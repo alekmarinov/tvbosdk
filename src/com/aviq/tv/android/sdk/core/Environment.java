@@ -1,0 +1,642 @@
+/**
+ * Copyright (c) 2007-2013, AVIQ Bulgaria Ltd
+ *
+ * Project:     AVIQTVSDK
+ * Filename:    Environment.java
+ * Author:      alek
+ * Date:        1 Dec 2013
+ * Description: Defines application environment
+ */
+
+package com.aviq.tv.android.sdk.core;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import android.app.Activity;
+import android.app.ActivityManager;
+import android.app.Application;
+import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.os.Bundle;
+import android.support.v4.util.LruCache;
+
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.ImageLoader;
+import com.android.volley.toolbox.ImageLoader.ImageCache;
+import com.android.volley.toolbox.Volley;
+import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
+import com.aviq.tv.android.sdk.core.feature.FeatureName;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
+import com.aviq.tv.android.sdk.core.feature.FeatureSet;
+import com.aviq.tv.android.sdk.core.feature.FeatureState;
+import com.aviq.tv.android.sdk.core.feature.IFeature;
+import com.aviq.tv.android.sdk.core.feature.IFeatureFactory;
+import com.aviq.tv.android.sdk.core.service.ServiceController;
+import com.aviq.tv.android.sdk.core.state.StateException;
+import com.aviq.tv.android.sdk.core.state.StateManager;
+import com.aviq.tv.android.sdk.feature.httpserver.HttpServer;
+
+/**
+ * Defines application environment
+ */
+public class Environment
+{
+	public static final String TAG = Environment.class.getSimpleName();
+	public static final int ON_LOADING = EventMessenger.ID();
+	public static final int ON_LOADED = EventMessenger.ID();
+
+	public enum Param
+	{
+		/**
+		 * Timeout in seconds for feature initialization
+		 */
+		FEATURE_INITIALIZE_TIMEOUT(30);
+
+		Param(int value)
+		{
+			Environment.getInstance().getPrefs().put(name(), value);
+		}
+
+		Param(String value)
+		{
+			Environment.getInstance().getPrefs().put(name(), value);
+		}
+	}
+
+	private static Environment _instance;
+	private Activity _activity;
+	private Application _context;
+	private StateManager _stateManager;
+	private ServiceController _serviceController;
+	private HttpServer _httpServer;
+	private Prefs _prefs;
+	private Prefs _userPrefs;
+	private RequestQueue _requestQueue;
+	private ImageLoader _imageLoader;
+	private List<IFeature> _features = new ArrayList<IFeature>();
+	private EventMessenger _eventMessenger = new EventMessenger();
+	private FeatureName.State _splashFeatureName;
+	private Map<FeatureName.Component, Prefs> _componentPrefs = new HashMap<FeatureName.Component, Prefs>();
+	private Map<FeatureName.Scheduler, Prefs> _schedulerPrefs = new HashMap<FeatureName.Scheduler, Prefs>();
+	private Map<FeatureName.State, Prefs> _statePrefs = new HashMap<FeatureName.State, Prefs>();
+	private IFeatureFactory _featureFactory;
+	// Chain based features initializer
+	private FeatureInitializeCallBack onFeatureInitialized = new FeatureInitializeCallBack();
+
+	/**
+	 * Environment constructor method
+	 */
+	private Environment()
+	{
+	}
+
+	public static synchronized Environment getInstance()
+	{
+		if (_instance == null)
+			_instance = new Environment();
+		return _instance;
+	}
+
+	/**
+	 * Initialize environment
+	 * @throws FeatureNotFoundException
+	 * @throws StateException
+	 */
+	public void initialize(Activity activity) throws FeatureNotFoundException, StateException
+	{
+		// initializes environment context
+		_activity = activity;
+		_context = activity.getApplication();
+		_userPrefs = createUserPrefs();
+		_prefs = createPrefs("system");
+		_serviceController = new ServiceController(_context);
+		_requestQueue = Volley.newRequestQueue(_context);
+
+		// Use 1/8th of the available memory for this memory cache.
+		int memClass = ((ActivityManager) activity.getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE))
+		        .getMemoryClass();
+		int cacheSize = 1024 * 1024 * memClass / 8;
+		_imageLoader = new ImageLoader(_requestQueue, new BitmapLruCache(cacheSize));
+
+		// Show splash sate
+		if (_splashFeatureName == null)
+		{
+			throw new RuntimeException("Splash state is not defined");
+		}
+		FeatureState splashFeatureState = getFeatureState(_splashFeatureName);
+		if (_stateManager == null)
+		{
+			throw new RuntimeException("Set StateManager first with setStateManager");
+		}
+
+		_stateManager.setStateMain(splashFeatureState, null);
+
+		// initializes features
+		Log.i(TAG, "Sorting features tolologically based on their declared dependencies");
+		_features = topologicalSort(_features);
+		for (int i = 0; i < _features.size(); i++)
+		{
+			Log.i(TAG, i + ". " + _features.get(i).getName() + " " + _features.get(i).getType());
+		}
+
+		Log.i(TAG, "Initializing features");
+		onFeatureInitialized.setTimeout(getPrefs().getInt(Param.FEATURE_INITIALIZE_TIMEOUT));
+		onFeatureInitialized.initializeNext();
+	}
+
+	private class FeatureInitializeCallBack implements Runnable, IFeature.OnFeatureInitialized
+	{
+		private int _nFeature = -1;
+		private int _nInitialized = -1;
+		private long _initStartedTime;
+		private int _timeout = 0;
+
+		public void setTimeout(int timeout)
+		{
+			_timeout = timeout;
+		}
+
+		// return true if there are more features to initialize or false
+		// otherwise
+		public void initializeNext()
+		{
+			_eventMessenger.removeCallbacks(this);
+			if ((_nFeature + 1) < _features.size())
+			{
+				_nFeature++;
+				_eventMessenger.postDelayed(this, _timeout * 1000);
+				_initStartedTime = System.currentTimeMillis();
+				IFeature feature = _features.get(_nFeature);
+				Log.i(TAG, "Initializing " + feature.getName() + " " + feature.getType() + " ("
+				        + feature.getClass().getName() + ") with timeout " + _timeout + " secs");
+				feature.initialize(this);
+			}
+			else
+			{
+				_eventMessenger.trigger(ON_LOADED);
+			}
+		}
+
+		@Override
+		public void run()
+		{
+			// Initialization timed out
+			IFeature feature = _features.get(_nFeature);
+			Log.e(TAG, _nFeature + ". initialize " + (System.currentTimeMillis() - _initStartedTime) + " ms: "
+			        + feature.getName() + " " + feature.getType() + " timeout!");
+			throw new RuntimeException("timeout!");
+		}
+
+		@Override
+		public void onInitialized(IFeature feature, int resultCode)
+		{
+			onInitializeProgress(feature, 1.0f);
+			String featureName = feature.getName() + " " + feature.getType();
+			if (_nInitialized == _nFeature)
+			{
+				throw new RuntimeException("Attempt to initialize feature " + featureName + " more than once");
+			}
+			_nInitialized = _nFeature;
+			Log.i(TAG, _nFeature + ". " + featureName + " initialized in "
+			        + (System.currentTimeMillis() - _initStartedTime) + " ms with result " + resultCode);
+			initializeNext();
+		}
+
+		@Override
+		public void onInitializeProgress(IFeature feature, float progress)
+		{
+			float totalProgress = (_nFeature + progress) / _features.size();
+
+			Bundle bundle = new Bundle();
+			bundle.putFloat("totalProgress", totalProgress);
+			bundle.putFloat("featureProgress", progress);
+			bundle.putString("featureName", feature.getType().name() + " " + feature.getName());
+			_eventMessenger.trigger(ON_LOADING, bundle);
+		}
+	}
+
+	/**
+	 * @return main application context
+	 */
+	public Context getContext()
+	{
+		return _context;
+	}
+
+	/**
+	 * @return application resources
+	 */
+	public Resources getResources()
+	{
+		return _context.getResources();
+	}
+
+	/**
+	 * @return the only application activity
+	 */
+	public Activity getActivity()
+	{
+		return _activity;
+	}
+
+	/**
+	 * Returns global initialized HttpServer instance
+	 *
+	 * @return HttpServer
+	 */
+	public HttpServer getHttpServer()
+	{
+		return _httpServer;
+	}
+
+	/**
+	 * Returns global preferences manager
+	 *
+	 * @return Prefs
+	 */
+	public Prefs getPrefs()
+	{
+		return _prefs;
+	}
+
+	/**
+	 * Returns global services controller
+	 *
+	 * @return ServiceController
+	 */
+	public ServiceController getServiceController()
+	{
+		return _serviceController;
+	}
+
+	/**
+	 * Returns global state manager
+	 *
+	 * @return StateManager
+	 */
+	public StateManager getStateManager()
+	{
+		return _stateManager;
+	}
+
+	/**
+	 * Sets global state manager
+	 *
+	 * @param StateManager
+	 */
+	public void setStateManager(StateManager stateManager)
+	{
+		_stateManager = stateManager;
+	}
+
+	/**
+	 * Returns global Volley requests queue
+	 *
+	 * @return RequestQueue
+	 */
+	public RequestQueue getRequestQueue()
+	{
+		return _requestQueue;
+	}
+
+	/**
+	 * Returns global Volley image loader
+	 *
+	 * @return ImageLoader
+	 */
+	public ImageLoader getImageLoader()
+	{
+		return _imageLoader;
+	}
+
+	/**
+	 * Returns event messenger
+	 *
+	 * @return EventMessenger
+	 */
+	public EventMessenger getEventMessenger()
+	{
+		return _eventMessenger;
+	}
+
+	/**
+	 * Declare component feature to be used
+	 *
+	 * @param featureName
+	 * @return The used FeatureComponent
+	 * @throws FeatureNotFoundException
+	 */
+	public FeatureComponent use(FeatureName.Component featureName) throws FeatureNotFoundException
+	{
+		Log.i(TAG, ".use: Component " + featureName);
+		try
+		{
+			// Check if feature is already used
+			return getFeatureComponent(featureName);
+		}
+		catch (FeatureNotFoundException e)
+		{
+			FeatureComponent feature = _featureFactory.createComponent(featureName);
+			useDependencies(feature);
+			_features.add(feature);
+			return feature;
+		}
+	}
+
+	/**
+	 * Declare scheduler feature to be used
+	 *
+	 * @param featureName
+	 * @return the used FeatureScheduler
+	 * @throws FeatureNotFoundException
+	 */
+	public FeatureScheduler use(FeatureName.Scheduler featureName) throws FeatureNotFoundException
+	{
+		Log.i(TAG, ".use: Scheduler " + featureName);
+
+		try
+		{
+			// Check if feature is already used
+			return getFeatureScheduler(featureName);
+		}
+		catch (FeatureNotFoundException e)
+		{
+			FeatureScheduler feature = _featureFactory.createScheduler(featureName);
+			useDependencies(feature);
+			_features.add(feature);
+			return feature;
+		}
+	}
+
+	/**
+	 * Declare state feature to be used. The first used state feature will be
+	 * used as home.
+	 *
+	 * @param featureName
+	 * @return the used FeatureState
+	 * @throws FeatureNotFoundException
+	 */
+	public FeatureState use(FeatureName.State featureName) throws FeatureNotFoundException
+	{
+		Log.i(TAG, ".use: State " + featureName);
+		if (_featureFactory == null)
+			throw new RuntimeException("Set IFeatureFactory with setFeatureFactory before declaring feature usages");
+
+		// Sets first used feature state as splash state
+		if (_splashFeatureName == null)
+		{
+			_splashFeatureName = featureName;
+		}
+
+		try
+		{
+			// Check if feature is already used
+			return getFeatureState(featureName);
+		}
+		catch (FeatureNotFoundException e)
+		{
+			// Use feature
+			FeatureState feature = _featureFactory.createState(featureName);
+			useDependencies(feature);
+			_features.add(feature);
+			return feature;
+		}
+	}
+
+	/**
+	 * @param featureName
+	 * @return FeatureComponent
+	 * @throws FeatureNotFoundException
+	 */
+	public FeatureComponent getFeatureComponent(FeatureName.Component featureName) throws FeatureNotFoundException
+	{
+		for (IFeature feature : _features)
+		{
+			if (IFeature.Type.COMPONENT.equals(feature.getType()))
+			{
+				FeatureComponent component = (FeatureComponent) feature;
+				if (featureName.equals(component.getComponentName()))
+					return component;
+			}
+		}
+		throw new FeatureNotFoundException(featureName);
+	}
+
+	/**
+	 * @param featureName
+	 * @return FeatureScheduler
+	 * @throws FeatureNotFoundException
+	 */
+	public FeatureScheduler getFeatureScheduler(FeatureName.Scheduler featureName) throws FeatureNotFoundException
+	{
+		for (IFeature feature : _features)
+		{
+			if (IFeature.Type.SCHEDULER.equals(feature.getType()))
+			{
+				FeatureScheduler scheduler = (FeatureScheduler) feature;
+				if (featureName.equals(scheduler.getSchedulerName()))
+					return scheduler;
+			}
+		}
+		throw new FeatureNotFoundException(featureName);
+	}
+
+	/**
+	 * @param featureName
+	 * @return FeatureState
+	 * @throws FeatureNotFoundException
+	 */
+	public FeatureState getFeatureState(FeatureName.State featureName) throws FeatureNotFoundException
+	{
+		for (IFeature feature : _features)
+		{
+			if (IFeature.Type.STATE.equals(feature.getType()))
+			{
+				FeatureState state = (FeatureState) feature;
+				if (featureName.equals(state.getStateName()))
+					return state;
+			}
+		}
+		throw new FeatureNotFoundException(featureName);
+	}
+
+	public Prefs getFeaturePrefs(FeatureName.Component featureName)
+	{
+		Prefs prefsFile = _componentPrefs.get(featureName);
+		if (prefsFile == null)
+		{
+			prefsFile = createPrefs(featureName.name());
+			_componentPrefs.put(featureName, prefsFile);
+		}
+		return prefsFile;
+	}
+
+	public Prefs getFeaturePrefs(FeatureName.Scheduler featureName)
+	{
+		Prefs prefsFile = _schedulerPrefs.get(featureName);
+		if (prefsFile == null)
+		{
+			prefsFile = createPrefs(featureName.name());
+			_schedulerPrefs.put(featureName, prefsFile);
+		}
+		return prefsFile;
+	}
+
+	public Prefs getFeaturePrefs(FeatureName.State featureName)
+	{
+		Prefs prefsFile = _statePrefs.get(featureName);
+		if (prefsFile == null)
+		{
+			prefsFile = createPrefs(featureName.name());
+			_statePrefs.put(featureName, prefsFile);
+		}
+		return prefsFile;
+	}
+
+	public Prefs getUserPrefs()
+	{
+		return _userPrefs;
+	}
+
+	public void setFeatureFactory(IFeatureFactory featureFactory)
+    {
+	    _featureFactory = featureFactory;
+    }
+
+	private void useDependencies(IFeature feature) throws FeatureNotFoundException
+	{
+		FeatureSet deps = feature.dependencies();
+		for (FeatureName.Component featureName : deps.Components)
+		{
+			use(featureName);
+		}
+		for (FeatureName.Scheduler featureName : deps.Schedulers)
+		{
+			use(featureName);
+		}
+		for (FeatureName.State featureName : deps.States)
+		{
+			use(featureName);
+		}
+	}
+
+	private List<IFeature> topologicalSort(List<IFeature> features)
+	{
+		List<IFeature> sorted = new ArrayList<IFeature>();
+		int featureCount = features.size();
+
+		Log.v(TAG, ".topologicalSort: " + featureCount + " features");
+		while (sorted.size() < featureCount)
+		{
+			Log.v(TAG, "Sorted " + sorted.size() + " features out of " + featureCount);
+
+			int prevSortedSize = sorted.size();
+
+			// remove all independent features
+			for (IFeature feature : features)
+			{
+				int resolvedCounter;
+
+				// check component dependencies
+				resolvedCounter = feature.dependencies().Components.size();
+				for (FeatureName.Component component : feature.dependencies().Components)
+				{
+					for (IFeature sortedFeature : sorted)
+					{
+						if (IFeature.Type.COMPONENT.equals(sortedFeature.getType()))
+							if (component.equals(((FeatureComponent) sortedFeature).getComponentName()))
+							{
+								resolvedCounter--;
+								break;
+							}
+					}
+				}
+				if (resolvedCounter > 0) // has unresolved dependencies
+					continue;
+
+				// check scheduler dependencies
+				resolvedCounter = feature.dependencies().Schedulers.size();
+				for (FeatureName.Scheduler scheduler : feature.dependencies().Schedulers)
+				{
+					for (IFeature sortedFeature : sorted)
+					{
+						if (IFeature.Type.SCHEDULER.equals(sortedFeature.getType()))
+							if (scheduler.equals(((FeatureScheduler) sortedFeature).getSchedulerName()))
+							{
+								resolvedCounter--;
+								break;
+							}
+					}
+				}
+				if (resolvedCounter > 0) // has unresolved dependencies
+					continue;
+
+				// check state dependencies
+				resolvedCounter = feature.dependencies().States.size();
+				for (FeatureName.State state : feature.dependencies().States)
+				{
+					for (IFeature sortedFeature : sorted)
+					{
+						if (IFeature.Type.STATE.equals(sortedFeature.getType()))
+							if (state.equals(((FeatureState) sortedFeature).getStateName()))
+							{
+								resolvedCounter--;
+								break;
+							}
+					}
+				}
+				if (resolvedCounter > 0) // has unresolved dependencies
+					continue;
+
+				if (sorted.indexOf(feature) < 0)
+					sorted.add(feature);
+			}
+			if (prevSortedSize == sorted.size())
+				throw new RuntimeException("Internal error. Unable to sort features!");
+		}
+		return sorted;
+	}
+
+	private Prefs createUserPrefs()
+	{
+		Log.i(TAG, ".createUserPrefs");
+		return new Prefs(_context.getSharedPreferences("user", Activity.MODE_PRIVATE), true);
+	}
+
+	private Prefs createPrefs(String name)
+	{
+		Log.i(TAG, ".createPrefs: name = " + name);
+		return new Prefs(_context.getSharedPreferences(name, Activity.MODE_PRIVATE), false);
+	}
+
+	private class BitmapLruCache extends LruCache<String, Bitmap> implements ImageCache
+	{
+		public BitmapLruCache(int maxSize)
+		{
+			super(maxSize);
+		}
+
+		@Override
+		protected int sizeOf(String key, Bitmap value)
+		{
+			return value.getRowBytes() * value.getHeight();
+		}
+
+		@Override
+		public Bitmap getBitmap(String url)
+		{
+			return get(url);
+		}
+
+		@Override
+		public void putBitmap(String url, Bitmap bitmap)
+		{
+			put(url, bitmap);
+		}
+	}
+}
