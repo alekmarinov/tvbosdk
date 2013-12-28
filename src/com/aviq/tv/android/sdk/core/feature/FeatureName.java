@@ -22,7 +22,8 @@ public class FeatureName
 		PLAYER,
 		HTTP_SERVER,
 		REGISTER,
-		WATCHLIST
+		WATCHLIST,
+		CHANNELS
 	}
 
 	public static enum Scheduler

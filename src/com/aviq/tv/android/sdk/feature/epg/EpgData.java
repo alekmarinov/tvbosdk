@@ -100,7 +100,7 @@ public class EpgData implements IEpgDataProvider
 	}
 
 	/**
-	 * @return the number of channels
+	 * @return the number of all channels
 	 */
 	@Override
     public int getChannelCount()
@@ -120,8 +120,11 @@ public class EpgData implements IEpgDataProvider
 		return _channelList.indexOf(channel);
 	}
 
+	/**
+	 * Return list with all EPG channels
+	 */
 	@Override
-	public List<Channel> getAllChannels()
+	public List<Channel> getChannels()
 	{
 		return _channelList;
 	}

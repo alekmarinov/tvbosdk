@@ -81,6 +81,12 @@ public abstract class Channel implements Parcelable
 		return result;
 	}
 
+	@Override
+    public String toString()
+	{
+		return "[Channel " + _channelId + "]";
+	}
+
 	public String getChannelId()
 	{
 		return _channelId;
