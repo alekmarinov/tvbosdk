@@ -11,6 +11,7 @@
 package com.aviq.tv.android.sdk.feature.channels;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import android.util.Log;
@@ -44,6 +45,7 @@ public class FeatureChannels extends FeatureComponent
 
 	private Prefs _userPrefs;
 	private EpgData _epgData;
+	private boolean _isModified = false;
 
 	// List of favorite channels
 	private List<Channel> _channels;
@@ -87,13 +89,12 @@ public class FeatureChannels extends FeatureComponent
 	 */
 	public void setChannelFavorite(Channel channel, boolean isFavorite)
 	{
-		boolean isModified = false;
 		if (isFavorite)
 		{
 			if (!isChannelFavorite(channel))
 			{
 				_channels.add(channel);
-				isModified = true;
+				_isModified = true;
 				Log.i(TAG, "Channel " + channel.getChannelId() + " added to favorites");
 			}
 		}
@@ -101,12 +102,10 @@ public class FeatureChannels extends FeatureComponent
 		{
 			if (_channels.remove(channel))
 			{
-				isModified = true;
+				_isModified = true;
 				Log.i(TAG, "Channel " + channel.getChannelId() + " removed from favorites");
 			}
 		}
-		if (isModified)
-			saveFavoriteChannels(_epgData, _channels);
 	}
 
 	/**
@@ -122,19 +121,54 @@ public class FeatureChannels extends FeatureComponent
 	 */
 	public List<Channel> getFavoriteChannels()
 	{
-		return _channels;
+		if (isEverChanged())
+			return _channels;
+		return _epgData.getChannels();
+	}
+
+	/**
+	 * Swap channel positions
+	 *
+	 */
+	public void swapChannelPositions(int position1, int position2)
+	{
+		if (position1 != position2)
+		{
+			Collections.swap(_channels, position1, position2);
+			_isModified = true;
+		}
+	}
+
+	/**
+	 * Save favorite channels to persistent storage
+	 */
+	public void save()
+	{
+		saveFavoriteChannels(_epgData, _channels);
+		_isModified = false;
+	}
+
+	/**
+	 * Returns true if the favorite channel list has been modified
+	 */
+	public boolean isModified()
+	{
+		return _isModified;
+	}
+
+	/**
+	 * Returns true if the favorite channel list has been ever changed
+	 */
+	public boolean isEverChanged()
+	{
+		return _channels.size() > 0;
 	}
 
 	private List<Channel> loadFavoriteChannels(EpgData epgData)
 	{
 		List<Channel> channels = new ArrayList<Channel>();
 		boolean isEmpty = !_userPrefs.has(Param.CHANNELS) || _userPrefs.getString(Param.CHANNELS).length() == 0;
-		if (isEmpty)
-		{
-			// Add all channels as favorites
-			channels.addAll(epgData.getChannels());
-		}
-		else
+		if (!isEmpty)
 		{
 			String buffer = _userPrefs.getString(Param.CHANNELS);
 			String[] channelIds = buffer.split(",");

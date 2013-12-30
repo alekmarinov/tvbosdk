@@ -5,8 +5,6 @@ import java.util.List;
 
 import android.graphics.Bitmap;
 
-
-
 public interface IEpgDataProvider
 {
 //	public void loadEpgMap(List<Channel> channelList, long timeStart, long timeEnd);
@@ -19,7 +17,6 @@ public interface IEpgDataProvider
 
 	public int getChannelCount();
 	public Channel getChannel(int index);
-	public int getChannelIndex(Channel channel);
 	public Bitmap getChannelLogoBitmap(int index);
 	public Program getProgram(String channelId, String dateTime);
 	public Program getProgram(String channelId, Calendar when);

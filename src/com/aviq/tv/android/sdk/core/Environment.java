@@ -23,6 +23,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v4.util.LruCache;
+import android.util.DisplayMetrics;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.ImageLoader;
@@ -104,11 +105,19 @@ public class Environment
 
 	/**
 	 * Initialize environment
+	 *
 	 * @throws FeatureNotFoundException
 	 * @throws StateException
 	 */
 	public void initialize(Activity activity) throws FeatureNotFoundException, StateException
 	{
+		DisplayMetrics metrics = new DisplayMetrics();
+		activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
+
+		Log.i(TAG, "Initializing environment: " + metrics.widthPixels + "x" + metrics.heightPixels + ", density = "
+		        + metrics.density + ", densityDpi = " + metrics.densityDpi + ", scaledDensity = "
+		        + metrics.scaledDensity + ", xdpi = " + metrics.xdpi + ", ydpi = " + metrics.ydpi);
+
 		// initializes environment context
 		_activity = activity;
 		_context = activity.getApplication();
@@ -504,9 +513,9 @@ public class Environment
 	}
 
 	public void setFeatureFactory(IFeatureFactory featureFactory)
-    {
-	    _featureFactory = featureFactory;
-    }
+	{
+		_featureFactory = featureFactory;
+	}
 
 	private void useDependencies(IFeature feature) throws FeatureNotFoundException
 	{

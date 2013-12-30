@@ -114,12 +114,6 @@ public class EpgData implements IEpgDataProvider
 		return _channelLogos[index];
 	}
 
-	@Override
-    public int getChannelIndex(Channel channel)
-	{
-		return _channelList.indexOf(channel);
-	}
-
 	/**
 	 * Return list with all EPG channels
 	 */

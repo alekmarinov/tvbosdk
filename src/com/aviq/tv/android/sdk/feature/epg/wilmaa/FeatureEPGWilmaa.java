@@ -71,9 +71,9 @@ public class FeatureEPGWilmaa extends FeatureEPG
 	}
 
 	@Override
-    protected Channel createChannel()
+    protected Channel createChannel(int index)
     {
-	    return new ChannelWilmaa();
+	    return new ChannelWilmaa(index);
     }
 
 	@Override

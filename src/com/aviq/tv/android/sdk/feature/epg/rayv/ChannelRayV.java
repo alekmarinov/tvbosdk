@@ -10,9 +10,6 @@
 
 package com.aviq.tv.android.sdk.feature.epg.rayv;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 
 /**
@@ -21,29 +18,10 @@ import com.aviq.tv.android.sdk.feature.epg.Channel;
 public class ChannelRayV extends Channel
 {
 
-	public static final Parcelable.Creator<Channel> CREATOR = new Parcelable.Creator<Channel>()
-	{
-		@Override
-		public Channel createFromParcel(Parcel in)
-		{
-			return new ChannelRayV(in);
-		}
-
-		@Override
-		public Channel[] newArray(int size)
-		{
-			return new Channel[size];
-		}
-	};
-
-	public ChannelRayV()
-	{
-	}
-
-	public ChannelRayV(Parcel in)
-	{
-		super(in);
-	}
+	public ChannelRayV(int index)
+    {
+	    super(index);
+    }
 
 	@Override
     public void setAttributes(MetaData channelMetaData, String[] attributes)

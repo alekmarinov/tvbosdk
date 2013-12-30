@@ -119,8 +119,8 @@ public class FeatureEPGRayV extends FeatureEPG
     }
 
 	@Override
-    protected Channel createChannel()
+    protected Channel createChannel(int index)
     {
-	    return new ChannelRayV();
+	    return new ChannelRayV(index);
     }
 }

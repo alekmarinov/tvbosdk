@@ -203,8 +203,10 @@ public abstract class FeatureEPG extends FeatureComponent
 
 	/**
 	 * @return create channel instance
+	 *
+	 * @param index is the channel position in the global Channels list
 	 */
-	protected abstract Channel createChannel();
+	protected abstract Channel createChannel(int index);
 
 	/**
 	 * @return create program instance
@@ -435,7 +437,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		List<Channel> newChannelList = new ArrayList<Channel>();
 		for (int i = 0; i < data.length; i++)
 		{
-			Channel channel = createChannel();
+			Channel channel = createChannel(i);
 			channel.setChannelId(data[i][metaData.metaChannelId]);
 			channel.setTitle(data[i][metaData.metaChannelTitle]);
 			channel.setThumbnail(data[i][metaData.metaChannelThumbnail]);
