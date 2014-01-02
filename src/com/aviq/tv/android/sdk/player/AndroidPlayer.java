@@ -32,8 +32,6 @@ public class AndroidPlayer extends BasePlayer
 	{
 		_videoView = videoView;
 		Log.i(TAG, "constructed");
-
-		// TODO: Attach listeners for VideoView and MediaPlayer
 	}
 
 	/**
@@ -76,12 +74,15 @@ public class AndroidPlayer extends BasePlayer
 		_videoView.pause();
 	}
 
-	/*
-	 * @see com.aviq.tv.android.home.player.BasePlayer#isPlaying()
-	 */
 	@Override
 	public boolean isPlaying()
 	{
 		return _videoView.isPlaying();
+	}
+
+	@Override
+	public int getPosition()
+	{
+		return _videoView.getCurrentPosition();
 	}
 }

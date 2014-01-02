@@ -10,29 +10,12 @@
 
 package com.aviq.tv.android.sdk.player;
 
-import android.os.Bundle;
 
 /**
  * Player interface
  */
 public interface IPlayer
 {
-	/**
-	 * Enumerates all player events
-	 */
-	public enum EventEnum
-	{
-		START, PLAY, STOP, PAUSE, ERROR
-	}
-
-	/**
-	 * Event listener interface responding to player events
-	 */
-	public interface EventListener
-	{
-		void onEvent(IPlayer player, EventEnum eventEnum, Bundle params);
-	}
-
 	/**
 	 * Starts playing URL
 	 */
@@ -59,14 +42,7 @@ public interface IPlayer
 	boolean isPaused();
 
 	/**
-	 * Register event listener called on player event
-	 * @param eventListener the event listener to be registered
+	 * Returns playback position
 	 */
-	void addEventListener(EventListener eventListener);
-
-	/**
-	 * Unregister event listener registered with addEventListener
-	 * @param eventListener the event listener to be unregistered
-	 */
-	void removeEventListener(EventListener eventListener);
+	int getPosition();
 }

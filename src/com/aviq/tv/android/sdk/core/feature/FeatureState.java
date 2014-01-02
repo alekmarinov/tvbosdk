@@ -168,8 +168,8 @@ public abstract class FeatureState extends BaseState implements IFeature
 		Log.i(TAG, ".onShow");
 		for (Subscription subscription : _subscriptions)
 		{
-			Log.i(TAG, "Register " + subscription.Feature.getName() + " " + subscription.Feature.getType()
-			        + " to event id = " + subscription.MsgId);
+			Log.i(TAG, "Register " + getName() + " " + getType() + " to " + subscription.Feature.getName() + " "
+			        + subscription.Feature.getType() + " on event id = " + subscription.MsgId);
 			subscription.Feature.getEventMessenger().register(this, subscription.MsgId);
 		}
 	}
@@ -183,8 +183,8 @@ public abstract class FeatureState extends BaseState implements IFeature
 		Log.i(TAG, getName() + ".onHide");
 		for (Subscription subscription : _subscriptions)
 		{
-			Log.i(TAG, "Unregister " + subscription.Feature.getName() + " " + subscription.Feature.getType()
-			        + " to event id = " + subscription.MsgId);
+			Log.i(TAG, "Unregister " + getName() + " " + getType() + " from " + subscription.Feature.getName() + " "
+			        + subscription.Feature.getType() + " on event id = " + subscription.MsgId);
 			subscription.Feature.getEventMessenger().unregister(this, subscription.MsgId);
 		}
 	}

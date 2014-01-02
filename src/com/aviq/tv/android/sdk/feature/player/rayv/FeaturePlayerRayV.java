@@ -10,7 +10,6 @@
 
 package com.aviq.tv.android.sdk.feature.player.rayv;
 
-import android.os.Bundle;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
@@ -96,17 +95,6 @@ public class FeaturePlayerRayV extends FeaturePlayer
         	Log.e(TAG, e.getMessage(), e);
     		onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
         }
-	}
-
-	public void play(String channelId)
-	{
-		Bundle bundle = new Bundle();
-		bundle.putString("USER", getPrefs().getString(Param.RAYV_USER));
-		bundle.putString("PASS", getPrefs().getString(Param.RAYV_PASS));
-		bundle.putString("STREAM_ID", channelId);
-		bundle.putInt("BITRATE", getPrefs().getInt(Param.RAYV_STREAM_BITRATE));
-		String url = getPrefs().getString(Param.RAYV_STREAM_URL_PATTERN, bundle);
-		_player.play(url);
 	}
 
 	public void setStreamerIni(String streamerIni)
