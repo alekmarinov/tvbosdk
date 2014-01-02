@@ -11,6 +11,7 @@
 package com.aviq.tv.android.sdk.feature.watchlist;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -38,8 +39,9 @@ public class FeatureWatchlist extends FeatureComponent
 	public static final String TAG = FeatureWatchlist.class.getSimpleName();
 	public static final int ON_PROGRAM_ADDED = EventMessenger.ID();
 	public static final int ON_PROGRAM_REMOVED = EventMessenger.ID();
+	public static final int ON_PROGRAM_NOTIFY = EventMessenger.ID();
 
-	public enum Param
+	public enum UserParam
 	{
 		/**
 		 * List of program identifier keys formatted as
@@ -48,8 +50,22 @@ public class FeatureWatchlist extends FeatureComponent
 		WATCHLIST
 	}
 
+	public enum Param
+	{
+		/**
+		 * The time in seconds to notify before the program starts
+		 */
+		NOTIFY_EARLIER(300);
+
+		Param(int value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.WATCHLIST).put(name(), value);
+		}
+	}
+
 	private ArrayList<Program> _watchedPrograms = new ArrayList<Program>();
 	private Prefs _userPrefs;
+	private int _notifyEarlier;
 
 	public FeatureWatchlist()
 	{
@@ -66,6 +82,8 @@ public class FeatureWatchlist extends FeatureComponent
 			FeatureEPG featureEPG = (FeatureEPG) Environment.getInstance().getFeatureComponent(
 			        FeatureName.Component.EPG);
 			_watchedPrograms = loadWatchlist(featureEPG.getEpgData());
+			_notifyEarlier = getPrefs().getInt(Param.NOTIFY_EARLIER);
+			updateProgramStartNotification();
 			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 		}
 		catch (FeatureNotFoundException e)
@@ -89,12 +107,12 @@ public class FeatureWatchlist extends FeatureComponent
 			Collections.sort(_watchedPrograms, new Comparator<Program>()
 			{
 				@Override
-                public int compare(Program lhs, Program rhs)
-                {
-	                return lhs.getStartTimeCalendar().compareTo(rhs.getStartTimeCalendar());
-                }
+				public int compare(Program lhs, Program rhs)
+				{
+					return lhs.getStartTimeCalendar().compareTo(rhs.getStartTimeCalendar());
+				}
 			});
-
+			updateProgramStartNotification();
 			Bundle bundle = new Bundle();
 			bundle.putString("PROGRAM", program.getId());
 			bundle.putString("CHANNEL", program.getChannel().getChannelId());
@@ -116,6 +134,7 @@ public class FeatureWatchlist extends FeatureComponent
 			bundle.putString("PROGRAM", program.getId());
 			bundle.putString("CHANNEL", program.getChannel().getChannelId());
 			getEventMessenger().trigger(ON_PROGRAM_REMOVED, bundle);
+			updateProgramStartNotification();
 			saveWatchlist(_watchedPrograms);
 		}
 	}
@@ -162,16 +181,16 @@ public class FeatureWatchlist extends FeatureComponent
 			buffer.append('/');
 			buffer.append(program.getId());
 		}
-		_userPrefs.put(Param.WATCHLIST, buffer.toString());
+		_userPrefs.put(UserParam.WATCHLIST, buffer.toString());
 	}
 
 	// Loads programs list from watchlist settings
 	private ArrayList<Program> loadWatchlist(EpgData epgData)
 	{
 		ArrayList<Program> programs = new ArrayList<Program>();
-		if (!_userPrefs.has(Param.WATCHLIST))
+		if (!_userPrefs.has(UserParam.WATCHLIST))
 			return programs;
-		String buffer = _userPrefs.getString(Param.WATCHLIST);
+		String buffer = _userPrefs.getString(UserParam.WATCHLIST);
 		String[] programIds = buffer.split(",");
 		for (String programId : programIds)
 		{
@@ -194,5 +213,41 @@ public class FeatureWatchlist extends FeatureComponent
 			}
 		}
 		return programs;
+	}
+
+	private void updateProgramStartNotification()
+	{
+		for (Program program : _watchedPrograms)
+		{
+			if (Calendar.getInstance().compareTo(program.getStartTimeCalendar()) < 0)
+			{
+				notifyProgram(program);
+				break;
+			}
+		}
+	}
+
+	private void notifyProgram(Program program)
+	{
+		getEventMessenger().removeCallbacks(_onProgramNotification);
+		_onProgramNotification.NotifyProgram = program;
+		getEventMessenger().postAtTime(_onProgramNotification,
+		        1000 * _notifyEarlier + program.getStartTimeCalendar().getTimeInMillis());
+	}
+
+	private ProgramNotifier _onProgramNotification = new ProgramNotifier();
+
+	private class ProgramNotifier implements Runnable
+	{
+		Program NotifyProgram;
+
+		@Override
+		public void run()
+		{
+			Bundle bundle = new Bundle();
+			bundle.putString("PROGRAM", NotifyProgram.getId());
+			bundle.putString("CHANNEL", NotifyProgram.getChannel().getChannelId());
+			getEventMessenger().trigger(ON_PROGRAM_NOTIFY, bundle);
+		}
 	}
 }

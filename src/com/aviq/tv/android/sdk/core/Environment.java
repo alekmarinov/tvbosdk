@@ -56,7 +56,7 @@ public class Environment
 		/**
 		 * Timeout in seconds for feature initialization
 		 */
-		FEATURE_INITIALIZE_TIMEOUT(30);
+		FEATURE_INITIALIZE_TIMEOUT(130);
 
 		Param(int value)
 		{

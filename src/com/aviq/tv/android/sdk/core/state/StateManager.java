@@ -47,13 +47,53 @@ public class StateManager
 		MAIN, OVERLAY, MESSAGE
 	}
 
-	// Message stage types definition
-	public enum MessageType
+	public static class MessageParams
 	{
-		INFO, WARN, ERROR
+		public static final String PARAM_TYPE = "PARAM_TYPE";
+		public static final String PARAM_TITLE = "PARAM_TITLE";
+		public static final String PARAM_TEXT = "PARAM_TEXT";
+
+		public enum Type
+		{
+			INFO, WARN, ERROR
+		}
+
+		public enum Button
+		{
+			OK, CANCEL, YES, NO
+		}
+
+		private Bundle _bundle = new Bundle();
+
+		public MessageParams setType(Type type)
+		{
+			_bundle.putString(PARAM_TYPE, type.name());
+			return this;
+		}
+
+		public MessageParams setTitle(String title)
+		{
+			_bundle.putString(PARAM_TITLE, title);
+			return this;
+		}
+
+		public MessageParams setText(String text)
+		{
+			_bundle.putString(PARAM_TEXT, text);
+			return this;
+		}
+
+		public MessageParams enableButton(Button buttonName)
+		{
+			_bundle.putBoolean(buttonName.name(), true);
+			return this;
+		}
+
+		public Bundle getParamsBundle()
+		{
+			return _bundle;
+		}
 	}
-	public static final String PARAM_MESSAGE_TYPE = "PARAM_TYPE";
-	public static final String PARAM_MESSAGE_TEXT_ID = "PARAM_TEXT_ID";
 
 	/**
 	 * Initialize StateManager instance.
@@ -333,8 +373,14 @@ public class StateManager
 		Log.i(TAG, ".onKeyDown: keyCode = " + keyCode + ", state = " + getMainState() + ", overlay = "
 		        + getOverlayState());
 
-		if (_activeStates.size() > 0)
+		if (_messageState.isAdded())
+		{
+			return _messageState.onKeyDown(keyCode, event);
+		}
+		else if (_activeStates.size() > 0)
+		{
 			return _activeStates.get(_activeStates.size() - 1).onKeyDown(keyCode, event);
+		}
 
 		return false;
 	}
@@ -355,8 +401,14 @@ public class StateManager
 	{
 		Log.i(TAG, ".onKeyUp: keyCode = " + keyCode + ", state = " + getMainState() + ", overlay = "
 		        + getOverlayState());
-		if (_activeStates.size() > 0)
+		if (_messageState.isAdded())
+		{
+			return _messageState.onKeyUp(keyCode, event);
+		}
+		else if (_activeStates.size() > 0)
+		{
 			return _activeStates.get(_activeStates.size() - 1).onKeyUp(keyCode, event);
+		}
 
 		return false;
 	}
@@ -367,17 +419,12 @@ public class StateManager
 	/**
 	 * Show message box
 	 *
-	 * @param msgType
-	 *            determine the kind of message (see MessageBox.Type)
-	 * @param stringId
-	 *            string resource identifier for the message text
+	 * @param MessageParams
+	 *            message box parameters
 	 */
-	public void showMessage(MessageType msgType, int stringId)
+	public void showMessage(MessageParams messageParams)
 	{
-		final Bundle params = new Bundle();
-		params.putString(PARAM_MESSAGE_TYPE, msgType.name());
-		params.putInt(PARAM_MESSAGE_TEXT_ID, stringId);
-		showState(_messageState, StateLayer.MESSAGE, params);
+		showState(_messageState, StateLayer.MESSAGE, messageParams.getParamsBundle());
 	}
 
 	/**
