@@ -11,11 +11,15 @@
 package com.aviq.tv.android.sdk.feature.watchlist;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
+import android.os.Bundle;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
@@ -32,6 +36,8 @@ import com.aviq.tv.android.sdk.feature.epg.Program;
 public class FeatureWatchlist extends FeatureComponent
 {
 	public static final String TAG = FeatureWatchlist.class.getSimpleName();
+	public static final int ON_PROGRAM_ADDED = EventMessenger.ID();
+	public static final int ON_PROGRAM_REMOVED = EventMessenger.ID();
 
 	public enum Param
 	{
@@ -79,6 +85,20 @@ public class FeatureWatchlist extends FeatureComponent
 		if (!isWatched(program))
 		{
 			_watchedPrograms.add(program);
+
+			Collections.sort(_watchedPrograms, new Comparator<Program>()
+			{
+				@Override
+                public int compare(Program lhs, Program rhs)
+                {
+	                return lhs.getStartTimeCalendar().compareTo(rhs.getStartTimeCalendar());
+                }
+			});
+
+			Bundle bundle = new Bundle();
+			bundle.putString("PROGRAM", program.getId());
+			bundle.putString("CHANNEL", program.getChannel().getChannelId());
+			getEventMessenger().trigger(ON_PROGRAM_ADDED, bundle);
 			saveWatchlist(_watchedPrograms);
 		}
 	}
@@ -91,7 +111,13 @@ public class FeatureWatchlist extends FeatureComponent
 	public void removeWatchlist(Program program)
 	{
 		if (_watchedPrograms.remove(program))
+		{
+			Bundle bundle = new Bundle();
+			bundle.putString("PROGRAM", program.getId());
+			bundle.putString("CHANNEL", program.getChannel().getChannelId());
+			getEventMessenger().trigger(ON_PROGRAM_REMOVED, bundle);
 			saveWatchlist(_watchedPrograms);
+		}
 	}
 
 	/**

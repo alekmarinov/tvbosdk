@@ -74,7 +74,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 	@Override
 	public void onEvent(int msgId, Bundle bundle)
 	{
-		Log.i(TAG, ".onEvent: msgId = " + msgId);
+		Log.i(TAG, getName() + ".onEvent: msgId = " + msgId);
 	}
 
 	/**
@@ -87,11 +87,11 @@ public abstract class FeatureState extends BaseState implements IFeature
 	 */
 	protected void subscribe(IFeature featureTo, int msgId)
 	{
-		Log.i(TAG, ".subscribe: for " + featureTo.getName() + " on " + msgId);
+		Log.i(TAG, getName() + ".subscribe: for " + featureTo.getName() + " on " + msgId);
 		if (isSubscribed(featureTo, msgId))
 		{
-			throw new RuntimeException("Attempt to subscribe " + getName() + " " + getType() + " to "
-			        + featureTo.getName() + " " + featureTo.getType() + " on event id " + msgId + " more than once");
+			throw new RuntimeException(getName() + " attempts to subscribe to " + featureTo.getName() + " "
+			        + featureTo.getType() + " on event id " + msgId + " more than once");
 		}
 
 		// add subscription for registration when this state is shown
@@ -113,7 +113,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 	 */
 	protected void unsubscribe(IFeature featureFrom, int msgId)
 	{
-		Log.i(TAG, ".unsubscribe: from " + featureFrom.getName() + " on " + msgId);
+		Log.i(TAG, getName() + ".unsubscribe: from " + featureFrom.getName() + " on " + msgId);
 		for (int i = 0; i < _subscriptions.size(); i++)
 		{
 			Subscription subscription = _subscriptions.get(i);
@@ -128,8 +128,8 @@ public abstract class FeatureState extends BaseState implements IFeature
 				return;
 			}
 		}
-		throw new RuntimeException("Attempt to unsubscribe " + getName() + " " + getType() + " from "
-		        + featureFrom.getName() + " " + featureFrom.getType() + " on event id " + msgId
+		throw new RuntimeException(getName() + " attempts to unsubscribe from " + featureFrom.getName() + " "
+		        + featureFrom.getType() + " on event id " + msgId
 		        + " without being subscribed. Verify if you are not unsubscribing it more than once");
 	}
 
@@ -163,14 +163,18 @@ public abstract class FeatureState extends BaseState implements IFeature
 	 * @throws StateException
 	 */
 	@Override
-	protected void onShow()
+	protected void onShow(boolean isViewUncovered)
 	{
-		Log.i(TAG, ".onShow");
-		for (Subscription subscription : _subscriptions)
+		Log.i(TAG, getName() + ".onShow: isViewUncovered = " + isViewUncovered);
+		if (!isViewUncovered)
 		{
-			Log.i(TAG, "Register " + getName() + " " + getType() + " to " + subscription.Feature.getName() + " "
-			        + subscription.Feature.getType() + " on event id = " + subscription.MsgId);
-			subscription.Feature.getEventMessenger().register(this, subscription.MsgId);
+			for (Subscription subscription : _subscriptions)
+			{
+				Log.i(TAG,
+				        getName() + " registers to " + subscription.Feature.getName() + " "
+				                + subscription.Feature.getType() + " on event id = " + subscription.MsgId);
+				subscription.Feature.getEventMessenger().register(this, subscription.MsgId);
+			}
 		}
 	}
 
@@ -178,14 +182,17 @@ public abstract class FeatureState extends BaseState implements IFeature
 	 * On hiding this FeatureState
 	 */
 	@Override
-	protected void onHide()
+	protected void onHide(boolean isViewCovered)
 	{
-		Log.i(TAG, getName() + ".onHide");
-		for (Subscription subscription : _subscriptions)
+		Log.i(TAG, getName() + ".onHide: isViewCovered = " + isViewCovered);
+		if (!isViewCovered)
 		{
-			Log.i(TAG, "Unregister " + getName() + " " + getType() + " from " + subscription.Feature.getName() + " "
-			        + subscription.Feature.getType() + " on event id = " + subscription.MsgId);
-			subscription.Feature.getEventMessenger().unregister(this, subscription.MsgId);
+			for (Subscription subscription : _subscriptions)
+			{
+				Log.i(TAG, "Unregister " + getName() + " " + getType() + " from " + subscription.Feature.getName()
+				        + " " + subscription.Feature.getType() + " on event id = " + subscription.MsgId);
+				subscription.Feature.getEventMessenger().unregister(this, subscription.MsgId);
+			}
 		}
 	}
 

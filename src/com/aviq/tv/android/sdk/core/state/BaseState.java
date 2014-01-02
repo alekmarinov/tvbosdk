@@ -86,15 +86,19 @@ public class BaseState extends Fragment
 	/**
 	 * Called on showing this state. The method can be overwritten in order to
 	 * initialize visualization.
+	 *
+	 * @param isViewUncovered true if the view has been uncovered from overlay
 	 */
-	protected void onShow()
+	protected void onShow(boolean isViewUncovered)
 	{
 	}
 
 	/**
 	 * Called on hiding this state.
+	 *
+	 * @param isViewCovered true if the view has been covered by overlay
 	 */
-	protected void onHide()
+	protected void onHide(boolean isViewCovered)
 	{
 	}
 

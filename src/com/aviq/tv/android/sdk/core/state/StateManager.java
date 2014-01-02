@@ -138,7 +138,9 @@ public class StateManager
 					}
 					else
 					{
-						_activeStates.get(0).onShow();
+						// restore focus of the uncovered view
+						_activeStates.get(0).onShow(true);
+
 						// !!! This breaks the EPG grid
 						// _activity.findViewById(R.id.main_fragment).requestFocus();
 						// _activeStates.elementAt(_activeStates.size() -
@@ -259,11 +261,11 @@ public class StateManager
 							else
 								state.getView().setBackgroundColor(_overlayBackgroundColor);
 
-							_activeStates.get(0).onHide();
+							_activeStates.get(0).onHide(true);
 						}
 
 						// notify state is shown
-						state.onShow();
+						state.onShow(false);
 					}
 				});
 			}
@@ -403,7 +405,7 @@ public class StateManager
 			ft.commit();
 
 			// notify state is hidden
-			state.onHide();
+			state.onHide(false);
 		}
 	}
 
