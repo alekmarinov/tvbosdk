@@ -10,6 +10,8 @@
 
 package com.aviq.tv.android.sdk.feature.player;
 
+import android.util.Log;
+import android.widget.RelativeLayout;
 import android.widget.VideoView;
 
 import com.aviq.tv.android.sdk.core.ResultCode;
@@ -51,5 +53,29 @@ public class FeaturePlayer extends FeatureComponent
 	public void setVideoView(VideoView videoView)
 	{
 		_videoView = videoView;
+	}
+
+	public VideoView getVideoView()
+	{
+		return _videoView;
+	}
+
+	public void setVideoViewPositionAndSize(int x, int y, int w, int h)
+	{
+		Log.i(TAG, ".setVideoViewPositionAndSize: " + x + "," + y + " " + w + "x" + h);
+		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(w, h);
+		params.leftMargin = x;
+		params.topMargin = y;
+		_videoView.setLayoutParams(params);
+	}
+
+	public void setVideoViewFullScreen()
+	{
+		Log.i(TAG, ".setVideoViewFullScreen");
+		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
+		        RelativeLayout.LayoutParams.MATCH_PARENT);
+		params.leftMargin = 0;
+		params.topMargin = 0;
+		_videoView.setLayoutParams(params);
 	}
 }

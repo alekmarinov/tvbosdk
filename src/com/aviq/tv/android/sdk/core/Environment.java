@@ -542,8 +542,6 @@ public class Environment
 		Log.v(TAG, ".topologicalSort: " + featureCount + " features");
 		while (sorted.size() < featureCount)
 		{
-			Log.v(TAG, "Sorted " + sorted.size() + " features out of " + featureCount);
-
 			int prevSortedSize = sorted.size();
 
 			// remove all independent features
