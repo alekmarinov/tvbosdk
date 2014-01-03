@@ -23,7 +23,8 @@ public class FeatureName
 		HTTP_SERVER,
 		REGISTER,
 		WATCHLIST,
-		CHANNELS
+		CHANNELS,
+		ETHERNET
 	}
 
 	public static enum Scheduler

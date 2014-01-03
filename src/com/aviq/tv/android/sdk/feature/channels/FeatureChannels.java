@@ -65,7 +65,6 @@ public class FeatureChannels extends FeatureComponent
 			FeatureEPG featureEPG = (FeatureEPG) Environment.getInstance().getFeatureComponent(
 			        FeatureName.Component.EPG);
 			_epgData = featureEPG.getEpgData();
-			Log.i(TAG, "_epgData -> " + _epgData);
 			_channels = loadFavoriteChannels(_epgData);
 			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 		}
