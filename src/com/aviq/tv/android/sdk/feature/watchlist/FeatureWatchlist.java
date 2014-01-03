@@ -10,11 +10,14 @@
 
 package com.aviq.tv.android.sdk.feature.watchlist;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -30,6 +33,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
+import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Component feature managing programs watchlist
@@ -155,6 +159,11 @@ public class FeatureWatchlist extends FeatureComponent
 		return false;
 	}
 
+	public void enableNotifications()
+	{
+
+	}
+
 	/**
 	 * @return list of programs whatchlist
 	 */
@@ -215,24 +224,41 @@ public class FeatureWatchlist extends FeatureComponent
 		return programs;
 	}
 
+	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
+
 	private void updateProgramStartNotification()
 	{
 		for (Program program : _watchedPrograms)
 		{
+			String programStart = DATE_FORMAT.format(program.getStartTimeCalendar().getTime());
+			String timeNow = DATE_FORMAT.format(Calendar.getInstance().getTime());
+
 			if (Calendar.getInstance().compareTo(program.getStartTimeCalendar()) < 0)
 			{
+				Log.i(TAG, "Program starting on " + programStart + " is in future, now = " + timeNow);
 				notifyProgram(program);
-				break;
+				return;
+			}
+			else
+			{
+				Log.i(TAG, "Program starting on " + programStart + " is in past, now = " + timeNow);
 			}
 		}
+		Log.i(TAG, "No program for notification");
 	}
 
 	private void notifyProgram(Program program)
 	{
 		getEventMessenger().removeCallbacks(_onProgramNotification);
 		_onProgramNotification.NotifyProgram = program;
-		getEventMessenger().postAtTime(_onProgramNotification,
-		        1000 * _notifyEarlier + program.getStartTimeCalendar().getTimeInMillis());
+		long now = Calendar.getInstance().getTimeInMillis();
+		long delayToNotify = program.getStartTimeCalendar().getTimeInMillis() - now - 1000 * _notifyEarlier;
+		if (delayToNotify < 0)
+			delayToNotify = 5 * 1000;
+
+		getEventMessenger().postDelayed(_onProgramNotification, delayToNotify);
+		Log.i(TAG, "Schedule for notification program " + program.getChannel().getChannelId() + "/" + program.getId() + " " + program.getTitle()
+		        + " in " + delayToNotify + " ms");
 	}
 
 	private ProgramNotifier _onProgramNotification = new ProgramNotifier();
@@ -244,10 +270,15 @@ public class FeatureWatchlist extends FeatureComponent
 		@Override
 		public void run()
 		{
+			removeWatchlist(NotifyProgram);
+
 			Bundle bundle = new Bundle();
 			bundle.putString("PROGRAM", NotifyProgram.getId());
 			bundle.putString("CHANNEL", NotifyProgram.getChannel().getChannelId());
+			Log.i(TAG, "Trigger ON_PROGRAM_NOTIFY: " + TextUtils.implodeBundle(bundle));
 			getEventMessenger().trigger(ON_PROGRAM_NOTIFY, bundle);
+
+			updateProgramStartNotification();
 		}
 	}
 }

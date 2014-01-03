@@ -10,8 +10,6 @@
 
 package com.aviq.tv.android.sdk.core.state;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Stack;
 
 import android.app.Activity;
@@ -31,7 +29,6 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 public class StateManager
 {
 	private static final String TAG = StateManager.class.getSimpleName();
-	private final Map<StateEnum, BaseState> _states = new HashMap<StateEnum, BaseState>();
 	private final Stack<BaseState> _activeStates = new Stack<BaseState>();
 	private final Activity _activity;
 	private final Handler _handler = new Handler();
@@ -322,17 +319,6 @@ public class StateManager
 	}
 
 	/**
-	 * Gets State instance by enum
-	 *
-	 * @param stateEnum
-	 * @return State instance corresponding to the specified enum
-	 */
-	public BaseState getState(StateEnum stateEnum)
-	{
-		return _states.get(stateEnum);
-	}
-
-	/**
 	 * Gets current active main state instance
 	 *
 	 * @return current state instance
@@ -421,10 +407,21 @@ public class StateManager
 	 *
 	 * @param MessageParams
 	 *            message box parameters
+	 * @return BaseState used to display the message. Use this reference to
+	 *         register for message box events.
 	 */
-	public void showMessage(MessageParams messageParams)
+	public BaseState showMessage(MessageParams messageParams)
 	{
 		showState(_messageState, StateLayer.MESSAGE, messageParams.getParamsBundle());
+		return _messageState;
+	}
+
+	/**
+	 * @return BaseState used to display the message
+	 */
+	public BaseState getMessageState()
+	{
+		return _messageState;
 	}
 
 	/**
