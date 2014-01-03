@@ -80,7 +80,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 	/**
 	 * Subscribes this feature to event triggered from another feature
 	 *
-	 * @param feature
+	 * @param Feature
 	 *            the feature to subscribe to
 	 * @param msgId
 	 *            the id of the message to subscribe
@@ -106,7 +106,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 	/**
 	 * Unsubscribes this feature from event triggered from another feature
 	 *
-	 * @param feature
+	 * @param Feature
 	 *            the feature to unsubscribe from
 	 * @param msgId
 	 *            the id of the message to unsubscribe

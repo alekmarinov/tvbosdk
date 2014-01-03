@@ -29,6 +29,9 @@ public class EventMessenger extends Handler
 	public static final String TAG = EventMessenger.class.getSimpleName();
 	private static int ID_GENERATOR = 0;
 	private SparseArray<List<IFeature>> _listners = new SparseArray<List<IFeature>>();
+	private List<RegisterCouple> _registerLater = new ArrayList<RegisterCouple>();
+	private List<RegisterCouple> _unregisterLater = new ArrayList<RegisterCouple>();
+	private boolean _inEventIteration = false;
 
 	public static synchronized int ID()
 	{
@@ -44,14 +47,21 @@ public class EventMessenger extends Handler
 	 */
 	public void register(IFeature feature, int msgId)
 	{
-		Log.i(TAG, ".register " + feature.getName() + " " + feature.getType() + " on " + msgId);
-		List<IFeature> msgListeners = _listners.get(msgId);
-		if (msgListeners == null)
+		if (_inEventIteration)
 		{
-			msgListeners = new ArrayList<IFeature>();
-			_listners.put(msgId, msgListeners);
+			_registerLater.add(new RegisterCouple(feature, msgId));
 		}
-		msgListeners.add(feature);
+		else
+		{
+			Log.i(TAG, ".register " + feature.getName() + " " + feature.getType() + " on " + msgId);
+			List<IFeature> msgListeners = _listners.get(msgId);
+			if (msgListeners == null)
+			{
+				msgListeners = new ArrayList<IFeature>();
+				_listners.put(msgId, msgListeners);
+			}
+			msgListeners.add(feature);
+		}
 	}
 
 	/**
@@ -63,10 +73,17 @@ public class EventMessenger extends Handler
 	 */
 	public void unregister(IFeature feature, int msgId)
 	{
-		Log.i(TAG, ".unregister " + feature.getName() + " " + feature.getType() + " from " + msgId);
-		List<IFeature> msgListeners = _listners.get(msgId);
-		if (msgListeners != null)
-			msgListeners.remove(feature);
+		if (_inEventIteration)
+		{
+			_unregisterLater.add(new RegisterCouple(feature, msgId));
+		}
+		else
+		{
+			Log.i(TAG, ".unregister " + feature.getName() + " " + feature.getType() + " from " + msgId);
+			List<IFeature> msgListeners = _listners.get(msgId);
+			if (msgListeners != null)
+				msgListeners.remove(feature);
+		}
 	}
 
 	/**
@@ -125,9 +142,33 @@ public class EventMessenger extends Handler
 	public void handleMessage(Message msg)
 	{
 		super.handleMessage(msg);
+		_inEventIteration = true;
 		List<IFeature> msgListeners = _listners.get(msg.what);
 		if (msgListeners != null)
 			for (IFeature feature : msgListeners)
 				feature.onEvent(msg.what, (Bundle) msg.obj);
+		_inEventIteration = false;
+		for (RegisterCouple registerCouple : _registerLater)
+		{
+			register(registerCouple.Feature, registerCouple.MsgId);
+		}
+		for (RegisterCouple registerCouple : _unregisterLater)
+		{
+			unregister(registerCouple.Feature, registerCouple.MsgId);
+		}
+		_registerLater.clear();
+		_unregisterLater.clear();
+	}
+
+	private class RegisterCouple
+	{
+		IFeature Feature;
+		int MsgId;
+
+		RegisterCouple(IFeature feature, int msgId)
+		{
+			Feature = feature;
+			MsgId = msgId;
+		}
 	}
 }
