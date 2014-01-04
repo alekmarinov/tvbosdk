@@ -27,6 +27,26 @@ public class TextUtils
 	private static final String TAG = TextUtils.class.getSimpleName();
 
 	/**
+	 * Implodes byte[] into String
+	 *
+	 * @param bytes the byte array to implode to string
+	 * @param format the byte format
+	 * @param sep separator string between bytes
+	 * @return the String with imploded bytes
+	 */
+	public static String implodeBytesArray(byte[] bytes, String format, String sep)
+	{
+		StringBuffer sb = new StringBuffer();
+		for (byte b : bytes)
+		{
+			if (sb.length() > 0)
+				sb.append(sep);
+			sb.append(String.format(format, b & 255)); // cutting off the sign
+		}
+		return sb.toString();
+	}
+
+	/**
 	 * Reads an InputStream and returns its contents as a String
 	 *
 	 * @param inputStream

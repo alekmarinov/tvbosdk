@@ -17,5 +17,6 @@ public class ResultCode
 {
 	public static final int OK = 0;
 	public static final int NOT_FOUND_404 = 404;
+	public static final int NOT_SUPPORTED = -2;
 	public static final int GENERAL_FAILURE = -1;
 }

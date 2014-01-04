@@ -19,6 +19,7 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.KeyEvent;
 
+import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
@@ -74,9 +75,21 @@ public class StateManager
 			return this;
 		}
 
+		public MessageParams setTitle(int titleId)
+		{
+			_bundle.putString(PARAM_TITLE, Environment.getInstance().getResources().getString(titleId));
+			return this;
+		}
+
 		public MessageParams setText(String text)
 		{
 			_bundle.putString(PARAM_TEXT, text);
+			return this;
+		}
+
+		public MessageParams setText(int textId)
+		{
+			_bundle.putString(PARAM_TEXT, Environment.getInstance().getResources().getString(textId));
 			return this;
 		}
 
@@ -177,11 +190,6 @@ public class StateManager
 					{
 						// restore focus of the uncovered view
 						_activeStates.get(0).onShow(true);
-
-						// !!! This breaks the EPG grid
-						// _activity.findViewById(R.id.main_fragment).requestFocus();
-						// _activeStates.elementAt(_activeStates.size() -
-						// 1).getView().requestFocus();
 					}
 				}
 				else
@@ -430,6 +438,8 @@ public class StateManager
 	public void hideMessage()
 	{
 		hideState(_messageState);
+		if (_activeStates.size() > 0)
+			_activeStates.get(_activeStates.size() - 1).onShow(true);
 	}
 
 	/**
