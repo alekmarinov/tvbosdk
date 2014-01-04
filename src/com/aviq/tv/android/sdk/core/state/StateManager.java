@@ -369,9 +369,10 @@ public class StateManager
 
 		if (_messageState.isAdded())
 		{
-			return _messageState.onKeyDown(keyCode, event);
+			if (_messageState.onKeyDown(keyCode, event))
+				return true;
 		}
-		else if (_activeStates.size() > 0)
+		if (_activeStates.size() > 0)
 		{
 			return _activeStates.get(_activeStates.size() - 1).onKeyDown(keyCode, event);
 		}
@@ -437,9 +438,9 @@ public class StateManager
 	 */
 	public void hideMessage()
 	{
-		hideState(_messageState);
-		if (_activeStates.size() > 0)
-			_activeStates.get(_activeStates.size() - 1).onShow(true);
+		if (hideState(_messageState))
+			if (_activeStates.size() > 0)
+				_activeStates.get(_activeStates.size() - 1).onShow(true);
 	}
 
 	/**
@@ -448,7 +449,7 @@ public class StateManager
 	 * @param state
 	 *            to be removed from screen
 	 */
-	/* package */void hideState(BaseState state)
+	/* package */boolean hideState(BaseState state)
 	{
 		Log.i(TAG, ".hideState: " + state.getClass().getSimpleName());
 
@@ -460,7 +461,9 @@ public class StateManager
 
 			// notify state is hidden
 			state.onHide(false);
+			return true;
 		}
+		return false;
 	}
 
 	public void setFragmentLayerResources(int mainFragmentId, int overlayFragmentId, int messageFragmentId)

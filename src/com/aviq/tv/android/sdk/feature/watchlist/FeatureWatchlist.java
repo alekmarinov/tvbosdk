@@ -10,14 +10,11 @@
 
 package com.aviq.tv.android.sdk.feature.watchlist;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -86,6 +83,7 @@ public class FeatureWatchlist extends FeatureComponent
 			FeatureEPG featureEPG = (FeatureEPG) Environment.getInstance().getFeatureComponent(
 			        FeatureName.Component.EPG);
 			_watchedPrograms = loadWatchlist(featureEPG.getEpgData());
+			expirePrograms();
 			_notifyEarlier = getPrefs().getInt(Param.NOTIFY_EARLIER);
 			updateProgramStartNotification();
 			onFeatureInitialized.onInitialized(this, ResultCode.OK);
@@ -159,6 +157,17 @@ public class FeatureWatchlist extends FeatureComponent
 		return false;
 	}
 
+	/**
+	 * Check if program is expired and can't be watched
+	 *
+	 * @param program
+	 * @return true if the program is expired
+	 */
+	public boolean isExpired(Program program)
+	{
+		return Calendar.getInstance().compareTo(program.getStartTimeCalendar()) > 0;
+	}
+
 	public void enableNotifications()
 	{
 
@@ -224,25 +233,29 @@ public class FeatureWatchlist extends FeatureComponent
 		return programs;
 	}
 
-	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
+	private void expirePrograms()
+	{
+		List<Program> expiredPrograms = new ArrayList<Program>();
+		for (Program program : _watchedPrograms)
+		{
+			if (isExpired(program))
+			{
+				// program expired
+				expiredPrograms.add(program);
+			}
+		}
+		for (Program program : expiredPrograms)
+			removeWatchlist(program);
+	}
 
 	private void updateProgramStartNotification()
 	{
+		expirePrograms();
 		for (Program program : _watchedPrograms)
 		{
-			String programStart = DATE_FORMAT.format(program.getStartTimeCalendar().getTime());
-			String timeNow = DATE_FORMAT.format(Calendar.getInstance().getTime());
-
-			if (Calendar.getInstance().compareTo(program.getStartTimeCalendar()) < 0)
-			{
-				Log.i(TAG, "Program starting on " + programStart + " is in future, now = " + timeNow);
-				notifyProgram(program);
-				return;
-			}
-			else
-			{
-				Log.i(TAG, "Program starting on " + programStart + " is in past, now = " + timeNow);
-			}
+			// about to notify for starting program
+			notifyProgram(program);
+			return;
 		}
 		Log.i(TAG, "No program for notification");
 	}
@@ -257,8 +270,8 @@ public class FeatureWatchlist extends FeatureComponent
 			delayToNotify = 5 * 1000;
 
 		getEventMessenger().postDelayed(_onProgramNotification, delayToNotify);
-		Log.i(TAG, "Schedule for notification program " + program.getChannel().getChannelId() + "/" + program.getId() + " " + program.getTitle()
-		        + " in " + delayToNotify + " ms");
+		Log.i(TAG, "Schedule for notification program " + program.getChannel().getChannelId() + "/" + program.getId()
+		        + " " + program.getTitle() + " in " + delayToNotify + " ms");
 	}
 
 	private ProgramNotifier _onProgramNotification = new ProgramNotifier();
@@ -271,7 +284,6 @@ public class FeatureWatchlist extends FeatureComponent
 		public void run()
 		{
 			removeWatchlist(NotifyProgram);
-
 			Bundle bundle = new Bundle();
 			bundle.putString("PROGRAM", NotifyProgram.getId());
 			bundle.putString("CHANNEL", NotifyProgram.getChannel().getChannelId());

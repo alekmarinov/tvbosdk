@@ -143,6 +143,7 @@ public class Environment
 			throw new RuntimeException("Set StateManager first with setStateManager");
 		}
 
+		Log.i(TAG, "Showing splash feature " + splashFeatureState.getName());
 		_stateManager.setStateMain(splashFeatureState, null);
 
 		// initializes features
@@ -331,6 +332,60 @@ public class Environment
 	public EventMessenger getEventMessenger()
 	{
 		return _eventMessenger;
+	}
+
+	/**
+	 * @param featureName
+	 * @return true if the feature component exists
+	 */
+	public boolean hasFeature(FeatureName.Component featureName)
+	{
+		try
+		{
+			// Check if feature exists
+			getFeatureComponent(featureName);
+			return true;
+		}
+		catch (FeatureNotFoundException e)
+		{
+			return false;
+		}
+	}
+
+	/**
+	 * @param featureName
+	 * @return true if the feature scheduler exists
+	 */
+	public boolean hasFeature(FeatureName.Scheduler featureName)
+	{
+		try
+		{
+			// Check if feature exists
+			getFeatureScheduler(featureName);
+			return true;
+		}
+		catch (FeatureNotFoundException e)
+		{
+			return false;
+		}
+	}
+
+	/**
+	 * @param featureName
+	 * @return true if the feature state exists
+	 */
+	public boolean hasFeature(FeatureName.State featureName)
+	{
+		try
+		{
+			// Check if feature exists
+			getFeatureState(featureName);
+			return true;
+		}
+		catch (FeatureNotFoundException e)
+		{
+			return false;
+		}
 	}
 
 	/**
