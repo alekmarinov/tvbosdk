@@ -158,8 +158,8 @@ public abstract class FeatureState extends BaseState implements IFeature
 	 *
 	 * @param params
 	 *            The params set to this State when showing
-	 * @param isOverlay
-	 *            set to true to show this state as Overlay
+	 * @param isViewUncovered
+	 * 			  set to true if the view has been uncovered from overlay
 	 * @throws StateException
 	 */
 	@Override
@@ -180,6 +180,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 
 	/**
 	 * On hiding this FeatureState
+	 * isViewCovered true if the view has been covered by overlay
 	 */
 	@Override
 	protected void onHide(boolean isViewCovered)

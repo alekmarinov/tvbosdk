@@ -37,7 +37,7 @@ public class FeatureSet
 			case SCHEDULER:
 				return Schedulers.indexOf(((FeatureScheduler)feature).getSchedulerName()) >= 0;
 			case STATE:
-				return States.indexOf(((FeatureScheduler)feature).getSchedulerName()) >= 0;
+				return States.indexOf(((FeatureState)feature).getStateName()) >= 0;
 		}
 		return false;
 	}

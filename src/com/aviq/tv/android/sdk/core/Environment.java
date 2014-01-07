@@ -147,7 +147,7 @@ public class Environment
 		_stateManager.setStateMain(splashFeatureState, null);
 
 		// initializes features
-		Log.i(TAG, "Sorting features tolologically based on their declared dependencies");
+		Log.i(TAG, "Sorting features topologically based on their declared dependencies");
 		_features = topologicalSort(_features);
 		for (int i = 0; i < _features.size(); i++)
 		{
