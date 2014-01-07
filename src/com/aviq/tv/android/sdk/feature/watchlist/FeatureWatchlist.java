@@ -83,7 +83,6 @@ public class FeatureWatchlist extends FeatureComponent
 			FeatureEPG featureEPG = (FeatureEPG) Environment.getInstance().getFeatureComponent(
 			        FeatureName.Component.EPG);
 			_watchedPrograms = loadWatchlist(featureEPG.getEpgData());
-			expirePrograms();
 			_notifyEarlier = getPrefs().getInt(Param.NOTIFY_EARLIER);
 			updateProgramStartNotification();
 			onFeatureInitialized.onInitialized(this, ResultCode.OK);
@@ -233,8 +232,9 @@ public class FeatureWatchlist extends FeatureComponent
 		return programs;
 	}
 
-	private void expirePrograms()
+	private void updateProgramStartNotification()
 	{
+		// remove expired programs
 		List<Program> expiredPrograms = new ArrayList<Program>();
 		for (Program program : _watchedPrograms)
 		{
@@ -246,18 +246,11 @@ public class FeatureWatchlist extends FeatureComponent
 		}
 		for (Program program : expiredPrograms)
 			removeWatchlist(program);
-	}
 
-	private void updateProgramStartNotification()
-	{
-		expirePrograms();
-		for (Program program : _watchedPrograms)
-		{
-			// about to notify for starting program
-			notifyProgram(program);
-			return;
-		}
-		Log.i(TAG, "No program for notification");
+		if (_watchedPrograms.size() > 0)
+			notifyProgram(_watchedPrograms.get(0));
+		else
+			Log.i(TAG, "No program for notification");
 	}
 
 	private void notifyProgram(Program program)
@@ -283,13 +276,12 @@ public class FeatureWatchlist extends FeatureComponent
 		@Override
 		public void run()
 		{
-			removeWatchlist(NotifyProgram);
 			Bundle bundle = new Bundle();
 			bundle.putString("PROGRAM", NotifyProgram.getId());
 			bundle.putString("CHANNEL", NotifyProgram.getChannel().getChannelId());
 			Log.i(TAG, "Trigger ON_PROGRAM_NOTIFY: " + TextUtils.implodeBundle(bundle));
 			getEventMessenger().trigger(ON_PROGRAM_NOTIFY, bundle);
-
+			removeWatchlist(NotifyProgram);
 			updateProgramStartNotification();
 		}
 	}
