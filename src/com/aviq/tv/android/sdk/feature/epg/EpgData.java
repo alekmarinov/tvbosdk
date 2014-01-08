@@ -28,8 +28,13 @@ public class EpgData implements IEpgDataProvider
 
 	public EpgData(List<Channel> newChannelList)
 	{
+		// Keep first value far in the past
 		_maxEpgStopTime = Calendar.getInstance();
+		_maxEpgStopTime.set(Calendar.YEAR, _maxEpgStopTime.getMinimum(Calendar.YEAR));
+		
+		// Keep first value far in the future
 		_minEpgStartTime = Calendar.getInstance();
+		_minEpgStartTime.set(Calendar.YEAR, _minEpgStartTime.getMaximum(Calendar.YEAR));
 
 		_channelList = newChannelList;
 		_channelLogos = new Bitmap[_channelList.size()];
@@ -55,6 +60,14 @@ public class EpgData implements IEpgDataProvider
 
 		_channelToProgramListMap.put(channelId, newProgramList);
 		_channelToProgramNavigableMap.put(channelId, newProgramNavigableMap);
+		
+		// Keep EPG program min start time
+
+		String firstStartTime = newProgramNavigableMap.firstKey();
+		Calendar firstStartTimeCal = Program.getEpgTime(firstStartTime);
+
+		if (_minEpgStartTime.after(firstStartTimeCal))
+			_minEpgStartTime = firstStartTimeCal;
 
 		// Keep EPG program max start time
 
@@ -63,15 +76,7 @@ public class EpgData implements IEpgDataProvider
 
 		if (_maxEpgStopTime.before(lastProgram.getStopTimeCalendar()))
 			_maxEpgStopTime = lastProgram.getStopTimeCalendar();
-
-		// Keep EPG program min start time
-
-		String firstStartTime = newProgramNavigableMap.firstKey();
-		Calendar firstStartTimeCal = Program.getEpgTime(firstStartTime);
-
-		if (_minEpgStartTime.before(firstStartTimeCal))
-			_minEpgStartTime = firstStartTimeCal;
-
+		
 		return true;
 	}
 

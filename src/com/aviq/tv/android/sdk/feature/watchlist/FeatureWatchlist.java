@@ -205,7 +205,7 @@ public class FeatureWatchlist extends FeatureComponent
 	private ArrayList<Program> loadWatchlist(EpgData epgData)
 	{
 		ArrayList<Program> programs = new ArrayList<Program>();
-		if (!_userPrefs.has(UserParam.WATCHLIST))
+		if (epgData == null || !_userPrefs.has(UserParam.WATCHLIST))
 			return programs;
 		String buffer = _userPrefs.getString(UserParam.WATCHLIST);
 		String[] programIds = buffer.split(",");
