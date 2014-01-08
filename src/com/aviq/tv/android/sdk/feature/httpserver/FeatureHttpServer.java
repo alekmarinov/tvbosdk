@@ -28,6 +28,8 @@ public class FeatureHttpServer extends FeatureComponent
 {
 	public static final String TAG = FeatureHttpServer.class.getSimpleName();
 
+	private HttpServer _httpServer;
+
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
@@ -35,21 +37,27 @@ public class FeatureHttpServer extends FeatureComponent
 
 		// Start HTTP server
 		Log.i(TAG, "Start HTTP server");
-		HttpServer httpServer = new HttpServer(Environment.getInstance().getContext());
+		_httpServer = new HttpServer(Environment.getInstance().getContext());
 		try
 		{
-			httpServer.create();
+			_httpServer.create();
+			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 		}
 		catch (IOException e)
 		{
 			Log.e(TAG, e.getMessage(), e);
+			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
 		}
-		onFeatureInitialized.onInitialized(this, ResultCode.OK);
 	}
 
 	@Override
 	public Component getComponentName()
 	{
 		return FeatureName.Component.HTTP_SERVER;
+	}
+
+	public int getListenPort()
+	{
+		return _httpServer.getPort();
 	}
 }
