@@ -62,29 +62,7 @@ public class ProgramWilmaa extends Program
 				case SUBTITLE:
 					return _detailsResponse.getString("subtitle");
 				case SUMMARY:
-				{
-					String description = _detailsResponse.getString("description");
-					if (description != null)
-					{
-						int endPos = MAX_SUMMARY_LENGTH;
-						int pntPos = description.indexOf('.');
-						if (pntPos > 0)
-						{
-							int bestPntPos = pntPos;
-							while (pntPos < MAX_SUMMARY_LENGTH)
-							{
-								int newPos = description.indexOf('.', pntPos + 1);
-								if (newPos < 0)
-									break;
-								bestPntPos = pntPos;
-								pntPos = newPos;
-							}
-							endPos = Math.min(Math.max(bestPntPos, MIN_SUMMARY_LENGTH), MAX_SUMMARY_LENGTH);
-						}
-						endPos = Math.min(description.length() - 1, endPos);
-						return description.substring(0, endPos);
-					}
-				}
+					return _detailsResponse.getString("description");
 				case DESCRIPTION:
 					return _detailsResponse.getString("description");
 				case GENRE:
