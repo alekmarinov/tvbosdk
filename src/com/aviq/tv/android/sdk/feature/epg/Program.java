@@ -114,7 +114,7 @@ public abstract class Program implements Comparable<Program>
 		return _startTime;
 	}
 
-	public void setStartTime(String startTime) throws ParseException
+	public void setStartTime(String startTime)
 	{
 		_startTime = startTime;
 	}
@@ -124,7 +124,7 @@ public abstract class Program implements Comparable<Program>
 		return _stopTime;
 	}
 
-	public void setStopTime(String stopTime) throws ParseException
+	public void setStopTime(String stopTime)
 	{
 		_stopTime = stopTime;
 	}

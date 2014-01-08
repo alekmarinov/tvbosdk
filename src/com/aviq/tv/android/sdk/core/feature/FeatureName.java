@@ -44,6 +44,7 @@ public class FeatureName
 		CHANNELS,
 		SETTINGS,
 		SETTINGS_ETHERNET,
-		SETTINGS_WIFI
+		SETTINGS_WIFI,
+		KEYBOARD
 	}
 }

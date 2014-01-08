@@ -11,7 +11,6 @@
 package com.aviq.tv.android.sdk.feature.epg;
 
 import java.io.UnsupportedEncodingException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NavigableMap;
@@ -475,24 +474,8 @@ public abstract class FeatureEPG extends FeatureComponent
 		{
 			Program program = createProgram(channel);
 			program.setTitle(data[i][metaData.metaTitle]);
-
-			try
-			{
-				program.setStartTime(data[i][metaData.metaStart]);
-			}
-			catch (ParseException e)
-			{
-				Log.w(TAG, "Undefined start time for program: " + program.getTitle() + " on channel: " + channelId);
-			}
-
-			try
-			{
-				program.setStopTime(data[i][metaData.metaStop]);
-			}
-			catch (ParseException e)
-			{
-				Log.w(TAG, "Undefined stop time for program: " + program.getTitle() + " on channel: " + channelId);
-			}
+			program.setStartTime(data[i][metaData.metaStart]);
+			program.setStopTime(data[i][metaData.metaStop]);
 
 			// set custom provider attributes
 			program.setDetailAttributes(metaData, data[i]);

@@ -39,6 +39,7 @@ public class FeatureHttpServer extends FeatureComponent
 		try
 		{
 			httpServer.create();
+			httpServer.start();
 		}
 		catch (IOException e)
 		{

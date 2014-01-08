@@ -53,12 +53,12 @@ public class FeaturePlayerRayV extends FeaturePlayer
 		Param(String value)
 		{
 			if (value != null)
-				Environment.getInstance().getFeaturePrefs(FeatureName.Component.EPG).put(name(), value);
+				Environment.getInstance().getFeaturePrefs(FeatureName.Component.PLAYER).put(name(), value);
 		}
 
 		Param(int value)
 		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Component.EPG).put(name(), value);
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.PLAYER).put(name(), value);
 		}
 	}
 
