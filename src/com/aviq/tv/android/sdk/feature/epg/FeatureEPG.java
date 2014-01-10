@@ -134,6 +134,7 @@ public abstract class FeatureEPG extends FeatureComponent
 
 	private EpgData _epgData;
 	private EpgData _epgDataBeingLoaded;
+	private JsonObjectRequest _programDetailsRequest;
 
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
@@ -177,9 +178,13 @@ public abstract class FeatureEPG extends FeatureComponent
 		Log.i(TAG, "Retrieving program details of " + program.getTitle() + ", id = " + program.getId() + " from "
 		        + programDetailsUrl);
 		ProgramDetailsResponseCallback responseCallback = new ProgramDetailsResponseCallback(program, onProgramDetails);
-		JsonObjectRequest programDetailsRequest = new JsonObjectRequest(Request.Method.GET, programDetailsUrl, null,
-		        responseCallback, responseCallback);
-		_httpQueue.add(programDetailsRequest);
+
+		if (_programDetailsRequest != null)
+			_programDetailsRequest.cancel();
+		_programDetailsRequest = new JsonObjectRequest(Request.Method.GET, programDetailsUrl, null, responseCallback,
+		        responseCallback);
+
+		_httpQueue.add(_programDetailsRequest);
 	}
 
 	@Override
@@ -202,8 +207,8 @@ public abstract class FeatureEPG extends FeatureComponent
 
 	/**
 	 * @return create channel instance
-	 *
-	 * @param index is the channel position in the global Channels list
+	 * @param index
+	 *            is the channel position in the global Channels list
 	 */
 	protected abstract Channel createChannel(int index);
 
@@ -368,6 +373,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		{
 			_program.setDetails(response);
 			_onProgramDetails.onProgramDetails(_program);
+			_programDetailsRequest = null;
 		}
 
 		@Override
@@ -377,6 +383,7 @@ public abstract class FeatureEPG extends FeatureComponent
 			if (error.networkResponse != null)
 				resultCode = error.networkResponse.statusCode;
 			_onProgramDetails.onError(resultCode);
+			_programDetailsRequest = null;
 		}
 	}
 
@@ -401,7 +408,8 @@ public abstract class FeatureEPG extends FeatureComponent
 		else
 		{
 			float processedCount = _retrievedChannelPrograms + _retrievedChannelLogos;
-			float totalCount = 2 * numChannels; // The number of all programs and logos queries
+			float totalCount = 2 * numChannels; // The number of all programs
+												// and logos queries
 			_onFeatureInitialized.onInitializeProgress(FeatureEPG.this, processedCount / totalCount);
 		}
 	}
