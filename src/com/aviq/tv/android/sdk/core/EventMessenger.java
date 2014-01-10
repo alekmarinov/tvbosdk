@@ -20,6 +20,7 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import com.aviq.tv.android.sdk.core.feature.IFeature;
+import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Manage event messages
@@ -94,6 +95,7 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId)
 	{
+		Log.d(TAG, ".trigger: " + msgId);
 		sendMessage(obtainMessage(msgId));
 	}
 
@@ -107,6 +109,8 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId, Bundle bundle)
 	{
+		Log.d(TAG, ".trigger: " + msgId + "(" + TextUtils.implodeBundle(bundle) + ")");
+		removeMessages(msgId);
 		sendMessage(obtainMessage(msgId, bundle));
 	}
 
@@ -120,6 +124,8 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId, long delayMs)
 	{
+		Log.d(TAG, ".trigger: " + msgId + " in " + delayMs + " ms");
+		removeMessages(msgId);
 		sendMessageDelayed(obtainMessage(msgId), delayMs);
 	}
 
@@ -135,6 +141,8 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId, Bundle bundle, long delayMs)
 	{
+		Log.d(TAG, ".trigger: " + msgId + "(" + TextUtils.implodeBundle(bundle) + ") in " + delayMs + " ms");
+		removeMessages(msgId);
 		sendMessageDelayed(obtainMessage(msgId, bundle), delayMs);
 	}
 
@@ -145,8 +153,11 @@ public class EventMessenger extends Handler
 		_inEventIteration = true;
 		List<IFeature> msgListeners = _listners.get(msg.what);
 		if (msgListeners != null)
+		{
+			Log.d(TAG, ".handleMessage: notifying " + msgListeners.size() + " listeners on " + msg.what);
 			for (IFeature feature : msgListeners)
 				feature.onEvent(msg.what, (Bundle) msg.obj);
+		}
 		_inEventIteration = false;
 		for (RegisterCouple registerCouple : _registerLater)
 		{

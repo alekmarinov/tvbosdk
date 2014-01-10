@@ -92,7 +92,7 @@ public class ProgramWilmaa extends Program
 		}
 		catch (JSONException e)
 		{
-			Log.e(TAG, e.getMessage(), e);
+			Log.w(TAG, e.getMessage());
 		}
 		return null;
 	}
