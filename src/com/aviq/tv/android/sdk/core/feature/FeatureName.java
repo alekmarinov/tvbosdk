@@ -18,6 +18,7 @@ public class FeatureName
 {
 	public static enum Component
 	{
+		RCU,
 		EPG,
 		PLAYER,
 		HTTP_SERVER,

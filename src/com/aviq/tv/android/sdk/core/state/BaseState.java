@@ -12,8 +12,8 @@ package com.aviq.tv.android.sdk.core.state;
 
 import android.app.Fragment;
 import android.os.Bundle;
-import android.view.KeyEvent;
 
+import com.aviq.tv.android.sdk.core.AVKeyEvent;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 
@@ -113,16 +113,13 @@ public class BaseState extends Fragment
 	/**
 	 * Method consuming key down event if the State is currently active
 	 *
-	 * @param keyCode
-	 *            The value in event.getKeyCode().
-	 * @param event
-	 *            Description of the key event.
+	 * @param event the AVKeyEvent
 	 * @return Return true to prevent this event from being propagated further,
 	 *         or false to indicate that you have not handled this event and it
 	 *         should continue to be propagated.
 	 * @throws StateException
 	 */
-	public boolean onKeyDown(int keyCode, KeyEvent event)
+	public boolean onKeyDown(AVKeyEvent event)
 	{
 		return false;
 	}
@@ -130,16 +127,13 @@ public class BaseState extends Fragment
 	/**
 	 * Method consuming key up event if the State is currently active
 	 *
-	 * @param keyCode
-	 *            The value in event.getKeyCode().
-	 * @param event
-	 *            Description of the key event.
+	 * @param event the AVKeyEvent
 	 * @return Return true to prevent this event from being propagated further,
 	 *         or false to indicate that you have not handled this event and it
 	 *         should continue to be propagated.
 	 * @throws StateException
 	 */
-	public boolean onKeyUp(int keyCode, KeyEvent event)
+	public boolean onKeyUp(AVKeyEvent event)
 	{
 		return false;
 	}

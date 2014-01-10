@@ -17,8 +17,8 @@ import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
-import android.view.KeyEvent;
 
+import com.aviq.tv.android.sdk.core.AVKeyEvent;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -362,19 +362,18 @@ public class StateManager
 	 *         should continue to be propagated.
 	 * @throws StateException
 	 */
-	public boolean onKeyDown(int keyCode, KeyEvent event)
+	public boolean onKeyDown(AVKeyEvent keyEvent)
 	{
-		Log.i(TAG, ".onKeyDown: keyCode = " + keyCode + ", state = " + getMainState() + ", overlay = "
-		        + getOverlayState());
+		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", state = " + getMainState() + ", overlay = " + getOverlayState());
 
 		if (_messageState.isAdded())
 		{
-			if (_messageState.onKeyDown(keyCode, event))
+			if (_messageState.onKeyDown(keyEvent))
 				return true;
 		}
 		if (_activeStates.size() > 0)
 		{
-			return _activeStates.get(_activeStates.size() - 1).onKeyDown(keyCode, event);
+			return _activeStates.get(_activeStates.size() - 1).onKeyDown(keyEvent);
 		}
 
 		return false;
@@ -392,17 +391,17 @@ public class StateManager
 	 *         should continue to be propagated.
 	 * @throws StateException
 	 */
-	public boolean onKeyUp(int keyCode, KeyEvent event)
+	public boolean onKeyUp(AVKeyEvent keyEvent)
 	{
-		Log.i(TAG, ".onKeyUp: keyCode = " + keyCode + ", state = " + getMainState() + ", overlay = "
-		        + getOverlayState());
+		Log.i(TAG, ".onKeyUp: key = " + keyEvent + ", state = " + getMainState() + ", overlay = " + getOverlayState());
+
 		if (_messageState.isAdded())
 		{
-			return _messageState.onKeyUp(keyCode, event);
+			return _messageState.onKeyUp(keyEvent);
 		}
 		else if (_activeStates.size() > 0)
 		{
-			return _activeStates.get(_activeStates.size() - 1).onKeyUp(keyCode, event);
+			return _activeStates.get(_activeStates.size() - 1).onKeyUp(keyEvent);
 		}
 
 		return false;
