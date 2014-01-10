@@ -45,6 +45,7 @@ public class FeatureName
 		SETTINGS,
 		SETTINGS_ETHERNET,
 		SETTINGS_WIFI,
-		KEYBOARD
+		KEYBOARD,
+		PROGRAMS
 	}
 }
