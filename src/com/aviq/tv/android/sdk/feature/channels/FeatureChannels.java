@@ -44,7 +44,7 @@ public class FeatureChannels extends FeatureComponent
 	}
 
 	private Prefs _userPrefs;
-	private EpgData _epgData;
+	private FeatureEPG _featureEPG;
 	private boolean _isModified = false;
 
 	// List of favorite channels
@@ -62,10 +62,8 @@ public class FeatureChannels extends FeatureComponent
 		try
 		{
 			_userPrefs = Environment.getInstance().getUserPrefs();
-			FeatureEPG featureEPG = (FeatureEPG) Environment.getInstance().getFeatureComponent(
-			        FeatureName.Component.EPG);
-			_epgData = featureEPG.getEpgData();
-			_channels = loadFavoriteChannels(_epgData);
+			_featureEPG = (FeatureEPG) Environment.getInstance().getFeatureComponent(FeatureName.Component.EPG);
+			_channels = loadFavoriteChannels(_featureEPG.getEpgData());
 			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 		}
 		catch (FeatureNotFoundException e)
@@ -123,7 +121,7 @@ public class FeatureChannels extends FeatureComponent
 	{
 		if (isEverChanged())
 			return _channels;
-		return _epgData.getChannels();
+		return _featureEPG.getEpgData().getChannels();
 	}
 
 	/**
@@ -144,7 +142,7 @@ public class FeatureChannels extends FeatureComponent
 	 */
 	public void save()
 	{
-		saveFavoriteChannels(_epgData, _channels);
+		saveFavoriteChannels(_featureEPG.getEpgData(), _channels);
 		_isModified = false;
 	}
 
