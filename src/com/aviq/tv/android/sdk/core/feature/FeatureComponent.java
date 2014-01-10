@@ -15,6 +15,7 @@ import android.os.Bundle;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Prefs;
+import com.aviq.tv.android.sdk.core.ResultCode;
 
 
 
@@ -32,6 +33,7 @@ public abstract class FeatureComponent implements IFeature
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
+		onFeatureInitialized.onInitialized(this, ResultCode.OK);
 	}
 
 	@Override
