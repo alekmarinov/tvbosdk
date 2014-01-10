@@ -46,6 +46,14 @@ public class FeatureRCUWilmaa extends FeatureRCU
 				return Key.VOLUME_UP;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				return Key.VOLUME_DOWN;
+
+			// FIXME: used for testing
+			case KeyEvent.KEYCODE_Y:
+				return Key.YELLOW;
+			case KeyEvent.KEYCODE_R:
+				return Key.RED;
+			case KeyEvent.KEYCODE_G:
+				return Key.GREEN;
 		}
 		return Key.UNKNOWN;
 	}
