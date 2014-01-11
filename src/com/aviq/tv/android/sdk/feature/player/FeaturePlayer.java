@@ -36,6 +36,19 @@ public class FeaturePlayer extends FeatureComponent
 	public enum Param
 	{
 		/**
+		 * Start playing timeout in seconds
+		 */
+		TIMEOUT(20);
+
+		Param(int value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.PLAYER).put(name(), value);
+		}
+	}
+
+	public enum UserParam
+	{
+		/**
 		 * Keep the last played URL
 		 */
 		LAST_URL
@@ -64,11 +77,11 @@ public class FeaturePlayer extends FeatureComponent
 	public void play(String url)
 	{
 		Log.i(TAG, ".play: url = " + url);
-		_userPrefs.put(Param.LAST_URL, url);
+		_userPrefs.put(UserParam.LAST_URL, url);
 		_player.play(url);
 
 		getEventMessenger().post(_videoStartedPoller);
-		getEventMessenger().postDelayed(_videoStartTimeout, 10000);
+		getEventMessenger().postDelayed(_videoStartTimeout, getPrefs().getInt(Param.TIMEOUT) * 1000);
 	}
 
 	public IPlayer getPlayer()

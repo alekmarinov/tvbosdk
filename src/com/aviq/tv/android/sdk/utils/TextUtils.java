@@ -111,8 +111,6 @@ public class TextUtils
 				buffer.append(key).append(sepKey).append(bundle.get(key));
 				isSepVal = true;
 			}
-		if (isSepVal)
-			buffer.append(sepVal);
 		return buffer;
 	}
 

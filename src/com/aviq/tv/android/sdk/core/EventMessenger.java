@@ -54,7 +54,7 @@ public class EventMessenger extends Handler
 		}
 		else
 		{
-			Log.i(TAG, ".register " + feature.getName() + " " + feature.getType() + " on " + msgId);
+			Log.d(TAG, ".register " + feature.getName() + " " + feature.getType() + " on " + msgId);
 			List<IFeature> msgListeners = _listners.get(msgId);
 			if (msgListeners == null)
 			{
@@ -80,7 +80,7 @@ public class EventMessenger extends Handler
 		}
 		else
 		{
-			Log.i(TAG, ".unregister " + feature.getName() + " " + feature.getType() + " from " + msgId);
+			Log.d(TAG, ".unregister " + feature.getName() + " " + feature.getType() + " from " + msgId);
 			List<IFeature> msgListeners = _listners.get(msgId);
 			if (msgListeners != null)
 				msgListeners.remove(feature);
@@ -95,7 +95,7 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId)
 	{
-		Log.d(TAG, ".trigger: " + msgId);
+		Log.v(TAG, ".trigger: " + msgId);
 		sendMessage(obtainMessage(msgId));
 	}
 
@@ -109,7 +109,7 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId, Bundle bundle)
 	{
-		Log.d(TAG, ".trigger: " + msgId + "(" + TextUtils.implodeBundle(bundle) + ")");
+		Log.v(TAG, ".trigger: " + msgId + TextUtils.implodeBundle(bundle));
 		removeMessages(msgId);
 		sendMessage(obtainMessage(msgId, bundle));
 	}
@@ -124,7 +124,7 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId, long delayMs)
 	{
-		Log.d(TAG, ".trigger: " + msgId + " in " + delayMs + " ms");
+		Log.v(TAG, ".trigger: " + msgId + " in " + delayMs + " ms");
 		removeMessages(msgId);
 		sendMessageDelayed(obtainMessage(msgId), delayMs);
 	}
@@ -141,7 +141,7 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId, Bundle bundle, long delayMs)
 	{
-		Log.d(TAG, ".trigger: " + msgId + "(" + TextUtils.implodeBundle(bundle) + ") in " + delayMs + " ms");
+		Log.v(TAG, ".trigger: " + msgId + TextUtils.implodeBundle(bundle) + " in " + delayMs + " ms");
 		removeMessages(msgId);
 		sendMessageDelayed(obtainMessage(msgId, bundle), delayMs);
 	}
@@ -154,7 +154,7 @@ public class EventMessenger extends Handler
 		List<IFeature> msgListeners = _listners.get(msg.what);
 		if (msgListeners != null)
 		{
-			Log.d(TAG, ".handleMessage: notifying " + msgListeners.size() + " listeners on " + msg.what);
+			Log.v(TAG, ".handleMessage: notifying " + msgListeners.size() + " listeners on " + msg.what);
 			for (IFeature feature : msgListeners)
 				feature.onEvent(msg.what, (Bundle) msg.obj);
 		}

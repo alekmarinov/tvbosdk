@@ -33,8 +33,6 @@ public class FeatureHttpServer extends FeatureComponent
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		super.initialize(onFeatureInitialized);
-
 		// Start HTTP server
 		Log.i(TAG, "Start HTTP server");
 		_httpServer = new HttpServer(Environment.getInstance().getContext());
@@ -42,7 +40,7 @@ public class FeatureHttpServer extends FeatureComponent
 		{
 			_httpServer.create();
 			_httpServer.start();
-			onFeatureInitialized.onInitialized(this, ResultCode.OK);
+			super.initialize(onFeatureInitialized);
 		}
 		catch (IOException e)
 		{
