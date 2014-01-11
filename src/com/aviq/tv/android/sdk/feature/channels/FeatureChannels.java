@@ -202,12 +202,15 @@ public class FeatureChannels extends FeatureComponent
 			index = 0;
 		Channel channel = channels.get(index);
 
-		String lastChannelId = _userPrefs.getString(UserParam.LAST_CHANNEL_ID);
-		Log.i(TAG, ".play: last channel = " + lastChannelId + ", new channel = " + channel.getChannelId());
-		if (_featurePlayer.getPlayer().isPlaying() && channel.getChannelId().equals(lastChannelId))
+		if (_userPrefs.has(UserParam.LAST_CHANNEL_ID))
 		{
-			Log.d(TAG, ".play: already playing");
-			return;
+			String lastChannelId = _userPrefs.getString(UserParam.LAST_CHANNEL_ID);
+			Log.i(TAG, ".play: last channel = " + lastChannelId + ", new channel = " + channel.getChannelId());
+			if (_featurePlayer.getPlayer().isPlaying() && channel.getChannelId().equals(lastChannelId))
+			{
+				Log.d(TAG, ".play: already playing");
+				return;
+			}
 		}
 		_userPrefs.put(UserParam.LAST_CHANNEL_ID, channel.getChannelId());
 		Log.d(TAG, ".play: start playing " + channel.getChannelId());
