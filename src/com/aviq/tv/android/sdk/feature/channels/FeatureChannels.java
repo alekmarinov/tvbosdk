@@ -26,6 +26,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
+import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
 
 /**
  * Component feature managing favorite channels
@@ -37,14 +38,33 @@ public class FeatureChannels extends FeatureComponent
 	public enum Param
 	{
 		/**
+		 * Automatically start playing last played channel
+		 */
+		AUTOPLAY(true);
+
+		Param(boolean value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.CHANNELS).put(name(), value);
+		}
+	}
+
+	public enum UserParam
+	{
+		/**
 		 * List of channel identifier keys formatted as
 		 * <channel_id>,<channel_id>,...
 		 */
-		CHANNELS
+		CHANNELS,
+
+		/**
+		 * Last played channel id
+		 */
+		LAST_CHANNEL_ID
 	}
 
 	private Prefs _userPrefs;
 	private FeatureEPG _featureEPG;
+	private FeaturePlayer _featurePlayer;
 	private boolean _isModified = false;
 
 	// List of favorite channels
@@ -53,6 +73,7 @@ public class FeatureChannels extends FeatureComponent
 	public FeatureChannels()
 	{
 		_dependencies.Components.add(FeatureName.Component.EPG);
+		_dependencies.Components.add(FeatureName.Component.PLAYER);
 	}
 
 	@Override
@@ -63,7 +84,13 @@ public class FeatureChannels extends FeatureComponent
 		{
 			_userPrefs = Environment.getInstance().getUserPrefs();
 			_featureEPG = (FeatureEPG) Environment.getInstance().getFeatureComponent(FeatureName.Component.EPG);
+			_featurePlayer = (FeaturePlayer) Environment.getInstance()
+			        .getFeatureComponent(FeatureName.Component.PLAYER);
 			_channels = loadFavoriteChannels(_featureEPG.getEpgData());
+			if (getPrefs().getBool(Param.AUTOPLAY))
+			{
+				playLast();
+			}
 			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 		}
 		catch (FeatureNotFoundException e)
@@ -126,7 +153,6 @@ public class FeatureChannels extends FeatureComponent
 
 	/**
 	 * Swap channel positions
-	 *
 	 */
 	public void swapChannelPositions(int position1, int position2)
 	{
@@ -162,13 +188,80 @@ public class FeatureChannels extends FeatureComponent
 		return _channels.size() > 0;
 	}
 
+	/**
+	 * Start playing channel at specified index in the channels favorite list
+	 *
+	 * @param index
+	 */
+	public void play(int index)
+	{
+		List<Channel> channels = getFavoriteChannels();
+		if (channels.size() == 0)
+			return;
+		if (index < 0 || index >= channels.size())
+			index = 0;
+		Channel channel = channels.get(index);
+
+		String lastChannelId = _userPrefs.getString(UserParam.LAST_CHANNEL_ID);
+		Log.i(TAG, ".play: last channel = " + lastChannelId + ", new channel = " + channel.getChannelId());
+		if (_featurePlayer.getPlayer().isPlaying() && channel.getChannelId().equals(lastChannelId))
+		{
+			Log.d(TAG, ".play: already playing");
+			return;
+		}
+		_userPrefs.put(UserParam.LAST_CHANNEL_ID, channel.getChannelId());
+		Log.d(TAG, ".play: start playing " + channel.getChannelId());
+		int globalIndex = channel.getIndex();
+		String streamUrl = _featureEPG.getChannelStreamUrl(globalIndex);
+		_featurePlayer.play(streamUrl);
+	}
+
+	/**
+	 * Start playing channel with specified channel id
+	 */
+	public void play(String channelId)
+	{
+		play(findChannelIndex(channelId));
+	}
+
+	/**
+	 * Start playing last played channel
+	 */
+	public void playLast()
+	{
+		if (hasLastChannel())
+		{
+			play(_userPrefs.getString(UserParam.LAST_CHANNEL_ID));
+		}
+	}
+
+	/**
+	 * Returns true if last channel has been set
+	 */
+	public boolean hasLastChannel()
+	{
+		return _userPrefs.has(UserParam.LAST_CHANNEL_ID);
+	}
+
+	/**
+	 * Returns last played channel index
+	 */
+	public int getLastChannelIndex()
+	{
+		if (hasLastChannel())
+		{
+			return findChannelIndex(_userPrefs.getString(UserParam.LAST_CHANNEL_ID));
+		}
+		return 0;
+	}
+
 	private List<Channel> loadFavoriteChannels(EpgData epgData)
 	{
 		List<Channel> channels = new ArrayList<Channel>();
-		boolean isEmpty = !_userPrefs.has(Param.CHANNELS) || _userPrefs.getString(Param.CHANNELS).length() == 0;
+		boolean isEmpty = !_userPrefs.has(UserParam.CHANNELS) || _userPrefs.getString(UserParam.CHANNELS).length() == 0;
 		if (!isEmpty)
 		{
-			String buffer = _userPrefs.getString(Param.CHANNELS);
+			String buffer = _userPrefs.getString(UserParam.CHANNELS);
 			String[] channelIds = buffer.split(",");
 			for (String channelId : channelIds)
 			{
@@ -189,7 +282,22 @@ public class FeatureChannels extends FeatureComponent
 				buffer.append(',');
 			buffer.append(channel.getChannelId());
 		}
-		_userPrefs.put(Param.CHANNELS, buffer.toString());
+		_userPrefs.put(UserParam.CHANNELS, buffer.toString());
 		Log.i(TAG, "Updated favorites list: " + buffer);
+	}
+
+	private int findChannelIndex(String channelId)
+	{
+		if (channelId != null)
+		{
+			List<Channel> favoriteChannels = getFavoriteChannels();
+			for (int i = 0; i < favoriteChannels.size(); i++)
+			{
+				Channel channel = favoriteChannels.get(i);
+				if (channel.getChannelId().equals(channelId))
+					return i;
+			}
+		}
+		return 0;
 	}
 }

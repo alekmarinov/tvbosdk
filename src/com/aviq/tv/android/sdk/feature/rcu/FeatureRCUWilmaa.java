@@ -54,6 +54,8 @@ public class FeatureRCUWilmaa extends FeatureRCU
 				return Key.RED;
 			case KeyEvent.KEYCODE_G:
 				return Key.GREEN;
+			case KeyEvent.KEYCODE_E:
+				return Key.EPG;
 		}
 		return Key.UNKNOWN;
 	}

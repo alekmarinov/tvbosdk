@@ -173,7 +173,7 @@ public class Prefs
 		}
 		else
 		{
-			Log.v(TAG, "Skip setting " + key + " = " + value + ", previous value = " + getInt(key));
+			Log.v(TAG, "Skip setting " + key + " = " + value + ", previous value = " + getBool(key));
 		}
 	}
 
