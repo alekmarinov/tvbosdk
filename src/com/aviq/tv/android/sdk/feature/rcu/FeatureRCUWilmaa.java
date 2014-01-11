@@ -58,6 +58,33 @@ public class FeatureRCUWilmaa extends FeatureRCU
 				return Key.BLUE;
 			case KeyEvent.KEYCODE_E:
 				return Key.EPG;
+			case KeyEvent.KEYCODE_H:
+				return Key.HOME;
+			case KeyEvent.KEYCODE_PAGE_DOWN:
+				return Key.PAGE_DOWN;
+			case KeyEvent.KEYCODE_PAGE_UP:
+				return Key.PAGE_UP;
+
+			case KeyEvent.KEYCODE_0:
+				return Key.NUM_0;
+			case KeyEvent.KEYCODE_1:
+				return Key.NUM_1;
+			case KeyEvent.KEYCODE_2:
+				return Key.NUM_2;
+			case KeyEvent.KEYCODE_3:
+				return Key.NUM_3;
+			case KeyEvent.KEYCODE_4:
+				return Key.NUM_4;
+			case KeyEvent.KEYCODE_5:
+				return Key.NUM_5;
+			case KeyEvent.KEYCODE_6:
+				return Key.NUM_6;
+			case KeyEvent.KEYCODE_7:
+				return Key.NUM_7;
+			case KeyEvent.KEYCODE_8:
+				return Key.NUM_8;
+			case KeyEvent.KEYCODE_9:
+				return Key.NUM_9;
 		}
 		return Key.UNKNOWN;
 	}

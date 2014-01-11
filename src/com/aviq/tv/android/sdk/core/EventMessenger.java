@@ -96,6 +96,7 @@ public class EventMessenger extends Handler
 	public void trigger(int msgId)
 	{
 		Log.v(TAG, ".trigger: " + msgId);
+		removeMessages(msgId);
 		sendMessage(obtainMessage(msgId));
 	}
 
