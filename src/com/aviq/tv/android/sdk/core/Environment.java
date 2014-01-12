@@ -88,6 +88,7 @@ public class Environment
 	private IFeatureFactory _featureFactory;
 	// Chain based features initializer
 	private FeatureInitializeCallBack onFeatureInitialized = new FeatureInitializeCallBack();
+	private boolean _isInitialized = false;
 
 	/**
 	 * Environment constructor method
@@ -189,6 +190,7 @@ public class Environment
 			else
 			{
 				_eventMessenger.trigger(ON_LOADED);
+				_isInitialized = true;
 			}
 		}
 
@@ -570,6 +572,14 @@ public class Environment
 	public void setFeatureFactory(IFeatureFactory featureFactory)
 	{
 		_featureFactory = featureFactory;
+	}
+
+	/**
+	 * @return true if all features has been initialized
+	 */
+	public boolean isInitialized()
+	{
+		return _isInitialized;
 	}
 
 	private void useDependencies(IFeature feature) throws FeatureNotFoundException

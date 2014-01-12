@@ -31,7 +31,7 @@ public class BaseState extends Fragment
 	 */
 	public BaseState()
 	{
-		Log.i(TAG, getClass().getSimpleName() + " created");
+		Log.i(TAG, this + " created");
 	}
 
 	/**
@@ -136,5 +136,11 @@ public class BaseState extends Fragment
 	public boolean onKeyUp(AVKeyEvent event)
 	{
 		return false;
+	}
+
+	@Override
+    public String toString()
+	{
+		return getClass().getSimpleName();
 	}
 }

@@ -38,6 +38,7 @@ public class FeatureName
 		MENU,
 		LOADING,
 		TV,
+		VOD,
 		EPG,
 		MESSAGE_BOX,
 		PROGRAM_INFO,
