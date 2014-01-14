@@ -60,6 +60,7 @@ public class FeatureChannels extends FeatureComponent
 		 * Last played channel id
 		 */
 		LAST_CHANNEL_ID,
+
 		/**
 		 * Active channels are from the favorites list
 		 */
@@ -278,6 +279,18 @@ public class FeatureChannels extends FeatureComponent
 	public boolean hasLastChannel()
 	{
 		return _userPrefs.has(UserParam.LAST_CHANNEL_ID);
+	}
+
+	/**
+	 * Returns last played channel id
+	 */
+	public String getLastChannelId()
+	{
+		if (hasLastChannel())
+		{
+			return _userPrefs.getString(UserParam.LAST_CHANNEL_ID);
+		}
+		return null;
 	}
 
 	/**
