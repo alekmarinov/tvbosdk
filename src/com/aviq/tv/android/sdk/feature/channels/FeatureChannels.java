@@ -12,9 +12,7 @@ package com.aviq.tv.android.sdk.feature.channels;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import android.util.Log;
 
@@ -76,7 +74,6 @@ public class FeatureChannels extends FeatureComponent
 
 	// List of favorite channels
 	private List<Channel> _channels;
-	private Set<String> _channelIds;
 
 	public FeatureChannels()
 	{
@@ -94,7 +91,6 @@ public class FeatureChannels extends FeatureComponent
 			_featureEPG = (FeatureEPG) Environment.getInstance().getFeatureComponent(FeatureName.Component.EPG);
 			_featurePlayer = (FeaturePlayer) Environment.getInstance()
 			        .getFeatureComponent(FeatureName.Component.PLAYER);
-			_channelIds = new HashSet<String>();
 			_channels = loadFavoriteChannels(_featureEPG.getEpgData());
 
 			if (getPrefs().getBool(Param.AUTOPLAY))
@@ -129,7 +125,6 @@ public class FeatureChannels extends FeatureComponent
 			if (!isChannelFavorite(channel))
 			{
 				_channels.add(channel);
-				_channelIds.add(channel.getChannelId());
 				_isModified = true;
 				Log.i(TAG, "Channel " + channel.getChannelId() + " added to favorites");
 			}
@@ -138,7 +133,6 @@ public class FeatureChannels extends FeatureComponent
 		{
 			if (_channels.remove(channel))
 			{
-				_channelIds.remove(channel.getChannelId());
 				_isModified = true;
 				Log.i(TAG, "Channel " + channel.getChannelId() + " removed from favorites");
 			}
@@ -150,10 +144,10 @@ public class FeatureChannels extends FeatureComponent
 	 */
 	public boolean isChannelFavorite(Channel channel)
 	{
-		if (_channelIds.size() > 0)
-			return _channelIds.contains(channel.getChannelId());
+		if (isEverChanged())
+			return _channels.indexOf(channel) >= 0;
 
-		return _channels.indexOf(channel) >= 0;
+		return true;
 	}
 
 	/**
@@ -164,8 +158,6 @@ public class FeatureChannels extends FeatureComponent
 		if (_channels.size() == 0)
 		{
 			_channels.addAll(channels);
-			for (Channel channel : _channels)
-				_channelIds.add(channel.getChannelId());
 		}
 	}
 
@@ -306,7 +298,6 @@ public class FeatureChannels extends FeatureComponent
 	public void resetFavorites()
 	{
 		_userPrefs.put(UserParam.CHANNELS, "");
-		_channelIds.clear();
 		_channels = loadFavoriteChannels(_featureEPG.getEpgData());
 	}
 
@@ -322,9 +313,6 @@ public class FeatureChannels extends FeatureComponent
 			{
 				Log.i(TAG, "epgData -> " + epgData + ", channels -> " + channels);
 				channels.add(epgData.getChannel(channelId));
-
-				// FIXME: this is incorrect here
-				_channelIds.add(channelId);
 			}
 		}
 		Log.i(TAG, "Loaded " + channels.size() + " favorite channels");
