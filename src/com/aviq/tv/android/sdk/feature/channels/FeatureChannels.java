@@ -65,7 +65,6 @@ public class FeatureChannels extends FeatureComponent
 		 * Active channels are from the favorites list
 		 */
 		USE_FAVORITES
-
 	}
 
 	private Prefs _userPrefs;
@@ -163,11 +162,11 @@ public class FeatureChannels extends FeatureComponent
 	}
 
 	/**
-	 * @return list of user favorite channels
+	 * @return list of user channels
 	 */
 	public List<Channel> getFavoriteChannels()
 	{
-		if (isEverChanged())
+		if (isEverChanged() && isUseFavorites())
 			return _channels;
 		return _featureEPG.getEpgData().getChannels();
 	}
@@ -303,6 +302,26 @@ public class FeatureChannels extends FeatureComponent
 			return findChannelIndex(_userPrefs.getString(UserParam.LAST_CHANNEL_ID));
 		}
 		return 0;
+	}
+
+	/**
+	 * Tells to use the favorite channels or the original channels list by
+	 * getFavoriteChannels
+	 *
+	 * @param isUseFavorites
+	 */
+	public void setUseFavorites(boolean isUseFavorites)
+	{
+		_userPrefs.put(UserParam.USE_FAVORITES, isUseFavorites);
+	}
+
+	/**
+	 * @return true if the favorite channels or the original channels list will
+	 *         be returned by getFavoriteChannels
+	 */
+	public boolean isUseFavorites()
+	{
+		return _userPrefs.has(UserParam.USE_FAVORITES) ? _userPrefs.getBool(UserParam.USE_FAVORITES) : false;
 	}
 
 	/**
