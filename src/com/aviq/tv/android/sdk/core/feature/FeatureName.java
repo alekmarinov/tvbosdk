@@ -25,7 +25,8 @@ public class FeatureName
 		REGISTER,
 		WATCHLIST,
 		CHANNELS,
-		ETHERNET
+		ETHERNET,
+		LANGUAGE
 	}
 
 	public static enum Scheduler
