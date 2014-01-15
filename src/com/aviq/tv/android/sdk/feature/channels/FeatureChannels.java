@@ -151,6 +151,21 @@ public class FeatureChannels extends FeatureComponent
 	}
 
 	/**
+	 * Verify if channel belongs to favorites list
+	 */
+	public Channel getFavoriteChannel(String channelId)
+	{
+		if (isEverChanged())
+		{
+			int index = findChannelIndex(channelId);
+			if (index > -1)
+				return _channels.get(index);
+		}
+
+		return null;
+	}
+
+	/**
 	 * Initialize channels with channel collection if needed
 	 */
 	public void setChannels(List<Channel> channels)
