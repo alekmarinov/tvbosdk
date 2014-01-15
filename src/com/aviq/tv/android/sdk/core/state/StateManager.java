@@ -50,6 +50,7 @@ public class StateManager
 		public static final String PARAM_TYPE = "PARAM_TYPE";
 		public static final String PARAM_TITLE = "PARAM_TITLE";
 		public static final String PARAM_TEXT = "PARAM_TEXT";
+		public static final String PARAM_SKIP_BTN_IMAGE = "PARAM_SKIP_BTN_IMAGE";
 
 		public enum Type
 		{
@@ -96,6 +97,12 @@ public class StateManager
 		public MessageParams enableButton(Button buttonName)
 		{
 			_bundle.putBoolean(buttonName.name(), true);
+			return this;
+		}
+
+		public MessageParams skipButtonImage(boolean skipImage)
+		{
+			_bundle.putBoolean(PARAM_SKIP_BTN_IMAGE, skipImage);
 			return this;
 		}
 
