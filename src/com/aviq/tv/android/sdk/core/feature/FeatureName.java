@@ -50,6 +50,8 @@ public class FeatureName
 		SETTINGS_WIFI,
 		KEYBOARD,
 		PROGRAMS,
+		LANGUAGE
+
 		TELETEXT,
 		HOLLYSTAR
 	}

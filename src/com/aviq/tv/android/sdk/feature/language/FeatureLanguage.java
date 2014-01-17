@@ -10,6 +10,13 @@
 
 package com.aviq.tv.android.sdk.feature.language;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Locale;
+
+import android.content.res.Configuration;
+import android.util.Log;
+
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
@@ -31,6 +38,11 @@ public class FeatureLanguage extends FeatureComponent
 		LANGUAGE
 	}
 
+	public enum Code
+	{
+		EN, FR, DE
+	}
+
 	@Override
 	public Component getComponentName()
 	{
@@ -41,11 +53,31 @@ public class FeatureLanguage extends FeatureComponent
 	 * Set system language
 	 *
 	 * @param language
+	 *            code
 	 *            is as EN, DE, FR, IT, etc.
 	 */
-	public void setLanguage(String language)
+	public void setLanguage(Code code)
 	{
-		Environment.getInstance().getUserPrefs().put(UserParam.LANGUAGE, language);
+		Locale locale = null;
+
+		switch(code)
+		{
+			case EN:
+				locale = Locale.UK;
+				break;
+			case FR:
+				locale = Locale.FRENCH;
+				break;
+			case DE:
+				locale = Locale.GERMAN;
+				break;
+			default:
+				locale = Locale.UK;
+				break;
+		}
+
+		Environment.getInstance().getUserPrefs().put(UserParam.LANGUAGE, locale.getLanguage());
+		setSystemLanguage(locale);
 	}
 
 	/**
@@ -57,5 +89,42 @@ public class FeatureLanguage extends FeatureComponent
 	{
 		Prefs userPrefs = Environment.getInstance().getUserPrefs();
 		return userPrefs.has(UserParam.LANGUAGE) ? userPrefs.getString(UserParam.LANGUAGE) : null;
+	}
+
+	private void setSystemLanguage(Locale locale)
+	{
+		try
+		{
+			Class<?> amnClass = Class.forName("android.app.ActivityManagerNative");
+			Object amn = null;
+			Configuration config = null;
+
+			// amn = ActivityManagerNative.getDefault();
+			Method methodGetDefault = amnClass.getMethod("getDefault");
+			methodGetDefault.setAccessible(true);
+			amn = methodGetDefault.invoke(amnClass);
+
+			// config = amn.getConfiguration();
+			Method methodGetConfiguration = amnClass.getMethod("getConfiguration");
+			methodGetConfiguration.setAccessible(true);
+			config = (Configuration) methodGetConfiguration.invoke(amn);
+
+			// config.userSetLocale = true;
+			Class<? extends Configuration> configClass = config.getClass();
+			Field f = configClass.getField("userSetLocale");
+			f.setBoolean(config, true);
+
+			// set the locale to the new value
+			config.locale = locale;
+
+			// amn.updateConfiguration(config);
+			Method methodUpdateConfiguration = amnClass.getMethod("updateConfiguration", Configuration.class);
+			methodUpdateConfiguration.setAccessible(true);
+			methodUpdateConfiguration.invoke(amn, config);
+		}
+		catch (Exception e)
+		{
+			Log.e(TAG, "Error changing locale: " + e.getMessage(), e);
+		}
 	}
 }
