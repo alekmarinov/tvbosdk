@@ -49,6 +49,8 @@ public class FeatureName
 		SETTINGS_ETHERNET,
 		SETTINGS_WIFI,
 		KEYBOARD,
-		PROGRAMS
+		PROGRAMS,
+		TELETEXT,
+		HOLLYSTAR
 	}
 }
