@@ -138,6 +138,20 @@ public class BaseState extends Fragment
 		return false;
 	}
 
+	/**
+	 * Method consuming long key press event if the State is currently active
+	 *
+	 * @param event the AVKeyEvent
+	 * @return Return true to prevent this event from being propagated further,
+	 *         or false to indicate that you have not handled this event and it
+	 *         should continue to be propagated.
+	 * @throws StateException
+	 */
+	public boolean onKeyLongPress(AVKeyEvent event)
+	{
+		return false;
+	}
+
 	@Override
     public String toString()
 	{

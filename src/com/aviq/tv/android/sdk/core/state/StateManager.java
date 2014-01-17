@@ -414,6 +414,34 @@ public class StateManager
 		return false;
 	}
 
+	/**
+	 * Delegates long key press event to the current active state or overlay
+	 *
+	 * @param keyCode
+	 *            The value in event.getKeyCode().
+	 * @param event
+	 *            Description of the key event.
+	 * @return Return true to prevent this event from being propagated further,
+	 *         or false to indicate that you have not handled this event and it
+	 *         should continue to be propagated.
+	 * @throws StateException
+	 */
+	public boolean onKeyLongPress(AVKeyEvent keyEvent)
+	{
+		Log.i(TAG, ".onKeyLongPress: key = " + keyEvent + ", state = " + getMainState() + ", overlay = " + getOverlayState());
+
+		if (_messageState.isAdded())
+		{
+			return _messageState.onKeyLongPress(keyEvent);
+		}
+		else if (_activeStates.size() > 0)
+		{
+			return _activeStates.get(_activeStates.size() - 1).onKeyLongPress(keyEvent);
+		}
+
+		return false;
+	}
+
 	// TODO: Add onLongKeyDown() method
 	// TODO: Add onLongKeyUp() method
 
