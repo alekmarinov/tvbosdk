@@ -43,7 +43,9 @@ public class FeatureRCUWilmaa extends FeatureRCU
 			case 132:
 				return Key.MENU;
 			case KeyEvent.KEYCODE_VOLUME_UP:
+			case KeyEvent.KEYCODE_U:
 				return Key.VOLUME_UP;
+			case KeyEvent.KEYCODE_D:
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				return Key.VOLUME_DOWN;
 
