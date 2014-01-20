@@ -60,6 +60,8 @@ public class FeatureRCUWilmaa extends FeatureRCU
 				return Key.EPG;
 			case KeyEvent.KEYCODE_H:
 				return Key.HOME;
+			case KeyEvent.KEYCODE_F:
+				return Key.FAVORITE;
 			case KeyEvent.KEYCODE_PAGE_DOWN:
 				return Key.PAGE_DOWN;
 			case KeyEvent.KEYCODE_PAGE_UP:

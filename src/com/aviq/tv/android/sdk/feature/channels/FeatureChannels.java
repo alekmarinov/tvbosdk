@@ -251,7 +251,7 @@ public class FeatureChannels extends FeatureComponent
 			index = 0;
 		Channel channel = channels.get(index);
 
-		if (_userPrefs.has(UserParam.LAST_CHANNEL_ID))
+		if (hasLastChannel())
 		{
 			String lastChannelId = _userPrefs.getString(UserParam.LAST_CHANNEL_ID);
 			Log.i(TAG, ".play: last channel = " + lastChannelId + ", new channel = " + channel.getChannelId());
@@ -261,7 +261,7 @@ public class FeatureChannels extends FeatureComponent
 				return;
 			}
 		}
-		_userPrefs.put(UserParam.LAST_CHANNEL_ID, channel.getChannelId());
+		setLastChannelId(channel.getChannelId());
 		Log.d(TAG, ".play: start playing " + channel.getChannelId());
 		int globalIndex = channel.getIndex();
 		String streamUrl = _featureEPG.getChannelStreamUrl(globalIndex);
@@ -305,6 +305,14 @@ public class FeatureChannels extends FeatureComponent
 			return _userPrefs.getString(UserParam.LAST_CHANNEL_ID);
 		}
 		return null;
+	}
+
+	/**
+	 * Set last played channel id
+	 */
+	public void setLastChannelId(String lastChannelId)
+	{
+		_userPrefs.put(UserParam.LAST_CHANNEL_ID, lastChannelId);
 	}
 
 	/**
