@@ -85,10 +85,10 @@ public class FeatureLanguage extends FeatureComponent
 	 *
 	 * @return the current system language e.g. EN, DE, FR, IT, etc.
 	 */
-	public String getLanguage()
+	public Code getLanguage()
 	{
 		Prefs userPrefs = Environment.getInstance().getUserPrefs();
-		return userPrefs.has(UserParam.LANGUAGE) ? userPrefs.getString(UserParam.LANGUAGE) : null;
+		return userPrefs.has(UserParam.LANGUAGE) ? Code.valueOf(userPrefs.getString(UserParam.LANGUAGE)) : Code.EN;
 	}
 
 	private void setSystemLanguage(Locale locale)
