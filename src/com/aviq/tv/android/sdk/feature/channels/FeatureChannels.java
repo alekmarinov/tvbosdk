@@ -62,6 +62,11 @@ public class FeatureChannels extends FeatureComponent
 		LAST_CHANNEL_ID,
 
 		/**
+		 * Previous played channel id
+		 */
+		PREV_CHANNEL_ID,
+
+		/**
 		 * Active channels are from the favorites list
 		 */
 		USE_FAVORITES
@@ -260,6 +265,10 @@ public class FeatureChannels extends FeatureComponent
 				Log.d(TAG, ".play: already playing");
 				return;
 			}
+			else
+			{
+				_userPrefs.put(UserParam.PREV_CHANNEL_ID, lastChannelId);
+			}
 		}
 		_userPrefs.put(UserParam.LAST_CHANNEL_ID, channel.getChannelId());
 		Log.d(TAG, ".play: start playing " + channel.getChannelId());
@@ -304,6 +313,19 @@ public class FeatureChannels extends FeatureComponent
 		{
 			return _userPrefs.getString(UserParam.LAST_CHANNEL_ID);
 		}
+		return null;
+	}
+
+	/**
+	 * Return previously played channel id
+	 */
+	public String getPreviousChannelId()
+	{
+		if (_userPrefs.has(UserParam.PREV_CHANNEL_ID))
+		{
+			return _userPrefs.getString(UserParam.PREV_CHANNEL_ID);
+		}
+
 		return null;
 	}
 
