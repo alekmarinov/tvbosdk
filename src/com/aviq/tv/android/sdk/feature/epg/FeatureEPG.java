@@ -51,7 +51,7 @@ public abstract class FeatureEPG extends FeatureComponent
 
 	public enum Provider
 	{
-		rayv, wilmaa
+		rayv, wilmaa, bulsat
 	}
 
 	public enum Param
@@ -520,7 +520,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		return getPrefs().getString(Param.EPG_CHANNEL_LOGO_URL, bundle);
 	}
 
-	private String getProgramsUrl(String channelId)
+	protected String getProgramsUrl(String channelId)
 	{
 		Bundle bundle = new Bundle();
 		bundle.putString("SERVER", _epgServer);

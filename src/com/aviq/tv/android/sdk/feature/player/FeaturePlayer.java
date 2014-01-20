@@ -120,10 +120,10 @@ public class FeaturePlayer extends FeatureComponent
 	public void setVideoViewFullScreen()
 	{
 		Log.i(TAG, ".setVideoViewFullScreen");
-		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
-		        RelativeLayout.LayoutParams.MATCH_PARENT);
-		params.leftMargin = 0;
-		params.topMargin = 0;
+		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
+		        RelativeLayout.LayoutParams.WRAP_CONTENT);
+		params.addRule(RelativeLayout.CENTER_HORIZONTAL);
+		params.addRule(RelativeLayout.CENTER_VERTICAL);
 		_videoView.setLayoutParams(params);
 	}
 

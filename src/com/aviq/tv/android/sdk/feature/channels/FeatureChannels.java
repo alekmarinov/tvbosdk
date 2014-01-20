@@ -147,7 +147,7 @@ public class FeatureChannels extends FeatureComponent
 		if (isEverChanged())
 			return _channels.indexOf(channel) >= 0;
 
-		return true;
+		return false;
 	}
 
 	/**
