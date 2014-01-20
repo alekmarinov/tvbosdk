@@ -139,6 +139,18 @@ public abstract class Program implements Comparable<Program>
 		_title = title;
 	}
 
+	/** Return the program length in milliseconds */
+	public long getLengthMillis()
+	{
+		return getStopTimeCalendar().getTimeInMillis() - getStartTimeCalendar().getTimeInMillis();
+	}
+
+	/** Return the program length in minutes */
+	public int getLengthMin()
+	{
+		return (int) (getLengthMillis() / 60000);
+	}
+
 	/**
 	 * @return true if program detail attributes has been set
 	 */
