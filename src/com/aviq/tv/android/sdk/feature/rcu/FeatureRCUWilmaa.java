@@ -43,7 +43,9 @@ public class FeatureRCUWilmaa extends FeatureRCU
 			case 132:
 				return Key.MENU;
 			case KeyEvent.KEYCODE_VOLUME_UP:
+			case KeyEvent.KEYCODE_U:
 				return Key.VOLUME_UP;
+			case KeyEvent.KEYCODE_D:
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				return Key.VOLUME_DOWN;
 
@@ -64,6 +66,8 @@ public class FeatureRCUWilmaa extends FeatureRCU
 				return Key.FAVORITE;
 			case KeyEvent.KEYCODE_L:
 				return Key.LAST_CHANNEL;
+			case KeyEvent.KEYCODE_T:
+				return Key.TXT;
 			case KeyEvent.KEYCODE_PAGE_DOWN:
 				return Key.PAGE_DOWN;
 			case KeyEvent.KEYCODE_PAGE_UP:

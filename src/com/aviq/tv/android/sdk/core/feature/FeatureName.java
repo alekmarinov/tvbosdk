@@ -52,6 +52,7 @@ public class FeatureName
 		PROGRAMS,
 		LANGUAGE,
 		TELETEXT,
-		HOLLYSTAR
+		HOLLYSTAR,
+		HOLLYSTAR_VIDEO
 	}
 }
