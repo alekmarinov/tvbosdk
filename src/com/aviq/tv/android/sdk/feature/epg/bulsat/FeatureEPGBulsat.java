@@ -10,6 +10,12 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
+import android.util.Log;
+
+import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.Prefs;
+import com.aviq.tv.android.sdk.feature.channels.FeatureChannels;
+import com.aviq.tv.android.sdk.feature.channels.FeatureChannels.UserParam;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
@@ -20,6 +26,16 @@ import com.aviq.tv.android.sdk.feature.epg.Program;
 public class FeatureEPGBulsat extends FeatureEPG
 {
 	public static final String TAG = FeatureEPGBulsat.class.getSimpleName();
+
+	@Override
+	public void initialize(final OnFeatureInitialized onFeatureInitialized)
+	{
+		Log.i(TAG, ".initialize");
+		Prefs userPrefs = Environment.getInstance().getUserPrefs();
+		userPrefs.put(FeatureChannels.UserParam.CHANNELS, "animal-planet,axn,bnt-1,btv,btv-action,btv-cinema,btv-comedy,diema,diema-family,discovery-channel,discovery-hd,film-plus,hbo,kinonova,mtv-hits,ngc,nick-jr,nova-sport,nova,planeta-tv,ring-bg,the-voice,tv7,tv-plus,viasat-explorer,hobby-hd");
+		userPrefs.put(UserParam.LAST_CHANNEL_ID, "animal-planet");
+		super.initialize(onFeatureInitialized);
+	}
 
 	/**
 	 * @return Bulsat EPG provider name
