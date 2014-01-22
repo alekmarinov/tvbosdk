@@ -2,13 +2,13 @@
  * Copyright (c) 2007-2013, AVIQ Bulgaria Ltd
  *
  * Project:     AVIQTVSDK
- * Filename:    FeatureInternet.java
+ * Filename:    FeatureSchedulerInternet.java
  * Author:      alek
  * Date:        3 Dec 2013
  * Description: Feature managing internet connectivity
  */
 
-package com.aviq.tv.android.sdk.feature.scheduler.internet;
+package com.aviq.tv.android.sdk.feature.internet;
 
 import android.os.Bundle;
 

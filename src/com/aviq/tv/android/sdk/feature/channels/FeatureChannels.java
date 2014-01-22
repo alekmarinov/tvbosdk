@@ -87,7 +87,7 @@ public class FeatureChannels extends FeatureComponent
 
 	public FeatureChannels()
 	{
-		_dependencies.Components.add(FeatureName.Component.EPG);
+		_dependencies.Schedulers.add(FeatureName.Scheduler.EPG);
 		_dependencies.Components.add(FeatureName.Component.PLAYER);
 	}
 
@@ -98,7 +98,7 @@ public class FeatureChannels extends FeatureComponent
 		try
 		{
 			_userPrefs = Environment.getInstance().getUserPrefs();
-			_featureEPG = (FeatureEPG) Environment.getInstance().getFeatureComponent(FeatureName.Component.EPG);
+			_featureEPG = (FeatureEPG) Environment.getInstance().getFeatureScheduler(FeatureName.Scheduler.EPG);
 			_featurePlayer = (FeaturePlayer) Environment.getInstance()
 			        .getFeatureComponent(FeatureName.Component.PLAYER);
 			_channels = loadFavoriteChannels(_featureEPG.getEpgData());
