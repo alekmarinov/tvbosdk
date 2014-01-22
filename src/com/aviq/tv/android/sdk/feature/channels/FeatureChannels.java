@@ -69,7 +69,12 @@ public class FeatureChannels extends FeatureComponent
 		/**
 		 * Active channels are from the favorites list
 		 */
-		USE_FAVORITES
+		USE_FAVORITES,
+
+		/**
+		 * LAST EPG Synchronized channels
+		 */
+		SYNCED_CHANNELS
 	}
 
 	private Prefs _userPrefs;
@@ -378,6 +383,27 @@ public class FeatureChannels extends FeatureComponent
 		_channels = loadFavoriteChannels(_featureEPG.getEpgData());
 	}
 
+	/**
+	 * Return the list of previous EPG downloaded channels
+	 */
+	public String getSyncedChannels()
+	{
+		return _userPrefs.has(UserParam.SYNCED_CHANNELS) ? _userPrefs.getString(UserParam.SYNCED_CHANNELS) : null;
+	}
+
+	public void saveSyncedChannel()
+	{
+		StringBuffer buffer = new StringBuffer();
+		for (Channel channel : _featureEPG.getEpgData().getChannels())
+		{
+			if (buffer.length() > 0)
+				buffer.append(',');
+			buffer.append(channel.getChannelId());
+		}
+		_userPrefs.put(UserParam.SYNCED_CHANNELS, buffer.toString());
+		Log.i(TAG, "Updated synched channels list: " + buffer);
+	}
+
 	private List<Channel> loadFavoriteChannels(EpgData epgData)
 	{
 		List<Channel> channels = new ArrayList<Channel>();
@@ -389,7 +415,9 @@ public class FeatureChannels extends FeatureComponent
 			for (String channelId : channelIds)
 			{
 				Log.i(TAG, "epgData -> " + epgData + ", channels -> " + channels);
-				channels.add(epgData.getChannel(channelId));
+				Channel channel = epgData.getChannel(channelId);
+				if (channel != null)
+					channels.add(channel);
 			}
 		}
 		Log.i(TAG, "Loaded " + channels.size() + " favorite channels");
