@@ -27,6 +27,6 @@ public class FeatureRCUBulsat extends FeatureRCUSDMC
 			{
 			}
 		}
-		return Key.UNKNOWN;
+		return key;
 	}
 }
