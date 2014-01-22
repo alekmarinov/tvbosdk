@@ -12,6 +12,7 @@ package com.aviq.tv.android.sdk.core.state;
 
 import android.app.Fragment;
 import android.os.Bundle;
+import android.view.View;
 
 import com.aviq.tv.android.sdk.core.AVKeyEvent;
 import com.aviq.tv.android.sdk.core.Environment;
@@ -35,7 +36,7 @@ public class BaseState extends Fragment
 	}
 
 	/**
-	 * Shows State on screen.
+	 * Create state
 	 *
 	 * @param params
 	 *            The params set to this State when showing
@@ -43,7 +44,7 @@ public class BaseState extends Fragment
 	 *            set to true to show this state as Overlay
 	 * @throws StateException
 	 */
-	public void show(Bundle params, boolean isOverlay) throws StateException
+	public void create(Bundle params, boolean isOverlay) throws StateException
 	{
 		if (isOverlay)
 			Environment.getInstance().getStateManager().setStateOverlay(this, params);
@@ -52,35 +53,59 @@ public class BaseState extends Fragment
 	}
 
 	/**
-	 * Shows State on Main layer of the screen
+	 * Create state on main layer of the screen
 	 *
 	 * @param params
 	 *            The params set to this State when showing
 	 * @throws StateException
 	 */
-	public void show(Bundle params) throws StateException
+	public void create(Bundle params) throws StateException
 	{
-		show(params, false);
+		create(params, false);
 	}
 
 	/**
-	 * Shows State on Overlay layer of the screen
+	 * Create state on overlay layer of the screen
 	 *
 	 * @param params
 	 *            The params set to this State when showing
 	 * @throws StateException
 	 */
-	public void showOverlay(Bundle params) throws StateException
+	public void createOverlay(Bundle params) throws StateException
 	{
-		show(params, true);
+		create(params, true);
 	}
 
 	/**
-	 * Hides State from screen
+	 * Destroy and remove state from screen
+	 */
+	public void destroy()
+	{
+		Environment.getInstance().getStateManager().destroyState(this);
+	}
+
+	/**
+	 * Show state view
+	 */
+	public void show()
+	{
+		super.getView().setVisibility(View.VISIBLE);
+	}
+
+	/**
+	 * Hide state view
 	 */
 	public void hide()
 	{
-		Environment.getInstance().getStateManager().hideState(this);
+		super.getView().setVisibility(View.INVISIBLE);
+	}
+
+	/**
+	 * @return true if the this state is shown
+	 */
+	public boolean isShown()
+	{
+		return super.getView().getVisibility() == View.VISIBLE;
 	}
 
 	/**
@@ -103,9 +128,9 @@ public class BaseState extends Fragment
 	}
 
 	/**
-	 * Returns true if the current state is visible on screen
+	 * Returns true if the current state is created
 	 */
-	public boolean isShown()
+	public boolean isCreated()
 	{
 		return isAdded();
 	}

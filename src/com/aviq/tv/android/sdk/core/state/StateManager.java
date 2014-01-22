@@ -161,7 +161,7 @@ public class StateManager
 					if (newState != null)
 					{
 						_activeStates.add(newState);
-						showState(newState, StateLayer.MAIN, params);
+						createState(newState, StateLayer.MAIN, params);
 					}
 				}
 			break;
@@ -171,27 +171,27 @@ public class StateManager
 					if (newState != null)
 					{
 						_activeStates.add(newState);
-						showState(newState, StateLayer.OVERLAY, params);
+						createState(newState, StateLayer.OVERLAY, params);
 					}
 				}
 				else
 				{
-					hideState(_activeStates.pop());
+					destroyState(_activeStates.pop());
 					if (newState != null)
 					{
 						_activeStates.add(newState);
-						showState(newState, StateLayer.MAIN, params);
+						createState(newState, StateLayer.MAIN, params);
 					}
 				}
 			break;
 			case 2:
 				if (isOverlay)
 				{
-					hideState(_activeStates.pop());
+					destroyState(_activeStates.pop());
 					if (newState != null)
 					{
 						_activeStates.add(newState);
-						showState(newState, StateLayer.OVERLAY, params);
+						createState(newState, StateLayer.OVERLAY, params);
 					}
 					else
 					{
@@ -201,12 +201,12 @@ public class StateManager
 				}
 				else
 				{
-					hideState(_activeStates.pop());
-					hideState(_activeStates.pop());
+					destroyState(_activeStates.pop());
+					destroyState(_activeStates.pop());
 					if (newState != null)
 					{
 						_activeStates.add(newState);
-						showState(newState, StateLayer.MAIN, params);
+						createState(newState, StateLayer.MAIN, params);
 					}
 				}
 			break;
@@ -264,7 +264,7 @@ public class StateManager
 	 * @param params
 	 *            Bundle with State params
 	 */
-	/* package */void showState(final BaseState state, final StateLayer stateLayer, final Bundle params)
+	/* package */void createState(final BaseState state, final StateLayer stateLayer, final Bundle params)
 	{
 		StringBuffer logMsg = new StringBuffer();
 		logMsg.append(".showState: ").append(state.getClass().getSimpleName()).append('(');
@@ -324,7 +324,7 @@ public class StateManager
 		};
 		if (state.isAdded())
 		{
-			hideState(state);
+			destroyState(state);
 			_handler.post(showFragmentChunk);
 		}
 		else
@@ -455,7 +455,7 @@ public class StateManager
 	 */
 	public BaseState showMessage(MessageParams messageParams)
 	{
-		showState(_messageState, StateLayer.MESSAGE, messageParams.getParamsBundle());
+		createState(_messageState, StateLayer.MESSAGE, messageParams.getParamsBundle());
 		return _messageState;
 	}
 
@@ -472,7 +472,7 @@ public class StateManager
 	 */
 	public void hideMessage()
 	{
-		if (hideState(_messageState))
+		if (destroyState(_messageState))
 			if (_activeStates.size() > 0)
 				_activeStates.get(_activeStates.size() - 1).onShow(true);
 	}
@@ -483,7 +483,7 @@ public class StateManager
 	 * @param state
 	 *            to be removed from screen
 	 */
-	/* package */boolean hideState(BaseState state)
+	/* package */boolean destroyState(BaseState state)
 	{
 		Log.i(TAG, ".hideState: " + state.getClass().getSimpleName());
 
