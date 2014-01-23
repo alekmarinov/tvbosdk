@@ -54,12 +54,12 @@ public class FeatureEPGRayV extends FeatureEPG
 		Param(String value)
 		{
 			if (value != null)
-				Environment.getInstance().getFeaturePrefs(FeatureName.Component.EPG).put(name(), value);
+				Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.EPG).put(name(), value);
 		}
 
 		Param(int value)
 		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Component.EPG).put(name(), value);
+			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.EPG).put(name(), value);
 		}
 	}
 

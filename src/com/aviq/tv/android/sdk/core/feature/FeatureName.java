@@ -19,7 +19,6 @@ public class FeatureName
 	public static enum Component
 	{
 		RCU,
-		EPG,
 		PLAYER,
 		HTTP_SERVER,
 		REGISTER,
@@ -31,7 +30,9 @@ public class FeatureName
 
 	public static enum Scheduler
 	{
-		INTERNET
+		INTERNET,
+		EPG,
+		TEST
 	}
 
 	public static enum State
@@ -45,6 +46,7 @@ public class FeatureName
 		PROGRAM_INFO,
 		WATCHLIST,
 		CHANNELS,
+		CHANNELS_ALERT,
 		SETTINGS,
 		SETTINGS_ETHERNET,
 		SETTINGS_WIFI,

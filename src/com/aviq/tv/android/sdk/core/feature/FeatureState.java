@@ -96,7 +96,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 
 		// add subscription for registration when this state is shown
 		_subscriptions.add(new Subscription(featureTo, msgId));
-		if (isShown())
+		if (isCreated())
 		{
 			// register immediately if the state is already shown
 			featureTo.getEventMessenger().register(this, msgId);
@@ -120,7 +120,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 			if (subscription.Feature == featureFrom && subscription.MsgId == msgId)
 			{
 				_subscriptions.remove(i);
-				if (isShown())
+				if (isCreated())
 				{
 					// if already shown unregister immediately
 					featureFrom.getEventMessenger().unregister(this, msgId);

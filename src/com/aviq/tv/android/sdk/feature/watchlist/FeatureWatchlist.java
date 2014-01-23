@@ -70,7 +70,7 @@ public class FeatureWatchlist extends FeatureComponent
 
 	public FeatureWatchlist()
 	{
-		_dependencies.Components.add(FeatureName.Component.EPG);
+		_dependencies.Schedulers.add(FeatureName.Scheduler.EPG);
 	}
 
 	@Override
@@ -80,8 +80,8 @@ public class FeatureWatchlist extends FeatureComponent
 		try
 		{
 			_userPrefs = Environment.getInstance().getUserPrefs();
-			FeatureEPG featureEPG = (FeatureEPG) Environment.getInstance().getFeatureComponent(
-			        FeatureName.Component.EPG);
+			FeatureEPG featureEPG = (FeatureEPG) Environment.getInstance().getFeatureScheduler(
+			        FeatureName.Scheduler.EPG);
 			_watchedPrograms = loadWatchlist(featureEPG.getEpgData());
 			_notifyEarlier = getPrefs().getInt(Param.NOTIFY_EARLIER);
 			updateProgramStartNotification();

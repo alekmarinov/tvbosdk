@@ -36,16 +36,16 @@ import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.ResultCode;
-import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
-import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
+import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
 /**
  * Component feature providing EPG data
  */
-public abstract class FeatureEPG extends FeatureComponent
+public abstract class FeatureEPG extends FeatureScheduler
 {
 	public static final String TAG = FeatureEPG.class.getSimpleName();
 
@@ -94,16 +94,21 @@ public abstract class FeatureEPG extends FeatureComponent
 		/**
 		 * Channel logo height
 		 */
-		CHANNEL_LOGO_HEIGHT(50);
+		CHANNEL_LOGO_HEIGHT(50),
+
+		/**
+		 * Schedule interval
+		 */
+		UPDATE_INTERVAL(60 * 1000);
 
 		Param(int value)
 		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Component.EPG).put(name(), value);
+			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.EPG).put(name(), value);
 		}
 
 		Param(String value)
 		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Component.EPG).put(name(), value);
+			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.EPG).put(name(), value);
 		}
 	}
 
@@ -141,8 +146,6 @@ public abstract class FeatureEPG extends FeatureComponent
 	{
 		Log.i(TAG, ".initialize");
 
-		_onFeatureInitialized = onFeatureInitialized;
-
 		_epgProvider = getEPGProvider().name();
 		_epgVersion = getPrefs().getInt(Param.EPG_VERSION);
 		_epgServer = getPrefs().getString(Param.EPG_SERVER);
@@ -151,7 +154,27 @@ public abstract class FeatureEPG extends FeatureComponent
 
 		_httpQueue = Environment.getInstance().getRequestQueue();
 
-		retrieveChannels();
+		onSchedule(onFeatureInitialized);
+	}
+
+	@Override
+    protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
+	{
+		_onFeatureInitialized = onFeatureInitialized;
+
+		// update epg data
+		String channelsUrl = getChannelsUrl();
+		Log.i(TAG, "Retrieving EPG channels from " + channelsUrl);
+		ChannelListResponseCallback responseCallback = new ChannelListResponseCallback();
+
+		// retrieve channels
+		GsonRequest<ChannelListResponse> channelListRequest = new GsonRequest<ChannelListResponse>(Request.Method.GET,
+		        channelsUrl, ChannelListResponse.class, responseCallback, responseCallback);
+
+		_httpQueue.add(channelListRequest);
+
+		// schedule update later
+		scheduleDelayed(getPrefs().getInt(Param.UPDATE_INTERVAL));
 	}
 
 	public EpgData getEpgData()
@@ -188,9 +211,9 @@ public abstract class FeatureEPG extends FeatureComponent
 	}
 
 	@Override
-	public Component getComponentName()
+	public Scheduler getSchedulerName()
 	{
-		return FeatureName.Component.EPG;
+		return FeatureName.Scheduler.EPG;
 	}
 
 	/**
@@ -216,18 +239,6 @@ public abstract class FeatureEPG extends FeatureComponent
 	 * @return create program instance
 	 */
 	protected abstract Program createProgram(Channel channel);
-
-	private void retrieveChannels()
-	{
-		String channelsUrl = getChannelsUrl();
-		Log.i(TAG, "Retrieving EPG channels from " + channelsUrl);
-		ChannelListResponseCallback responseCallback = new ChannelListResponseCallback();
-
-		GsonRequest<ChannelListResponse> channelListRequest = new GsonRequest<ChannelListResponse>(Request.Method.GET,
-		        channelsUrl, ChannelListResponse.class, responseCallback, responseCallback);
-
-		_httpQueue.add(channelListRequest);
-	}
 
 	private void retrieveChannelLogo(Channel channel, int channelIndex)
 	{
