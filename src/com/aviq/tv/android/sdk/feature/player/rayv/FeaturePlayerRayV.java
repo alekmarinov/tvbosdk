@@ -12,12 +12,8 @@ package com.aviq.tv.android.sdk.feature.player.rayv;
 
 import android.util.Log;
 
-import com.aviq.tv.android.sdk.core.Environment;
-import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
-import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
-import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 import com.rayv.StreamingAgent.Loader;
 
 /**
@@ -27,40 +23,6 @@ public class FeaturePlayerRayV extends FeaturePlayer
 {
 	public static final String TAG = FeaturePlayerRayV.class.getSimpleName();
 	private String _streamerIni;
-
-	public enum Param
-	{
-		/**
-		 * Registered RayV user account name
-		 */
-		RAYV_USER(null),
-
-		/**
-		 * Registered RayV account password
-		 */
-		RAYV_PASS(null),
-
-		/**
-		 * RayV stream bitrate
-		 */
-		RAYV_STREAM_BITRATE(1200),
-
-		/**
-		 * Pattern composing channel stream url for RayV CDN provider
-		 */
-		RAYV_STREAM_URL_PATTERN("http://localhost:1234/RayVAgent/v1/RAYV/${USER}:${PASS}@${STREAM_ID}?streams=${STREAM_ID}:${BITRATE}");
-
-		Param(String value)
-		{
-			if (value != null)
-				Environment.getInstance().getFeaturePrefs(FeatureName.Component.PLAYER).put(name(), value);
-		}
-
-		Param(int value)
-		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Component.PLAYER).put(name(), value);
-		}
-	}
 
 	public FeaturePlayerRayV()
 	{
@@ -72,7 +34,6 @@ public class FeaturePlayerRayV extends FeaturePlayer
 	{
 		// Start streaming agent
 		Log.i(TAG, "Start streaming agent");
-
 		new Thread(new Runnable()
 		{
 			@Override
@@ -81,20 +42,7 @@ public class FeaturePlayerRayV extends FeaturePlayer
 				Loader.startStreamer(_streamerIni);
 			}
 		}).start();
-
-        try
-		{
-			FeatureRegister featureRegister = (FeatureRegister) Environment.getInstance().getFeatureComponent(
-			        FeatureName.Component.REGISTER);
-			getPrefs().put(Param.RAYV_USER, featureRegister.getBoxId());
-			getPrefs().put(Param.RAYV_PASS, featureRegister.getBoxId());
-			super.initialize(onFeatureInitialized);
-		}
-        catch (FeatureNotFoundException e)
-        {
-        	Log.e(TAG, e.getMessage(), e);
-    		onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-        }
+		super.initialize(onFeatureInitialized);
 	}
 
 	public void setStreamerIni(String streamerIni)

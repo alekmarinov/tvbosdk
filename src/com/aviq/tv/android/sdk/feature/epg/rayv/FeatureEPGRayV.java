@@ -34,12 +34,12 @@ public class FeatureEPGRayV extends FeatureEPG
 		/**
 		 * Registered RayV user account name
 		 */
-		RAYV_USER("1C6F65F9DE8B"),
+		RAYV_USER(null), //1C6F65F9DE8B
 
 		/**
 		 * Registered RayV account password
 		 */
-		RAYV_PASS("1C6F65F9DE8B"),
+		RAYV_PASS(null), //1C6F65F9DE8B
 
 		/**
 		 * RayV stream bitrate
