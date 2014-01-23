@@ -10,7 +10,10 @@
 
 package com.aviq.tv.android.sdk.feature.player;
 
+import android.content.Context;
 import android.util.Log;
+import android.view.View;
+import android.widget.MediaController;
 import android.widget.RelativeLayout;
 import android.widget.VideoView;
 
@@ -57,6 +60,7 @@ public class FeaturePlayer extends FeatureComponent
 	protected AndroidPlayer _player;
 	private VideoView _videoView;
 	private Prefs _userPrefs;
+	private MediaController _mediaController;
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
@@ -125,6 +129,25 @@ public class FeaturePlayer extends FeatureComponent
 		params.addRule(RelativeLayout.CENTER_HORIZONTAL);
 		params.addRule(RelativeLayout.CENTER_VERTICAL);
 		_videoView.setLayoutParams(params);
+	}
+
+	public MediaController createMediaController()
+	{
+		Context context = Environment.getInstance().getActivity();
+		_mediaController = new MediaController(context, false);
+		_mediaController.setVisibility(View.VISIBLE);
+		_mediaController.setAnchorView(_videoView);
+		_mediaController.setMediaPlayer(_videoView);
+		_videoView.setMediaController(_mediaController);
+
+		_mediaController.setFocusable(false);
+
+		return _mediaController;
+	}
+
+	public void removeMediaController()
+	{
+		_mediaController.setVisibility(View.GONE);
 	}
 
 	private Runnable _videoStartedPoller = new Runnable()
