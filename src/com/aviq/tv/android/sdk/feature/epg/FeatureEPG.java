@@ -99,7 +99,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		/**
 		 * Schedule interval
 		 */
-		UPDATE_INTERVAL(60 * 1000);
+		UPDATE_INTERVAL(60 * 60 * 1000);
 
 		Param(int value)
 		{
