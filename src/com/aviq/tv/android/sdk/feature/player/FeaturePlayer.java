@@ -131,10 +131,10 @@ public class FeaturePlayer extends FeatureComponent
 		_videoView.setLayoutParams(params);
 	}
 
-	public MediaController createMediaController()
+	public MediaController createMediaController(boolean useFastForward)
 	{
 		Context context = Environment.getInstance().getActivity();
-		_mediaController = new MediaController(context, false);
+		_mediaController = new AviqMediaController(context, useFastForward);
 		_mediaController.setVisibility(View.VISIBLE);
 		_mediaController.setAnchorView(_videoView);
 		_mediaController.setMediaPlayer(_videoView);
