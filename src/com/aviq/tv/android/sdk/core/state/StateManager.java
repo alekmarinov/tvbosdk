@@ -176,7 +176,7 @@ public class StateManager
 				}
 				else
 				{
-					destroyState(_activeStates.pop());
+					closeState(_activeStates.pop());
 					if (newState != null)
 					{
 						_activeStates.add(newState);
@@ -187,7 +187,7 @@ public class StateManager
 			case 2:
 				if (isOverlay)
 				{
-					destroyState(_activeStates.pop());
+					closeState(_activeStates.pop());
 					if (newState != null)
 					{
 						_activeStates.add(newState);
@@ -201,8 +201,8 @@ public class StateManager
 				}
 				else
 				{
-					destroyState(_activeStates.pop());
-					destroyState(_activeStates.pop());
+					closeState(_activeStates.pop());
+					closeState(_activeStates.pop());
 					if (newState != null)
 					{
 						_activeStates.add(newState);
@@ -324,7 +324,7 @@ public class StateManager
 		};
 		if (state.isAdded())
 		{
-			destroyState(state);
+			closeState(state);
 			_handler.post(showFragmentChunk);
 		}
 		else
@@ -472,7 +472,7 @@ public class StateManager
 	 */
 	public void hideMessage()
 	{
-		if (destroyState(_messageState))
+		if (closeState(_messageState))
 			if (_activeStates.size() > 0)
 				_activeStates.get(_activeStates.size() - 1).onShow(true);
 	}
@@ -483,9 +483,18 @@ public class StateManager
 	 * @param state
 	 *            to be removed from screen
 	 */
-	/* package */boolean destroyState(BaseState state)
+	/* package */boolean closeState(BaseState state)
 	{
 		Log.i(TAG, ".hideState: " + state.getClass().getSimpleName());
+
+		int stateIndex = _activeStates.indexOf(state);
+		if (stateIndex >= 0)
+		{
+			for (int i = _activeStates.size() - 1; i >= stateIndex; i--)
+			{
+				closeState(_activeStates.pop());
+			}
+		}
 
 		if (state.isAdded())
 		{

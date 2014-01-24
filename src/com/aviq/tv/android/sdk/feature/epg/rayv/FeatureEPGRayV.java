@@ -50,6 +50,7 @@ public class FeatureEPGRayV extends FeatureEPG
 		 * Pattern composing channel stream url for RayV provider
 		 */
 		RAYV_STREAM_URL_PATTERN("http://localhost:1234/RayVAgent/v1/RAYV/${USER}:${PASS}@${STREAM_ID}?streams=${STREAM_ID}:${BITRATE}");
+		// RAYV_STREAM_URL_PATTERN("http://localhost:1234/RayVAgent/v1/RAYV/ValidAccount:${PASS}@${STREAM_ID}?bitrate=${BITRATE}");
 
 		Param(String value)
 		{
@@ -63,6 +64,9 @@ public class FeatureEPGRayV extends FeatureEPG
 		}
 	}
 
+	private String _rayvUser;
+	private String _rayvPass;
+
 	public FeatureEPGRayV()
 	{
 		_dependencies.Components.add(FeatureName.Component.REGISTER);
@@ -75,8 +79,13 @@ public class FeatureEPGRayV extends FeatureEPG
 		{
 			FeatureRegister featureRegister = (FeatureRegister) Environment.getInstance().getFeatureComponent(
 			        FeatureName.Component.REGISTER);
-			getPrefs().put(Param.RAYV_USER, featureRegister.getBoxId());
-			getPrefs().put(Param.RAYV_PASS, featureRegister.getBoxId());
+			if (_rayvUser == null)
+				_rayvUser = featureRegister.getBoxId();
+			if (_rayvPass == null)
+				_rayvPass = featureRegister.getBoxId();
+
+			getPrefs().put(Param.RAYV_USER, _rayvUser);
+			getPrefs().put(Param.RAYV_PASS, _rayvPass);
 			super.initialize(onFeatureInitialized);
 		}
         catch (FeatureNotFoundException e)
@@ -85,6 +94,19 @@ public class FeatureEPGRayV extends FeatureEPG
     		onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
         }
 	}
+
+	/**
+	 * Overwrite default RayV username and password
+	 *
+	 * @param rayvUser
+	 * @param rayvPass
+	 */
+	public void setRayVAccount(String rayvUser, String rayvPass)
+	{
+		_rayvUser = rayvUser;
+		_rayvPass = rayvPass;
+	}
+
 	/**
 	 * @return rayv EPG provider name
 	 */

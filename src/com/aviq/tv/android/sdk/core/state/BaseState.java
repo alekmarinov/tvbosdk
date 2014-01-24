@@ -79,9 +79,9 @@ public class BaseState extends Fragment
 	/**
 	 * Destroy and remove state from screen
 	 */
-	public void destroy()
+	public void close()
 	{
-		Environment.getInstance().getStateManager().destroyState(this);
+		Environment.getInstance().getStateManager().closeState(this);
 	}
 
 	/**
