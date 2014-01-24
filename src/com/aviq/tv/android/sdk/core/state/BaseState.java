@@ -17,6 +17,7 @@ import android.view.View;
 import com.aviq.tv.android.sdk.core.AVKeyEvent;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.state.StateManager.StateLayer;
 
 /**
  * Base class of all application visible states.
@@ -81,7 +82,27 @@ public class BaseState extends Fragment
 	 */
 	public void close()
 	{
-		Environment.getInstance().getStateManager().closeState(this);
+		StateManager stateManager = Environment.getInstance().getStateManager();
+		StateLayer stateLayer = stateManager.getStateLayer(this);
+		try
+		{
+			if (StateLayer.MAIN.equals(stateLayer))
+			{
+				stateManager.setStateMain(null, null);
+			}
+			else if (StateLayer.OVERLAY.equals(stateLayer))
+			{
+				stateManager.setStateOverlay(null, null);
+			}
+			else if (StateLayer.OVERLAY.equals(stateLayer))
+			{
+				stateManager.hideMessage();
+			}
+		}
+		catch (StateException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
 	}
 
 	/**
@@ -112,19 +133,23 @@ public class BaseState extends Fragment
 	 * Called on showing this state. The method can be overwritten in order to
 	 * initialize visualization.
 	 *
-	 * @param isViewUncovered true if the view has been uncovered from overlay
+	 * @param isViewUncovered
+	 *            true if the view has been uncovered from overlay
 	 */
 	protected void onShow(boolean isViewUncovered)
 	{
+		Log.i(TAG, ".onShow: isViewUncovered = " + isViewUncovered);
 	}
 
 	/**
 	 * Called on hiding this state.
 	 *
-	 * @param isViewCovered true if the view has been covered by overlay
+	 * @param isViewCovered
+	 *            true if the view has been covered by overlay
 	 */
 	protected void onHide(boolean isViewCovered)
 	{
+		Log.i(TAG, ".onHide: isViewCovered = " + isViewCovered);
 	}
 
 	/**
@@ -138,7 +163,8 @@ public class BaseState extends Fragment
 	/**
 	 * Method consuming key down event if the State is currently active
 	 *
-	 * @param event the AVKeyEvent
+	 * @param event
+	 *            the AVKeyEvent
 	 * @return Return true to prevent this event from being propagated further,
 	 *         or false to indicate that you have not handled this event and it
 	 *         should continue to be propagated.
@@ -152,7 +178,8 @@ public class BaseState extends Fragment
 	/**
 	 * Method consuming key up event if the State is currently active
 	 *
-	 * @param event the AVKeyEvent
+	 * @param event
+	 *            the AVKeyEvent
 	 * @return Return true to prevent this event from being propagated further,
 	 *         or false to indicate that you have not handled this event and it
 	 *         should continue to be propagated.
@@ -166,7 +193,8 @@ public class BaseState extends Fragment
 	/**
 	 * Method consuming long key press event if the State is currently active
 	 *
-	 * @param event the AVKeyEvent
+	 * @param event
+	 *            the AVKeyEvent
 	 * @return Return true to prevent this event from being propagated further,
 	 *         or false to indicate that you have not handled this event and it
 	 *         should continue to be propagated.
@@ -178,7 +206,7 @@ public class BaseState extends Fragment
 	}
 
 	@Override
-    public String toString()
+	public String toString()
 	{
 		return getClass().getSimpleName();
 	}

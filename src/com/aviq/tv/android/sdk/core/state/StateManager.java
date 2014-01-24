@@ -213,6 +213,20 @@ public class StateManager
 		}
 	}
 
+	public StateLayer getStateLayer(BaseState state)
+	{
+		switch (_activeStates.indexOf(state))
+		{
+			case 0:
+				return StateLayer.MAIN;
+			case 1:
+				return StateLayer.OVERLAY;
+			case 2:
+				return StateLayer.MESSAGE;
+		}
+		return null;
+	}
+
 	/**
 	 * Sets new main State as active.
 	 *
@@ -428,7 +442,8 @@ public class StateManager
 	 */
 	public boolean onKeyLongPress(AVKeyEvent keyEvent)
 	{
-		Log.i(TAG, ".onKeyLongPress: key = " + keyEvent + ", state = " + getMainState() + ", overlay = " + getOverlayState());
+		Log.i(TAG, ".onKeyLongPress: key = " + keyEvent + ", state = " + getMainState() + ", overlay = "
+		        + getOverlayState());
 
 		if (_messageState.isAdded())
 		{
@@ -486,15 +501,6 @@ public class StateManager
 	/* package */boolean closeState(BaseState state)
 	{
 		Log.i(TAG, ".hideState: " + state.getClass().getSimpleName());
-
-		int stateIndex = _activeStates.indexOf(state);
-		if (stateIndex >= 0)
-		{
-			for (int i = _activeStates.size() - 1; i >= stateIndex; i--)
-			{
-				closeState(_activeStates.pop());
-			}
-		}
 
 		if (state.isAdded())
 		{
