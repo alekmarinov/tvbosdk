@@ -60,20 +60,20 @@ public class FeatureLanguage extends FeatureComponent
 	{
 		Locale locale = null;
 
-		switch(code)
+		switch (code)
 		{
 			case EN:
 				locale = Locale.UK;
-				break;
+			break;
 			case FR:
 				locale = Locale.FRENCH;
-				break;
+			break;
 			case DE:
 				locale = Locale.GERMAN;
-				break;
+			break;
 			default:
 				locale = Locale.UK;
-				break;
+			break;
 		}
 
 		Environment.getInstance().getUserPrefs().put(UserParam.LANGUAGE, locale.getLanguage());
@@ -88,7 +88,14 @@ public class FeatureLanguage extends FeatureComponent
 	public Code getLanguage()
 	{
 		Prefs userPrefs = Environment.getInstance().getUserPrefs();
-		return userPrefs.has(UserParam.LANGUAGE) ? Code.valueOf(userPrefs.getString(UserParam.LANGUAGE)) : Code.EN;
+		return userPrefs.has(UserParam.LANGUAGE) ? Code.valueOf(userPrefs.getString(UserParam.LANGUAGE).toUpperCase())
+		        : Code.EN;
+	}
+
+	public boolean hasLanguage()
+	{
+		Prefs userPrefs = Environment.getInstance().getUserPrefs();
+		return userPrefs.has(UserParam.LANGUAGE);
 	}
 
 	private void setSystemLanguage(Locale locale)

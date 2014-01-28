@@ -163,7 +163,7 @@ public class FeaturePlayer extends FeatureComponent
 			}
 			else
 			{
-				Log.d(TAG, "waiting player to start: position = " + _player.getPosition());
+				Log.v(TAG, "waiting player to start: position = " + _player.getPosition());
 				getEventMessenger().postDelayed(this, 100);
 			}
 		}
