@@ -18,11 +18,6 @@ import android.view.KeyEvent;
  */
 public interface IApplication
 {
-	public static enum Name
-	{
-		AVIQTV
-	}
-
 	/**
 	 * Invoked on activity create
 	 */
