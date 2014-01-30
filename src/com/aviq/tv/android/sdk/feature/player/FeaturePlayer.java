@@ -148,6 +148,7 @@ public class FeaturePlayer extends FeatureComponent
 	public void removeMediaController()
 	{
 		_mediaController.setVisibility(View.GONE);
+		_videoView.setMediaController(null);
 	}
 
 	private Runnable _videoStartedPoller = new Runnable()

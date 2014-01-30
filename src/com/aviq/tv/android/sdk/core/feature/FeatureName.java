@@ -25,7 +25,8 @@ public class FeatureName
 		WATCHLIST,
 		CHANNELS,
 		ETHERNET,
-		LANGUAGE
+		LANGUAGE,
+		WEBTV
 	}
 
 	public static enum Scheduler
