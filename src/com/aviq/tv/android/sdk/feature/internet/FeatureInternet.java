@@ -38,12 +38,6 @@ public class FeatureInternet extends FeatureScheduler
 	}
 
 	@Override
-	public void initialize(OnFeatureInitialized onFeatureInitialized)
-	{
-		onFeatureInitialized.onInitialized(this, ResultCode.OK);
-	}
-
-	@Override
 	public FeatureName.Scheduler getSchedulerName()
 	{
 		return FeatureName.Scheduler.INTERNET;

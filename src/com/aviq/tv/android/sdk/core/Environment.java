@@ -40,7 +40,6 @@ import com.aviq.tv.android.sdk.core.feature.IFeatureFactory;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.state.StateException;
 import com.aviq.tv.android.sdk.core.state.StateManager;
-import com.aviq.tv.android.sdk.feature.httpserver.HttpServer;
 
 /**
  * Defines application environment
@@ -74,7 +73,6 @@ public class Environment
 	private Application _context;
 	private StateManager _stateManager;
 	private ServiceController _serviceController;
-	private HttpServer _httpServer;
 	private Prefs _prefs;
 	private Prefs _userPrefs;
 	private RequestQueue _requestQueue;
@@ -254,16 +252,6 @@ public class Environment
 	public Activity getActivity()
 	{
 		return _activity;
-	}
-
-	/**
-	 * Returns global initialized HttpServer instance
-	 *
-	 * @return HttpServer
-	 */
-	public HttpServer getHttpServer()
-	{
-		return _httpServer;
 	}
 
 	/**
