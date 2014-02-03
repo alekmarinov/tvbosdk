@@ -10,12 +10,9 @@
 
 package com.aviq.tv.android.sdk.feature.player;
 
-import android.content.Context;
 import android.util.Log;
-import android.view.View;
+import android.view.SurfaceView;
 import android.widget.MediaController;
-import android.widget.RelativeLayout;
-import android.widget.VideoView;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
@@ -24,7 +21,7 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
-import com.aviq.tv.android.sdk.player.AndroidPlayer;
+import com.aviq.tv.android.sdk.player.BasePlayer;
 import com.aviq.tv.android.sdk.player.IPlayer;
 
 /**
@@ -57,18 +54,16 @@ public class FeaturePlayer extends FeatureComponent
 		LAST_URL
 	}
 
-	protected AndroidPlayer _player;
-	private VideoView _videoView;
+	protected BasePlayer _player;
 	private Prefs _userPrefs;
-	private MediaController _mediaController;
+
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		if (_videoView == null)
-			throw new RuntimeException("Set VideoView first via method setVideoView");
+		if (_player == null)
+			throw new RuntimeException("Set AndroidPlayer first via method setPlayer");
 		_userPrefs = Environment.getInstance().getUserPrefs();
-		_player = new AndroidPlayer(_videoView);
 		onFeatureInitialized.onInitialized(this, ResultCode.OK);
 	}
 
@@ -93,62 +88,43 @@ public class FeaturePlayer extends FeatureComponent
 		return _player;
 	}
 
-	public void setVideoView(VideoView videoView)
+	public void setPlayer(BasePlayer player)
 	{
-		_videoView = videoView;
+		_player = player;
 	}
 
-	public VideoView getVideoView()
+	/**
+	 * This can be either a VideoView or a SurfaceView.
+	 * @return SurfaceView
+	 */
+	public SurfaceView getView()
 	{
-		return _videoView;
+		return _player.getView();
 	}
 
-	public void hideVideoView()
+	public void hide()
 	{
-		Log.i(TAG, ".hideVideoView");
-		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(0, 0);
-		params.leftMargin = 0;
-		params.topMargin = 0;
-		_videoView.setLayoutParams(params);
+		_player.hide();
 	}
 
-	public void setVideoViewPositionAndSize(int x, int y, int w, int h)
+	public void setPositionAndSize(int x, int y, int w, int h)
 	{
-		Log.i(TAG, ".setVideoViewPositionAndSize: " + x + "," + y + " " + w + "x" + h);
-		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(w, h);
-		params.leftMargin = x;
-		params.topMargin = y;
-		_videoView.setLayoutParams(params);
+		_player.setPositionAndSize(x, y, w, h);
 	}
 
-	public void setVideoViewFullScreen()
+	public void setFullScreen()
 	{
-		Log.i(TAG, ".setVideoViewFullScreen");
-		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
-		        RelativeLayout.LayoutParams.WRAP_CONTENT);
-		params.addRule(RelativeLayout.CENTER_HORIZONTAL);
-		params.addRule(RelativeLayout.CENTER_VERTICAL);
-		_videoView.setLayoutParams(params);
+		_player.setFullScreen();
 	}
 
 	public MediaController createMediaController(boolean useFastForward)
 	{
-		Context context = Environment.getInstance().getActivity();
-		_mediaController = new AviqMediaController(context, useFastForward);
-		_mediaController.setVisibility(View.VISIBLE);
-		_mediaController.setAnchorView(_videoView);
-		_mediaController.setMediaPlayer(_videoView);
-		_videoView.setMediaController(_mediaController);
-
-		_mediaController.setFocusable(false);
-
-		return _mediaController;
+		return _player.createMediaController(useFastForward);
 	}
 
 	public void removeMediaController()
 	{
-		_mediaController.setVisibility(View.GONE);
-		_videoView.setMediaController(null);
+		_player.removeMediaController();
 	}
 
 	private Runnable _videoStartedPoller = new Runnable()

@@ -10,6 +10,10 @@
 
 package com.aviq.tv.android.sdk.player;
 
+import android.view.SurfaceView;
+import android.widget.MediaController;
+
+
 
 /**
  * Defines abstract player
@@ -18,6 +22,13 @@ package com.aviq.tv.android.sdk.player;
 public abstract class BasePlayer implements IPlayer
 {
 	private boolean _isPause = false;
+
+    public abstract SurfaceView getView();
+	public abstract void hide();
+	public abstract void setPositionAndSize(int x, int y, int w, int h);
+	public abstract void setFullScreen();
+	public abstract MediaController createMediaController(boolean useFastForward);
+	public abstract void removeMediaController();
 
 	/**
 	 * Starts playing URL and triggers EventEnum.PLAY with param URL=url
