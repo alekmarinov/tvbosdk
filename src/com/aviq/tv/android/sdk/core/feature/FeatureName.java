@@ -33,6 +33,7 @@ public class FeatureName
 	{
 		INTERNET,
 		EPG,
+		TICKER,
 		TEST
 	}
 
