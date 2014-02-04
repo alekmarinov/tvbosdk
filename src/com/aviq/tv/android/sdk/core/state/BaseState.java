@@ -47,6 +47,7 @@ public class BaseState extends Fragment
 	 */
 	public void create(Bundle params, boolean isOverlay) throws StateException
 	{
+		Log.i(getClass().getSimpleName(), ".create: isOverlay = " + isOverlay);
 		if (isOverlay)
 			Environment.getInstance().getStateManager().setStateOverlay(this, params);
 		else
@@ -82,6 +83,7 @@ public class BaseState extends Fragment
 	 */
 	public void close()
 	{
+		Log.i(getClass().getSimpleName(), ".close");
 		StateManager stateManager = Environment.getInstance().getStateManager();
 		StateLayer stateLayer = stateManager.getStateLayer(this);
 		try
@@ -110,6 +112,7 @@ public class BaseState extends Fragment
 	 */
 	public void show()
 	{
+		Log.i(getClass().getSimpleName(), ".show");
 		super.getView().setVisibility(View.VISIBLE);
 	}
 
@@ -118,6 +121,7 @@ public class BaseState extends Fragment
 	 */
 	public void hide()
 	{
+		Log.i(getClass().getSimpleName(), ".hide");
 		super.getView().setVisibility(View.INVISIBLE);
 	}
 

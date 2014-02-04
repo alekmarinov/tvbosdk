@@ -2,10 +2,10 @@
  * Copyright (c) 2007-2013, AVIQ Bulgaria Ltd
  *
  * Project:     AVIQTVSDK
- * Filename:    Watchlist.java
- * Author:      alek
- * Date:        1 Dec 2013
- * Description: Component feature managing programs watchlist
+ * Filename:    FeatureWebTV.java
+ * Author:      zheliazko
+ * Date:        30 Jan 2014
+ * Description: Component feature managing WebTV streams
  */
 
 package com.aviq.tv.android.sdk.feature.webtv;
@@ -22,7 +22,6 @@ import android.util.Log;
 
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
-import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
@@ -41,9 +40,6 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 public class FeatureWebTV extends FeatureComponent
 {
 	public static final String TAG = FeatureWebTV.class.getSimpleName();
-
-	private RequestQueue _httpQueue;
-	private OnFeatureInitialized _onFeatureInitialized;
 
 	public enum Param
 	{
@@ -65,26 +61,11 @@ public class FeatureWebTV extends FeatureComponent
 
 	private ArrayList<WebTVItem> _videoStreams = new ArrayList<WebTVItem>();
 
-	public FeatureWebTV()
-	{
-	}
-
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		//try
-		{
-			_onFeatureInitialized = onFeatureInitialized;
-
-			_httpQueue = Environment.getInstance().getRequestQueue();
-			loadVideoStreams();
-		}
-		//catch (FeatureNotFoundException e)
-		//{
-		//	Log.e(TAG, e.getMessage(), e);
-		//	onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-		//}
+		loadVideoStreams(onFeatureInitialized);
 	}
 
 	/**
@@ -101,14 +82,14 @@ public class FeatureWebTV extends FeatureComponent
 		return FeatureName.Component.WEBTV;
 	}
 
-	private void loadVideoStreams()
+	private void loadVideoStreams(OnFeatureInitialized onFeatureInitialized)
 	{
 		String url = getPrefs().getString(Param.CONTENT_URL);
 		Log.i(TAG, "Retrieving WebTV content " + url);
-		WebTVResponseCallback responseCallback = new WebTVResponseCallback();
+		WebTVResponseCallback responseCallback = new WebTVResponseCallback(onFeatureInitialized);
 
 		JsonArrayRequest webTvContentRequest = new JsonArrayRequest(url, responseCallback, responseCallback);
-		_httpQueue.add(webTvContentRequest);
+		Environment.getInstance().getRequestQueue().add(webTvContentRequest);
 	}
 
 	private void parseContent(JSONArray response, List<WebTVItem> _owner) throws JSONException
@@ -132,7 +113,7 @@ public class FeatureWebTV extends FeatureComponent
 			JSONArray langArr = item.getJSONArray("languages");
 			for (int j = 0; j < langArr.length(); j++)
 				languages.add(langArr.getString(j));
-			bean.setLanguages(genres);
+			bean.setLanguages(languages);
 
 			bean.setCountry(item.getString("country"));
 			bean.setLogo(item.getString("logo"));
@@ -146,20 +127,27 @@ public class FeatureWebTV extends FeatureComponent
 
 	private class WebTVResponseCallback implements Response.Listener<JSONArray>, Response.ErrorListener
 	{
+		private OnFeatureInitialized _onFeatureInitialized;
+
+		WebTVResponseCallback(OnFeatureInitialized onFeatureInitialized)
+		{
+			_onFeatureInitialized = onFeatureInitialized;
+		}
+
 		@Override
 		public void onResponse(JSONArray response)
 		{
 			Log.i(TAG, ".onResponse: num WebTV streams = " + response.length());
 			try
-            {
-	            parseContent(response, _videoStreams);
-	            _onFeatureInitialized.onInitialized(FeatureWebTV.this, ResultCode.OK);
-            }
-            catch (JSONException e)
-            {
-            	Log.e(TAG, "Error parsing WebTV video streams.", e);
-    			_onFeatureInitialized.onInitialized(FeatureWebTV.this, ResultCode.GENERAL_FAILURE);
-            }
+			{
+				parseContent(response, _videoStreams);
+				_onFeatureInitialized.onInitialized(FeatureWebTV.this, ResultCode.OK);
+			}
+			catch (JSONException e)
+			{
+				Log.e(TAG, "Error parsing WebTV video streams.", e);
+				_onFeatureInitialized.onInitialized(FeatureWebTV.this, ResultCode.GENERAL_FAILURE);
+			}
 		}
 
 		@Override
@@ -173,7 +161,8 @@ public class FeatureWebTV extends FeatureComponent
 	}
 
 	/**
-	 * A request for retrieving a {@link JSONArray} response body at a given URL.
+	 * A request for retrieving a {@link JSONArray} response body at a given
+	 * URL.
 	 */
 	private class JsonArrayRequest extends JsonRequest<JSONArray>
 	{
