@@ -51,6 +51,8 @@ public class StateManager
 		public static final String PARAM_TITLE = "PARAM_TITLE";
 		public static final String PARAM_TEXT = "PARAM_TEXT";
 		public static final String PARAM_SKIP_BTN_IMAGE = "PARAM_SKIP_BTN_IMAGE";
+		public static final String PARAM_AUTO_HIDE_DELAY = "PARAM_AUTO_HIDE_DELAY";
+		public static final String PARAM_AUTO_HIDE_DEFAULT_BUTTON = "PARAM_AUTO_HIDE_DEFAULT_BUTTON";
 
 		public enum Type
 		{
@@ -103,6 +105,18 @@ public class StateManager
 		public MessageParams skipButtonImage(boolean skipImage)
 		{
 			_bundle.putBoolean(PARAM_SKIP_BTN_IMAGE, skipImage);
+			return this;
+		}
+
+		public MessageParams setAutoHideDelay(int delayMillis)
+		{
+			_bundle.putInt(PARAM_AUTO_HIDE_DELAY, delayMillis);
+			return this;
+		}
+
+		public MessageParams setAutoHideButton(Button buttonName)
+		{
+			_bundle.putString(PARAM_AUTO_HIDE_DEFAULT_BUTTON, buttonName.name());
 			return this;
 		}
 
