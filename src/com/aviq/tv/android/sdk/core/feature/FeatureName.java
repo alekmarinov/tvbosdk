@@ -26,7 +26,8 @@ public class FeatureName
 		CHANNELS,
 		ETHERNET,
 		LANGUAGE,
-		WEBTV
+		WEBTV,
+		MENU
 	}
 
 	public static enum Scheduler
