@@ -35,6 +35,7 @@ public class FeatureName
 		INTERNET,
 		EPG,
 		TICKER,
+		SOFTWARE_UPDATE,
 		TEST
 	}
 

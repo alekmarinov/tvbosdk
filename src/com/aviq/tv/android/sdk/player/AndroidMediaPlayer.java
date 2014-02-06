@@ -23,6 +23,7 @@ import android.media.MediaPlayer.OnPreparedListener;
 import android.media.MediaPlayer.OnSeekCompleteListener;
 import android.media.MediaPlayer.OnVideoSizeChangedListener;
 import android.os.Build;
+import android.os.Bundle;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -42,6 +43,7 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
         OnSeekCompleteListener, MediaPlayerControl
 {
 	public static final String TAG = AndroidMediaPlayer.class.getSimpleName();
+
 	private final SurfaceView _surfaceView;
 	private SurfaceHolder _surfaceHolder;
 	private MediaPlayer _mediaPlayer;
@@ -110,6 +112,17 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
     	}
 
        	_mediaPlayer.prepareAsync();
+	}
+
+	/**
+	 * Starts playing from a paused state
+	 *
+	 * @see com.aviq.tv.android.sdk.player.IPlayer#play()
+	 */
+	@Override
+	public void play()
+	{
+		onPrepared(_mediaPlayer);
 	}
 
 	/**
@@ -216,13 +229,16 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 	@Override
     public void onSeekComplete(MediaPlayer mp)
     {
-	    // TODO Auto-generated method stub
+		Environment.getInstance().getEventMessenger().trigger(ON_SEEK_COMPLETED);
     }
 
 	@Override
     public boolean onInfo(MediaPlayer mp, int what, int extra)
     {
-	    // TODO Auto-generated method stub
+		Bundle bundle = new Bundle();
+		bundle.putInt(PARAM_WHAT, what);
+		bundle.putInt(PARAM_EXTRA, extra);
+		Environment.getInstance().getEventMessenger().trigger(ON_INFO, bundle);
 	    return false;
     }
 
@@ -248,6 +264,11 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 			_mediaPlayer.release();
 			_mediaPlayer = null;
 		}
+
+		Bundle bundle = new Bundle();
+		bundle.putInt(PARAM_WHAT, what);
+		bundle.putInt(PARAM_EXTRA, extra);
+		Environment.getInstance().getEventMessenger().trigger(ON_ERROR, bundle);
 	    return true;
     }
 
@@ -292,6 +313,8 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 				}
 			});
 		}
+
+		Environment.getInstance().getEventMessenger().trigger(ON_PREPARED);
     }
 
 	@Override
@@ -301,6 +324,15 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		{
             _mediaController.hide();
         }
+
+		if (_mediaPlayer != null)
+		{
+			_mediaPlayer.stop();
+			_mediaPlayer.release();
+			_mediaPlayer = null;
+		}
+
+		Environment.getInstance().getEventMessenger().trigger(ON_COMPLETION);
     }
 
 	@Override

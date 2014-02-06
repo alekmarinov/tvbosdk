@@ -56,6 +56,19 @@ public class AndroidPlayer extends BasePlayer
 	}
 
 	/**
+	 * Starts playing from a paused state
+	 *
+	 * @see com.aviq.tv.android.sdk.player.IPlayer#play()
+	 */
+	@Override
+    public void play()
+	{
+		Log.i(TAG, ".play");
+		super.play();
+		_videoView.start();
+	}
+
+	/**
 	 * Stops playing
 	 *
 	 * @see com.aviq.tv.android.sdk.player.IPlayer#stop()
