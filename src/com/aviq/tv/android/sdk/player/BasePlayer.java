@@ -13,6 +13,8 @@ package com.aviq.tv.android.sdk.player;
 import android.view.SurfaceView;
 import android.widget.MediaController;
 
+import com.aviq.tv.android.sdk.core.EventMessenger;
+
 
 
 /**
@@ -21,6 +23,15 @@ import android.widget.MediaController;
  */
 public abstract class BasePlayer implements IPlayer
 {
+	public static final int ON_ERROR = EventMessenger.ID();
+	public static final int ON_INFO = EventMessenger.ID();
+	public static final int ON_SEEK_COMPLETED = EventMessenger.ID();
+	public static final int ON_PREPARED = EventMessenger.ID();
+	public static final int ON_COMPLETION = EventMessenger.ID();
+
+	public static final String PARAM_WHAT = "what";
+	public static final String PARAM_EXTRA = "extra";
+
 	private boolean _isPause = false;
 
     public abstract SurfaceView getView();
@@ -37,6 +48,16 @@ public abstract class BasePlayer implements IPlayer
 	 */
 	@Override
 	public void play(String url)
+	{
+	}
+
+	/**
+	 * Starts playing from a paused state and triggers EventEnum.PLAY with param URL=url
+	 *
+	 * @see com.aviq.tv.android.sdk.player.IPlayer#play(java.lang.String)
+	 */
+	@Override
+	public void play()
 	{
 	}
 

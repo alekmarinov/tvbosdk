@@ -22,6 +22,11 @@ public interface IPlayer
 	void play(String url);
 
 	/**
+	 * Starts playing from a paused state
+	 */
+	void play();
+
+	/**
 	 * Stops playing
 	 */
 	void stop();
