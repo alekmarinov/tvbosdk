@@ -218,11 +218,12 @@ public class HttpServer implements Runnable
 	{
 		if (request == null)
 		{
+			Log.e(TAG, "got null request");
 			return;
 		}
 
 		String uri = request.getRequestLine().getUri();
-		// strip '/' in the beginning
+		// strip leading '/'
 		if (uri.charAt(0) == '/')
 			uri = uri.substring(1);
 
