@@ -71,7 +71,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 		/**
 		 * Schedule interval
 		 */
-		UPDATE_CHECK_INTERVAL(60 * 1000),
+		UPDATE_CHECK_INTERVAL(5 * 60 * 1000),
 
 		/**
 		 * URL for software updates. It should be set by the client application.
@@ -126,7 +126,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		super.initialize(onFeatureInitialized);
+		//super.initialize(onFeatureInitialized);
 		_onFeatureInitialized = onFeatureInitialized;
 		onSchedule(onFeatureInitialized);
 	}
@@ -153,7 +153,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 	public boolean hasUpdate()
 	{
 		// FIXME: remove when done testing
-		_hasUpdate = true;
+//		_hasUpdate = true;
 
 		Log.i(TAG, ".hasUpdate: " + _hasUpdate);
 		return _hasUpdate;
@@ -181,7 +181,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 
 		Bundle params = new Bundle();
 
-		serviceController.startService(DownloadUpdateService.class, params).then(new OnResultReceived()
+		serviceController.startService(UpdateCheckService.class, params).then(new OnResultReceived()
 		{
 			@Override
 			public void onReceiveResult(int resultCode, Bundle resultData)
@@ -193,10 +193,14 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 					String currentVersion = resultData.getString(PARAM_CURRENT_VERSION);
 					String serverVersion = resultData.getString(PARAM_SERVER_VERSION);
 					String filename = resultData.getString(PARAM_FILENAME);
-					String filesize = resultData.getString(PARAM_FILESIZE);
+					long filesize = resultData.getLong(PARAM_FILESIZE);
 					String softwareType = resultData.getString(PARAM_SOFTWARE_TYPE);
-					String isForced = resultData.getString(PARAM_ISFORCED);
+					boolean isForced = resultData.getBoolean(PARAM_ISFORCED);
 					String brand = resultData.getString(PARAM_SERVER_BRAND);
+
+					Log.i(TAG, ".checkForUpdate result: currentVersion = " + currentVersion + ", serverVersion = "
+					        + serverVersion + ", filename = " + filename + ", filesize = " + filesize
+					        + " softwareType = " + softwareType + ", isForced = " + isForced + ", brand = " + brand);
 
 					// store box category type - for read only purposes
 					Environment.getInstance().getUserPrefs().put(UserParam.UPGRADE_BOX_CATEGORY, softwareType);
@@ -214,16 +218,29 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 					if (_initializing)
 					{
 						_initializing = false;
-						_onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this, ResultCode.OK);
+//						_onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this, ResultCode.OK);
+
+						// TODO try to delay in order to demo the splash; remove later
+						getEventMessenger().postDelayed(new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								_hasUpdate = true;
+								_onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this, ResultCode.OK);
+							}
+						}, 7000);
 					}
 				}
 				else if (CODE_UPDATE_ERROR == resultCode)
 				{
 					// TODO
+					Log.e(TAG, ".checkForUpdate failed due to an error");
 				}
 				else if (CODE_NEW_SERVER_CONFIG == resultCode)
 				{
 					// TODO: store in prefs?
+					Log.i(TAG, ".checkForUpdate: new server configuration found");
 				}
 			}
 		});
@@ -271,18 +288,13 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 				        }
 				        else if (CODE_UPDATE_ERROR == resultCode)
 				        {
-					        // FIXME: is this really necessary, I think not, it
-							// was a copy-paste from the update check method
-					        if (_initializing)
-					        {
-						        _initializing = false;
-						        _onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this,
-						                ResultCode.GENERAL_FAILURE);
-					        }
+					        // TODO
+				        	Log.e(TAG, ".downloadUpdate failed due to an error");
 				        }
 				        else if (CODE_NEW_SERVER_CONFIG == resultCode)
 				        {
 					        // TODO: store in prefs?
+				        	Log.i(TAG, ".downloadUpdate: new server configuration found");
 				        }
 			        }
 		        });
