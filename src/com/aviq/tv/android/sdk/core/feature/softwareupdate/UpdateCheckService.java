@@ -28,6 +28,7 @@ import android.os.ResultReceiver;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
+import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.service.BaseService;
 import com.aviq.tv.android.sdk.utils.HttpException;
 
@@ -59,8 +60,8 @@ public class UpdateCheckService extends IntentService
 
 		try
 		{
-			Prefs userPrefs = Environment.getInstance().getUserPrefs();
-			_abmpURL = userPrefs.getString(FeatureSoftwareUpdate.Param.ABMP_URL);
+			Prefs prefs = Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.SOFTWARE_UPDATE);
+			_abmpURL = prefs.getString(FeatureSoftwareUpdate.Param.ABMP_URL);
 
 			_boxId = Helpers.readMacAddress();
 			_version = Helpers.parseAppVersion();

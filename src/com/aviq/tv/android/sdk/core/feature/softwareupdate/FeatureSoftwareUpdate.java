@@ -63,22 +63,20 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 
 	public enum Param
 	{
-		REGISTRATION_BRAND("zixi"), // TODO: where should this go? what value?
+		/**
+		 * Registration brand of the device. It should be filled in by the client project.
+		 */
+		REGISTRATION_BRAND("zixi"),
 
 		/**
 		 * Schedule interval
 		 */
 		UPDATE_CHECK_INTERVAL(60 * 1000),
 
-		ABMP_URL("http://aviq.dyndns.org:983"),
-
-		UPGRADE_BOX_CATEGORY(""),
-
-		UPGRADE_FILE(null),
-
-		UPGRADE_VERSION(null),
-
-		UPGRADE_BRAND(null);
+		/**
+		 * URL for software updates. It should be set by the client application.
+		 */
+		ABMP_URL("http://aviq.dyndns.org:983");
 
 		Param(int value)
 		{
@@ -89,6 +87,29 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 		{
 			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.SOFTWARE_UPDATE).put(name(), value);
 		}
+	}
+
+	public enum UserParam
+	{
+		/**
+		 * Box category type (read-only purposes)
+		 */
+		UPGRADE_BOX_CATEGORY,
+
+		/**
+		 * File name of the downloaded software update.
+		 */
+		UPGRADE_FILE,
+
+		/**
+		 * Version of the software update downloaded.
+		 */
+		UPGRADE_VERSION,
+
+		/**
+		 * Brand for which a software update has been downloaded.
+		 */
+		UPGRADE_BRAND;
 	}
 
 	private OnFeatureInitialized _onFeatureInitialized;
@@ -111,7 +132,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 	}
 
 	@Override
-    protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
+	protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
 	{
 		// Check for software updates
 		Log.i(TAG, "Checking for software updates.");
@@ -163,7 +184,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 		serviceController.startService(DownloadUpdateService.class, params).then(new OnResultReceived()
 		{
 			@Override
-            public void onReceiveResult(int resultCode, Bundle resultData)
+			public void onReceiveResult(int resultCode, Bundle resultData)
 			{
 				if (CODE_UPDATE_CHECK_RESULTS == resultCode)
 				{
@@ -178,8 +199,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 					String brand = resultData.getString(PARAM_SERVER_BRAND);
 
 					// store box category type - for read only purposes
-					Environment.getInstance().getUserPrefs()
-					        .put(FeatureSoftwareUpdate.Param.UPGRADE_BOX_CATEGORY, softwareType);
+					Environment.getInstance().getUserPrefs().put(UserParam.UPGRADE_BOX_CATEGORY, softwareType);
 
 					_hasUpdate = hasNewVersion(currentVersion, serverVersion, brand);
 					if (_hasUpdate)
@@ -199,11 +219,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 				}
 				else if (CODE_UPDATE_ERROR == resultCode)
 				{
-					if (_initializing)
-					{
-						_initializing = false;
-						_onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this, ResultCode.GENERAL_FAILURE);
-					}
+					// TODO
 				}
 				else if (CODE_NEW_SERVER_CONFIG == resultCode)
 				{
@@ -219,54 +235,57 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 
 		ServiceController serviceController = Environment.getInstance().getServiceController();
 
-		serviceController.startService(DownloadUpdateService.class, _updateCheckResultsBundle).then(new OnResultReceived()
-		{
-			@Override
-            public void onReceiveResult(int resultCode, Bundle resultData)
-			{
-				if (CODE_UPDATE_DOWNLOAD_STARTED == resultCode)
-				{
-					// Download started
-					_updateDownloadStarted = true;
-					_updateDownloadFinished = false;
-					return;
-				}
-				else if (CODE_UPDATE_DOWNLOAD_FINISHED == resultCode)
-				{
-					// Download finished
-					_updateDownloadStarted = false;
-					_updateDownloadFinished = true;
+		serviceController.startService(DownloadUpdateService.class, _updateCheckResultsBundle).then(
+		        new OnResultReceived()
+		        {
+			        @Override
+			        public void onReceiveResult(int resultCode, Bundle resultData)
+			        {
+				        if (CODE_UPDATE_DOWNLOAD_STARTED == resultCode)
+				        {
+					        // Download started
+					        _updateDownloadStarted = true;
+					        _updateDownloadFinished = false;
+					        return;
+				        }
+				        else if (CODE_UPDATE_DOWNLOAD_FINISHED == resultCode)
+				        {
+					        // Download finished
+					        _updateDownloadStarted = false;
+					        _updateDownloadFinished = true;
 
-					// Update user preferences with necessary data
+					        // Update user preferences with necessary data
 
-					String updateFile = resultData.getString(PARAM_DOWNLOAD_FILE);
-					String updateVersion = _updateCheckResultsBundle.getString(PARAM_SERVER_VERSION);
-					String brand = _updateCheckResultsBundle.getString(PARAM_SERVER_BRAND);
+					        String updateFile = resultData.getString(PARAM_DOWNLOAD_FILE);
+					        String updateVersion = _updateCheckResultsBundle.getString(PARAM_SERVER_VERSION);
+					        String brand = _updateCheckResultsBundle.getString(PARAM_SERVER_BRAND);
 
-					Prefs userPrefs = Environment.getInstance().getUserPrefs();
-					userPrefs.put(Param.UPGRADE_FILE, updateFile);
-					userPrefs.put(Param.UPGRADE_VERSION, updateVersion);
-					userPrefs.put(Param.UPGRADE_BRAND, brand);
-				}
-				else if (CODE_UPDATE_DOWNLOAD_PROGRESS == resultCode)
-				{
-					// TODO
-				}
-				else if (CODE_UPDATE_ERROR == resultCode)
-				{
-					// FIXME: is this really necessary, I think not, it was a copy-paste from the update check method
-					if (_initializing)
-					{
-						_initializing = false;
-						_onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this, ResultCode.GENERAL_FAILURE);
-					}
-				}
-				else if (CODE_NEW_SERVER_CONFIG == resultCode)
-				{
-					// TODO: store in prefs?
-				}
-			}
-		});
+					        Prefs userPrefs = Environment.getInstance().getUserPrefs();
+					        userPrefs.put(UserParam.UPGRADE_FILE, updateFile);
+					        userPrefs.put(UserParam.UPGRADE_VERSION, updateVersion);
+					        userPrefs.put(UserParam.UPGRADE_BRAND, brand);
+				        }
+				        else if (CODE_UPDATE_DOWNLOAD_PROGRESS == resultCode)
+				        {
+					        // TODO
+				        }
+				        else if (CODE_UPDATE_ERROR == resultCode)
+				        {
+					        // FIXME: is this really necessary, I think not, it
+							// was a copy-paste from the update check method
+					        if (_initializing)
+					        {
+						        _initializing = false;
+						        _onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this,
+						                ResultCode.GENERAL_FAILURE);
+					        }
+				        }
+				        else if (CODE_NEW_SERVER_CONFIG == resultCode)
+				        {
+					        // TODO: store in prefs?
+				        }
+			        }
+		        });
 	}
 
 	private boolean hasNewVersion(String currentVersion, String otherVersion, String brand)
@@ -275,7 +294,8 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 			throw new IllegalArgumentException("Arguments cannot be null");
 
 		// check if BoxID is reassigned to new brand to allow FW update
-		boolean isNewBrand = !(TextUtils.isEmpty(brand) || getPrefs().getString(Param.REGISTRATION_BRAND).equalsIgnoreCase(brand));
+		boolean isNewBrand = !(TextUtils.isEmpty(brand) || getPrefs().getString(Param.REGISTRATION_BRAND)
+		        .equalsIgnoreCase(brand));
 		if (isNewBrand)
 			return true;
 

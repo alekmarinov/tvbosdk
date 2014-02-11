@@ -21,6 +21,7 @@ import android.os.ResultReceiver;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
+import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.softwareupdate.Helpers.RedirectCallback;
 import com.aviq.tv.android.sdk.core.feature.softwareupdate.Helpers.RequestMethod;
 import com.aviq.tv.android.sdk.core.service.BaseService;
@@ -69,8 +70,8 @@ public class DownloadUpdateService extends IntentService
 
 		try
 		{
-			Prefs userPrefs = Environment.getInstance().getUserPrefs();
-			_abmpURL = userPrefs.getString(FeatureSoftwareUpdate.Param.ABMP_URL);
+			Prefs prefs = Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.SOFTWARE_UPDATE);
+			_abmpURL = prefs.getString(FeatureSoftwareUpdate.Param.ABMP_URL);
 
 			_boxId = Helpers.readMacAddress();
 
@@ -255,7 +256,6 @@ public class DownloadUpdateService extends IntentService
 		{
 			long start = System.currentTimeMillis();
 			conn = Helpers.openHttpConnection(url, RequestMethod.DEFAULT, proxy, redirectCallback, 0);
-// (URL url, RequestMethod method, Proxy proxy, RedirectCallback redirectCallback, int recurseCounter)
 			is = conn.getInputStream();
 			inputStream = new BufferedInputStream(is, DOWNLOAD_BUF_SIZE);
 			int total = conn.getContentLength();
