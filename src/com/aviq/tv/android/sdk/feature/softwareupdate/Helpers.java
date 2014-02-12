@@ -1,4 +1,4 @@
-package com.aviq.tv.android.sdk.core.feature.softwareupdate;
+package com.aviq.tv.android.sdk.feature.softwareupdate;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

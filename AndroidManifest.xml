@@ -8,8 +8,8 @@
         android:targetSdkVersion="18" />
 
     <application android:allowBackup="true" >
-        <service android:name="com.aviq.tv.android.sdk.core.feature.softwareupdate.DownloadUpdateService" />
-        <service android:name="com.aviq.tv.android.sdk.core.feature.softwareupdate.UpdateCheckService" />
+        <service android:name="com.aviq.tv.android.sdk.feature.softwareupdate.DownloadUpdateService" />
+        <service android:name="com.aviq.tv.android.sdk.feature.softwareupdate.UpdateCheckService" />
     </application>
 
 </manifest>

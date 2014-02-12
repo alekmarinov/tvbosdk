@@ -1,4 +1,4 @@
-package com.aviq.tv.android.sdk.core.feature.softwareupdate;
+package com.aviq.tv.android.sdk.feature.softwareupdate;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,9 +22,9 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
-import com.aviq.tv.android.sdk.core.feature.softwareupdate.Helpers.RedirectCallback;
-import com.aviq.tv.android.sdk.core.feature.softwareupdate.Helpers.RequestMethod;
 import com.aviq.tv.android.sdk.core.service.BaseService;
+import com.aviq.tv.android.sdk.feature.softwareupdate.Helpers.RedirectCallback;
+import com.aviq.tv.android.sdk.feature.softwareupdate.Helpers.RequestMethod;
 import com.aviq.tv.android.sdk.utils.Files;
 import com.aviq.tv.android.sdk.utils.HttpException;
 

@@ -8,7 +8,7 @@
  * Description: Component feature providing ticker widget's data
  */
 
-package com.aviq.tv.android.sdk.core.feature.softwareupdate;
+package com.aviq.tv.android.sdk.feature.softwareupdate;
 
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -236,6 +236,22 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 				{
 					// TODO
 					Log.e(TAG, ".checkForUpdate failed due to an error");
+
+					if (_initializing)
+					{
+						_initializing = false;
+
+						// TODO try to delay in order to demo the splash; remove later
+						getEventMessenger().postDelayed(new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								_hasUpdate = true;
+								_onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this, ResultCode.GENERAL_FAILURE);
+							}
+						}, 7000);
+					}
 				}
 				else if (CODE_NEW_SERVER_CONFIG == resultCode)
 				{
