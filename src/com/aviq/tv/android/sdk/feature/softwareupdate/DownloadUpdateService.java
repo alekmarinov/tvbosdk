@@ -61,7 +61,7 @@ public class DownloadUpdateService extends IntentService
 		if (extras != null)
 		{
 			_resultReceiver = (ResultReceiver) extras.get(BaseService.EXTRA_RESULT_RECEIVER);
-			_resultReceiver.send(FeatureSoftwareUpdate.CODE_UPDATE_DOWNLOAD_STARTED, null);
+			_resultReceiver.send(FeatureSoftwareUpdate.ON_UPDATE_DOWNLOAD_STARTED, null);
 
 			_fileName = extras.getString(FeatureSoftwareUpdate.PARAM_FILENAME);
 			_fileSize = extras.getLong(FeatureSoftwareUpdate.PARAM_FILESIZE);
@@ -105,7 +105,7 @@ public class DownloadUpdateService extends IntentService
 					params.putString(FeatureSoftwareUpdate.PARAM_DOWNLOAD_URL, downloadURL);
 
 					if (_resultReceiver != null)
-						_resultReceiver.send(FeatureSoftwareUpdate.CODE_UPDATE_DOWNLOAD_STARTED, params);
+						_resultReceiver.send(FeatureSoftwareUpdate.ON_UPDATE_DOWNLOAD_STARTED, params);
 
 					deletePreviousDownloads();
 
@@ -133,7 +133,7 @@ public class DownloadUpdateService extends IntentService
 								params.putString(FeatureSoftwareUpdate.PARAM_PROGRESS_SERVER_VERSION, _version);
 
 								if (_resultReceiver != null)
-									_resultReceiver.send(FeatureSoftwareUpdate.CODE_UPDATE_DOWNLOAD_PROGRESS, params);
+									_resultReceiver.send(FeatureSoftwareUpdate.ON_UPDATE_DOWNLOAD_PROGRESS, params);
 
 								lastProgress[0] = nProgress;
 							}
@@ -151,7 +151,7 @@ public class DownloadUpdateService extends IntentService
 
 								Bundle resultData = new Bundle();
 								resultData.putString(FeatureSoftwareUpdate.PARAM_NEW_SERVER_CONFIG, location);
-								_resultReceiver.send(FeatureSoftwareUpdate.CODE_NEW_SERVER_CONFIG, resultData);
+								_resultReceiver.send(FeatureSoftwareUpdate.ON_NEW_SERVER_CONFIG, resultData);
 							}
 							else
 							{
@@ -204,7 +204,7 @@ public class DownloadUpdateService extends IntentService
 						params.putString(FeatureSoftwareUpdate.PARAM_DOWNLOAD_FILE, file.getAbsolutePath());
 
 						if (_resultReceiver != null)
-							_resultReceiver.send(FeatureSoftwareUpdate.CODE_UPDATE_DOWNLOAD_FINISHED, params);
+							_resultReceiver.send(FeatureSoftwareUpdate.ON_UPDATE_DOWNLOAD_FINISHED, params);
 					}
 				}
 				else
@@ -213,7 +213,7 @@ public class DownloadUpdateService extends IntentService
 					params.putString(FeatureSoftwareUpdate.PARAM_DOWNLOAD_FILE, file.getAbsolutePath());
 
 					if (_resultReceiver != null)
-						_resultReceiver.send(FeatureSoftwareUpdate.CODE_UPDATE_DOWNLOAD_FINISHED, params);
+						_resultReceiver.send(FeatureSoftwareUpdate.ON_UPDATE_DOWNLOAD_FINISHED, params);
 				}
 			}
 			catch (InterruptedException e)
@@ -238,7 +238,7 @@ public class DownloadUpdateService extends IntentService
 			}
 
 			if (_resultReceiver != null)
-				_resultReceiver.send(FeatureSoftwareUpdate.CODE_UPDATE_ERROR, intent.getExtras());
+				_resultReceiver.send(FeatureSoftwareUpdate.ON_UPDATE_ERROR, intent.getExtras());
 		}
     }
 

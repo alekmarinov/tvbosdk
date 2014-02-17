@@ -81,7 +81,7 @@ public class UpdateCheckService extends IntentService
 			}
 
 			if (_resultReceiver != null)
-				_resultReceiver.send(FeatureSoftwareUpdate.CODE_UPDATE_ERROR, intent.getExtras());
+				_resultReceiver.send(FeatureSoftwareUpdate.ON_UPDATE_ERROR, intent.getExtras());
 		}
 	}
 
@@ -104,7 +104,7 @@ public class UpdateCheckService extends IntentService
 
 					Bundle resultData = new Bundle();
 					resultData.putString(FeatureSoftwareUpdate.PARAM_NEW_SERVER_CONFIG, location);
-					_resultReceiver.send(FeatureSoftwareUpdate.CODE_NEW_SERVER_CONFIG, resultData);
+					_resultReceiver.send(FeatureSoftwareUpdate.ON_NEW_SERVER_CONFIG, resultData);
 				}
 				else
 				{
@@ -161,6 +161,6 @@ public class UpdateCheckService extends IntentService
 		resultData.putString(FeatureSoftwareUpdate.PARAM_SERVER_BRAND, brand);
 
 		if (_resultReceiver != null)
-			_resultReceiver.send(FeatureSoftwareUpdate.CODE_UPDATE_CHECK_RESULTS, resultData);
+			_resultReceiver.send(FeatureSoftwareUpdate.ON_UPDATE_CHECK_RESULTS, resultData);
 	}
 }

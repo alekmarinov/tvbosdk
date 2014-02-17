@@ -33,10 +33,10 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 
 	public static final int ON_SOFTWARE_UPDATE_FOUND = EventMessenger.ID();
 
-	public static final int CODE_NEW_SERVER_CONFIG = EventMessenger.ID();
+	public static final int ON_NEW_SERVER_CONFIG = EventMessenger.ID();
 	public static final String PARAM_NEW_SERVER_CONFIG = "NEW_SERVER_CONFIG";
 
-	public static final int CODE_UPDATE_CHECK_RESULTS = EventMessenger.ID();
+	public static final int ON_UPDATE_CHECK_RESULTS = EventMessenger.ID();
 	public static final String PARAM_CURRENT_VERSION = "CURRENT_VERSION";
 	public static final String PARAM_SERVER_VERSION = "SERVER_VERSION";
 	public static final String PARAM_FILENAME = "FILENAME";
@@ -45,17 +45,17 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 	public static final String PARAM_ISFORCED = "ISFORCED";
 	public static final String PARAM_SERVER_BRAND = "SERVER_BRAND";
 
-	public static final int CODE_UPDATE_ERROR = EventMessenger.ID();
+	public static final int ON_UPDATE_ERROR = EventMessenger.ID();
 	public static final String PARAM_ERROR = "ERROR";
 	public static final String PARAM_ERROR_DETAILS = "ERROR_DETAILS";
 
-	public static final int CODE_UPDATE_DOWNLOAD_STARTED = EventMessenger.ID();
+	public static final int ON_UPDATE_DOWNLOAD_STARTED = EventMessenger.ID();
 	public static final String PARAM_DOWNLOAD_URL = "DOWNLOAD_URL";
 
-	public static final int CODE_UPDATE_DOWNLOAD_FINISHED = EventMessenger.ID();
+	public static final int ON_UPDATE_DOWNLOAD_FINISHED = EventMessenger.ID();
 	public static final String PARAM_DOWNLOAD_FILE = "DOWNLOAD_FILE";
 
-	public static final int CODE_UPDATE_DOWNLOAD_PROGRESS = EventMessenger.ID();
+	public static final int ON_UPDATE_DOWNLOAD_PROGRESS = EventMessenger.ID();
 	public static final String PARAM_PROGRESS_AMOUNT = "PROGRESS_AMOUNT";
 	public static final String PARAM_PROGRESS_SERVER_VERSION = "PROGRESS_SERVER_VERSION";
 
@@ -121,6 +121,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 
 	public FeatureSoftwareUpdate()
 	{
+		_dependencies.Schedulers.add(FeatureName.Scheduler.INTERNET);
 	}
 
 	@Override
@@ -137,8 +138,13 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 		// Check for software updates
 		Log.i(TAG, "Checking for software updates.");
 
-		// Contact the server for a software update check
-		checkForUpdate();
+		// Contact the server for a software update check; skip check if we
+		// already know there is an update or if the update is currently being
+		// downloaded or has already been downloaded because the main has
+		// been notify about the update and further checking is pointless.
+		boolean performCheck = !(hasUpdate() && (isUpdateDownloadStarted() || isUpdateDownloadFinished()));
+		if (performCheck)
+			checkForUpdate();
 
 		// Schedule another update
 		scheduleDelayed(getPrefs().getInt(Param.UPDATE_CHECK_INTERVAL));
@@ -186,7 +192,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 			@Override
 			public void onReceiveResult(int resultCode, Bundle resultData)
 			{
-				if (CODE_UPDATE_CHECK_RESULTS == resultCode)
+				if (ON_UPDATE_CHECK_RESULTS == resultCode)
 				{
 					_updateCheckResultsBundle = resultData;
 
@@ -232,7 +238,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 						}, 7000);
 					}
 				}
-				else if (CODE_UPDATE_ERROR == resultCode)
+				else if (ON_UPDATE_ERROR == resultCode)
 				{
 					// TODO
 					Log.e(TAG, ".checkForUpdate failed due to an error");
@@ -253,7 +259,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 						}, 7000);
 					}
 				}
-				else if (CODE_NEW_SERVER_CONFIG == resultCode)
+				else if (ON_NEW_SERVER_CONFIG == resultCode)
 				{
 					// TODO: store in prefs?
 					Log.i(TAG, ".checkForUpdate: new server configuration found");
@@ -274,14 +280,14 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 			        @Override
 			        public void onReceiveResult(int resultCode, Bundle resultData)
 			        {
-				        if (CODE_UPDATE_DOWNLOAD_STARTED == resultCode)
+				        if (ON_UPDATE_DOWNLOAD_STARTED == resultCode)
 				        {
 					        // Download started
 					        _updateDownloadStarted = true;
 					        _updateDownloadFinished = false;
 					        return;
 				        }
-				        else if (CODE_UPDATE_DOWNLOAD_FINISHED == resultCode)
+				        else if (ON_UPDATE_DOWNLOAD_FINISHED == resultCode)
 				        {
 					        // Download finished
 					        _updateDownloadStarted = false;
@@ -297,17 +303,19 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 					        userPrefs.put(UserParam.UPGRADE_FILE, updateFile);
 					        userPrefs.put(UserParam.UPGRADE_VERSION, updateVersion);
 					        userPrefs.put(UserParam.UPGRADE_BRAND, brand);
+
+					        getEventMessenger().trigger(ON_UPDATE_DOWNLOAD_FINISHED, resultData);
 				        }
-				        else if (CODE_UPDATE_DOWNLOAD_PROGRESS == resultCode)
+				        else if (ON_UPDATE_DOWNLOAD_PROGRESS == resultCode)
 				        {
-					        // TODO
+				        	getEventMessenger().trigger(ON_UPDATE_DOWNLOAD_PROGRESS, resultData);
 				        }
-				        else if (CODE_UPDATE_ERROR == resultCode)
+				        else if (ON_UPDATE_ERROR == resultCode)
 				        {
 					        // TODO
 				        	Log.e(TAG, ".downloadUpdate failed due to an error");
 				        }
-				        else if (CODE_NEW_SERVER_CONFIG == resultCode)
+				        else if (ON_NEW_SERVER_CONFIG == resultCode)
 				        {
 					        // TODO: store in prefs?
 				        	Log.i(TAG, ".downloadUpdate: new server configuration found");
