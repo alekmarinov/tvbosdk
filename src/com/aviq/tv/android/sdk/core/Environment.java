@@ -132,18 +132,17 @@ public class Environment
 		_imageLoader = new ImageLoader(_requestQueue, new BitmapLruCache(cacheSize));
 
 		// Show splash sate
-		if (_splashFeatureName == null)
+		if (_splashFeatureName != null)
 		{
-			throw new RuntimeException("Splash state is not defined");
-		}
-		FeatureState splashFeatureState = getFeatureState(_splashFeatureName);
-		if (_stateManager == null)
-		{
-			throw new RuntimeException("Set StateManager first with setStateManager");
-		}
+			FeatureState splashFeatureState = getFeatureState(_splashFeatureName);
+			if (_stateManager == null)
+			{
+				throw new RuntimeException("Set StateManager first with setStateManager");
+			}
 
-		Log.i(TAG, "Showing splash feature " + splashFeatureState.getName());
-		_stateManager.setStateMain(splashFeatureState, null);
+			Log.i(TAG, "Showing splash feature " + splashFeatureState.getName());
+			_stateManager.setStateMain(splashFeatureState, null);
+		}
 
 		// initializes features
 		Log.i(TAG, "Sorting features topologically based on their declared dependencies");
@@ -244,6 +243,16 @@ public class Environment
 	public Resources getResources()
 	{
 		return _context.getResources();
+	}
+
+	/**
+	 * sets the only application activity
+	 *
+	 * @param activity application activity
+	 */
+	public void setActivity(Activity activity)
+	{
+		_activity = activity;
 	}
 
 	/**

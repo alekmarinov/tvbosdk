@@ -14,7 +14,6 @@ import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Prefs;
-import com.aviq.tv.android.sdk.feature.channels.FeatureChannels;
 import com.aviq.tv.android.sdk.feature.channels.FeatureChannels.UserParam;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
@@ -32,8 +31,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 	{
 		Log.i(TAG, ".initialize");
 		Prefs userPrefs = Environment.getInstance().getUserPrefs();
-		userPrefs.put(FeatureChannels.UserParam.CHANNELS, "animal-planet,axn,bnt-1,btv,btv-action,btv-cinema,btv-comedy,diema,diema-family,discovery-channel,discovery-hd,film-plus,hbo,kinonova,mtv-hits,ngc,nick-jr,nova-sport,nova,planeta-tv,ring-bg,the-voice,tv7,tv-plus,viasat-explorer,hobby-hd");
-		userPrefs.put(UserParam.LAST_CHANNEL_ID, "animal-planet");
+//		userPrefs.put(FeatureChannels.UserParam.CHANNELS, "animal-planet,axn,bnt-1,btv,btv-action,btv-cinema,btv-comedy,diema,diema-family,discovery-channel,discovery-hd,film-plus,hbo,kinonova,mtv-hits,ngc,nick-jr,nova-sport,nova,planeta-tv,ring-bg,the-voice,tv7,tv-plus,viasat-explorer,hobby-hd");
+		userPrefs.put(UserParam.LAST_CHANNEL_ID, "24-kitchen");
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -123,7 +122,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 			case 80:
 				return "http://46.40.123.186:1935/tv/viasat_history.stream/playlist.m3u8";
 		}
-		return "http://46.40.123.186:1935/tv/vh1_classic.stream/playlist.m3u8";
+		return "http://46.40.123.186:1935/dvr/sportaltv.stream/playlist.m3u8";
     }
 
 	@Override

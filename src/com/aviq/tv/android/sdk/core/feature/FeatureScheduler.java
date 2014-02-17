@@ -22,7 +22,6 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 
 /**
  * Defines the base class for scheduler feature type
- *
  */
 public abstract class FeatureScheduler implements IFeature
 {
@@ -42,7 +41,8 @@ public abstract class FeatureScheduler implements IFeature
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		onFeatureInitialized.onInitialized(this, ResultCode.OK);
+		if (onFeatureInitialized != null)
+			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 	}
 
 	protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
@@ -63,13 +63,13 @@ public abstract class FeatureScheduler implements IFeature
 	}
 
 	@Override
-    public String getName()
+	public String getName()
 	{
 		return getSchedulerName().toString();
 	}
 
 	@Override
-    public Prefs getPrefs()
+	public Prefs getPrefs()
 	{
 		return Environment.getInstance().getFeaturePrefs(getSchedulerName());
 	}
@@ -84,7 +84,7 @@ public abstract class FeatureScheduler implements IFeature
 	}
 
 	@Override
-    public void onEvent(int msgId, Bundle bundle)
+	public void onEvent(int msgId, Bundle bundle)
 	{
 		if (ON_SCHEDULE == msgId)
 		{

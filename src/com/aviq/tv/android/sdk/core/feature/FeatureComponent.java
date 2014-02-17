@@ -33,7 +33,8 @@ public abstract class FeatureComponent implements IFeature
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		onFeatureInitialized.onInitialized(this, ResultCode.OK);
+		if (onFeatureInitialized != null)
+			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 	}
 
 	@Override
