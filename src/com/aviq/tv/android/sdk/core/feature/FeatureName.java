@@ -27,7 +27,8 @@ public class FeatureName
 		ETHERNET,
 		LANGUAGE,
 		WEBTV,
-		MENU
+		MENU,
+		RPC
 	}
 
 	public static enum Scheduler

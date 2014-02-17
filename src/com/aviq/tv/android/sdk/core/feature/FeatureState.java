@@ -35,7 +35,8 @@ public abstract class FeatureState extends BaseState implements IFeature
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		onFeatureInitialized.onInitialized(this, ResultCode.OK);
+		if (onFeatureInitialized != null)
+			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 	}
 
 	@Override
@@ -159,7 +160,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 	 * @param params
 	 *            The params set to this State when showing
 	 * @param isViewUncovered
-	 * 			  set to true if the view has been uncovered from overlay
+	 *            set to true if the view has been uncovered from overlay
 	 * @throws StateException
 	 */
 	@Override
