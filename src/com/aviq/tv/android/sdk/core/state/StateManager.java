@@ -53,6 +53,8 @@ public class StateManager
 		public static final String PARAM_SKIP_BTN_IMAGE = "PARAM_SKIP_BTN_IMAGE";
 		public static final String PARAM_AUTO_HIDE_DELAY = "PARAM_AUTO_HIDE_DELAY";
 		public static final String PARAM_AUTO_HIDE_DEFAULT_BUTTON = "PARAM_AUTO_HIDE_DEFAULT_BUTTON";
+		public static final String PARAM_POSITIVE_BUTTON_LABEL = "PARAM_POSITIVE_BUTTON_LABEL";
+		public static final String PARAM_NEGATIVE_BUTTON_LABEL = "PARAM_NEGATIVE_BUTTON_LABEL";
 
 		public enum Type
 		{
@@ -61,7 +63,7 @@ public class StateManager
 
 		public enum Button
 		{
-			OK, CANCEL, YES, NO
+			OK, CANCEL, YES, NO, POSITIVE_BUTTON, NEGATIVE_BUTTON
 		}
 
 		private Bundle _bundle = new Bundle();
@@ -99,6 +101,20 @@ public class StateManager
 		public MessageParams enableButton(Button buttonName)
 		{
 			_bundle.putBoolean(buttonName.name(), true);
+			return this;
+		}
+
+		public MessageParams enablePositiveButton(int labelResId)
+		{
+			_bundle.putBoolean(Button.POSITIVE_BUTTON.name(), true);
+			_bundle.putInt(PARAM_POSITIVE_BUTTON_LABEL, labelResId);
+			return this;
+		}
+
+		public MessageParams enableNegativeButton(int labelResId)
+		{
+			_bundle.putBoolean(Button.NEGATIVE_BUTTON.name(), true);
+			_bundle.putInt(PARAM_NEGATIVE_BUTTON_LABEL, labelResId);
 			return this;
 		}
 

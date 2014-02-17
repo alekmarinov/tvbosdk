@@ -62,6 +62,7 @@ public class FeatureName
 		HOLLYSTAR,
 		HOLLYSTAR_VIDEO,
 		WEBTV,
-		WEBTV_VIDEO
+		WEBTV_VIDEO,
+		SOFTWARE_UPDATE
 	}
 }
