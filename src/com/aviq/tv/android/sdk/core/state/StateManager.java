@@ -55,6 +55,7 @@ public class StateManager
 		public static final String PARAM_AUTO_HIDE_DEFAULT_BUTTON = "PARAM_AUTO_HIDE_DEFAULT_BUTTON";
 		public static final String PARAM_POSITIVE_BUTTON_LABEL = "PARAM_POSITIVE_BUTTON_LABEL";
 		public static final String PARAM_NEGATIVE_BUTTON_LABEL = "PARAM_NEGATIVE_BUTTON_LABEL";
+		public static final String PARAM_IMAGE_URL = "PARAM_IMAGE_URL";
 
 		public enum Type
 		{
@@ -95,6 +96,12 @@ public class StateManager
 		public MessageParams setText(int textId)
 		{
 			_bundle.putString(PARAM_TEXT, Environment.getInstance().getResources().getString(textId));
+			return this;
+		}
+
+		public MessageParams setImageUrl(String url)
+		{
+			_bundle.putString(PARAM_IMAGE_URL, url);
 			return this;
 		}
 
