@@ -17,7 +17,6 @@ import java.util.Map;
 
 import android.app.Activity;
 import android.app.ActivityManager;
-import android.app.Application;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -70,7 +69,6 @@ public class Environment
 
 	private static Environment _instance;
 	private Activity _activity;
-	private Application _context;
 	private StateManager _stateManager;
 	private ServiceController _serviceController;
 	private Prefs _prefs;
@@ -79,13 +77,12 @@ public class Environment
 	private ImageLoader _imageLoader;
 	private List<IFeature> _features = new ArrayList<IFeature>();
 	private EventMessenger _eventMessenger = new EventMessenger();
-	private FeatureName.State _splashFeatureName;
 	private Map<FeatureName.Component, Prefs> _componentPrefs = new HashMap<FeatureName.Component, Prefs>();
 	private Map<FeatureName.Scheduler, Prefs> _schedulerPrefs = new HashMap<FeatureName.Scheduler, Prefs>();
 	private Map<FeatureName.State, Prefs> _statePrefs = new HashMap<FeatureName.State, Prefs>();
 	private IFeatureFactory _featureFactory;
 	// Chain based features initializer
-	private FeatureInitializeCallBack onFeatureInitialized = new FeatureInitializeCallBack();
+	private FeatureInitializeCallBack _onFeatureInitialized = new FeatureInitializeCallBack();
 	private boolean _isInitialized = false;
 
 	/**
@@ -119,30 +116,16 @@ public class Environment
 
 		// initializes environment context
 		_activity = activity;
-		_context = activity.getApplication();
 		_userPrefs = createUserPrefs();
 		_prefs = createPrefs("system");
-		_serviceController = new ServiceController(_context);
-		_requestQueue = Volley.newRequestQueue(_context);
+		_serviceController = new ServiceController(_activity);
+		_requestQueue = Volley.newRequestQueue(_activity);
 
 		// Use 1/8th of the available memory for this memory cache.
 		int memClass = ((ActivityManager) activity.getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE))
 		        .getMemoryClass();
 		int cacheSize = 1024 * 1024 * memClass / 8;
 		_imageLoader = new ImageLoader(_requestQueue, new BitmapLruCache(cacheSize));
-
-		// Show splash sate
-		if (_splashFeatureName != null)
-		{
-			FeatureState splashFeatureState = getFeatureState(_splashFeatureName);
-			if (_stateManager == null)
-			{
-				throw new RuntimeException("Set StateManager first with setStateManager");
-			}
-
-			Log.i(TAG, "Showing splash feature " + splashFeatureState.getName());
-			_stateManager.setStateMain(splashFeatureState, null);
-		}
 
 		// initializes features
 		Log.i(TAG, "Sorting features topologically based on their declared dependencies");
@@ -153,8 +136,8 @@ public class Environment
 		}
 
 		Log.i(TAG, "Initializing features");
-		onFeatureInitialized.setTimeout(getPrefs().getInt(Param.FEATURE_INITIALIZE_TIMEOUT));
-		onFeatureInitialized.initializeNext();
+		_onFeatureInitialized.setTimeout(getPrefs().getInt(Param.FEATURE_INITIALIZE_TIMEOUT));
+		_onFeatureInitialized.initializeNext();
 	}
 
 	private class FeatureInitializeCallBack implements Runnable, IFeature.OnFeatureInitialized
@@ -230,19 +213,11 @@ public class Environment
 	}
 
 	/**
-	 * @return main application context
-	 */
-	public Context getContext()
-	{
-		return _context;
-	}
-
-	/**
 	 * @return application resources
 	 */
 	public Resources getResources()
 	{
-		return _context.getResources();
+		return _activity.getResources();
 	}
 
 	/**
@@ -451,10 +426,10 @@ public class Environment
 			throw new RuntimeException("Set IFeatureFactory with setFeatureFactory before declaring feature usages");
 
 		// Sets first used feature state as splash state
-		if (_splashFeatureName == null)
-		{
-			_splashFeatureName = featureName;
-		}
+//		if (_splashFeatureName == null)
+//		{
+//			_splashFeatureName = featureName;
+//		}
 
 		try
 		{
@@ -674,13 +649,13 @@ public class Environment
 	private Prefs createUserPrefs()
 	{
 		Log.i(TAG, ".createUserPrefs");
-		return new Prefs(_context.getSharedPreferences("user", Activity.MODE_PRIVATE), true);
+		return new Prefs(_activity.getSharedPreferences("user", Activity.MODE_PRIVATE), true);
 	}
 
 	private Prefs createPrefs(String name)
 	{
 		Log.i(TAG, ".createPrefs: name = " + name);
-		return new Prefs(_context.getSharedPreferences(name, Activity.MODE_PRIVATE), false);
+		return new Prefs(_activity.getSharedPreferences(name, Activity.MODE_PRIVATE), false);
 	}
 
 	private class BitmapLruCache extends LruCache<String, Bitmap> implements ImageCache

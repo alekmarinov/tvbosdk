@@ -156,7 +156,7 @@ public class FeatureRegister extends FeatureComponent
 
 	private String getActiveNetworkType()
 	{
-		final ConnectivityManager connectivityManager = (ConnectivityManager) Environment.getInstance().getContext()
+		final ConnectivityManager connectivityManager = (ConnectivityManager) Environment.getInstance().getActivity()
 		        .getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo netInfo = connectivityManager.getActiveNetworkInfo();
 		return (netInfo != null) ? netInfo.getTypeName().toLowerCase() : "";
@@ -164,8 +164,8 @@ public class FeatureRegister extends FeatureComponent
 
 	private String parseAppVersion() throws NameNotFoundException
 	{
-		String version = Environment.getInstance().getContext().getPackageManager()
-		        .getPackageInfo(Environment.getInstance().getContext().getPackageName(), 0).versionName;
+		String version = Environment.getInstance().getActivity().getPackageManager()
+		        .getPackageInfo(Environment.getInstance().getActivity().getPackageName(), 0).versionName;
 		int dotIdx = version.lastIndexOf('.');
 		if (dotIdx >= 0)
 		{

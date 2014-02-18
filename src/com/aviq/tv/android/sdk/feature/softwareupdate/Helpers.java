@@ -42,8 +42,8 @@ class Helpers
 
 	public static String parseAppVersion() throws NameNotFoundException
 	{
-		String version = Environment.getInstance().getContext().getPackageManager()
-		        .getPackageInfo(Environment.getInstance().getContext().getPackageName(), 0).versionName;
+		String version = Environment.getInstance().getActivity().getPackageManager()
+		        .getPackageInfo(Environment.getInstance().getActivity().getPackageName(), 0).versionName;
 		int dotIdx = version.lastIndexOf('.');
 		if (dotIdx >= 0)
 		{

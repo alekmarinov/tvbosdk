@@ -35,7 +35,7 @@ public class FeatureHttpServer extends FeatureComponent
 	{
 		// Start HTTP server
 		Log.i(TAG, "Start HTTP server");
-		_httpServer = new HttpServer(Environment.getInstance().getContext());
+		_httpServer = new HttpServer(Environment.getInstance().getActivity());
 		try
 		{
 			_httpServer.create();
