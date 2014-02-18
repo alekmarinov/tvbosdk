@@ -25,10 +25,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 
-import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
-import com.aviq.tv.android.sdk.core.Prefs;
-import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.service.BaseService;
 import com.aviq.tv.android.sdk.utils.HttpException;
 
@@ -36,8 +33,8 @@ public class UpdateCheckService extends IntentService
 {
 	private static final String TAG = UpdateCheckService.class.getSimpleName();
 
-	private String _boxId;
-	private String _version;
+	public static final String PARAM_SERVER_URL = "SERVER_URL";
+
 	private String _abmpURL;
 	private ResultReceiver _resultReceiver;
 
@@ -56,16 +53,11 @@ public class UpdateCheckService extends IntentService
 		if (extras != null)
 		{
 			_resultReceiver = (ResultReceiver) extras.get(BaseService.EXTRA_RESULT_RECEIVER);
+			_abmpURL = extras.getString(PARAM_SERVER_URL);
 		}
 
 		try
 		{
-			Prefs prefs = Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.SOFTWARE_UPDATE);
-			_abmpURL = prefs.getString(FeatureSoftwareUpdate.Param.ABMP_URL);
-
-			_boxId = Helpers.readMacAddress();
-			_version = Helpers.parseAppVersion();
-
 			checkServerForUpdate();
 		}
 		catch (Exception e)
@@ -88,7 +80,7 @@ public class UpdateCheckService extends IntentService
 	private void checkServerForUpdate() throws XPathExpressionException, ParserConfigurationException, IOException,
 	        SAXException, NameNotFoundException
 	{
-		URL newVerURL = new URL(_abmpURL + "/Box/SWVersion.ashx?boxID=" + _boxId + "&version=" + _version);
+		URL newVerURL = new URL(_abmpURL);
 		Log.i(TAG, "Checking for new software version from " + newVerURL.toString());
 
 		URLConnection conn = Helpers.openHttpConnection(newVerURL, Helpers.RequestMethod.DEFAULT, null, new Helpers.RedirectCallback()
@@ -148,11 +140,10 @@ public class UpdateCheckService extends IntentService
 			Log.w(TAG, e.getMessage());
 		}
 
-		Log.i(TAG, "Current version=" + _version + ", reported software version=" + version + ", fileName=`" + fileName
+		Log.i(TAG, "Reported software version=" + version + ", fileName=`" + fileName
 		        + "', fileSize=" + fileSize + ", softwareType=" + softwareType + ", forced=" + isForced);
 
 		Bundle resultData = new Bundle();
-		resultData.putString(FeatureSoftwareUpdate.PARAM_CURRENT_VERSION, _version);
 		resultData.putString(FeatureSoftwareUpdate.PARAM_SERVER_VERSION, version);
 		resultData.putString(FeatureSoftwareUpdate.PARAM_FILENAME, fileName);
 		resultData.putLong(FeatureSoftwareUpdate.PARAM_FILESIZE, fileSize);

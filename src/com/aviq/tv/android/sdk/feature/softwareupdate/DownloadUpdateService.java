@@ -18,10 +18,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 
-import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
-import com.aviq.tv.android.sdk.core.Prefs;
-import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.service.BaseService;
 import com.aviq.tv.android.sdk.feature.softwareupdate.Helpers.RedirectCallback;
 import com.aviq.tv.android.sdk.feature.softwareupdate.Helpers.RequestMethod;
@@ -32,6 +29,10 @@ public class DownloadUpdateService extends IntentService
 {
 	private static final String TAG = DownloadUpdateService.class.getSimpleName();
 
+	public static final String PARAM_SERVER_URL = "SERVER_URL";
+	public static final String PARAM_FILENAME = "FILENAME";
+	public static final String PARAM_FILESIZE = "FILESIZE";
+
 	public static final int DOWNLOAD_BUF_SIZE = 10 * 100 * 8192;
 	public static int CONNECT_TIMEOUT = 60 * 1000;
 	public static int READ_TIMEOUT = 60 * 1000;
@@ -39,10 +40,8 @@ public class DownloadUpdateService extends IntentService
 
 	private static final String UPDATE_DIR = "update";
 
-	private String _boxId;
-	private String _version;
-	private String _abmpURL;
 	private ResultReceiver _resultReceiver;
+	private String _abmpURL;
 	private String _fileName;
 	private long _fileSize;
 
@@ -63,20 +62,15 @@ public class DownloadUpdateService extends IntentService
 			_resultReceiver = (ResultReceiver) extras.get(BaseService.EXTRA_RESULT_RECEIVER);
 			_resultReceiver.send(FeatureSoftwareUpdate.ON_UPDATE_DOWNLOAD_STARTED, null);
 
-			_fileName = extras.getString(FeatureSoftwareUpdate.PARAM_FILENAME);
-			_fileSize = extras.getLong(FeatureSoftwareUpdate.PARAM_FILESIZE);
-			_version = extras.getString(FeatureSoftwareUpdate.PARAM_SERVER_VERSION);
+			_fileName = extras.getString(PARAM_FILENAME);
+			_fileSize = extras.getLong(PARAM_FILESIZE);
+			_abmpURL = extras.getString(PARAM_SERVER_URL);
 		}
 
 		try
 		{
-			Prefs prefs = Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.SOFTWARE_UPDATE);
-			_abmpURL = prefs.getString(FeatureSoftwareUpdate.Param.ABMP_URL);
-
-			_boxId = Helpers.readMacAddress();
-
 			// New software version available for download
-			String downloadURL = _abmpURL + "/Box/SWupdate.ashx?boxID=" + _boxId + "&service=swupdate&file=" + _fileName;
+			String downloadURL = _abmpURL;
 			String md5URL = downloadURL + ".md5";
 
 			Log.i(TAG, "New software version available, downloading from " + downloadURL);
@@ -130,7 +124,6 @@ public class DownloadUpdateService extends IntentService
 
 								Bundle params = new Bundle();
 								params.putFloat(FeatureSoftwareUpdate.PARAM_PROGRESS_AMOUNT, Float.valueOf(progress));
-								params.putString(FeatureSoftwareUpdate.PARAM_PROGRESS_SERVER_VERSION, _version);
 
 								if (_resultReceiver != null)
 									_resultReceiver.send(FeatureSoftwareUpdate.ON_UPDATE_DOWNLOAD_PROGRESS, params);

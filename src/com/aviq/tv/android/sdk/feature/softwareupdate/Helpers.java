@@ -1,7 +1,5 @@
 package com.aviq.tv.android.sdk.feature.softwareupdate;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.Proxy;
@@ -16,41 +14,16 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import android.content.pm.PackageManager.NameNotFoundException;
-
-import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.utils.HttpException;
-import com.aviq.tv.android.sdk.utils.TextUtils;
 
 class Helpers
 {
 	private static final String TAG = Helpers.class.getSimpleName();
 
-	private static final String MAC_ADDRESS_FILE = "/sys/class/net/eth0/address";
 	private static int CONNECT_TIMEOUT = 60 * 1000;
 	private static int READ_TIMEOUT = 60 * 1000;
 	private static final int MAX_REDIRECTS = 10;
-
-	public static String readMacAddress() throws FileNotFoundException
-	{
-		FileInputStream fis = new FileInputStream(MAC_ADDRESS_FILE);
-		String macAddress = TextUtils.inputSteamToString(fis);
-		macAddress = macAddress.substring(0, 17);
-		return macAddress.replace(":", "").toUpperCase();
-	}
-
-	public static String parseAppVersion() throws NameNotFoundException
-	{
-		String version = Environment.getInstance().getContext().getPackageManager()
-		        .getPackageInfo(Environment.getInstance().getContext().getPackageName(), 0).versionName;
-		int dotIdx = version.lastIndexOf('.');
-		if (dotIdx >= 0)
-		{
-			version = version.substring(dotIdx + 1);
-		}
-		return version;
-	}
 
 	// Quick solution to bypass SSL verification
 	public static void trustAllHosts()

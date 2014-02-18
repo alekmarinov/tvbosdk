@@ -20,9 +20,11 @@ import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
+import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 
 /**
  * Component feature providing ticker widget's data
@@ -64,7 +66,8 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 	public enum Param
 	{
 		/**
-		 * Registration brand of the device. It should be filled in by the client project.
+		 * Registration brand of the device. It should be filled in by the
+		 * client project.
 		 */
 		REGISTRATION_BRAND("zixi"),
 
@@ -76,7 +79,17 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 		/**
 		 * URL for software updates. It should be set by the client application.
 		 */
-		ABMP_URL("http://aviq.dyndns.org:983");
+		ABMP_SERVER("http://aviq.dyndns.org:983"),
+
+		/**
+		 * ABMP update check URL format
+		 */
+		ABMP_UPDATE_CHECK_URL("${SERVER}/Box/SWVersion.ashx?boxID=${BOX_ID}&version=${VERSION}"),
+
+		/**
+		 * ABMP update download URL format
+		 */
+		ABMP_UPDATE_DOWNLOAD_URL("${SERVER}/Box/SWupdate.ashx?boxID=${BOX_ID}&service=swupdate&file=${FILE_NAME}");
 
 		Param(int value)
 		{
@@ -112,6 +125,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 		UPGRADE_BRAND;
 	}
 
+	private FeatureRegister _featureRegister;
 	private OnFeatureInitialized _onFeatureInitialized;
 	private boolean _hasUpdate;
 	private boolean _updateDownloadStarted;
@@ -121,15 +135,27 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 
 	public FeatureSoftwareUpdate()
 	{
+		_dependencies.Components.add(FeatureName.Component.REGISTER);
 		_dependencies.Schedulers.add(FeatureName.Scheduler.INTERNET);
 	}
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		//super.initialize(onFeatureInitialized);
+		Log.i(TAG, ".initialize");
 		_onFeatureInitialized = onFeatureInitialized;
-		onSchedule(onFeatureInitialized);
+		try
+		{
+			_featureRegister = (FeatureRegister) Environment.getInstance().getFeatureComponent(
+			        FeatureName.Component.REGISTER);
+
+			onSchedule(onFeatureInitialized);
+		}
+		catch (FeatureNotFoundException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
+		}
 	}
 
 	@Override
@@ -158,9 +184,6 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 
 	public boolean hasUpdate()
 	{
-		// FIXME: remove when done testing
-//		_hasUpdate = true;
-
 		Log.i(TAG, ".hasUpdate: " + _hasUpdate);
 		return _hasUpdate;
 	}
@@ -168,14 +191,12 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 	public boolean isUpdateDownloadStarted()
 	{
 		Log.i(TAG, ".isUpdateDownloadStarted: " + _updateDownloadStarted);
-		// FIXME: remove when done testing
 		return _updateDownloadStarted;
 	}
 
 	public boolean isUpdateDownloadFinished()
 	{
 		Log.i(TAG, ".isUpdateDownloadFinished: " + _updateDownloadFinished);
-		// FIXME: remove when done testing
 		return _updateDownloadFinished;
 	}
 
@@ -183,10 +204,17 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 	{
 		Log.i(TAG, ".checkForUpdate");
 
-		ServiceController serviceController = Environment.getInstance().getServiceController();
+		Bundle abmpUrlTemplateParams = new Bundle();
+		abmpUrlTemplateParams.putString("SERVER", getPrefs().getString(Param.ABMP_SERVER));
+		abmpUrlTemplateParams.putString("BOX_ID", _featureRegister.getBoxId());
+		abmpUrlTemplateParams.putString("VERSION", Environment.getInstance().getBuildVersion());
+
+		String abmpUrl = getPrefs().getString(Param.ABMP_UPDATE_CHECK_URL, abmpUrlTemplateParams);
 
 		Bundle params = new Bundle();
+		params.putString(UpdateCheckService.PARAM_SERVER_URL, abmpUrl);
 
+		ServiceController serviceController = Environment.getInstance().getServiceController();
 		serviceController.startService(UpdateCheckService.class, params).then(new OnResultReceived()
 		{
 			@Override
@@ -196,7 +224,8 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 				{
 					_updateCheckResultsBundle = resultData;
 
-					String currentVersion = resultData.getString(PARAM_CURRENT_VERSION);
+					String currentVersion = Environment.getInstance().getBuildVersion();
+
 					String serverVersion = resultData.getString(PARAM_SERVER_VERSION);
 					String filename = resultData.getString(PARAM_FILENAME);
 					long filesize = resultData.getLong(PARAM_FILESIZE);
@@ -208,7 +237,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 					        + serverVersion + ", filename = " + filename + ", filesize = " + filesize
 					        + " softwareType = " + softwareType + ", isForced = " + isForced + ", brand = " + brand);
 
-					// store box category type - for read only purposes
+					// Store box category type - for read only purposes
 					Environment.getInstance().getUserPrefs().put(UserParam.UPGRADE_BOX_CATEGORY, softwareType);
 
 					_hasUpdate = hasNewVersion(currentVersion, serverVersion, brand);
@@ -221,12 +250,15 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 						downloadUpdate();
 					}
 
+					// TODO: this if-block seems unnecessary at all
 					if (_initializing)
 					{
 						_initializing = false;
-//						_onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this, ResultCode.OK);
+						// _onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this,
+						// ResultCode.OK);
 
-						// TODO try to delay in order to demo the splash; remove later
+						// TODO try to delay in order to demo the splash; remove
+						// later
 						getEventMessenger().postDelayed(new Runnable()
 						{
 							@Override
@@ -235,29 +267,33 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 								_hasUpdate = true;
 								_onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this, ResultCode.OK);
 							}
-						}, 7000);
+						}, 5000);
 					}
 				}
 				else if (ON_UPDATE_ERROR == resultCode)
 				{
-					// TODO
 					Log.e(TAG, ".checkForUpdate failed due to an error");
+					_hasUpdate = false;
 
 					if (_initializing)
 					{
 						_initializing = false;
+						//_onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this, ResultCode.GENERAL_FAILURE);
 
-						// TODO try to delay in order to demo the splash; remove later
+						// TODO try to delay in order to demo the splash; remove
+						// later
 						getEventMessenger().postDelayed(new Runnable()
 						{
 							@Override
 							public void run()
 							{
-								_hasUpdate = true;
-								_onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this, ResultCode.GENERAL_FAILURE);
+								_onFeatureInitialized.onInitialized(FeatureSoftwareUpdate.this,
+								        ResultCode.GENERAL_FAILURE);
 							}
-						}, 7000);
+						}, 5000);
 					}
+
+					getEventMessenger().trigger(ON_UPDATE_ERROR, resultData);
 				}
 				else if (ON_NEW_SERVER_CONFIG == resultCode)
 				{
@@ -272,9 +308,30 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 	{
 		Log.i(TAG, ".downloadUpdate");
 
-		ServiceController serviceController = Environment.getInstance().getServiceController();
+		String filename = _updateCheckResultsBundle != null ? _updateCheckResultsBundle
+		        .getString(FeatureSoftwareUpdate.PARAM_FILENAME) : null;
+		if (filename == null || filename.trim().length() == 0)
+		{
+			Log.w(TAG, "Software update download failed: no file name.");
+			getEventMessenger().trigger(ON_UPDATE_ERROR, null);
+			return;
+		}
 
-		serviceController.startService(DownloadUpdateService.class, _updateCheckResultsBundle).then(
+		Bundle abmpUrlTemplateParams = new Bundle();
+		abmpUrlTemplateParams.putString("SERVER", getPrefs().getString(Param.ABMP_SERVER));
+		abmpUrlTemplateParams.putString("BOX_ID", _featureRegister.getBoxId());
+		abmpUrlTemplateParams.putString("FILE_NAME", filename);
+
+		String abmpUrl = getPrefs().getString(Param.ABMP_UPDATE_DOWNLOAD_URL, abmpUrlTemplateParams);
+
+		Bundle params = new Bundle();
+		params.putAll(_updateCheckResultsBundle);
+		params.putString(DownloadUpdateService.PARAM_SERVER_URL, abmpUrl);
+		params.putString(DownloadUpdateService.PARAM_FILENAME, _updateCheckResultsBundle.getString(PARAM_FILENAME));
+		params.putLong(DownloadUpdateService.PARAM_FILESIZE, _updateCheckResultsBundle.getLong(PARAM_FILESIZE));
+
+		ServiceController serviceController = Environment.getInstance().getServiceController();
+		serviceController.startService(DownloadUpdateService.class, params).then(
 		        new OnResultReceived()
 		        {
 			        @Override
@@ -308,17 +365,17 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 				        }
 				        else if (ON_UPDATE_DOWNLOAD_PROGRESS == resultCode)
 				        {
-				        	getEventMessenger().trigger(ON_UPDATE_DOWNLOAD_PROGRESS, resultData);
+					        getEventMessenger().trigger(ON_UPDATE_DOWNLOAD_PROGRESS, resultData);
 				        }
 				        else if (ON_UPDATE_ERROR == resultCode)
 				        {
-					        // TODO
-				        	Log.e(TAG, ".downloadUpdate failed due to an error");
+					        Log.e(TAG, ".downloadUpdate failed due to an error");
+					        getEventMessenger().trigger(ON_UPDATE_ERROR, resultData);
 				        }
 				        else if (ON_NEW_SERVER_CONFIG == resultCode)
 				        {
 					        // TODO: store in prefs?
-				        	Log.i(TAG, ".downloadUpdate: new server configuration found");
+					        Log.i(TAG, ".downloadUpdate: new server configuration found");
 				        }
 			        }
 		        });

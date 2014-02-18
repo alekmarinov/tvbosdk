@@ -15,7 +15,6 @@ import java.io.FileNotFoundException;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -88,7 +87,7 @@ public class FeatureRegister extends FeatureComponent
 		try
 		{
 			_boxId = readMacAddress();
-			_version = parseAppVersion();
+			_version = Environment.getInstance().getBuildVersion();
 
 			Bundle bundle = new Bundle();
 			bundle.putString("SERVER", getPrefs().getString(Param.ABMP_SERVER));
@@ -128,11 +127,6 @@ public class FeatureRegister extends FeatureComponent
 			Log.e(TAG, e.getMessage(), e);
 			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
 		}
-		catch (NameNotFoundException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-		}
 	}
 
 	@Override
@@ -143,6 +137,7 @@ public class FeatureRegister extends FeatureComponent
 
 	public String getBoxId()
 	{
+		// if (true) return "902B34F69D99"; //TODO used to test FW download
 		return _boxId;
 	}
 
@@ -160,17 +155,5 @@ public class FeatureRegister extends FeatureComponent
 		        .getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo netInfo = connectivityManager.getActiveNetworkInfo();
 		return (netInfo != null) ? netInfo.getTypeName().toLowerCase() : "";
-	}
-
-	private String parseAppVersion() throws NameNotFoundException
-	{
-		String version = Environment.getInstance().getContext().getPackageManager()
-		        .getPackageInfo(Environment.getInstance().getContext().getPackageName(), 0).versionName;
-		int dotIdx = version.lastIndexOf('.');
-		if (dotIdx >= 0)
-		{
-			version = version.substring(dotIdx + 1);
-		}
-		return version;
 	}
 }

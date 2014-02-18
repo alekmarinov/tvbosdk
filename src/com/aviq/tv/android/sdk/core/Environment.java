@@ -19,6 +19,7 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Application;
 import android.content.Context;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -331,6 +332,30 @@ public class Environment
 	public EventMessenger getEventMessenger()
 	{
 		return _eventMessenger;
+	}
+
+	/**
+	 * Parses the version string from the manifest.
+	 * @return
+	 * @throws NameNotFoundException
+	 */
+	public String getBuildVersion()
+	{
+		String version;
+        try
+        {
+	        version = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0).versionName;
+        }
+        catch (NameNotFoundException e)
+        {
+        	version = "";
+        }
+		int dotIdx = version.lastIndexOf('.');
+		if (dotIdx >= 0)
+		{
+			version = version.substring(dotIdx + 1);
+		}
+		return version;
 	}
 
 	/**
