@@ -319,7 +319,7 @@ public class Environment
 		String version;
         try
         {
-	        version = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0).versionName;
+	        version = getActivity().getPackageManager().getPackageInfo(getActivity().getPackageName(), 0).versionName;
         }
         catch (NameNotFoundException e)
         {
