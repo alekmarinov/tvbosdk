@@ -200,6 +200,14 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 		return _updateDownloadFinished;
 	}
 
+	public String getUpdateFileName()
+	{
+		if (_updateCheckResultsBundle == null || _updateCheckResultsBundle.isEmpty())
+			return null;
+
+		return _updateCheckResultsBundle.getString(PARAM_FILENAME);
+	}
+
 	private void checkForUpdate()
 	{
 		Log.i(TAG, ".checkForUpdate");
