@@ -79,7 +79,7 @@ public class FeatureSoftwareUpdate extends FeatureScheduler
 		/**
 		 * URL for software updates. It should be set by the client application.
 		 */
-		ABMP_SERVER("http://aviq.dyndns.org:983"),
+		ABMP_SERVER("http://aviq.dyndns.org:984"),
 
 		/**
 		 * ABMP update check URL format
