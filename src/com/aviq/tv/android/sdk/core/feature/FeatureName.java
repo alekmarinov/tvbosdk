@@ -37,6 +37,7 @@ public class FeatureName
 		EPG,
 		TICKER,
 		SOFTWARE_UPDATE,
+		DATA_LOADER,
 		TEST
 	}
 

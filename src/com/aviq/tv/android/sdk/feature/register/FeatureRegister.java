@@ -44,12 +44,12 @@ public class FeatureRegister extends FeatureComponent
 		/**
 		 * ABMP Server address
 		 */
-		ABMP_SERVER("http://abmp.aviq.bg"),
+		ABMP_SERVER("http://aviq.dyndns.org:984"),
 
 		/**
 		 * Brand name to represent the box on ABMP
 		 */
-		BRAND("aviqtv"),
+		BRAND("zixi"),
 
 		/**
 		 * ABMP registration URL format
