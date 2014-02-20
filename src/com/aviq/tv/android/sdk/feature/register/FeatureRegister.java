@@ -12,12 +12,15 @@ package com.aviq.tv.android.sdk.feature.register;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.util.Base64;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
@@ -51,7 +54,8 @@ public class FeatureRegister extends FeatureComponent
 		/**
 		 * ABMP registration URL format
 		 */
-		ABMP_REGISTER_URL("${SERVER}/Box/Register.aspx?boxID=${BOX_ID}&version=${VERSION}&brand=${BRAND}&network=${NETWORK}"),
+		ABMP_REGISTER_URL(
+		        "${SERVER}/Box/Register.aspx?boxID=${BOX_ID}&version=${VERSION}&brand=${BRAND}&network=${NETWORK}"),
 
 		/**
 		 * Ping ABMP interval in seconds
@@ -71,6 +75,7 @@ public class FeatureRegister extends FeatureComponent
 
 	private static final String MAC_ADDRESS_FILE = "/sys/class/net/eth0/address";
 	private String _boxId;
+	private String _userToken;
 	private String _version;
 
 	/**
@@ -87,6 +92,7 @@ public class FeatureRegister extends FeatureComponent
 		try
 		{
 			_boxId = readMacAddress();
+			_userToken = createUserToken(_boxId);
 			_version = Environment.getInstance().getBuildVersion();
 
 			Bundle bundle = new Bundle();
@@ -99,8 +105,8 @@ public class FeatureRegister extends FeatureComponent
 			String abmpRegUrl = getPrefs().getString(Param.ABMP_REGISTER_URL, bundle);
 			int registerInterval = getPrefs().getInt(Param.ABMP_REGISTER_INTERVAL);
 
-			FeatureInternet featureInternet = (FeatureInternet) Environment.getInstance()
-			        .getFeatureScheduler(FeatureName.Scheduler.INTERNET);
+			FeatureInternet featureInternet = (FeatureInternet) Environment.getInstance().getFeatureScheduler(
+			        FeatureName.Scheduler.INTERNET);
 			featureInternet.addCheckUrl(abmpRegUrl, registerInterval, new FeatureInternet.OnResultReceived()
 			{
 				@Override
@@ -155,5 +161,25 @@ public class FeatureRegister extends FeatureComponent
 		        .getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo netInfo = connectivityManager.getActiveNetworkInfo();
 		return (netInfo != null) ? netInfo.getTypeName().toLowerCase() : "";
+	}
+
+	private String base64(byte[] bytes)
+	{
+		return android.util.Base64.encodeToString(bytes, Base64.DEFAULT);
+	}
+
+	private String createUserToken(String mac)
+	{
+		try
+		{
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			digest.update(mac.getBytes());
+			return base64(digest.digest());
+		}
+		catch (NoSuchAlgorithmException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		return null;
 	}
 }
