@@ -11,10 +11,13 @@
 package com.aviq.tv.android.sdk.core;
 
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
@@ -74,6 +77,7 @@ public class Environment
 	private ServiceController _serviceController;
 	private Prefs _prefs;
 	private Prefs _userPrefs;
+	private Properties _brandProperties;
 	private RequestQueue _requestQueue;
 	private ImageLoader _imageLoader;
 	private List<IFeature> _features = new ArrayList<IFeature>();
@@ -100,13 +104,19 @@ public class Environment
 		return _instance;
 	}
 
+	public void setBrandProperties(Properties brandProperties)
+	{
+		_brandProperties = brandProperties;
+	}
+
 	/**
 	 * Initialize environment
 	 *
 	 * @throws FeatureNotFoundException
 	 * @throws StateException
 	 */
-	public void initialize(Activity activity) throws FeatureNotFoundException, StateException
+	@SuppressLint("DefaultLocale")
+    public void initialize(Activity activity) throws FeatureNotFoundException, StateException
 	{
 		DisplayMetrics metrics = new DisplayMetrics();
 		activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -137,6 +147,44 @@ public class Environment
 		}
 
 		Log.i(TAG, "Initializing features");
+
+		// Initialize brand properties
+		if (_brandProperties != null)
+		{
+			Log.i(TAG, "Apply brand properties");
+			Enumeration<Object> keys = _brandProperties.keys();
+
+			while (keys.hasMoreElements())
+			{
+				String key = (String) keys.nextElement();
+				String value = _brandProperties.getProperty(key);
+				Log.i(TAG, key + " = `" + value + "'");
+				String[] parts = key.split("\\.");
+				if (parts.length != 3)
+					throw new RuntimeException(
+					        "Invalid brand.properties key, expected <featureType>.<featureName>.<featureParam>, got `"
+					                + key + "'");
+				String featureType = parts[0];
+				String featureName = parts[1];
+				String featureParam = parts[2];
+				Prefs prefs;
+				if (featureType.equalsIgnoreCase(IFeature.Type.COMPONENT.name()))
+					prefs = getFeaturePrefs(FeatureName.Component.valueOf(featureName));
+				else if (featureType.equalsIgnoreCase(IFeature.Type.SCHEDULER.name()))
+					prefs = getFeaturePrefs(FeatureName.Scheduler.valueOf(featureName));
+				else if (featureType.equalsIgnoreCase(IFeature.Type.STATE.name()))
+					prefs = getFeaturePrefs(FeatureName.State.valueOf(featureName));
+				else
+					throw new RuntimeException(
+					        "Invalid feature type in brand.properties key, expected component, scheduler or state, got `"
+					                + featureType + "'");
+
+				Log.i(TAG, "Set brand property " + featureType.toLowerCase() + "." + featureName.toUpperCase() + "."
+				        + featureParam + "=`" + value + "'");
+				prefs.put(featureParam, value);
+			}
+		}
+
 		_onFeatureInitialized.setTimeout(getPrefs().getInt(Param.FEATURE_INITIALIZE_TIMEOUT));
 		_onFeatureInitialized.initializeNext();
 	}
@@ -224,7 +272,8 @@ public class Environment
 	/**
 	 * sets the only application activity
 	 *
-	 * @param activity application activity
+	 * @param activity
+	 *            application activity
 	 */
 	public void setActivity(Activity activity)
 	{
@@ -311,20 +360,21 @@ public class Environment
 
 	/**
 	 * Parses the version string from the manifest.
+	 *
 	 * @return
 	 * @throws NameNotFoundException
 	 */
 	public String getBuildVersion()
 	{
 		String version;
-        try
-        {
-	        version = getActivity().getPackageManager().getPackageInfo(getActivity().getPackageName(), 0).versionName;
-        }
-        catch (NameNotFoundException e)
-        {
-        	version = "";
-        }
+		try
+		{
+			version = getActivity().getPackageManager().getPackageInfo(getActivity().getPackageName(), 0).versionName;
+		}
+		catch (NameNotFoundException e)
+		{
+			version = "";
+		}
 		int dotIdx = version.lastIndexOf('.');
 		if (dotIdx >= 0)
 		{
@@ -451,10 +501,10 @@ public class Environment
 			throw new RuntimeException("Set IFeatureFactory with setFeatureFactory before declaring feature usages");
 
 		// Sets first used feature state as splash state
-//		if (_splashFeatureName == null)
-//		{
-//			_splashFeatureName = featureName;
-//		}
+		// if (_splashFeatureName == null)
+		// {
+		// _splashFeatureName = featureName;
+		// }
 
 		try
 		{
