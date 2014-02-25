@@ -65,7 +65,7 @@ public class FeatureName
 		WEBTV,
 		WEBTV_VIDEO,
 		SOFTWARE_UPDATE,
-		RCU_WIZZARD,
+		RCU_WIZARD,
 		NETWORK,
 		BOOT_WIZARD
 	}

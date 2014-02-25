@@ -385,6 +385,8 @@ public class StateManager
 	}
 
 	/**
+	 * FIXME: rename to getMainState for consistency with setStateMain
+	 *
 	 * Gets current active main state instance
 	 *
 	 * @return current state instance
@@ -397,6 +399,8 @@ public class StateManager
 	}
 
 	/**
+	 * FIXME: rename to getStateOverlay for consistency with setStateOverlay
+	 *
 	 * Gets current active overlay state instance
 	 *
 	 * @return current overlay instance

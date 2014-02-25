@@ -18,6 +18,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URL;
 import java.net.UnknownHostException;
 
 import org.keplerproject.luajava.JavaFunction;
@@ -104,7 +105,29 @@ public class FeatureLuaRPC extends FeatureComponent
 		return _luaStub;
 	}
 
-	public void execute(final InputStream inputStream)
+	/**
+	 * Executes script as input stream asynchronously
+	 *
+	 * @param inputStream
+	 */
+	public void executeAsync(final InputStream inputStream)
+	{
+		new Thread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				execute(inputStream);
+			}
+		}).start();
+	}
+
+	/**
+	 * Executes remote script from url
+	 *
+	 * @param url
+	 */
+	public void executeUrl(final String url)
 	{
 		new Thread(new Runnable()
 		{
@@ -112,28 +135,41 @@ public class FeatureLuaRPC extends FeatureComponent
 			public void run()
 			{
 				try
-				{
-					Socket clientSocket = new Socket("localhost", _port);
-					OutputStream outputStream = clientSocket.getOutputStream();
-					byte[] buffer = new byte[4096];
-					int n = 0;
-					while (-1 != (n = inputStream.read(buffer)))
-					{
-						outputStream.write(buffer, 0, n);
-					}
-					inputStream.close();
-					outputStream.close();
-				}
-				catch (UnknownHostException e)
-				{
-					Log.e(TAG, e.getMessage(), e);
-				}
-				catch (IOException e)
-				{
-					Log.e(TAG, e.getMessage(), e);
-				}
+                {
+	                execute(new URL(url).openStream());
+                }
+                catch (IOException e)
+                {
+        			Log.e(TAG, e.getMessage(), e);
+                }
 			}
 		}).start();
+	}
+
+	// Executes script as input stream
+	private void execute(InputStream inputStream)
+	{
+		try
+		{
+			Socket clientSocket = new Socket("localhost", _port);
+			OutputStream outputStream = clientSocket.getOutputStream();
+			byte[] buffer = new byte[4096];
+			int n = 0;
+			while (-1 != (n = inputStream.read(buffer)))
+			{
+				outputStream.write(buffer, 0, n);
+			}
+			inputStream.close();
+			outputStream.close();
+		}
+		catch (UnknownHostException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
 	}
 
 	private static class ClientThread extends Thread

@@ -116,7 +116,7 @@ public class Environment
 	 * @throws StateException
 	 */
 	@SuppressLint("DefaultLocale")
-    public void initialize(Activity activity) throws FeatureNotFoundException, StateException
+	public void initialize(Activity activity) throws FeatureNotFoundException, StateException
 	{
 		DisplayMetrics metrics = new DisplayMetrics();
 		activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -632,6 +632,8 @@ public class Environment
 	private void useDependencies(IFeature feature) throws FeatureNotFoundException
 	{
 		FeatureSet deps = feature.dependencies();
+		if (deps == null)
+			return ;
 		for (FeatureName.Component featureName : deps.Components)
 		{
 			use(featureName);
@@ -662,55 +664,59 @@ public class Environment
 				int resolvedCounter;
 
 				// check component dependencies
-				resolvedCounter = feature.dependencies().Components.size();
-				for (FeatureName.Component component : feature.dependencies().Components)
+				if (feature.dependencies() != null)
 				{
-					for (IFeature sortedFeature : sorted)
+					resolvedCounter = feature.dependencies().Components.size();
+					for (FeatureName.Component component : feature.dependencies().Components)
 					{
-						if (IFeature.Type.COMPONENT.equals(sortedFeature.getType()))
-							if (component.equals(((FeatureComponent) sortedFeature).getComponentName()))
-							{
-								resolvedCounter--;
-								break;
-							}
+						for (IFeature sortedFeature : sorted)
+						{
+							if (IFeature.Type.COMPONENT.equals(sortedFeature.getType()))
+								if (component.equals(((FeatureComponent) sortedFeature).getComponentName()))
+								{
+									resolvedCounter--;
+									break;
+								}
+						}
 					}
-				}
-				if (resolvedCounter > 0) // has unresolved dependencies
-					continue;
+					if (resolvedCounter > 0) // has unresolved dependencies
+						continue;
 
-				// check scheduler dependencies
-				resolvedCounter = feature.dependencies().Schedulers.size();
-				for (FeatureName.Scheduler scheduler : feature.dependencies().Schedulers)
-				{
-					for (IFeature sortedFeature : sorted)
+					// check scheduler dependencies
+					resolvedCounter = feature.dependencies().Schedulers.size();
+					for (FeatureName.Scheduler scheduler : feature.dependencies().Schedulers)
 					{
-						if (IFeature.Type.SCHEDULER.equals(sortedFeature.getType()))
-							if (scheduler.equals(((FeatureScheduler) sortedFeature).getSchedulerName()))
-							{
-								resolvedCounter--;
-								break;
-							}
+						for (IFeature sortedFeature : sorted)
+						{
+							if (IFeature.Type.SCHEDULER.equals(sortedFeature.getType()))
+								if (scheduler.equals(((FeatureScheduler) sortedFeature).getSchedulerName()))
+								{
+									resolvedCounter--;
+									break;
+								}
+						}
 					}
-				}
-				if (resolvedCounter > 0) // has unresolved dependencies
-					continue;
+					if (resolvedCounter > 0) // has unresolved dependencies
+						continue;
 
-				// check state dependencies
-				resolvedCounter = feature.dependencies().States.size();
-				for (FeatureName.State state : feature.dependencies().States)
-				{
-					for (IFeature sortedFeature : sorted)
+					// check state dependencies
+					resolvedCounter = feature.dependencies().States.size();
+					for (FeatureName.State state : feature.dependencies().States)
 					{
-						if (IFeature.Type.STATE.equals(sortedFeature.getType()))
-							if (state.equals(((FeatureState) sortedFeature).getStateName()))
-							{
-								resolvedCounter--;
-								break;
-							}
+						for (IFeature sortedFeature : sorted)
+						{
+							if (IFeature.Type.STATE.equals(sortedFeature.getType()))
+								if (state.equals(((FeatureState) sortedFeature).getStateName()))
+								{
+									resolvedCounter--;
+									break;
+								}
+						}
 					}
+					if (resolvedCounter > 0) // has unresolved dependencies
+						continue;
+
 				}
-				if (resolvedCounter > 0) // has unresolved dependencies
-					continue;
 
 				if (sorted.indexOf(feature) < 0)
 					sorted.add(feature);
