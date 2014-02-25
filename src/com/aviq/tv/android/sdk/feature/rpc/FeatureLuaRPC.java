@@ -129,19 +129,20 @@ public class FeatureLuaRPC extends FeatureComponent
 	 */
 	public void executeUrl(final String url)
 	{
+		Log.i(TAG, ".executeUrl: " + url);
 		new Thread(new Runnable()
 		{
 			@Override
 			public void run()
 			{
 				try
-                {
-	                execute(new URL(url).openStream());
-                }
-                catch (IOException e)
-                {
-        			Log.e(TAG, e.getMessage(), e);
-                }
+				{
+					execute(new URL(url).openStream());
+				}
+				catch (IOException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
 			}
 		}).start();
 	}
@@ -185,6 +186,23 @@ public class FeatureLuaRPC extends FeatureComponent
 			_clientSocket = clientSocket;
 		}
 
+		private void writeToClient(String message)
+		{
+			if (_clientWriter != null)
+			{
+				try
+				{
+					_clientWriter.append(message);
+					_clientWriter.flush();
+				}
+				catch (IOException e)
+				{
+					Log.w(TAG, e.getMessage());
+					_clientWriter = null;
+				}
+			}
+		}
+
 		private static byte[] readAll(InputStream input) throws IOException
 		{
 			ByteArrayOutputStream output = new ByteArrayOutputStream(4096);
@@ -213,42 +231,34 @@ public class FeatureLuaRPC extends FeatureComponent
 					@Override
 					public int execute() throws LuaException
 					{
-						try
+						for (int i = 2; i <= L.getTop(); i++)
 						{
-							for (int i = 2; i <= L.getTop(); i++)
+							int type = L.type(i);
+							String stype = L.typeName(type);
+							String val = null;
+							if (stype.equals("userdata"))
 							{
-								int type = L.type(i);
-								String stype = L.typeName(type);
-								String val = null;
-								if (stype.equals("userdata"))
-								{
-									Object obj = L.toJavaObject(i);
-									if (obj != null)
-										val = obj.toString();
-								}
-								else if (stype.equals("boolean"))
-								{
-									val = L.toBoolean(i) ? "true" : "false";
-								}
-								else
-								{
-									val = L.toString(i);
-								}
-								if (val == null)
-									val = stype;
-								_clientWriter.append(val);
-
-								Log.i(TAG, val);
+								Object obj = L.toJavaObject(i);
+								if (obj != null)
+									val = obj.toString();
 							}
-							_clientWriter.append("\t");
-							_clientWriter.append("\n");
-							_clientWriter.flush();
-							return 0;
+							else if (stype.equals("boolean"))
+							{
+								val = L.toBoolean(i) ? "true" : "false";
+							}
+							else
+							{
+								val = L.toString(i);
+							}
+							if (val == null)
+								val = stype;
+							writeToClient(val);
+
+							Log.i(TAG, val);
 						}
-						catch (IOException e)
-						{
-							throw new LuaException(e);
-						}
+						writeToClient("\t");
+						writeToClient("\n");
+						return 0;
 					}
 				};
 				print.register("print");
@@ -291,8 +301,7 @@ public class FeatureLuaRPC extends FeatureComponent
 				InputStream clientInput = _clientSocket.getInputStream();
 				OutputStream clientOutput = _clientSocket.getOutputStream();
 				_clientWriter = new OutputStreamWriter(clientOutput);
-				_clientWriter.write("Lua output follows...\r\n");
-				_clientWriter.flush();
+				writeToClient("Lua output follows...\r\n");
 
 				if (_featureLuaRPC.getLuaStub() != null)
 				{
@@ -342,19 +351,10 @@ public class FeatureLuaRPC extends FeatureComponent
 						L.remove(-2);
 						L.insert(-2);
 						int ok = L.pcall(0, 0, -2);
-						try
+						writeToClient("Lua output finished!\r\n");
+						if (ok != 0)
 						{
-							_clientWriter.write("Lua output finished!\r\n");
-							_clientWriter.flush();
-							if (ok != 0)
-								throw new LuaException(errorReason(ok) + ": " + L.toString(-1));
-						}
-						catch (IOException e)
-						{
-							Log.e(TAG, e.getMessage(), e);
-						}
-						catch (LuaException e)
-						{
+							Exception e = new LuaException(errorReason(ok) + ": " + L.toString(-1));
 							Log.e(TAG, e.getMessage(), e);
 						}
 					}

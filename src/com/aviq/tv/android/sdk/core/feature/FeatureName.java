@@ -36,7 +36,11 @@ public class FeatureName
 		INTERNET,
 		EPG,
 		TICKER,
+
+		// FIXME: rename to UPGRADE, and all related files
 		SOFTWARE_UPDATE,
+
+		// FIXME: not meaningful name
 		DATA_LOADER,
 		TEST
 	}
@@ -64,9 +68,10 @@ public class FeatureName
 		HOLLYSTAR_VIDEO,
 		WEBTV,
 		WEBTV_VIDEO,
-		SOFTWARE_UPDATE,
+		UPGRADE_WIZARD,
 		RCU_WIZARD,
-		NETWORK,
+		LANGUAGE_WIZARD,
+		NETWORK_WIZARD,
 		BOOT_WIZARD
 	}
 }
