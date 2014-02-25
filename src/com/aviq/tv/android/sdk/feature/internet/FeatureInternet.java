@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2007-2013, AVIQ Bulgaria Ltd
+ * Copyright (c) 2007-2014, AVIQ Bulgaria Ltd
  *
  * Project:     AVIQTVSDK
- * Filename:    FeatureSchedulerInternet.java
+ * Filename:    FeatureInternet.java
  * Author:      alek
  * Date:        3 Dec 2013
  * Description: Feature managing internet connectivity
@@ -21,6 +21,8 @@ import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
+import com.aviq.tv.android.sdk.core.service.ServiceController;
+import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 
 /**
  * Feature managing internet connectivity
@@ -29,12 +31,14 @@ public class FeatureInternet extends FeatureScheduler
 {
 	private static final String TAG = FeatureInternet.class.getSimpleName();
 
-	/**
-	 * Interface to be implemented when requested url returns response status
-	 */
-	public interface OnResultReceived
+	public enum ResultExtras
 	{
-		void onReceiveResult(int resultCode, Bundle resultData);
+		URL, CONTENT
+	}
+
+	public static enum RequestMethod
+	{
+		GET, POST, HEAD, OPTIONS, PUT, DELETE, TRACE
 	}
 
 	@Override
@@ -63,6 +67,35 @@ public class FeatureInternet extends FeatureScheduler
 	}
 
 	/**
+	 * Get content from Url
+	 *
+	 * @param url
+	 * @param onResultReceived
+	 */
+	public void getUrlContent(String url, OnResultReceived onResultReceived)
+	{
+		Log.i(TAG, ".getUrlContent: " + url);
+		CheckResponse responseSuccess = new CheckResponse(onResultReceived);
+		CheckResponse responseError = new CheckResponse(onResultReceived);
+		StringRequest stringRequest = new StringRequest(url, responseSuccess, responseError);
+		responseSuccess.setRequest(stringRequest);
+		responseError.setRequest(stringRequest);
+		Environment.getInstance().getRequestQueue().add(stringRequest);
+	}
+
+	/**
+	 * Download file
+	 *
+	 * @param params Bundle with various download options. See DownloadService.Extras
+	 * @param onResultReceived
+	 */
+	public void downloadFile(Bundle params, OnResultReceived onResultReceived)
+	{
+		ServiceController serviceController = Environment.getInstance().getServiceController();
+		serviceController.startService(DownloadService.class, params).then(onResultReceived);
+	}
+
+	/**
 	 * Url check response handler
 	 */
 	private class CheckResponse implements Listener<String>, ErrorListener, Runnable
@@ -77,6 +110,11 @@ public class FeatureInternet extends FeatureScheduler
 			_onResultReceived = onResultReceived;
 		}
 
+		private CheckResponse(OnResultReceived onResultReceived)
+		{
+			this(0, onResultReceived);
+		}
+
 		public void setRequest(StringRequest stringRequest)
 		{
 			_stringRequest = stringRequest;
@@ -88,17 +126,19 @@ public class FeatureInternet extends FeatureScheduler
 		@Override
 		public void onResponse(String response)
 		{
-			if (response.length() > 10)
-				response = response.substring(0, 10);
-			Log.i(TAG, _stringRequest.getUrl() + " -> " + response);
+			Log.i(TAG, _stringRequest.getUrl() + " -> " + response.substring(0, Math.min(10, response.length() - 1)));
 			if (_onResultReceived != null)
 			{
 				Bundle bundle = new Bundle();
-				bundle.putString("URL", _stringRequest.getUrl());
+				bundle.putString(ResultExtras.URL.name(), _stringRequest.getUrl());
+				bundle.putString(ResultExtras.CONTENT.name(), response);
 				_onResultReceived.onReceiveResult(ResultCode.OK, bundle);
 			}
-			Log.i(TAG, "Post checking again in " + _intervalSecs + " ms");
-			Environment.getInstance().getEventMessenger().postDelayed(this, _intervalSecs);
+			if (_intervalSecs > 0)
+			{
+				Log.i(TAG, "Post checking again in " + _intervalSecs + " ms");
+				Environment.getInstance().getEventMessenger().postDelayed(this, _intervalSecs);
+			}
 		}
 
 		/**
@@ -117,8 +157,11 @@ public class FeatureInternet extends FeatureScheduler
 				bundle.putString("URL", _stringRequest.getUrl());
 				_onResultReceived.onReceiveResult(statusCode, bundle);
 			}
-			Log.i(TAG, "Post checking again in " + _intervalSecs + " ms");
-			Environment.getInstance().getEventMessenger().postDelayed(this, _intervalSecs);
+			if (_intervalSecs > 0)
+			{
+				Log.i(TAG, "Post checking again in " + _intervalSecs + " ms");
+				Environment.getInstance().getEventMessenger().postDelayed(this, _intervalSecs);
+			}
 		}
 
 		@Override

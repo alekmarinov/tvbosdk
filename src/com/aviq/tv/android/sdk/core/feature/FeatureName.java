@@ -36,11 +36,9 @@ public class FeatureName
 		INTERNET,
 		EPG,
 		TICKER,
+		UPGRADE,
 
-		// FIXME: rename to UPGRADE, and all related files
-		SOFTWARE_UPDATE,
-
-		// FIXME: not meaningful name
+		// FIXME: rename to more meaningful name
 		DATA_LOADER,
 		TEST
 	}

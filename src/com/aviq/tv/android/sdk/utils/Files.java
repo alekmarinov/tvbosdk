@@ -33,6 +33,17 @@ public class Files
 	}
 
 	/**
+	 * Return file directory
+	 */
+	public static String dirName(String fileName)
+	{
+		int sep = fileName.lastIndexOf('/');
+		if (sep >= 0)
+			return fileName.substring(0, sep);
+		return "";
+	}
+
+	/**
 	 * Return file name extension
 	 */
 	public static String ext(String fileName)

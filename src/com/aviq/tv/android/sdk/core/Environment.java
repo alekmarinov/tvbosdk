@@ -366,21 +366,15 @@ public class Environment
 	 */
 	public String getBuildVersion()
 	{
-		String version;
 		try
 		{
-			version = getActivity().getPackageManager().getPackageInfo(getActivity().getPackageName(), 0).versionName;
+			return getActivity().getPackageManager().getPackageInfo(getActivity().getApplication().getPackageName(), 0).versionName;
 		}
 		catch (NameNotFoundException e)
 		{
-			version = "";
+			Log.e(TAG, e.getMessage(), e);
 		}
-		int dotIdx = version.lastIndexOf('.');
-		if (dotIdx >= 0)
-		{
-			version = version.substring(dotIdx + 1);
-		}
-		return version;
+		return null;
 	}
 
 	/**
