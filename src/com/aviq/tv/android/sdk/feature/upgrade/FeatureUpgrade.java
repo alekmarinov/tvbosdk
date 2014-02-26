@@ -125,6 +125,7 @@ public class FeatureUpgrade extends FeatureScheduler
 
 	private FeatureRegister _featureRegister;
 	private FeatureInternet _featureInternet;
+	private boolean _hasError;
 	private boolean _hasUpdate;
 	private boolean _updateDownloadStarted;
 	private boolean _updateDownloadFinished;
@@ -186,6 +187,12 @@ public class FeatureUpgrade extends FeatureScheduler
 	{
 		Log.i(TAG, ".hasUpdate: " + _hasUpdate);
 		return _hasUpdate;
+	}
+
+	public boolean hasError()
+	{
+		Log.i(TAG, ".hasError: " + _hasError);
+		return _hasError;
 	}
 
 	public boolean isUpdateDownloadStarted()
@@ -274,6 +281,12 @@ public class FeatureUpgrade extends FeatureScheduler
 						}
 					}
 					break;
+
+					default:
+						Log.e(TAG, ".checkForUpdate: check failed; resultCode = " + resultCode);
+						_hasError = true;
+						_hasUpdate = false;
+						break;
 				}
 			}
 		});
@@ -289,6 +302,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		// Store box category type - for read only purposes
 		Environment.getInstance().getUserPrefs().put(UserParam.UPGRADE_BOX_CATEGORY, updateData.SoftwareType);
 
+		_hasError = false;
 		_hasUpdate = hasNewVersion(Environment.getInstance().getBuildVersion(), updateData.Version, updateData.Brand);
 		if (_hasUpdate)
 		{
