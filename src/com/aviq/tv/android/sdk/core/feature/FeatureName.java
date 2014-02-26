@@ -36,7 +36,9 @@ public class FeatureName
 		INTERNET,
 		EPG,
 		TICKER,
-		SOFTWARE_UPDATE,
+		UPGRADE,
+
+		// FIXME: rename to more meaningful name
 		DATA_LOADER,
 		POPUP,
 		TEST
@@ -65,9 +67,10 @@ public class FeatureName
 		HOLLYSTAR_VIDEO,
 		WEBTV,
 		WEBTV_VIDEO,
-		SOFTWARE_UPDATE,
-		RCU_WIZZARD,
-		NETWORK,
+		UPGRADE_WIZARD,
+		RCU_WIZARD,
+		LANGUAGE_WIZARD,
+		NETWORK_WIZARD,
 		BOOT_WIZARD
 	}
 }

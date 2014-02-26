@@ -53,7 +53,7 @@ public class TextUtils
 	 *            The InputStream to read from.
 	 * @return The contents of the InputStream as a String.
 	 */
-	public static String inputSteamToString(InputStream inputStream)
+	public static String inputStreamToString(InputStream inputStream)
 	{
 		StringBuilder outputBuilder = new StringBuilder();
 		BufferedReader reader = null;

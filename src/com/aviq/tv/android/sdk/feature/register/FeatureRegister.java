@@ -28,6 +28,7 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -107,7 +108,7 @@ public class FeatureRegister extends FeatureComponent
 
 			FeatureInternet featureInternet = (FeatureInternet) Environment.getInstance().getFeatureScheduler(
 			        FeatureName.Scheduler.INTERNET);
-			featureInternet.addCheckUrl(abmpRegUrl, registerInterval, new FeatureInternet.OnResultReceived()
+			featureInternet.addCheckUrl(abmpRegUrl, registerInterval, new ServiceController.OnResultReceived()
 			{
 				@Override
 				public void onReceiveResult(int resultCode, Bundle resultData)
@@ -150,7 +151,7 @@ public class FeatureRegister extends FeatureComponent
 	private String readMacAddress() throws FileNotFoundException
 	{
 		FileInputStream fis = new FileInputStream(MAC_ADDRESS_FILE);
-		String macAddress = TextUtils.inputSteamToString(fis);
+		String macAddress = TextUtils.inputStreamToString(fis);
 		macAddress = macAddress.substring(0, 17);
 		return macAddress.replace(":", "").toUpperCase();
 	}
