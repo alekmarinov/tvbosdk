@@ -41,7 +41,7 @@ public class DownloadService extends BaseService
 	private static final int READ_TIMEOUT = 60 * 1000;
 	private static final int BUFFER_SIZE = 10 * 100 * 8192;
 
-	public static final int RESULT_PROGRESS = EventMessenger.ID();
+	public static final int DOWNLOAD_PROGRESS = EventMessenger.ID();
 	public static final int DOWNLOAD_SUCCESS = EventMessenger.ID();
 	public static final int DOWNLOAD_FAILED = EventMessenger.ID();
 
@@ -50,7 +50,7 @@ public class DownloadService extends BaseService
 	 */
 	public enum Extras
 	{
-		URL, LOCAL_FILE, MD5, PROXY_HOST, PROXY_PORT, CONNECT_TIMEOUT, READ_TIMEOUT, BUFFER_SIZE
+		URL, LOCAL_FILE, IS_COMPUTE_MD5, PROXY_HOST, PROXY_PORT, CONNECT_TIMEOUT, READ_TIMEOUT, BUFFER_SIZE
 	}
 
 	/**
@@ -58,7 +58,7 @@ public class DownloadService extends BaseService
 	 */
 	public enum ResultExtras
 	{
-		PROGRESS, BYTES_DOWNLOADED, BYTES_TOTAL
+		PROGRESS, MD5, BYTES_DOWNLOADED, BYTES_TOTAL, EXCEPTION
 	}
 
 	public DownloadService()
@@ -73,6 +73,7 @@ public class DownloadService extends BaseService
 		HttpURLConnection conn = null;
 		FileOutputStream outputStream = null;
 		int result = DOWNLOAD_FAILED;
+		Bundle resultData = new Bundle();
 		try
 		{
 			String fileUrl = intent.getStringExtra(Extras.URL.name());
@@ -113,18 +114,21 @@ public class DownloadService extends BaseService
 			Log.i(TAG, "`" + url + "' -> HTTP " + responseCode);
 
 			// prepare md5 digest
-			String expectedMd5 = intent.getStringExtra(Extras.MD5.name());
+			boolean isComputeMd5 = intent.getBooleanExtra(Extras.IS_COMPUTE_MD5.name(), false);
 			MessageDigest md5 = null;
-			if (expectedMd5 != null)
+			if (isComputeMd5)
 			{
-				Log.i(TAG, "Expected MD5 " + expectedMd5);
+				// FIXME: Extend with ability to request various check sum algorithms, e.g. SHA
+				Log.i(TAG, "Requested md5 check sum calculation");
 				md5 = MessageDigest.getInstance("MD5");
 			}
+			int bufSize = intent.getIntExtra(Extras.BUFFER_SIZE.name(), BUFFER_SIZE);
 
 			long downloadStart = System.currentTimeMillis();
-			int bufSize = intent.getIntExtra(Extras.BUFFER_SIZE.name(), BUFFER_SIZE);
+			// prepare input stream
 			inputStream = new BufferedInputStream(conn.getInputStream(), bufSize);
 
+			// prepare destination directory
 			String dirName = Files.dirName(localFile);
 			if (!TextUtils.isEmpty(dirName))
 			{
@@ -133,13 +137,16 @@ public class DownloadService extends BaseService
 					dir.mkdir();
 			}
 
-			outputStream = new FileOutputStream(new File(getFilesDir(), localFile));
+			// create output stream
+			File partFile = new File(getFilesDir(), localFile + ".part");
+			outputStream = new FileOutputStream(partFile);
 
 			int total = conn.getContentLength();
 			byte data[] = new byte[bufSize];
 			int count;
 			int bytesWritten = 0;
 			Bundle progressData = new Bundle();
+			// downloading
 			while ((count = inputStream.read(data, 0, bufSize)) != -1)
 			{
 				if (md5 != null)
@@ -147,51 +154,51 @@ public class DownloadService extends BaseService
 				outputStream.write(data, 0, count);
 				bytesWritten += count;
 
+				// send progress events back to receiver
 				progressData.putFloat(ResultExtras.PROGRESS.name(), (float) bytesWritten / total);
 				progressData.putFloat(ResultExtras.BYTES_DOWNLOADED.name(), bytesWritten);
 				progressData.putFloat(ResultExtras.BYTES_TOTAL.name(), total);
-				resultReceiver.send(RESULT_PROGRESS, progressData);
+				resultReceiver.send(DOWNLOAD_PROGRESS, progressData);
 			}
 			long duration = System.currentTimeMillis() - downloadStart;
 			Log.i(TAG, bytesWritten + " bytes in " + duration + " ms downloaded from " + url);
 
 			if (md5 != null)
 			{
-				// verify md5
+				// format md5 string
 				byte[] digest = md5.digest();
 				StringBuffer downloadedMd5 = new StringBuffer();
 				for (int i = 0; i < digest.length; i++)
 				{
 					downloadedMd5.append(Integer.toString((digest[i] & 0xFF) + 0x100, 16).substring(1));
 				}
+				Log.i(TAG, "Computed MD5 sum: " + downloadedMd5);
+				resultData.putString(ResultExtras.MD5.name(), downloadedMd5.toString());
+			}
 
-				if (expectedMd5.equalsIgnoreCase(downloadedMd5.toString()))
-				{
-					Log.i(TAG, "Download success: MD5 check ok");
-					result = DOWNLOAD_SUCCESS;
-				}
-				else
-				{
-					Log.i(TAG, "MD5 check failed. Expected `" + expectedMd5 + "' got `" + downloadedMd5 + "'");
-				}
-			}
-			else
-			{
-				Log.i(TAG, "Download success");
-				result = DOWNLOAD_SUCCESS;
-			}
+			File downloadedFile = new File(getFilesDir(), localFile);
+			// delete if file with the same name already exists
+			if (downloadedFile.exists())
+				downloadedFile.delete();
+
+			// rename file to requested name
+			partFile.renameTo(downloadedFile);
+
+			// finish success
+			Log.i(TAG, "Download success: " + downloadedFile);
+			result = DOWNLOAD_SUCCESS;
 		}
 		catch (MalformedURLException e)
 		{
-			Log.e(TAG, e.getMessage(), e);
+			resultData.putSerializable(ResultExtras.EXCEPTION.name(), e);
 		}
 		catch (IOException e)
 		{
-			Log.e(TAG, e.getMessage(), e);
+			resultData.putSerializable(ResultExtras.EXCEPTION.name(), e);
 		}
 		catch (NoSuchAlgorithmException e)
 		{
-			Log.e(TAG, e.getMessage(), e);
+			resultData.putSerializable(ResultExtras.EXCEPTION.name(), e);
 		}
 		finally
 		{
@@ -203,7 +210,7 @@ public class DownloadService extends BaseService
 			Files.closeQuietly(outputStream, TAG);
 
 			// send download status to result receiver
-			resultReceiver.send(result, new Bundle());
+			resultReceiver.send(result, resultData);
 		}
 	}
 }

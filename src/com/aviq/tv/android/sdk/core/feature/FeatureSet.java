@@ -22,6 +22,7 @@ public class FeatureSet
 	public List<FeatureName.Component> Components = new ArrayList<FeatureName.Component>();
 	public List<FeatureName.Scheduler> Schedulers = new ArrayList<FeatureName.Scheduler>();
 	public List<FeatureName.State> States = new ArrayList<FeatureName.State>();
+	public List<Class<?>> Specials = new ArrayList<Class<?>>();
 
 	public boolean isEmpty()
 	{
@@ -30,6 +31,9 @@ public class FeatureSet
 
 	public boolean has(IFeature feature)
 	{
+		if (Specials.indexOf(feature.getClass()) >= 0)
+			return true;
+
 		switch (feature.getType())
 		{
 			case COMPONENT:

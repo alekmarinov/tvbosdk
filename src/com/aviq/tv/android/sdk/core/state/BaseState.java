@@ -96,10 +96,6 @@ public class BaseState extends Fragment
 			{
 				stateManager.setStateOverlay(null, null);
 			}
-			else if (StateLayer.OVERLAY.equals(stateLayer))
-			{
-				stateManager.hideMessage();
-			}
 		}
 		catch (StateException e)
 		{

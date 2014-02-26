@@ -18,6 +18,7 @@ import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.View;
 
 import com.aviq.tv.android.sdk.core.AVKeyEvent;
 import com.aviq.tv.android.sdk.core.Environment;
@@ -278,10 +279,32 @@ public class StateManager
 				return StateLayer.MAIN;
 			case 1:
 				return StateLayer.OVERLAY;
-			case 2:
-				return StateLayer.MESSAGE;
 		}
 		return null;
+	}
+
+	/**
+	 * Replace one state with another keeping the same layer
+	 *
+	 * @param currentState
+	 *            The state to be replaced. It must occupy MAIN or OVERLAY layer
+	 * @param newState
+	 *            The new State to replace with
+	 * @param params
+	 *            Bundle holding params to be sent to the State when showing
+	 */
+	public void replaceState(BaseState currentState, BaseState newState, Bundle params) throws StateException
+	{
+		StateLayer stateLayer = getStateLayer(currentState);
+		if (stateLayer == null)
+		{
+			throw new StateException(currentState, "State " + currentState.getClass().getSimpleName()
+			        + " is not active to be replaced by " + newState.getClass().getSimpleName());
+		}
+		if (StateLayer.MAIN.equals(stateLayer))
+			setStateMain(newState, params);
+		else if (StateLayer.OVERLAY.equals(stateLayer))
+			setStateOverlay(newState, params);
 	}
 
 	/**
@@ -379,11 +402,18 @@ public class StateManager
 					{
 						if (stateLayer.equals(StateLayer.OVERLAY))
 						{
-							if (_overlayBackgroundImage != 0)
-								state.getView().setBackgroundResource(_overlayBackgroundImage);
+							View stateView = state.getView();
+							if (stateView != null)
+							{
+								if (_overlayBackgroundImage != 0)
+									state.getView().setBackgroundResource(_overlayBackgroundImage);
+								else
+									state.getView().setBackgroundColor(_overlayBackgroundColor);
+							}
 							else
-								state.getView().setBackgroundColor(_overlayBackgroundColor);
-
+							{
+								Log.e(TAG, "The view of overlay " + state.getClass().getName() + " is null!");
+							}
 							_activeStates.get(0).onHide(true);
 						}
 
@@ -406,7 +436,6 @@ public class StateManager
 
 	/**
 	 * FIXME: rename to getMainState for consistency with setStateMain
-	 *
 	 * Gets current active main state instance
 	 *
 	 * @return current state instance
@@ -420,7 +449,6 @@ public class StateManager
 
 	/**
 	 * FIXME: rename to getStateOverlay for consistency with setStateOverlay
-	 *
 	 * Gets current active overlay state instance
 	 *
 	 * @return current overlay instance

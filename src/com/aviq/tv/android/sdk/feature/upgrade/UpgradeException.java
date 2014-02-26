@@ -10,21 +10,24 @@
 
 package com.aviq.tv.android.sdk.feature.upgrade;
 
+
 /**
  * Exception caused by FeatureUpgrade
  */
 public class UpgradeException extends Exception
 {
     private static final long serialVersionUID = 1L;
+    private int _resultCode;
 
-	public UpgradeException()
+	public UpgradeException(int resultCode)
 	{
+		_resultCode = resultCode;
 	}
 
 	/**
 	 * @param detailMessage
 	 */
-	public UpgradeException(String detailMessage)
+	public UpgradeException(int resultCode, String detailMessage)
 	{
 		super(detailMessage);
 	}
@@ -32,7 +35,7 @@ public class UpgradeException extends Exception
 	/**
 	 * @param throwable
 	 */
-	public UpgradeException(Throwable throwable)
+	public UpgradeException(int resultCode, Throwable throwable)
 	{
 		super(throwable);
 	}
@@ -41,9 +44,13 @@ public class UpgradeException extends Exception
 	 * @param detailMessage
 	 * @param throwable
 	 */
-	public UpgradeException(String detailMessage, Throwable throwable)
+	public UpgradeException(int resultCode, String detailMessage, Throwable throwable)
 	{
 		super(detailMessage, throwable);
 	}
 
+	public int getResultCode()
+	{
+		return _resultCode;
+	}
 }
