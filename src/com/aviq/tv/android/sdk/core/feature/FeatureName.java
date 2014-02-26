@@ -38,6 +38,7 @@ public class FeatureName
 		TICKER,
 		SOFTWARE_UPDATE,
 		DATA_LOADER,
+		POPUP,
 		TEST
 	}
 

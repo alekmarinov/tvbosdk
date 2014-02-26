@@ -10,6 +10,7 @@
 
 package com.aviq.tv.android.sdk.core.state;
 
+import java.util.ArrayList;
 import java.util.Stack;
 
 import android.app.Activity;
@@ -56,6 +57,8 @@ public class StateManager
 		public static final String PARAM_POSITIVE_BUTTON_LABEL = "PARAM_POSITIVE_BUTTON_LABEL";
 		public static final String PARAM_NEGATIVE_BUTTON_LABEL = "PARAM_NEGATIVE_BUTTON_LABEL";
 		public static final String PARAM_IMAGE_URL = "PARAM_IMAGE_URL";
+		public static final String PARAM_CUSTOM_BUTTON_LABEL = "PARAM_CUSTOM_BUTTON_LABEL";
+		public static final String PARAM_CUSTOM_BUTTON_ACTION_CODE = "PARAM_CUSTOM_BUTTON_ACTION_CODE";
 
 		public enum Type
 		{
@@ -64,7 +67,7 @@ public class StateManager
 
 		public enum Button
 		{
-			OK, CANCEL, YES, NO, POSITIVE_BUTTON, NEGATIVE_BUTTON
+			OK, CANCEL, YES, NO, POSITIVE_BUTTON, NEGATIVE_BUTTON, CUSTOM
 		}
 
 		private Bundle _bundle = new Bundle();
@@ -122,6 +125,23 @@ public class StateManager
 		{
 			_bundle.putBoolean(Button.NEGATIVE_BUTTON.name(), true);
 			_bundle.putInt(PARAM_NEGATIVE_BUTTON_LABEL, labelResId);
+			return this;
+		}
+
+		public MessageParams addCustomButton(String label, int actionCode)
+		{
+			ArrayList<Bundle> customButtonList = _bundle.getParcelableArrayList(Button.CUSTOM.name());
+			if (customButtonList == null)
+			{
+				customButtonList = new ArrayList<Bundle>();
+				_bundle.putParcelableArrayList(Button.CUSTOM.name(), customButtonList);
+			}
+
+			Bundle bundle = new Bundle();
+			bundle.putString(PARAM_CUSTOM_BUTTON_LABEL, label);
+			bundle.putInt(PARAM_CUSTOM_BUTTON_ACTION_CODE, actionCode);
+
+			customButtonList.add(bundle);
 			return this;
 		}
 
