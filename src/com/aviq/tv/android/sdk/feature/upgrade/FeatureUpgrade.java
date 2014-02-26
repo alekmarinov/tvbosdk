@@ -10,6 +10,7 @@
 
 package com.aviq.tv.android.sdk.feature.upgrade;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 
@@ -29,6 +30,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import android.os.Bundle;
+import android.os.RecoverySystem;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -220,7 +222,8 @@ public class FeatureUpgrade extends FeatureScheduler
 		Log.i(TAG, "Checking for new software update");
 
 		Bundle updateCheckUrlParams = new Bundle();
-		updateCheckUrlParams.putString("SERVER", _featureRegister.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
+		updateCheckUrlParams.putString("SERVER",
+		        _featureRegister.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
 		updateCheckUrlParams.putString("BOX_ID", _featureRegister.getBoxId());
 		updateCheckUrlParams.putString("VERSION", Environment.getInstance().getBuildVersion());
 
@@ -286,7 +289,7 @@ public class FeatureUpgrade extends FeatureScheduler
 						Log.e(TAG, ".checkForUpdate: check failed; resultCode = " + resultCode);
 						_hasError = true;
 						_hasUpdate = false;
-						break;
+					break;
 				}
 			}
 		});
@@ -314,8 +317,48 @@ public class FeatureUpgrade extends FeatureScheduler
 		}
 	}
 
+	public boolean isUpgradeReady()
+	{
+		File upgradeFile = getUpgradeFile();
+		return upgradeFile != null && upgradeFile.exists();
+	}
+
+	public void rebootToInstall() throws UpgradeException
+	{
+		if (!isUpgradeReady())
+		{
+			throw new UpgradeException("rebootToInstall: Not ready for software upgrade");
+		}
+
+		File upgradeFile = getUpgradeFile();
+		try
+        {
+	        RecoverySystem.installPackage(Environment.getInstance().getActivity(), upgradeFile);
+        }
+        catch (IOException e)
+        {
+        	throw new UpgradeException("rebootToInstall: failed", e);
+        }
+	}
+
+	private File getUpgradeFile()
+	{
+		if (_updateData == null)
+			return null;
+
+		File filesDir = Environment.getInstance().getActivity().getFilesDir();
+		File firmwareFile = new File(filesDir, getPrefs().getString(Param.UPDATES_DIR) + "/" + Files.baseName(_updateData.FileName));
+		return firmwareFile;
+	}
+
 	private void downloadUpdate()
 	{
+		if (isUpgradeReady())
+		{
+			_updateDownloadStarted = false;
+			_updateDownloadFinished = true;
+			return ;
+		}
 		Bundle updateUrlParams = new Bundle();
 		updateUrlParams.putString("SERVER", _featureRegister.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
 		updateUrlParams.putString("BOX_ID", _featureRegister.getBoxId());
@@ -370,8 +413,8 @@ public class FeatureUpgrade extends FeatureScheduler
 			throw new IllegalArgumentException("Arguments cannot be null");
 
 		// check if BoxID is reassigned to new brand to allow FW update
-		boolean isNewBrand = !(TextUtils.isEmpty(brand) || _featureRegister.getPrefs().getString(FeatureRegister.Param.BRAND)
-		        .equalsIgnoreCase(brand));
+		boolean isNewBrand = !(TextUtils.isEmpty(brand) || _featureRegister.getPrefs()
+		        .getString(FeatureRegister.Param.BRAND).equalsIgnoreCase(brand));
 		if (isNewBrand)
 			return true;
 
