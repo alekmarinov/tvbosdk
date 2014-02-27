@@ -36,11 +36,6 @@ public class FeatureInternet extends FeatureScheduler
 		URL, CONTENT
 	}
 
-	public static enum RequestMethod
-	{
-		GET, POST, HEAD, OPTIONS, PUT, DELETE, TRACE
-	}
-
 	@Override
 	public FeatureName.Scheduler getSchedulerName()
 	{

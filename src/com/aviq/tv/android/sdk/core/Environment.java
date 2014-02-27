@@ -432,6 +432,46 @@ public class Environment
 	}
 
 	/**
+	 * Declare special feature referred by its class implementation
+	 *
+	 * @param featureClass
+	 *            The class of the special feature
+	 * @return feature instance
+	 */
+	public IFeature use(Class<?> featureClass) throws FeatureNotFoundException
+	{
+		try
+		{
+			// Check if feature is already used
+			return getFeature(featureClass);
+		}
+		catch (FeatureNotFoundException fe)
+		{
+			IFeature feature = null;
+			if (featureClass.isAssignableFrom(IFeature.class))
+			{
+				throw new FeatureNotFoundException("Feature " + featureClass.getName() + " must implement IFeature");
+			}
+
+			try
+			{
+				feature = (IFeature) featureClass.newInstance();
+				useDependencies(feature);
+				_features.add(feature);
+			}
+			catch (InstantiationException e)
+			{
+				throw new FeatureNotFoundException(e);
+			}
+			catch (IllegalAccessException e)
+			{
+				throw new FeatureNotFoundException(e);
+			}
+			return feature;
+		}
+	}
+
+	/**
 	 * Declare component feature to be used
 	 *
 	 * @param featureName
@@ -494,12 +534,6 @@ public class Environment
 		if (_featureFactory == null)
 			throw new RuntimeException("Set IFeatureFactory with setFeatureFactory before declaring feature usages");
 
-		// Sets first used feature state as splash state
-		// if (_splashFeatureName == null)
-		// {
-		// _splashFeatureName = featureName;
-		// }
-
 		try
 		{
 			// Check if feature is already used
@@ -513,6 +547,23 @@ public class Environment
 			_features.add(feature);
 			return feature;
 		}
+	}
+
+	/**
+	 * Get feature by specifying its class implementation
+	 *
+	 * @param featureClass
+	 *            The class of the feature
+	 * @return feature instance
+	 */
+	public IFeature getFeature(Class<?> featureClass) throws FeatureNotFoundException
+	{
+		for (IFeature feature : _features)
+		{
+			if (featureClass.isInstance(feature))
+				return feature;
+		}
+		throw new FeatureNotFoundException(featureClass.getName());
 	}
 
 	/**
@@ -627,7 +678,11 @@ public class Environment
 	{
 		FeatureSet deps = feature.dependencies();
 		if (deps == null)
-			return ;
+			return;
+		for (Class<?> featureClass : deps.Specials)
+		{
+			use(featureClass);
+		}
 		for (FeatureName.Component featureName : deps.Components)
 		{
 			use(featureName);
@@ -657,9 +712,25 @@ public class Environment
 			{
 				int resolvedCounter;
 
-				// check component dependencies
 				if (feature.dependencies() != null)
 				{
+					// check special features dependencies
+					resolvedCounter = feature.dependencies().Specials.size();
+					for (Class<?> special : feature.dependencies().Specials)
+					{
+						for (IFeature sortedFeature : sorted)
+						{
+							if (special.isInstance(sortedFeature))
+							{
+								resolvedCounter--;
+								break;
+							}
+						}
+					}
+					if (resolvedCounter > 0) // has unresolved dependencies
+						continue;
+
+					// check component dependencies
 					resolvedCounter = feature.dependencies().Components.size();
 					for (FeatureName.Component component : feature.dependencies().Components)
 					{

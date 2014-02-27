@@ -18,6 +18,7 @@ public class FeatureName
 {
 	public static enum Component
 	{
+		SPECIAL,
 		RCU,
 		PLAYER,
 		HTTP_SERVER,
@@ -33,6 +34,7 @@ public class FeatureName
 
 	public static enum Scheduler
 	{
+		SPECIAL,
 		INTERNET,
 		EPG,
 		TICKER,
@@ -47,6 +49,7 @@ public class FeatureName
 
 	public static enum State
 	{
+		SPECIAL,
 		MENU,
 		LOADING,
 		TV,

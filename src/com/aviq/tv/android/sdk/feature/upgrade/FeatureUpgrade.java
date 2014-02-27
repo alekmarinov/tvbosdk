@@ -10,6 +10,7 @@
 
 package com.aviq.tv.android.sdk.feature.upgrade;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 
@@ -29,6 +30,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import android.os.Bundle;
+import android.os.RecoverySystem;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -40,9 +42,11 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
+import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.internet.DownloadService;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
+import com.aviq.tv.android.sdk.feature.internet.FeatureInternet.ResultExtras;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 import com.aviq.tv.android.sdk.utils.Files;
 
@@ -52,10 +56,9 @@ import com.aviq.tv.android.sdk.utils.Files;
 public class FeatureUpgrade extends FeatureScheduler
 {
 	public static final String TAG = FeatureUpgrade.class.getSimpleName();
-	public static final int ON_SOFTWARE_UPDATE_FOUND = EventMessenger.ID();
-	public static final int ON_UPDATE_PROGRESS = EventMessenger.ID();
-	public static final int ON_UPDATE_ERROR = EventMessenger.ID();
-	public static final int ON_UPDATE_DOWNLOAD_FINISHED = EventMessenger.ID();
+	public static final int ON_STATUS_CHANGED = EventMessenger.ID();
+	public static final int ON_UPDATE_FOUND = EventMessenger.ID();
+	public static final int ON_UPDATE_PROGRESS = DownloadService.DOWNLOAD_PROGRESS;
 
 	public enum Param
 	{
@@ -113,6 +116,16 @@ public class FeatureUpgrade extends FeatureScheduler
 		UPGRADE_BRAND;
 	}
 
+	public enum Status
+	{
+		IDLE, ERROR, CHECKING, DOWNLOADING
+	}
+
+	public enum ErrorReason
+	{
+		NO_ERROR, EXCEPTION, CONNECTION_ERROR, MD5_CHECK_FAILED
+	}
+
 	public class UpdateData
 	{
 		String Version;
@@ -125,11 +138,12 @@ public class FeatureUpgrade extends FeatureScheduler
 
 	private FeatureRegister _featureRegister;
 	private FeatureInternet _featureInternet;
-	private boolean _hasError;
 	private boolean _hasUpdate;
-	private boolean _updateDownloadStarted;
-	private boolean _updateDownloadFinished;
 	private UpdateData _updateData;
+	private Status _status = Status.IDLE;
+	private ErrorReason _errorReason = ErrorReason.NO_ERROR;
+	private int _errorCode = ResultCode.OK;
+	private UpgradeException _exception;
 
 	public FeatureUpgrade()
 	{
@@ -162,14 +176,10 @@ public class FeatureUpgrade extends FeatureScheduler
 	{
 		super.onSchedule(onFeatureInitialized);
 
-		// Contact the server for a software update check; skip check if we
-		// already know there is an update or if the update is currently being
-		// downloaded or has already been downloaded because the main has
-		// been notify about the update and further checking is pointless.
-		boolean performCheck = !(hasUpdate() && (isUpdateDownloadStarted() || isUpdateDownloadFinished()));
-		Log.i(TAG, "performCheck = " + performCheck);
-		if (performCheck)
+		// Contact the server for a software update check
+		if (_status.equals(Status.IDLE) || _status.equals(Status.ERROR))
 		{
+			// reset the state variables to their initial values
 			checkForUpdate();
 		}
 
@@ -183,44 +193,75 @@ public class FeatureUpgrade extends FeatureScheduler
 		return FeatureName.Scheduler.UPGRADE;
 	}
 
-	public boolean hasUpdate()
+	/**
+	 * @return true if new software is ready for upgrade
+	 */
+	public boolean isUpgradeReady()
 	{
-		Log.i(TAG, ".hasUpdate: " + _hasUpdate);
-		return _hasUpdate;
+		File upgradeFile = getUpgradeFile();
+		return upgradeFile != null && upgradeFile.exists();
 	}
 
-	public boolean hasError()
+	/**
+	 * Reboot to install new software upgrade
+	 */
+	public void rebootToInstall() throws UpgradeException
 	{
-		Log.i(TAG, ".hasError: " + _hasError);
-		return _hasError;
+		if (!isUpgradeReady())
+		{
+			throw new UpgradeException(ResultCode.GENERAL_FAILURE, "rebootToInstall: Not ready for software upgrade");
+		}
+		try
+		{
+			RecoverySystem.installPackage(Environment.getInstance().getActivity(), getUpgradeFile());
+		}
+		catch (Exception e)
+		{
+			throw new UpgradeException(ResultCode.GENERAL_FAILURE, "rebootToInstall: failed", e);
+		}
 	}
 
-	public boolean isUpdateDownloadStarted()
+	/**
+	 * @return Status - the current execution status of the upgrade feature
+	 */
+	public Status getStatus()
 	{
-		Log.i(TAG, ".isUpdateDownloadStarted: " + _updateDownloadStarted);
-		return _updateDownloadStarted;
+		return _status;
 	}
 
-	public boolean isUpdateDownloadFinished()
+	/**
+	 * @return ErrorReason the high level reason in case of Error status
+	 */
+	public ErrorReason getErrorReason()
 	{
-		Log.i(TAG, ".isUpdateDownloadFinished: " + _updateDownloadFinished);
-		return _updateDownloadFinished;
+		return _errorReason;
 	}
 
-	public String getUpdateFileName()
+	/**
+	 * @return ResultCode integer describing the error occurred
+	 */
+	public int getErrorCode()
 	{
-		if (_updateData == null)
-			return null;
-		return _updateData.FileName;
+		return _errorCode;
+	}
+
+	/**
+	 * @return Exception occurred in case of Error status
+	 */
+	public UpgradeException getException()
+	{
+		return _exception;
 	}
 
 	private void checkForUpdate()
 	{
 		// Check for software updates
 		Log.i(TAG, "Checking for new software update");
+		setStatus(Status.CHECKING, ErrorReason.NO_ERROR, ResultCode.OK);
 
 		Bundle updateCheckUrlParams = new Bundle();
-		updateCheckUrlParams.putString("SERVER", _featureRegister.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
+		updateCheckUrlParams.putString("SERVER",
+		        _featureRegister.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
 		updateCheckUrlParams.putString("BOX_ID", _featureRegister.getBoxId());
 		updateCheckUrlParams.putString("VERSION", Environment.getInstance().getBuildVersion());
 
@@ -232,146 +273,215 @@ public class FeatureUpgrade extends FeatureScheduler
 			@Override
 			public void onReceiveResult(int resultCode, Bundle resultData)
 			{
-				switch (resultCode)
+				if (ResultCode.OK == resultCode)
 				{
-					case ResultCode.OK:
+					try
 					{
-						try
-						{
-							String content = resultData.getString(FeatureInternet.ResultExtras.CONTENT.name());
-							DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-							DocumentBuilder db = dbf.newDocumentBuilder();
-							InputSource xmlSource = new InputSource(new StringReader(content));
-							Document doc = db.parse(xmlSource);
+						String content = resultData.getString(FeatureInternet.ResultExtras.CONTENT.name());
+						DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+						DocumentBuilder db = dbf.newDocumentBuilder();
+						InputSource xmlSource = new InputSource(new StringReader(content));
+						Document doc = db.parse(xmlSource);
 
-							XPathFactory factory = XPathFactory.newInstance();
-							XPath xPath = factory.newXPath();
-							Element docElement = doc.getDocumentElement();
+						XPathFactory factory = XPathFactory.newInstance();
+						XPath xPath = factory.newXPath();
+						Element docElement = doc.getDocumentElement();
 
-							Node versionNode = ((NodeList) xPath.evaluate("/SW/version", docElement,
-							        XPathConstants.NODESET)).item(0);
-							UpdateData updateData = new UpdateData();
-							updateData.Version = xPath.evaluate("@name", versionNode);
-							updateData.FileName = xPath.evaluate("@url", versionNode);
-							updateData.SoftwareType = xPath.evaluate("@type", versionNode);
-							updateData.Brand = xPath.evaluate("@brand", versionNode);
-							updateData.IsForced = Boolean.parseBoolean(xPath.evaluate("@forced", versionNode));
-							updateData.FileSize = Long.parseLong(xPath.evaluate("@filesize", versionNode));
-							updateCheckResult(updateData);
-						}
-						catch (ParserConfigurationException e)
+						Node versionNode = ((NodeList) xPath
+						        .evaluate("/SW/version", docElement, XPathConstants.NODESET)).item(0);
+						UpdateData updateData = new UpdateData();
+						updateData.Version = xPath.evaluate("@name", versionNode);
+						updateData.FileName = xPath.evaluate("@url", versionNode);
+						updateData.SoftwareType = xPath.evaluate("@type", versionNode);
+						updateData.Brand = xPath.evaluate("@brand", versionNode);
+						updateData.IsForced = Boolean.parseBoolean(xPath.evaluate("@forced", versionNode));
+						updateData.FileSize = Long.parseLong(xPath.evaluate("@filesize", versionNode));
+
+						Log.i(TAG, "Reported software version=" + updateData.Version + ", brand=" + updateData.Brand
+						        + ", fileName=`" + updateData.FileName + "', fileSize=" + updateData.FileSize
+						        + ", softwareType=" + updateData.SoftwareType + ", forced=" + updateData.IsForced);
+						_updateData = updateData;
+
+						// Store box category type - for read only purposes
+						Environment.getInstance().getUserPrefs()
+						        .put(UserParam.UPGRADE_BOX_CATEGORY, updateData.SoftwareType);
+
+						_hasUpdate = isNewVersion(Environment.getInstance().getBuildVersion(), updateData.Version,
+						        updateData.Brand);
+						if (_hasUpdate)
 						{
-							Log.e(TAG, e.getMessage(), e);
+							// Proceed with downloading new software
+							downloadUpdate();
 						}
-						catch (SAXException e)
+						else
 						{
-							Log.e(TAG, e.getMessage(), e);
-						}
-						catch (IOException e)
-						{
-							Log.e(TAG, e.getMessage(), e);
-						}
-						catch (XPathExpressionException e)
-						{
-							Log.e(TAG, e.getMessage(), e);
-						}
-						catch (NumberFormatException e)
-						{
-							Log.w(TAG, e.getMessage());
+							// No new software update
+							setOkStatus();
 						}
 					}
-					break;
-
-					default:
-						Log.e(TAG, ".checkForUpdate: check failed; resultCode = " + resultCode);
-						_hasError = true;
-						_hasUpdate = false;
-						break;
+					catch (ParserConfigurationException e)
+					{
+						setStatus(new UpgradeException(ResultCode.PROTOCOL_ERROR, e));
+					}
+					catch (SAXException e)
+					{
+						setStatus(new UpgradeException(ResultCode.PROTOCOL_ERROR, e));
+					}
+					catch (NumberFormatException e)
+					{
+						setStatus(new UpgradeException(ResultCode.PROTOCOL_ERROR, e));
+					}
+					catch (IOException e)
+					{
+						setStatus(new UpgradeException(ResultCode.INTERNAL_ERROR, e));
+					}
+					catch (XPathExpressionException e)
+					{
+						setStatus(new UpgradeException(ResultCode.INTERNAL_ERROR, e));
+					}
+				}
+				else
+				{
+					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, resultCode);
 				}
 			}
 		});
 	}
 
-	private void updateCheckResult(UpdateData updateData)
+	private void setStatus(Status status, ErrorReason errorReason, int errorCode)
 	{
-		Log.i(TAG, "Reported software version=" + updateData.Version + ", brand=" + updateData.Brand + ", fileName=`"
-		        + updateData.FileName + "', fileSize=" + updateData.FileSize + ", softwareType="
-		        + updateData.SoftwareType + ", forced=" + updateData.IsForced);
-		_updateData = updateData;
-
-		// Store box category type - for read only purposes
-		Environment.getInstance().getUserPrefs().put(UserParam.UPGRADE_BOX_CATEGORY, updateData.SoftwareType);
-
-		_hasError = false;
-		_hasUpdate = hasNewVersion(Environment.getInstance().getBuildVersion(), updateData.Version, updateData.Brand);
-		if (_hasUpdate)
+		if (!status.equals(_status))
 		{
-			// Notify that new update exists
-			getEventMessenger().trigger(ON_SOFTWARE_UPDATE_FOUND);
-
-			// Start download in background
-			downloadUpdate();
+			_status = status;
+			_errorReason = errorReason;
+			_errorCode = errorCode;
+			getEventMessenger().trigger(ON_STATUS_CHANGED);
 		}
+	}
+
+	private void setOkStatus()
+	{
+		setStatus(Status.IDLE, ErrorReason.NO_ERROR, ResultCode.OK);
+	}
+
+	private void setStatus(UpgradeException exception)
+	{
+		_exception = exception;
+		setStatus(Status.ERROR, ErrorReason.EXCEPTION, exception.getResultCode());
+	}
+
+	private File getUpgradeFile()
+	{
+		if (_updateData == null)
+			return null;
+
+		File filesDir = Environment.getInstance().getActivity().getFilesDir();
+		File firmwareFile = new File(filesDir, getPrefs().getString(Param.UPDATES_DIR) + "/"
+		        + Files.baseName(_updateData.FileName));
+		return firmwareFile;
 	}
 
 	private void downloadUpdate()
 	{
+		if (isUpgradeReady())
+		{
+			setOkStatus();
+			return;
+		}
+		// notify update is found and start downloading
+		getEventMessenger().trigger(ON_UPDATE_FOUND);
+
+		// change status to downloading
+		setStatus(Status.DOWNLOADING, ErrorReason.NO_ERROR, ResultCode.OK);
+
+		// format download url
 		Bundle updateUrlParams = new Bundle();
 		updateUrlParams.putString("SERVER", _featureRegister.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
 		updateUrlParams.putString("BOX_ID", _featureRegister.getBoxId());
 		updateUrlParams.putString("FILE_NAME", _updateData.FileName);
-		String updateUrl = getPrefs().getString(Param.ABMP_UPDATE_DOWNLOAD_URL, updateUrlParams);
-		final String updateFile = getPrefs().getString(Param.UPDATES_DIR) + "/" + Files.baseName(_updateData.FileName);
+		final String updateUrl = getPrefs().getString(Param.ABMP_UPDATE_DOWNLOAD_URL, updateUrlParams);
 
-		Bundle downloadParams = new Bundle();
-		downloadParams.putString(DownloadService.Extras.URL.name(), updateUrl);
-		downloadParams.putString(DownloadService.Extras.LOCAL_FILE.name(), updateFile);
-		// FIXME: Add other params like md5, proxy, timeouts etc.
-
-		// start download
-		_updateDownloadStarted = true;
-		_updateDownloadFinished = false;
-		_featureInternet.downloadFile(downloadParams, new OnResultReceived()
+		// download md5 file
+		final String updateUrlMd5 = updateUrl + ".md5";
+		_featureInternet.getUrlContent(updateUrlMd5, new ServiceController.OnResultReceived()
 		{
 			@Override
 			public void onReceiveResult(int resultCode, Bundle resultData)
 			{
-				if (DownloadService.RESULT_PROGRESS == resultCode)
+				if (ResultCode.OK == resultCode)
 				{
-					float progress = resultData.getFloat(DownloadService.ResultExtras.PROGRESS.name());
-					Log.i(TAG, "File download progress " + progress);
-					getEventMessenger().trigger(ON_UPDATE_PROGRESS, resultData);
-				}
-				else if (DownloadService.DOWNLOAD_SUCCESS == resultCode)
-				{
-					Log.e(TAG, ".downloadUpdate: download success");
-					// Download finished
-					_updateDownloadStarted = false;
-					_updateDownloadFinished = true;
+					String md5Content = resultData.getString(ResultExtras.CONTENT.name());
+					String[] md5Parts = md5Content.split(" ");
+					if (md5Parts.length > 0)
+						md5Content = md5Parts[0];
+					final String md5 = md5Content;
 
-					Prefs userPrefs = Environment.getInstance().getUserPrefs();
-					userPrefs.put(UserParam.UPGRADE_FILE, updateFile);
-					userPrefs.put(UserParam.UPGRADE_VERSION, _updateData.Version);
-					userPrefs.put(UserParam.UPGRADE_BRAND, _updateData.Brand);
-					getEventMessenger().trigger(ON_UPDATE_DOWNLOAD_FINISHED, resultData);
+					final String updateFile = getPrefs().getString(Param.UPDATES_DIR) + "/"
+					        + Files.baseName(_updateData.FileName);
+					Bundle downloadParams = new Bundle();
+					downloadParams.putString(DownloadService.Extras.URL.name(), updateUrl);
+					downloadParams.putString(DownloadService.Extras.LOCAL_FILE.name(), updateFile);
+					downloadParams.putBoolean(DownloadService.Extras.IS_COMPUTE_MD5.name(), true);
+					// FIXME: Add other params like proxy, connection timeouts
+					// etc.
+
+					// start download
+					_featureInternet.downloadFile(downloadParams, new OnResultReceived()
+					{
+						@Override
+						public void onReceiveResult(int resultCode, Bundle resultData)
+						{
+							if (DownloadService.DOWNLOAD_PROGRESS == resultCode)
+							{
+								float progress = resultData.getFloat(DownloadService.ResultExtras.PROGRESS.name());
+								Log.i(TAG, "File download progress " + progress);
+								getEventMessenger().trigger(ON_UPDATE_PROGRESS, resultData);
+							}
+							else if (DownloadService.DOWNLOAD_SUCCESS == resultCode)
+							{
+								Log.i(TAG, ".downloadUpdate: download success");
+								// Download finished, checking md5
+								if (!md5.equalsIgnoreCase(resultData.getString(DownloadService.ResultExtras.MD5.name())))
+								{
+									// md5 check failed
+									setStatus(Status.ERROR, ErrorReason.MD5_CHECK_FAILED, ResultCode.GENERAL_FAILURE);
+								}
+								else
+								{
+									// download success
+									Prefs userPrefs = Environment.getInstance().getUserPrefs();
+									userPrefs.put(UserParam.UPGRADE_FILE, updateFile);
+									userPrefs.put(UserParam.UPGRADE_VERSION, _updateData.Version);
+									userPrefs.put(UserParam.UPGRADE_BRAND, _updateData.Brand);
+									setOkStatus();
+								}
+							}
+							else if (DownloadService.DOWNLOAD_FAILED == resultCode)
+							{
+								Log.e(TAG, ".downloadUpdate: download failed");
+								Throwable exception = (Throwable)resultData.getSerializable(DownloadService.ResultExtras.EXCEPTION.name());
+								setStatus(new UpgradeException(ResultCode.GENERAL_FAILURE, exception));
+							}
+						}
+					});
 				}
-				else if (DownloadService.DOWNLOAD_FAILED == resultCode)
+				else
 				{
-					Log.e(TAG, ".downloadUpdate: download failed");
-					getEventMessenger().trigger(ON_UPDATE_ERROR);
+					Log.e(TAG, "Error retrieving md5 file " + updateUrlMd5);
+					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, resultCode);
 				}
 			}
 		});
 	}
 
-	private boolean hasNewVersion(String currentVersion, String otherVersion, String brand)
+	private boolean isNewVersion(String currentVersion, String otherVersion, String brand)
 	{
 		if (currentVersion == null || otherVersion == null)
 			throw new IllegalArgumentException("Arguments cannot be null");
 
 		// check if BoxID is reassigned to new brand to allow FW update
-		boolean isNewBrand = !(TextUtils.isEmpty(brand) || _featureRegister.getPrefs().getString(FeatureRegister.Param.BRAND)
-		        .equalsIgnoreCase(brand));
+		boolean isNewBrand = !(TextUtils.isEmpty(brand) || _featureRegister.getPrefs()
+		        .getString(FeatureRegister.Param.BRAND).equalsIgnoreCase(brand));
 		if (isNewBrand)
 			return true;
 
