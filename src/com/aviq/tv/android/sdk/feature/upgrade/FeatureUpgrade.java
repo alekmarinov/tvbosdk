@@ -441,7 +441,7 @@ public class FeatureUpgrade extends FeatureScheduler
 							{
 								Log.i(TAG, ".downloadUpdate: download success");
 								// Download finished, checking md5
-								if (md5.equalsIgnoreCase(resultData.getString(DownloadService.ResultExtras.MD5.name())))
+								if (!md5.equalsIgnoreCase(resultData.getString(DownloadService.ResultExtras.MD5.name())))
 								{
 									// md5 check failed
 									setStatus(Status.ERROR, ErrorReason.MD5_CHECK_FAILED, ResultCode.GENERAL_FAILURE);
