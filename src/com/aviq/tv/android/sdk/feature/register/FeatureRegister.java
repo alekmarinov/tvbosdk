@@ -78,6 +78,7 @@ public class FeatureRegister extends FeatureComponent
 	private String _boxId;
 	private String _userToken;
 	private String _version;
+	private String _registrationUrl;
 
 	/**
 	 * @param environment
@@ -103,12 +104,12 @@ public class FeatureRegister extends FeatureComponent
 			bundle.putString("BRAND", getPrefs().getString(Param.BRAND));
 			bundle.putString("NETWORK", getActiveNetworkType());
 
-			String abmpRegUrl = getPrefs().getString(Param.ABMP_REGISTER_URL, bundle);
+			_registrationUrl = getPrefs().getString(Param.ABMP_REGISTER_URL, bundle);
 			int registerInterval = getPrefs().getInt(Param.ABMP_REGISTER_INTERVAL);
 
 			FeatureInternet featureInternet = (FeatureInternet) Environment.getInstance().getFeatureScheduler(
 			        FeatureName.Scheduler.INTERNET);
-			featureInternet.addCheckUrl(abmpRegUrl, registerInterval, new ServiceController.OnResultReceived()
+			featureInternet.addCheckUrl(_registrationUrl, registerInterval, new ServiceController.OnResultReceived()
 			{
 				@Override
 				public void onReceiveResult(int resultCode, Bundle resultData)
@@ -146,6 +147,11 @@ public class FeatureRegister extends FeatureComponent
 	{
 		// if (true) return "902B34F69D99"; //TODO used to test FW download
 		return _boxId;
+	}
+
+	public String getRegistrationUrl()
+	{
+		return _registrationUrl;
 	}
 
 	private String readMacAddress() throws FileNotFoundException

@@ -65,7 +65,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		/**
 		 * Schedule interval
 		 */
-		UPDATE_CHECK_INTERVAL(5 * 60 * 1000),
+		UPDATE_CHECK_INTERVAL(5 * 5 * 1000),
 
 		/**
 		 * ABMP update check URL format

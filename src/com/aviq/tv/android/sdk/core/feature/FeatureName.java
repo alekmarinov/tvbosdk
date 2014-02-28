@@ -39,6 +39,7 @@ public class FeatureName
 		EPG,
 		TICKER,
 		UPGRADE,
+		MENU,
 
 		// FIXME: rename to more meaningful name
 		DATA_LOADER,
