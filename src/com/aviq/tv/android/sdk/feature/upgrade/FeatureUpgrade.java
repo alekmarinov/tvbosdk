@@ -176,12 +176,9 @@ public class FeatureUpgrade extends FeatureScheduler
 	{
 		super.onSchedule(onFeatureInitialized);
 
-		// Contact the server for a software update check
-		if (_status.equals(Status.IDLE) || _status.equals(Status.ERROR))
-		{
-			// reset the state variables to their initial values
-			checkForUpdate();
-		}
+		// check for new software update. This method will run only if the
+		// current status is IDLE or ERROR
+		checkForUpdate();
 
 		// Schedule another update
 		scheduleDelayed(getPrefs().getInt(Param.UPDATE_CHECK_INTERVAL));
@@ -253,8 +250,19 @@ public class FeatureUpgrade extends FeatureScheduler
 		return _exception;
 	}
 
-	private void checkForUpdate()
+	/**
+	 * Checks for new software update. This method will run only if the current
+	 * status is IDLE or ERROR
+	 */
+	public void checkForUpdate()
 	{
+		// Contact the server for a software update check
+		if (!(_status.equals(Status.IDLE) || _status.equals(Status.ERROR)))
+		{
+			Log.w(TAG, ".checkForUpdate: Software update is already in progress");
+			return;
+		}
+
 		// Check for software updates
 		Log.i(TAG, "Checking for new software update");
 		setStatus(Status.CHECKING, ErrorReason.NO_ERROR, ResultCode.OK);
@@ -459,7 +467,8 @@ public class FeatureUpgrade extends FeatureScheduler
 							else if (DownloadService.DOWNLOAD_FAILED == resultCode)
 							{
 								Log.e(TAG, ".downloadUpdate: download failed");
-								Throwable exception = (Throwable)resultData.getSerializable(DownloadService.ResultExtras.EXCEPTION.name());
+								Throwable exception = (Throwable) resultData
+								        .getSerializable(DownloadService.ResultExtras.EXCEPTION.name());
 								setStatus(new UpgradeException(ResultCode.GENERAL_FAILURE, exception));
 							}
 						}
