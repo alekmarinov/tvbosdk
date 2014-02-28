@@ -15,6 +15,7 @@ import java.lang.reflect.Method;
 import java.util.Locale;
 
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
@@ -41,6 +42,14 @@ public class FeatureLanguage extends FeatureComponent
 	public enum Code
 	{
 		EN, FR, DE
+	}
+
+	@Override
+    public void initialize(OnFeatureInitialized onFeatureInitialized)
+	{
+		// update application language
+		setLanguage(getLanguage());
+		super.initialize(onFeatureInitialized);
 	}
 
 	@Override
@@ -99,6 +108,14 @@ public class FeatureLanguage extends FeatureComponent
 	}
 
 	private void setSystemLanguage(Locale locale)
+	{
+		Configuration config = new Configuration();
+		config.locale = locale;
+		Resources res = Environment.getInstance().getResources();
+		res.updateConfiguration(config, res.getDisplayMetrics());
+	}
+
+	private void setSystemLanguage2(Locale locale)
 	{
 		try
 		{

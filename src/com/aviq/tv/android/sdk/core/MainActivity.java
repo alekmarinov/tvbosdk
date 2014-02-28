@@ -11,7 +11,6 @@
 package com.aviq.tv.android.sdk.core;
 
 import android.app.Activity;
-import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -67,13 +66,5 @@ public class MainActivity extends Activity
 	public boolean onKeyUp(int keyCode, KeyEvent event)
 	{
 		return _application.onKeyUp(keyCode, event);
-	}
-
-	@Override
-	public void onConfigurationChanged(Configuration newConfig) {
-		super.onConfigurationChanged(newConfig);
-
-		Log.d(TAG, ".onConfigurationChanged");
-		getBaseContext().getResources().updateConfiguration(newConfig, getBaseContext().getResources().getDisplayMetrics());
 	}
 }
