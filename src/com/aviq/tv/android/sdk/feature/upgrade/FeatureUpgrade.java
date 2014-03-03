@@ -442,7 +442,7 @@ public class FeatureUpgrade extends FeatureScheduler
 							if (DownloadService.DOWNLOAD_PROGRESS == resultCode)
 							{
 								float progress = resultData.getFloat(DownloadService.ResultExtras.PROGRESS.name());
-								Log.i(TAG, "File download progress " + progress);
+								Log.v(TAG, "File download progress " + progress);
 								getEventMessenger().trigger(ON_UPDATE_PROGRESS, resultData);
 							}
 							else if (DownloadService.DOWNLOAD_SUCCESS == resultCode)

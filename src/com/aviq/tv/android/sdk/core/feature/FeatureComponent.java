@@ -17,8 +17,6 @@ import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 
-
-
 /**
  * Defines the base class for component feature type
  */
@@ -50,13 +48,17 @@ public abstract class FeatureComponent implements IFeature
 	}
 
 	@Override
-    public String getName()
+	public String getName()
 	{
-		return getComponentName().toString();
+		FeatureName.Component name = getComponentName();
+		if (FeatureName.Component.SPECIAL.equals(name))
+			return name.toString();
+		else
+			return getClass().getName();
 	}
 
 	@Override
-    public Prefs getPrefs()
+	public Prefs getPrefs()
 	{
 		return Environment.getInstance().getFeaturePrefs(getComponentName());
 	}
@@ -71,7 +73,7 @@ public abstract class FeatureComponent implements IFeature
 	}
 
 	@Override
-    public void onEvent(int msgId, Bundle bundle)
+	public void onEvent(int msgId, Bundle bundle)
 	{
 	}
 

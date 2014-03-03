@@ -42,6 +42,7 @@ public class FeatureLuaRPC extends FeatureComponent
 {
 	public static final String TAG = FeatureLuaRPC.class.getSimpleName();
 	public static final int RPC_SERVER_PORT = 6768;
+	private static final int BUF_SIZE = 1024 * 100;
 	private static final String EOL = "-- End of Lua";
 	private String _luaStub;
 	private int _port;
@@ -158,6 +159,7 @@ public class FeatureLuaRPC extends FeatureComponent
 			int n = 0;
 			while (-1 != (n = inputStream.read(buffer)))
 			{
+				Log.i(TAG, new String(buffer));
 				outputStream.write(buffer, 0, n);
 			}
 			inputStream.close();
@@ -205,8 +207,8 @@ public class FeatureLuaRPC extends FeatureComponent
 
 		private static byte[] readAll(InputStream input) throws IOException
 		{
-			ByteArrayOutputStream output = new ByteArrayOutputStream(4096);
-			byte[] buffer = new byte[4096];
+			ByteArrayOutputStream output = new ByteArrayOutputStream(BUF_SIZE);
+			byte[] buffer = new byte[BUF_SIZE];
 			int n = 0;
 			while (-1 != (n = input.read(buffer)))
 			{
@@ -277,6 +279,7 @@ public class FeatureLuaRPC extends FeatureComponent
 							Log.i(TAG, "Loading " + scriptPath);
 							InputStream is = am.open(scriptPath);
 							byte[] bytes = readAll(is);
+							Log.i(TAG, new String(bytes));
 							L.LloadBuffer(bytes, name);
 							return 1;
 						}

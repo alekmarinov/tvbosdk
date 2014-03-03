@@ -54,7 +54,11 @@ public abstract class FeatureState extends BaseState implements IFeature
 	@Override
 	public String getName()
 	{
-		return getStateName().toString();
+		FeatureName.State name = getStateName();
+		if (FeatureName.Scheduler.SPECIAL.equals(name))
+			return name.toString();
+		else
+			return getClass().getName();
 	}
 
 	@Override

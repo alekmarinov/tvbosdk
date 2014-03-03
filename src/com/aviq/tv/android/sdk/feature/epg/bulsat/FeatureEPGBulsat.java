@@ -69,12 +69,24 @@ public class FeatureEPGBulsat extends FeatureEPG
     {
 		switch (channelIndex)
 		{
+			case 0:
+				return "http://46.40.123.186:1935/tv/amoreyohd.stream/playlist.m3u8";
+			case 1:
+				return "http://46.40.123.186:1935/tv/amoreyosd.stream/playlist.m3u8";
 			case 2:
 				return "http://46.40.123.186:1935/tv/animal_planet.stream/playlist.m3u8";
 			case 3:
 				return "http://46.40.123.186:1935/tv/axn.stream/playlist.m3u8";
+			case 4:
+				return "http://46.40.123.186:1935/tv/cubayohd.stream/playlist.m3u8";
+			case 5:
+				return "http://46.40.123.186:1935/tv/cubayosd.stream/playlist.m3u8";
 			case 6:
 				return "http://46.40.123.186:1935/tv/bnt1.stream/playlist.m3u8";
+			case 7:
+				return "http://46.40.123.186:1935/tv/partyshd.stream/playlist.m3u8";
+			case 8:
+				return "http://46.40.123.186:1935/tv/partyssd.stream/playlist.m3u8";
 			case 9:
 				return "http://46.40.123.186:1935/tv/btv.stream/playlist.m3u8";
 			case 10:

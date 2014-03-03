@@ -29,7 +29,8 @@ public class FeatureName
 		LANGUAGE,
 		WEBTV,
 		MENU,
-		RPC
+		RPC,
+		SYSTEM
 	}
 
 	public static enum Scheduler
