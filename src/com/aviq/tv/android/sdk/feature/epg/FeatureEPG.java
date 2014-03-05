@@ -295,6 +295,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
+			// FIXME: This error occurs when the EPG server is down. Show appropriate message
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
 			Log.e(TAG, "Error retrieving channels with code " + statusCode + ": " + error);
