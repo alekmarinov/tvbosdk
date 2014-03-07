@@ -530,8 +530,7 @@ public class FeatureUpgrade extends FeatureScheduler
 			return true;
 		}
 
-		Log.i(TAG, ".hasNewVersion: Failed comparing versions current=" + currentVersion + " and other=" + otherVersion
-		        + ". Assuming new version!");
-		return true;
+		Log.i(TAG, ".hasNewVersion: Current version " + currentVersion + " is the same as the new reported " + otherVersion+ ". No new software version!");
+		return false;
 	}
 }
