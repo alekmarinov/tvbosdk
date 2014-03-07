@@ -13,13 +13,22 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.Authenticator;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.PasswordAuthentication;
 import java.net.Proxy;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -50,7 +59,7 @@ public class DownloadService extends BaseService
 	 */
 	public enum Extras
 	{
-		URL, LOCAL_FILE, IS_COMPUTE_MD5, PROXY_HOST, PROXY_PORT, CONNECT_TIMEOUT, READ_TIMEOUT, BUFFER_SIZE
+		URL, LOCAL_FILE, IS_COMPUTE_MD5, PROXY_HOST, PROXY_PORT, CONNECT_TIMEOUT, READ_TIMEOUT, BUFFER_SIZE, USERNAME, PASSWORD
 	}
 
 	/**
@@ -76,10 +85,28 @@ public class DownloadService extends BaseService
 		Bundle resultData = new Bundle();
 		try
 		{
+			final String username = intent.getStringExtra(Extras.USERNAME.name());
+			final String password = intent.getStringExtra(Extras.PASSWORD.name());
+
+			if (username != null && password != null)
+			{
+				Authenticator.setDefault(new Authenticator()
+				{
+					@Override
+					protected PasswordAuthentication getPasswordAuthentication()
+					{
+						return new PasswordAuthentication(username, password.toCharArray());
+					}
+				});
+			}
+
 			String fileUrl = intent.getStringExtra(Extras.URL.name());
 			String localFile = intent.getStringExtra(Extras.LOCAL_FILE.name());
 			URL url = new URL(fileUrl);
 			Log.i(TAG, "Downloading " + fileUrl + " to " + localFile);
+
+			// Bypass SSL verification
+			trustAllHosts();
 
 			// prepare proxy settings
 			String proxyHost = intent.getStringExtra(Extras.PROXY_HOST.name());
@@ -211,6 +238,44 @@ public class DownloadService extends BaseService
 
 			// send download status to result receiver
 			resultReceiver.send(result, resultData);
+		}
+	}
+
+	// quick solution to bypass SSL verification
+	private static void trustAllHosts()
+	{
+		// create a trust manager that does not validate certificate chains
+		TrustManager[] trustAllCerts = new TrustManager[]
+		{ new X509TrustManager()
+		{
+			@Override
+			public java.security.cert.X509Certificate[] getAcceptedIssuers()
+			{
+				return new java.security.cert.X509Certificate[]
+				{};
+			}
+
+			@Override
+			public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException
+			{
+			}
+
+			@Override
+			public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException
+			{
+			}
+		} };
+
+		// install the all-trusting trust manager
+		try
+		{
+			SSLContext sc = SSLContext.getInstance("TLS");
+			sc.init(null, trustAllCerts, new java.security.SecureRandom());
+			HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
 		}
 	}
 }
