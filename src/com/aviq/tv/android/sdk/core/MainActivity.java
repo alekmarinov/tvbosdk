@@ -15,6 +15,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 
+import com.aviq.tv.android.sdk.core.feature.FeatureName;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
+
 /**
  * The main activity managing all application screens
  */
@@ -22,6 +26,7 @@ public class MainActivity extends Activity
 {
 	public static final String TAG = MainActivity.class.getSimpleName();
 	private IApplication _application;
+	private FeatureRCU _featureRCU;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -30,6 +35,15 @@ public class MainActivity extends Activity
 		Log.i(TAG, ".onCreate");
         _application = (IApplication)getApplication();
         _application.onActivityCreate(this);
+        try
+        {
+	        _featureRCU = (FeatureRCU) Environment.getInstance().use(FeatureName.Component.RCU);
+        }
+        catch (FeatureNotFoundException e)
+        {
+        	// Fatal Error!
+        	Log.e(TAG, e.getMessage(), e);
+        }
 	}
 
 	@Override
@@ -59,12 +73,14 @@ public class MainActivity extends Activity
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
-		return _application.onKeyDown(keyCode, event);
+		Key key = _featureRCU.getKey(keyCode);
+		return Environment.getInstance().onKeyDown(new AVKeyEvent(event, key));
 	}
 
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event)
 	{
-		return _application.onKeyUp(keyCode, event);
+		Key key = _featureRCU.getKey(keyCode);
+		return Environment.getInstance().onKeyUp(new AVKeyEvent(event, key));
 	}
 }

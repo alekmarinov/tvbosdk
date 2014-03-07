@@ -27,6 +27,7 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v4.util.LruCache;
 import android.util.DisplayMetrics;
+import android.util.Log;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.ImageLoader;
@@ -52,6 +53,10 @@ public class Environment
 	public static final String TAG = Environment.class.getSimpleName();
 	public static final int ON_LOADING = EventMessenger.ID();
 	public static final int ON_LOADED = EventMessenger.ID();
+	public static final int ON_KEY_PRESSED = EventMessenger.ID();
+	public static final int ON_KEY_RELEASED = EventMessenger.ID();
+	public static final String EXTRA_KEY = "KEY";
+	public static final String EXTRA_KEYCODE = "KEYCODE";
 
 	public enum Param
 	{
@@ -672,6 +677,32 @@ public class Environment
 	public boolean isInitialized()
 	{
 		return _isInitialized;
+	}
+
+	/**
+	 * Inject key press in the environment
+	 */
+	boolean onKeyDown(AVKeyEvent keyEvent)
+	{
+		Log.i(TAG, ".onKeyDown: key = " + keyEvent);
+		Bundle bundle = new Bundle();
+		bundle.putString(EXTRA_KEY, keyEvent.Code.name());
+		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
+		_eventMessenger.trigger(ON_KEY_PRESSED, bundle);
+		return _stateManager.onKeyDown(keyEvent);
+	}
+
+	/**
+	 * Inject key release in the environment
+	 */
+	boolean onKeyUp(AVKeyEvent keyEvent)
+	{
+		Log.i(TAG, ".onKeyDown: key = " + keyEvent);
+		Bundle bundle = new Bundle();
+		bundle.putString(EXTRA_KEY, keyEvent.Code.name());
+		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
+		_eventMessenger.trigger(ON_KEY_RELEASED, bundle);
+		return _stateManager.onKeyUp(keyEvent);
 	}
 
 	private void useDependencies(IFeature feature) throws FeatureNotFoundException
