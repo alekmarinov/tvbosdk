@@ -57,6 +57,7 @@ public class Environment
 	public static final int ON_KEY_RELEASED = EventMessenger.ID();
 	public static final String EXTRA_KEY = "KEY";
 	public static final String EXTRA_KEYCODE = "KEYCODE";
+	public static final String EXTRA_KEYCONSUMED = "KEYCONSUMED";
 
 	public enum Param
 	{
@@ -688,8 +689,10 @@ public class Environment
 		Bundle bundle = new Bundle();
 		bundle.putString(EXTRA_KEY, keyEvent.Code.name());
 		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
+		boolean consumed = _stateManager.onKeyDown(keyEvent);
+		bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
 		_eventMessenger.trigger(ON_KEY_PRESSED, bundle);
-		return _stateManager.onKeyDown(keyEvent);
+		return consumed;
 	}
 
 	/**
@@ -701,8 +704,10 @@ public class Environment
 		Bundle bundle = new Bundle();
 		bundle.putString(EXTRA_KEY, keyEvent.Code.name());
 		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
+		boolean consumed = _stateManager.onKeyUp(keyEvent);
+		bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
 		_eventMessenger.trigger(ON_KEY_RELEASED, bundle);
-		return _stateManager.onKeyUp(keyEvent);
+		return consumed;
 	}
 
 	private void useDependencies(IFeature feature) throws FeatureNotFoundException
