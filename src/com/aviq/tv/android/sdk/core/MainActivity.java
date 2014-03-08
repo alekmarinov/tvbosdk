@@ -35,15 +35,6 @@ public class MainActivity extends Activity
 		Log.i(TAG, ".onCreate");
         _application = (IApplication)getApplication();
         _application.onActivityCreate(this);
-        try
-        {
-	        _featureRCU = (FeatureRCU) Environment.getInstance().use(FeatureName.Component.RCU);
-        }
-        catch (FeatureNotFoundException e)
-        {
-        	// Fatal Error!
-        	Log.e(TAG, e.getMessage(), e);
-        }
 	}
 
 	@Override
@@ -73,14 +64,36 @@ public class MainActivity extends Activity
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
-		Key key = _featureRCU.getKey(keyCode);
-		return Environment.getInstance().onKeyDown(new AVKeyEvent(event, key));
+        try
+        {
+        	if (_featureRCU == null)
+        		_featureRCU = (FeatureRCU) Environment.getInstance().use(FeatureName.Component.RCU);
+			Key key = _featureRCU.getKey(keyCode);
+			return Environment.getInstance().onKeyDown(new AVKeyEvent(event, key));
+        }
+        catch (FeatureNotFoundException e)
+        {
+        	// Fatal Error!
+        	Log.e(TAG, e.getMessage(), e);
+        	return false;
+        }
 	}
 
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event)
 	{
-		Key key = _featureRCU.getKey(keyCode);
-		return Environment.getInstance().onKeyUp(new AVKeyEvent(event, key));
+        try
+        {
+        	if (_featureRCU == null)
+        		_featureRCU = (FeatureRCU) Environment.getInstance().use(FeatureName.Component.RCU);
+			Key key = _featureRCU.getKey(keyCode);
+			return Environment.getInstance().onKeyUp(new AVKeyEvent(event, key));
+        }
+        catch (FeatureNotFoundException e)
+        {
+        	// Fatal Error!
+        	Log.e(TAG, e.getMessage(), e);
+        	return false;
+        }
 	}
 }
