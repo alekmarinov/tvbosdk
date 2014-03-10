@@ -83,6 +83,12 @@ public class FeaturePlayer extends FeatureComponent
 		getEventMessenger().postDelayed(_videoStartTimeout, getPrefs().getInt(Param.TIMEOUT) * 1000);
 	}
 
+	public void stop()
+	{
+		Log.i(TAG, ".stop");
+		_player.stop();
+	}
+
 	public IPlayer getPlayer()
 	{
 		return _player;
