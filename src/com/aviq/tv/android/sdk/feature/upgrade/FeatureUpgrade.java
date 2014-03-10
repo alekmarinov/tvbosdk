@@ -364,7 +364,8 @@ public class FeatureUpgrade extends FeatureScheduler
 			_errorReason = errorReason;
 			_errorCode = errorCode;
 
-			Log.i(TAG, ".setStatus: trigger = " + ON_STATUS_CHANGED + ", _status = " + _status + ", _errorReason = " + _errorReason + ", _errorCode = " + _errorCode);
+			Log.i(TAG, ".setStatus: trigger = " + ON_STATUS_CHANGED + ", _status = " + _status + ", _errorReason = "
+			        + _errorReason + ", _errorCode = " + _errorCode);
 			getEventMessenger().trigger(ON_STATUS_CHANGED);
 		}
 	}
@@ -532,7 +533,8 @@ public class FeatureUpgrade extends FeatureScheduler
 			return true;
 		}
 
-		Log.i(TAG, ".hasNewVersion: Current version " + currentVersion + " is the same as the new reported " + otherVersion+ ". No new software version!");
+		Log.i(TAG, ".hasNewVersion: Current version " + currentVersion + " is the same as the new reported "
+		        + otherVersion + ". No new software version!");
 		return false;
 	}
 }
