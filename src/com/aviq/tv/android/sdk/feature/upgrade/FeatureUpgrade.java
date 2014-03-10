@@ -144,6 +144,7 @@ public class FeatureUpgrade extends FeatureScheduler
 	private ErrorReason _errorReason = ErrorReason.NO_ERROR;
 	private int _errorCode = ResultCode.OK;
 	private UpgradeException _exception;
+	private Prefs _userPrefs;
 
 	public FeatureUpgrade()
 	{
@@ -157,6 +158,8 @@ public class FeatureUpgrade extends FeatureScheduler
 		Log.i(TAG, ".initialize");
 		try
 		{
+			_userPrefs = Environment.getInstance().getUserPrefs();
+
 			_featureRegister = (FeatureRegister) Environment.getInstance().getFeatureComponent(
 			        FeatureName.Component.REGISTER);
 			_featureInternet = (FeatureInternet) Environment.getInstance().getFeatureScheduler(
@@ -196,7 +199,11 @@ public class FeatureUpgrade extends FeatureScheduler
 	public boolean isUpgradeReady()
 	{
 		File upgradeFile = getUpgradeFile();
-		return upgradeFile != null && upgradeFile.exists();
+		if (!_userPrefs.has(UserParam.UPGRADE_VERSION))
+			return false;
+		String version = _userPrefs.getString(UserParam.UPGRADE_VERSION);
+		String brand = _userPrefs.getString(UserParam.UPGRADE_BRAND);
+		return upgradeFile != null && upgradeFile.exists() && isNewVersion(version, brand);
 	}
 
 	/**
@@ -311,11 +318,9 @@ public class FeatureUpgrade extends FeatureScheduler
 						_updateData = updateData;
 
 						// Store box category type - for read only purposes
-						Environment.getInstance().getUserPrefs()
-						        .put(UserParam.UPGRADE_BOX_CATEGORY, updateData.SoftwareType);
+						_userPrefs.put(UserParam.UPGRADE_BOX_CATEGORY, updateData.SoftwareType);
 
-						_hasUpdate = isNewVersion(Environment.getInstance().getBuildVersion(), updateData.Version,
-						        updateData.Brand);
+						_hasUpdate = isNewVersion(updateData.Version, updateData.Brand);
 						if (_hasUpdate)
 						{
 							// Proceed with downloading new software
@@ -381,15 +386,15 @@ public class FeatureUpgrade extends FeatureScheduler
 		setStatus(Status.ERROR, ErrorReason.EXCEPTION, exception.getResultCode());
 	}
 
+	// returns the last downloaded and verified firmware file
 	private File getUpgradeFile()
 	{
-		if (_updateData == null)
+		if (!_userPrefs.has(UserParam.UPGRADE_FILE))
 			return null;
 
+		String updateFile = _userPrefs.getString(UserParam.UPGRADE_FILE);
 		File filesDir = Environment.getInstance().getActivity().getFilesDir();
-		File firmwareFile = new File(filesDir, getPrefs().getString(Param.UPDATES_DIR) + "/"
-		        + Files.baseName(_updateData.FileName));
-		return firmwareFile;
+		return new File(filesDir, updateFile);
 	}
 
 	private void downloadUpdate()
@@ -460,10 +465,9 @@ public class FeatureUpgrade extends FeatureScheduler
 								else
 								{
 									// download success
-									Prefs userPrefs = Environment.getInstance().getUserPrefs();
-									userPrefs.put(UserParam.UPGRADE_FILE, updateFile);
-									userPrefs.put(UserParam.UPGRADE_VERSION, _updateData.Version);
-									userPrefs.put(UserParam.UPGRADE_BRAND, _updateData.Brand);
+									_userPrefs.put(UserParam.UPGRADE_FILE, updateFile);
+									_userPrefs.put(UserParam.UPGRADE_VERSION, _updateData.Version);
+									_userPrefs.put(UserParam.UPGRADE_BRAND, _updateData.Brand);
 									setOkStatus();
 								}
 							}
@@ -486,10 +490,11 @@ public class FeatureUpgrade extends FeatureScheduler
 		});
 	}
 
-	private boolean isNewVersion(String currentVersion, String otherVersion, String brand)
+	private boolean isNewVersion(String otherVersion, String brand)
 	{
-		if (currentVersion == null || otherVersion == null)
+		if (otherVersion == null)
 			throw new IllegalArgumentException("Arguments cannot be null");
+		String currentVersion = Environment.getInstance().getBuildVersion();
 
 		// check if BoxID is reassigned to new brand to allow FW update
 		boolean isNewBrand = !(TextUtils.isEmpty(brand) || _featureRegister.getPrefs()
