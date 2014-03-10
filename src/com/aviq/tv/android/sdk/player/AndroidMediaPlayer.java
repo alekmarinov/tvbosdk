@@ -108,7 +108,6 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
     		_mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
     		_mediaPlayer.setOnErrorListener(this);
     		_mediaPlayer.setOnInfoListener(this);
-    		_mediaPlayer.setScreenOnWhilePlaying(true);
     	}
 
        	_mediaPlayer.prepareAsync();
@@ -285,7 +284,10 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 			return;
 
 		if (_mediaPlayer != null)
+		{
 			_mediaPlayer.setDisplay(holder);
+			_mediaPlayer.setScreenOnWhilePlaying(true);
+		}
     }
 
 	@Override
