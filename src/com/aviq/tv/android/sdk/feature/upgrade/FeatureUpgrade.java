@@ -363,6 +363,8 @@ public class FeatureUpgrade extends FeatureScheduler
 			_status = status;
 			_errorReason = errorReason;
 			_errorCode = errorCode;
+
+			Log.i(TAG, ".setStatus: trigger = " + ON_STATUS_CHANGED + ", _status = " + _status + ", _errorReason = " + _errorReason + ", _errorCode = " + _errorCode);
 			getEventMessenger().trigger(ON_STATUS_CHANGED);
 		}
 	}
