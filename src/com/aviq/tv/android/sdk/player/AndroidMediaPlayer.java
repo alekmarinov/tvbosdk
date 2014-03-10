@@ -24,6 +24,7 @@ import android.media.MediaPlayer.OnSeekCompleteListener;
 import android.media.MediaPlayer.OnVideoSizeChangedListener;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -100,7 +101,6 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 				Log.e(TAG, "Error", e);
 			}
 
-    		_mediaPlayer.setDisplay(_surfaceHolder);
     		_mediaPlayer.setOnBufferingUpdateListener(this);
     		_mediaPlayer.setOnCompletionListener(this);
     		_mediaPlayer.setOnPreparedListener(this);
@@ -275,25 +275,27 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 	@Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height)
     {
-	    // TODO Auto-generated method stub
     }
 
 	@Override
     public void surfaceCreated(SurfaceHolder holder)
     {
-	    // TODO Auto-generated method stub
+		final Surface surface = holder.getSurface();
+		if (surface == null || !surface.isValid())
+			return;
+
+		if (_mediaPlayer != null)
+			_mediaPlayer.setDisplay(holder);
     }
 
 	@Override
     public void surfaceDestroyed(SurfaceHolder holder)
     {
-	    // TODO Auto-generated method stub
     }
 
 	@Override
     public void onVideoSizeChanged(MediaPlayer mp, int width, int height)
     {
-	    // TODO Auto-generated method stub
     }
 
 	@Override
