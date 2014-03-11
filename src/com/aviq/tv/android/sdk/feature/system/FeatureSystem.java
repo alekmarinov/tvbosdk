@@ -86,6 +86,12 @@ public class FeatureSystem extends FeatureComponent
 		return FeatureName.Component.SYSTEM;
 	}
 
+	public void command(final String cmd)
+	{
+		Log.i(TAG, "Adding `" + cmd + "' to execution queue");
+		_cmdQueue.add(cmd);
+	}
+
 	private Thread _readerThread = new Thread(new Runnable()
 	{
 		@Override
@@ -137,7 +143,7 @@ public class FeatureSystem extends FeatureComponent
 		}
 	});
 
-	public void connect(final Runnable callback)
+	private void connect(final Runnable callback)
 	{
 		new Thread(new Runnable()
 		{
@@ -169,13 +175,7 @@ public class FeatureSystem extends FeatureComponent
 		}).start();
 	}
 
-	public void command(final String cmd)
-	{
-		Log.i(TAG, "Adding `" + cmd + "' to execution queue");
-		_cmdQueue.add(cmd);
-	}
-
-	public void disconnect()
+	private void disconnect()
 	{
 		try
 		{

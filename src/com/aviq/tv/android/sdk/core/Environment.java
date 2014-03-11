@@ -21,6 +21,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -681,9 +682,26 @@ public class Environment
 	}
 
 	/**
+	 * starts android app by package name
+	 */
+	public void startAppPackage(String packageName)
+	{
+		Log.i(TAG, "Starting " + packageName);
+		Intent intent = _activity.getPackageManager().getLaunchIntentForPackage(packageName);
+		if (intent == null)
+		{
+			Log.w(getClass().getSimpleName(), "Can't find pacakge `" + packageName + "'");
+		}
+		else
+		{
+			_activity.startActivity(intent);
+		}
+	}
+
+	/**
 	 * Inject key press in the environment
 	 */
-	boolean onKeyDown(AVKeyEvent keyEvent)
+	/* package */ boolean onKeyDown(AVKeyEvent keyEvent)
 	{
 		Log.i(TAG, ".onKeyDown: key = " + keyEvent);
 		Bundle bundle = new Bundle();
@@ -698,7 +716,7 @@ public class Environment
 	/**
 	 * Inject key release in the environment
 	 */
-	boolean onKeyUp(AVKeyEvent keyEvent)
+	/* package */ boolean onKeyUp(AVKeyEvent keyEvent)
 	{
 		Log.i(TAG, ".onKeyDown: key = " + keyEvent);
 		Bundle bundle = new Bundle();

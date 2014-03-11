@@ -30,7 +30,8 @@ public class FeatureName
 		WEBTV,
 		MENU,
 		RPC,
-		SYSTEM
+		SYSTEM,
+		EASTER_EGG
 	}
 
 	public static enum Scheduler
