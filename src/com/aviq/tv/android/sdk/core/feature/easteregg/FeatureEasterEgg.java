@@ -81,25 +81,22 @@ public class FeatureEasterEgg extends FeatureComponent
 	{
 		if (Environment.ON_KEY_PRESSED == msgId)
 		{
-			boolean isConsumed = bundle.getBoolean(Environment.EXTRA_KEYCONSUMED);
-			if (!isConsumed)
+			long delay = System.currentTimeMillis() - lastKeyPress;
+			if (delay > _keyDelay)
 			{
-				long delay = System.currentTimeMillis() - lastKeyPress;
-				if (delay > _keyDelay)
-				{
-					_sequence.setLength(0);
-				}
-				Key key = Key.valueOf(bundle.getString(Environment.EXTRA_KEYCODE));
-				char chr = expectedKeyToChar(key);
-				if (chr != '\0')
-				{
-					_sequence.append(chr);
-				}
-				lastKeyPress = System.currentTimeMillis();
-				if (_sequence.equals(_keySequence))
+				_sequence.setLength(0);
+			}
+			Key key = Key.valueOf(bundle.getString(Environment.EXTRA_KEY));
+			char chr = expectedKeyToChar(key);
+			if (chr != '\0')
+			{
+				_sequence.append(chr);
+				Log.e(TAG, "_sequence = " + _sequence + ", _keySequence = " + _keySequence);
+				if (_sequence.toString().equals(_keySequence))
 				{
 					Environment.getInstance().startAppPackage(_startPackage);
 				}
+				lastKeyPress = System.currentTimeMillis();
 			}
 		}
 	}
