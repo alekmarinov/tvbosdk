@@ -65,7 +65,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		/**
 		 * Schedule interval
 		 */
-		UPDATE_CHECK_INTERVAL(5 * 5 * 1000),
+		UPDATE_CHECK_INTERVAL(30 * 60 * 1000),
 
 		/**
 		 * ABMP update check URL format
@@ -126,7 +126,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		NO_ERROR, EXCEPTION, CONNECTION_ERROR, MD5_CHECK_FAILED
 	}
 
-	public class UpdateData
+	private class UpdateData
 	{
 		String Version;
 		String FileName;
@@ -165,7 +165,7 @@ public class FeatureUpgrade extends FeatureScheduler
 			_featureInternet = (FeatureInternet) Environment.getInstance().getFeatureScheduler(
 			        FeatureName.Scheduler.INTERNET);
 
-			onSchedule(onFeatureInitialized);
+			super.initialize(onFeatureInitialized);
 		}
 		catch (FeatureNotFoundException e)
 		{
@@ -181,7 +181,7 @@ public class FeatureUpgrade extends FeatureScheduler
 
 		// check for new software update. This method will run only if the
 		// current status is IDLE or ERROR
-		checkForUpdate();
+		checkForUpdateAndDownload();
 
 		// Schedule another update
 		scheduleDelayed(getPrefs().getInt(Param.UPDATE_CHECK_INTERVAL));
@@ -194,7 +194,7 @@ public class FeatureUpgrade extends FeatureScheduler
 	}
 
 	/**
-	 * @return true if new software is ready for upgrade
+	 * @return true if new software is ready for upgrade by rebootToInstall
 	 */
 	public boolean isUpgradeReady()
 	{
@@ -204,6 +204,14 @@ public class FeatureUpgrade extends FeatureScheduler
 		String version = _userPrefs.getString(UserParam.UPGRADE_VERSION);
 		String brand = _userPrefs.getString(UserParam.UPGRADE_BRAND);
 		return upgradeFile != null && upgradeFile.exists() && isNewVersion(version, brand);
+	}
+
+	/**
+	 * @return true if new software is available for download
+	 */
+	public boolean isUpgradeAvailable()
+	{
+		return _updateData != null && isNewVersion(_updateData.Version, _updateData.Brand);
 	}
 
 	/**
@@ -260,14 +268,34 @@ public class FeatureUpgrade extends FeatureScheduler
 	/**
 	 * Checks for new software update. This method will run only if the current
 	 * status is IDLE or ERROR
+	 *
+	 * @return true if check for upgrade started, false means the upgrade
+	 *         process is in the middle of checking or downloading
 	 */
-	public void checkForUpdate()
+	public boolean checkForUpdate()
+	{
+		return checkForUpdate(false);
+	}
+
+	/**
+	 * Checks for new software update and download if new update is found.
+	 * This method will run only if the current status is IDLE or ERROR
+	 *
+	 * @return true if check for upgrade started, false means the upgrade
+	 *         process is in the middle of checking or downloading
+	 */
+	public boolean checkForUpdateAndDownload()
+	{
+		return checkForUpdate(true);
+	}
+
+	private boolean checkForUpdate(final boolean isDownload)
 	{
 		// Contact the server for a software update check
 		if (!(_status.equals(Status.IDLE) || _status.equals(Status.ERROR)))
 		{
-			Log.w(TAG, ".checkForUpdate: Software update is already in progress");
-			return;
+			Log.w(TAG, ".checkForUpdate: already in status " + _status);
+			return false;
 		}
 
 		// Check for software updates
@@ -321,7 +349,7 @@ public class FeatureUpgrade extends FeatureScheduler
 						_userPrefs.put(UserParam.UPGRADE_BOX_CATEGORY, updateData.SoftwareType);
 
 						_hasUpdate = isNewVersion(updateData.Version, updateData.Brand);
-						if (_hasUpdate)
+						if (_hasUpdate && isDownload)
 						{
 							// Proceed with downloading new software
 							downloadUpdate();
@@ -359,6 +387,8 @@ public class FeatureUpgrade extends FeatureScheduler
 				}
 			}
 		});
+
+		return true;
 	}
 
 	private void setStatus(Status status, ErrorReason errorReason, int errorCode)

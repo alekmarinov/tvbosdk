@@ -25,6 +25,9 @@ import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 
 /**
+ * FIXME: refactore this to component, addCheckUrl to be removed and
+ * functionality to be moved to FeatureRegister which must be made Scheduler
+ *
  * Feature managing internet connectivity
  */
 public class FeatureInternet extends FeatureScheduler
@@ -43,7 +46,7 @@ public class FeatureInternet extends FeatureScheduler
 	}
 
 	/**
-	 * Adds url to be checked periodically. The url is requested immediately.
+	 * Checks url is requested immediately.
 	 *
 	 * @param url
 	 *            to be checked periodically
@@ -81,7 +84,9 @@ public class FeatureInternet extends FeatureScheduler
 	/**
 	 * Download file
 	 *
-	 * @param params Bundle with various download options. See DownloadService.Extras
+	 * @param params
+	 *            Bundle with various download options. See
+	 *            DownloadService.Extras
 	 * @param onResultReceived
 	 */
 	public void downloadFile(Bundle params, OnResultReceived onResultReceived)
