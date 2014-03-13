@@ -39,6 +39,8 @@ public class FeatureInternet extends FeatureScheduler
 		URL, CONTENT
 	}
 
+	private double _averageDownloadRateMbPerSec;
+
 	@Override
 	public FeatureName.Scheduler getSchedulerName()
 	{
@@ -89,10 +91,31 @@ public class FeatureInternet extends FeatureScheduler
 	 *            DownloadService.Extras
 	 * @param onResultReceived
 	 */
-	public void downloadFile(Bundle params, OnResultReceived onResultReceived)
+	public void downloadFile(Bundle params, final OnResultReceived onResultReceived)
 	{
 		ServiceController serviceController = Environment.getInstance().getServiceController();
-		serviceController.startService(DownloadService.class, params).then(onResultReceived);
+		serviceController.startService(DownloadService.class, params).then(new OnResultReceived()
+		{
+			@Override
+			public void onReceiveResult(int resultCode, Bundle resultData)
+			{
+				if (resultData != null)
+				{
+					_averageDownloadRateMbPerSec = resultData
+					        .getDouble(DownloadService.ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name());
+				}
+
+				onResultReceived.onReceiveResult(resultCode, resultData);
+			}
+		});
+	}
+
+	/**
+	 * Return the download speed measured in MB/sec.
+	 */
+	public double getAverageDownloadRate()
+	{
+		return _averageDownloadRateMbPerSec;
 	}
 
 	/**

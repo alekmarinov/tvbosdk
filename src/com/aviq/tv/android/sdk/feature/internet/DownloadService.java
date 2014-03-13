@@ -49,6 +49,7 @@ public class DownloadService extends BaseService
 	private static final int CONNECT_TIMEOUT = 60 * 1000;
 	private static final int READ_TIMEOUT = 60 * 1000;
 	private static final int BUFFER_SIZE = 10 * 100 * 8192;
+	private static final int ONE_MEGABYTE = 1024 * 1024;
 
 	public static final int DOWNLOAD_PROGRESS = EventMessenger.ID();
 	public static final int DOWNLOAD_SUCCESS = EventMessenger.ID();
@@ -67,7 +68,7 @@ public class DownloadService extends BaseService
 	 */
 	public enum ResultExtras
 	{
-		PROGRESS, MD5, BYTES_DOWNLOADED, BYTES_TOTAL, EXCEPTION
+		PROGRESS, MD5, BYTES_DOWNLOADED, BYTES_TOTAL, EXCEPTION, DOWNLOAD_RATE_MB_PER_SEC
 	}
 
 	public DownloadService()
@@ -151,7 +152,6 @@ public class DownloadService extends BaseService
 			}
 			int bufSize = intent.getIntExtra(Extras.BUFFER_SIZE.name(), BUFFER_SIZE);
 
-			long downloadStart = System.currentTimeMillis();
 			// prepare input stream
 			inputStream = new BufferedInputStream(conn.getInputStream(), bufSize);
 
@@ -168,6 +168,9 @@ public class DownloadService extends BaseService
 			File partFile = new File(getFilesDir(), localFile + ".part");
 			outputStream = new FileOutputStream(partFile);
 
+			long downloadStart = System.currentTimeMillis();
+			long duration = 0;
+			double downloadRateMbPerSec = 0.0;
 			int total = conn.getContentLength();
 			byte data[] = new byte[bufSize];
 			int count;
@@ -181,14 +184,21 @@ public class DownloadService extends BaseService
 				outputStream.write(data, 0, count);
 				bytesWritten += count;
 
+				duration = System.currentTimeMillis() - downloadStart;
+				downloadRateMbPerSec = (bytesWritten / ((double) duration / 1000)) / ONE_MEGABYTE;
+
 				// send progress events back to receiver
 				progressData.putFloat(ResultExtras.PROGRESS.name(), (float) bytesWritten / total);
 				progressData.putFloat(ResultExtras.BYTES_DOWNLOADED.name(), bytesWritten);
 				progressData.putFloat(ResultExtras.BYTES_TOTAL.name(), total);
+				progressData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
 				resultReceiver.send(DOWNLOAD_PROGRESS, progressData);
 			}
-			long duration = System.currentTimeMillis() - downloadStart;
-			Log.i(TAG, bytesWritten + " bytes in " + duration + " ms downloaded from " + url);
+			duration = System.currentTimeMillis() - downloadStart;
+			downloadRateMbPerSec = (bytesWritten / ((double) duration / 1000)) / ONE_MEGABYTE;
+			resultData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
+			Log.i(TAG, bytesWritten + " bytes in " + duration + " ms downloaded from " + url + ", download rate = "
+			        + downloadRateMbPerSec + " MB/sec");
 
 			if (md5 != null)
 			{
