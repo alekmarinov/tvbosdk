@@ -32,6 +32,7 @@ public abstract class FeatureScheduler implements IFeature
 
 	protected FeatureSet _dependencies = new FeatureSet();
 	private Calendar _scheduledTime;
+	private EventMessenger _eventMessenger = new EventMessenger();
 
 	public FeatureScheduler()
 	{
@@ -84,7 +85,7 @@ public abstract class FeatureScheduler implements IFeature
 	@Override
 	public EventMessenger getEventMessenger()
 	{
-		return Environment.getInstance().getEventMessenger();
+		return _eventMessenger;
 	}
 
 	@Override

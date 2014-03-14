@@ -31,6 +31,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 	public static final String TAG = FeatureState.class.getSimpleName();
 	protected FeatureSet _dependencies = new FeatureSet();
 	private List<Subscription> _subscriptions = new ArrayList<Subscription>();
+	private EventMessenger _eventMessenger = new EventMessenger();
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
@@ -73,7 +74,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 	@Override
 	public EventMessenger getEventMessenger()
 	{
-		return Environment.getInstance().getEventMessenger();
+		return _eventMessenger;
 	}
 
 	@Override

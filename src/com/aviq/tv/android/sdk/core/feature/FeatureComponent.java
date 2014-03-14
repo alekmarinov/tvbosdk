@@ -23,6 +23,7 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 public abstract class FeatureComponent implements IFeature
 {
 	protected FeatureSet _dependencies = new FeatureSet();
+	private EventMessenger _eventMessenger = new EventMessenger();
 
 	public FeatureComponent()
 	{
@@ -69,7 +70,7 @@ public abstract class FeatureComponent implements IFeature
 	@Override
 	public EventMessenger getEventMessenger()
 	{
-		return Environment.getInstance().getEventMessenger();
+		return _eventMessenger;
 	}
 
 	@Override
