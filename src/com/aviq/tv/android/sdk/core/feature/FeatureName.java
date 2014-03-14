@@ -42,10 +42,6 @@ public class FeatureName
 		TICKER,
 		UPGRADE,
 		MENU,
-
-		// FIXME: rename to more meaningful name
-		DATA_LOADER,
-		POPUP,
 		TEST
 	}
 
