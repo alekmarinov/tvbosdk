@@ -148,12 +148,6 @@ public class Environment
 		// initializes features
 		Log.i(TAG, "Sorting features topologically based on their declared dependencies");
 		_features = topologicalSort(_features);
-		for (int i = 0; i < _features.size(); i++)
-		{
-			Log.i(TAG, i + ". " + _features.get(i).getName() + " " + _features.get(i).getType());
-		}
-
-		Log.i(TAG, "Initializing features");
 
 		// Initialize brand properties
 		if (_brandProperties != null)
@@ -192,8 +186,27 @@ public class Environment
 			}
 		}
 
+		Log.i(TAG, "Initializing features");
 		_onFeatureInitialized.setTimeout(getPrefs().getInt(Param.FEATURE_INITIALIZE_TIMEOUT));
 		_onFeatureInitialized.initializeNext();
+	}
+
+	/**
+	 * Disable/Enable the timeout during feature initializations.
+	 * This method must be called from IFeature.initialize before
+	 * the response of the onInitialized callback. If a feature is shown while
+	 * initializing the timeout is automatically stopped and restarted when the
+	 * feature hides.
+	 *
+	 * @param isEnabled
+	 */
+	public void setInitTimeout(boolean isEnabled)
+	{
+		Log.i(TAG, ".setInitTimeout: isEnabled = " + isEnabled);
+		if (isEnabled)
+			_onFeatureInitialized.startTimeout();
+		else
+			_onFeatureInitialized.stopTimeout();
 	}
 
 	private class FeatureInitializeCallBack implements Runnable, IFeature.OnFeatureInitialized
@@ -208,20 +221,48 @@ public class Environment
 			_timeout = timeout;
 		}
 
+		public void stopTimeout()
+		{
+			_eventMessenger.removeCallbacks(this);
+		}
+
+		public void startTimeout()
+		{
+			_eventMessenger.postDelayed(this, _timeout * 1000);
+		}
+
 		// return true if there are more features to initialize or false
 		// otherwise
 		public void initializeNext()
 		{
-			_eventMessenger.removeCallbacks(this);
+			stopTimeout();
 			if ((_nFeature + 1) < _features.size())
 			{
 				_nFeature++;
-				_eventMessenger.postDelayed(this, _timeout * 1000);
+				startTimeout();
 				_initStartedTime = System.currentTimeMillis();
-				IFeature feature = _features.get(_nFeature);
-				Log.i(TAG, "Initializing " + feature.getName() + " " + feature.getType() + " ("
+				final IFeature feature = _features.get(_nFeature);
+				Log.i(TAG, ">" + _nFeature + ". Initializing " + feature.getName() + " " + feature.getType() + " ("
 				        + feature.getClass().getName() + ") with timeout " + _timeout + " secs");
 				feature.initialize(this);
+				feature.getEventMessenger().register(new EventReceiver()
+				{
+					@Override
+					public void onEvent(int msgId, Bundle bundle)
+					{
+						stopTimeout();
+						feature.getEventMessenger().unregister(this, FeatureState.ON_SHOW);
+					}
+				}, FeatureState.ON_SHOW);
+				feature.getEventMessenger().register(new EventReceiver()
+				{
+					@Override
+					public void onEvent(int msgId, Bundle bundle)
+					{
+						startTimeout();
+						feature.getEventMessenger().unregister(this, FeatureState.ON_HIDE);
+					}
+				}, FeatureState.ON_HIDE);
 			}
 			else
 			{
@@ -250,7 +291,7 @@ public class Environment
 				throw new RuntimeException("Attempt to initialize feature " + featureName + " more than once");
 			}
 			_nInitialized = _nFeature;
-			Log.i(TAG, _nFeature + ". " + featureName + " initialized in "
+			Log.i(TAG, "<" + _nFeature + ". " + featureName + " initialized in "
 			        + (System.currentTimeMillis() - _initStartedTime) + " ms with result " + resultCode);
 			initializeNext();
 		}
@@ -701,7 +742,7 @@ public class Environment
 	/**
 	 * Inject key press in the environment
 	 */
-	/* package */ boolean onKeyDown(AVKeyEvent keyEvent)
+	/* package */boolean onKeyDown(AVKeyEvent keyEvent)
 	{
 		Log.i(TAG, ".onKeyDown: key = " + keyEvent);
 		Bundle bundle = new Bundle();
@@ -716,7 +757,7 @@ public class Environment
 	/**
 	 * Inject key release in the environment
 	 */
-	/* package */ boolean onKeyUp(AVKeyEvent keyEvent)
+	/* package */boolean onKeyUp(AVKeyEvent keyEvent)
 	{
 		Log.i(TAG, ".onKeyDown: key = " + keyEvent);
 		Bundle bundle = new Bundle();
@@ -838,7 +879,10 @@ public class Environment
 				}
 
 				if (sorted.indexOf(feature) < 0)
+				{
+					Log.i(TAG, sorted.size() +  ". " + feature);
 					sorted.add(feature);
+				}
 			}
 			if (prevSortedSize == sorted.size())
 				throw new RuntimeException("Internal error. Unable to sort features!");

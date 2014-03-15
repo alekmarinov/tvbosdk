@@ -23,23 +23,58 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
+import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
- * FIXME: refactore this to component, addCheckUrl to be removed and
- * functionality to be moved to FeatureRegister which must be made Scheduler
- *
- * Feature managing internet connectivity
+ * Feature managing Internet access
  */
 public class FeatureInternet extends FeatureScheduler
 {
 	private static final String TAG = FeatureInternet.class.getSimpleName();
 
-	public enum ResultExtras
+	public enum Param
 	{
-		URL, CONTENT
+		/**
+		 * Check URL interval in seconds
+		 */
+		CHECK_INTERVAL(60);
+
+		Param(int value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.INTERNET).put(name(), value);
+		}
+
+		Param(String value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.INTERNET).put(name(), value);
+		}
 	}
 
+	public enum ResultExtras
+	{
+		URL, CONTENT, ERROR
+	}
+
+	private String _checkUrl;
+
+	// FIXME: to be removed from this component
 	private double _averageDownloadRateMbPerSec;
+
+	@Override
+	public void onSchedule(final OnFeatureInitialized onFeatureInitialized)
+	{
+		Log.i(TAG, ".onSchedule");
+		getUrlContent(_checkUrl, new OnResultReceived()
+		{
+			@Override
+			public void onReceiveResult(int resultCode, Bundle resultData)
+			{
+				Log.i(TAG, ".onReceiveResult: resultCode = " + resultCode + " (" + TextUtils.implodeBundle(resultData) + ")");
+				onFeatureInitialized.onInitialized(FeatureInternet.this, resultCode);
+				scheduleDelayed(getPrefs().getInt(Param.CHECK_INTERVAL) * 1000);
+			}
+		});
+	}
 
 	@Override
 	public FeatureName.Scheduler getSchedulerName()
@@ -48,38 +83,42 @@ public class FeatureInternet extends FeatureScheduler
 	}
 
 	/**
-	 * Checks url is requested immediately.
+	 * Start checking periodically this url
 	 *
 	 * @param url
 	 *            to be checked periodically
-	 * @param intervalSecs
-	 *            the time interval in seconds
-	 * @param onResultReceived
 	 */
-	public void addCheckUrl(String url, int intervalSecs, OnResultReceived onResultReceived)
+	public void startCheckUrl(String url)
 	{
-		CheckResponse responseSuccess = new CheckResponse(1000 * intervalSecs, onResultReceived);
-		CheckResponse responseError = new CheckResponse(1000 * intervalSecs, onResultReceived);
-		StringRequest stringRequest = new StringRequest(url, responseSuccess, responseError);
-		responseSuccess.setRequest(stringRequest);
-		responseError.setRequest(stringRequest);
-		Environment.getInstance().getRequestQueue().add(stringRequest);
+		_checkUrl = url;
+		getEventMessenger().trigger(ON_SCHEDULE);
+	}
+
+	/**
+	 * Checks internet access
+	 *
+	 * @param onResultReceived
+	 *            result callback interface
+	 */
+	public void checkInternet(OnResultReceived onResultReceived)
+	{
+		getUrlContent(_checkUrl, onResultReceived);
 	}
 
 	/**
 	 * Get content from Url
 	 *
 	 * @param url
+	 *            the url to get content from
 	 * @param onResultReceived
+	 *            result callback interface
 	 */
 	public void getUrlContent(String url, OnResultReceived onResultReceived)
 	{
 		Log.i(TAG, ".getUrlContent: " + url);
-		CheckResponse responseSuccess = new CheckResponse(onResultReceived);
-		CheckResponse responseError = new CheckResponse(onResultReceived);
+		CheckResponse responseSuccess = new CheckResponse(url, onResultReceived);
+		CheckResponse responseError = new CheckResponse(url, onResultReceived);
 		StringRequest stringRequest = new StringRequest(url, responseSuccess, responseError);
-		responseSuccess.setRequest(stringRequest);
-		responseError.setRequest(stringRequest);
 		Environment.getInstance().getRequestQueue().add(stringRequest);
 	}
 
@@ -93,6 +132,7 @@ public class FeatureInternet extends FeatureScheduler
 	 */
 	public void downloadFile(Bundle params, final OnResultReceived onResultReceived)
 	{
+		Log.i(TAG, ".downloadFile: " + TextUtils.implodeBundle(params));
 		ServiceController serviceController = Environment.getInstance().getServiceController();
 		serviceController.startService(DownloadService.class, params).then(new OnResultReceived()
 		{
@@ -112,7 +152,10 @@ public class FeatureInternet extends FeatureScheduler
 
 	/**
 	 * Return the download speed measured in MB/sec.
+	 * FIXME: download rate must be obtained dynamically during download
+	 * progress calls
 	 */
+	@Deprecated
 	public double getAverageDownloadRate()
 	{
 		return _averageDownloadRateMbPerSec;
@@ -121,26 +164,15 @@ public class FeatureInternet extends FeatureScheduler
 	/**
 	 * Url check response handler
 	 */
-	private class CheckResponse implements Listener<String>, ErrorListener, Runnable
+	private class CheckResponse implements Listener<String>, ErrorListener
 	{
-		private StringRequest _stringRequest;
-		private int _intervalSecs;
 		private OnResultReceived _onResultReceived;
+		private String _url;
 
-		private CheckResponse(int intervalSecs, OnResultReceived onResultReceived)
+		CheckResponse(String url, OnResultReceived onResultReceived)
 		{
-			_intervalSecs = intervalSecs;
+			_url = url;
 			_onResultReceived = onResultReceived;
-		}
-
-		private CheckResponse(OnResultReceived onResultReceived)
-		{
-			this(0, onResultReceived);
-		}
-
-		public void setRequest(StringRequest stringRequest)
-		{
-			_stringRequest = stringRequest;
 		}
 
 		/**
@@ -149,19 +181,11 @@ public class FeatureInternet extends FeatureScheduler
 		@Override
 		public void onResponse(String response)
 		{
-			Log.i(TAG, _stringRequest.getUrl() + " -> " + response.substring(0, Math.min(10, response.length() - 1)));
-			if (_onResultReceived != null)
-			{
-				Bundle bundle = new Bundle();
-				bundle.putString(ResultExtras.URL.name(), _stringRequest.getUrl());
-				bundle.putString(ResultExtras.CONTENT.name(), response);
-				_onResultReceived.onReceiveResult(ResultCode.OK, bundle);
-			}
-			if (_intervalSecs > 0)
-			{
-				Log.i(TAG, "Post checking again in " + _intervalSecs + " ms");
-				Environment.getInstance().getEventMessenger().postDelayed(this, _intervalSecs);
-			}
+			Log.i(TAG, _url + " -> " + response.substring(0, Math.min(10, response.length() - 1)));
+			Bundle resultData = new Bundle();
+			resultData.putString(ResultExtras.URL.name(), _url);
+			resultData.putString(ResultExtras.CONTENT.name(), response);
+			_onResultReceived.onReceiveResult(ResultCode.OK, resultData);
 		}
 
 		/**
@@ -173,25 +197,11 @@ public class FeatureInternet extends FeatureScheduler
 			int statusCode = ResultCode.GENERAL_FAILURE;
 			if (error.networkResponse != null)
 				statusCode = error.networkResponse.statusCode;
-			Log.e(TAG, _stringRequest.getUrl() + " -> " + statusCode);
-			if (_onResultReceived != null)
-			{
-				Bundle bundle = new Bundle();
-				bundle.putString("URL", _stringRequest.getUrl());
-				_onResultReceived.onReceiveResult(statusCode, bundle);
-			}
-			if (_intervalSecs > 0)
-			{
-				Log.i(TAG, "Post checking again in " + _intervalSecs + " ms");
-				Environment.getInstance().getEventMessenger().postDelayed(this, _intervalSecs);
-			}
-		}
-
-		@Override
-		public void run()
-		{
-			Log.i(TAG, "Calling url " + _stringRequest.getUrl());
-			Environment.getInstance().getRequestQueue().add(_stringRequest);
+			Log.e(TAG, _url + " -> " + statusCode + " ( " + error.getMessage() + ")");
+			Bundle resultData = new Bundle();
+			resultData.putString(ResultExtras.URL.name(), _url);
+			resultData.putString(ResultExtras.ERROR.name(), error.getMessage());
+			_onResultReceived.onReceiveResult(statusCode, resultData);
 		}
 	}
 }

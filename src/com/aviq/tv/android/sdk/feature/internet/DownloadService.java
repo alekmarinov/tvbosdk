@@ -79,6 +79,7 @@ public class DownloadService extends BaseService
 	@Override
 	protected void onHandleIntent(Intent intent, ResultReceiver resultReceiver)
 	{
+		Log.i(TAG, ".onHandleIntent");
 		BufferedInputStream inputStream = null;
 		HttpURLConnection conn = null;
 		FileOutputStream outputStream = null;
@@ -248,6 +249,8 @@ public class DownloadService extends BaseService
 
 			// send download status to result receiver
 			resultReceiver.send(result, resultData);
+
+			Log.i(TAG, ".onHandleIntent: finished");
 		}
 	}
 

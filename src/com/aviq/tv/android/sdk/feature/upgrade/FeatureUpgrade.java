@@ -57,6 +57,7 @@ public class FeatureUpgrade extends FeatureScheduler
 {
 	public static final String TAG = FeatureUpgrade.class.getSimpleName();
 	public static final int ON_STATUS_CHANGED = EventMessenger.ID();
+	public static final int ON_UPDATE_CHECKED = EventMessenger.ID();
 	public static final int ON_UPDATE_FOUND = EventMessenger.ID();
 	public static final int ON_UPDATE_PROGRESS = DownloadService.DOWNLOAD_PROGRESS;
 
@@ -211,7 +212,7 @@ public class FeatureUpgrade extends FeatureScheduler
 	 */
 	public boolean isUpgradeAvailable()
 	{
-		return _updateData != null && isNewVersion(_updateData.Version, _updateData.Brand);
+		return _hasUpdate;
 	}
 
 	/**
@@ -286,11 +287,13 @@ public class FeatureUpgrade extends FeatureScheduler
 	 */
 	public boolean checkForUpdateAndDownload()
 	{
+		Log.i(TAG, ".checkForUpdateAndDownload");
 		return checkForUpdate(true);
 	}
 
 	private boolean checkForUpdate(final boolean isDownload)
 	{
+		Log.i(TAG, ".checkForUpdate: isDownload = " + isDownload);
 		// Contact the server for a software update check
 		if (!(_status.equals(Status.IDLE) || _status.equals(Status.ERROR)))
 		{
@@ -311,6 +314,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		String abmpUpdateCheckUrl = getPrefs().getString(Param.ABMP_UPDATE_CHECK_URL, updateCheckUrlParams);
 		Log.i(TAG, ".checkForUpdate: " + abmpUpdateCheckUrl);
 
+		_hasUpdate = false;
 		_featureInternet.getUrlContent(abmpUpdateCheckUrl, new OnResultReceived()
 		{
 			@Override
@@ -349,14 +353,20 @@ public class FeatureUpgrade extends FeatureScheduler
 						_userPrefs.put(UserParam.UPGRADE_BOX_CATEGORY, updateData.SoftwareType);
 
 						_hasUpdate = isNewVersion(updateData.Version, updateData.Brand);
-						if (_hasUpdate && isDownload)
+						if (_hasUpdate)
 						{
-							// Proceed with downloading new software
-							downloadUpdate();
+							getEventMessenger().trigger(ON_UPDATE_FOUND);
+
+							if (isDownload)
+							{
+								// Proceed with downloading new software
+								downloadUpdate();
+							}
 						}
-						else
+
+						if (!(_hasUpdate && isDownload))
 						{
-							// No new software update
+							// set ok status if not downloading
 							setOkStatus();
 						}
 					}
@@ -385,6 +395,7 @@ public class FeatureUpgrade extends FeatureScheduler
 				{
 					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, resultCode);
 				}
+				getEventMessenger().trigger(ON_UPDATE_CHECKED);
 			}
 		});
 
@@ -429,13 +440,13 @@ public class FeatureUpgrade extends FeatureScheduler
 
 	private void downloadUpdate()
 	{
+		Log.i(TAG, ".downloadUpdate");
 		if (isUpgradeReady())
 		{
+			Log.i(TAG, ".downloadUpdate: upgrade already downloaded");
 			setOkStatus();
 			return;
 		}
-		// notify update is found and start downloading
-		getEventMessenger().trigger(ON_UPDATE_FOUND);
 
 		// change status to downloading
 		setStatus(Status.DOWNLOADING, ErrorReason.NO_ERROR, ResultCode.OK);
@@ -536,7 +547,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		String[] otherVersionParts = otherVersion.split("\\.");
 		if (currentVersionParts.length != otherVersionParts.length)
 		{
-			Log.i(TAG, ".hasNewVersion: No compatible versions formats current=" + currentVersion + ", other="
+			Log.i(TAG, ".isNewVersion: No compatible versions formats current=" + currentVersion + ", other="
 			        + otherVersion + ". Assuming new version!");
 			return true;
 		}
@@ -549,13 +560,13 @@ public class FeatureUpgrade extends FeatureScheduler
 				int otherVer = Integer.parseInt(otherVersionParts[i]);
 				if (currentVer > otherVer)
 				{
-					Log.i(TAG, ".hasNewVersion: current=" + currentVersion + " is newer than other=" + otherVersion
+					Log.i(TAG, ".isNewVersion: current=" + currentVersion + " is newer than other=" + otherVersion
 					        + ". Assuming new version!");
 					return true;
 				}
 				else if (currentVer < otherVer)
 				{
-					Log.i(TAG, ".hasNewVersion: current=" + currentVersion + " is older than other=" + otherVersion
+					Log.i(TAG, ".isNewVersion: current=" + currentVersion + " is older than other=" + otherVersion
 					        + ". New version!");
 					return true;
 				}
@@ -563,12 +574,12 @@ public class FeatureUpgrade extends FeatureScheduler
 		}
 		catch (NumberFormatException e)
 		{
-			Log.i(TAG, ".hasNewVersion: Invalid version component in current=" + currentVersion + " or other="
+			Log.i(TAG, ".isNewVersion: Invalid version component in current=" + currentVersion + " or other="
 			        + otherVersion + ". Assuming new version!");
 			return true;
 		}
 
-		Log.i(TAG, ".hasNewVersion: Current version " + currentVersion + " is the same as the new reported "
+		Log.i(TAG, ".isNewVersion: Current version " + currentVersion + " is the same as the new reported "
 		        + otherVersion + ". No new software version!");
 		return false;
 	}

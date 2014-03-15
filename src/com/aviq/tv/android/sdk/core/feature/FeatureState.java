@@ -18,17 +18,21 @@ import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.state.BaseState;
 import com.aviq.tv.android.sdk.core.state.StateException;
+import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Defines the base class for state feature type
  */
-public abstract class FeatureState extends BaseState implements IFeature
+public abstract class FeatureState extends BaseState implements IFeature, EventReceiver
 {
 	public static final String TAG = FeatureState.class.getSimpleName();
+	public static final int ON_SHOW = EventMessenger.ID();
+	public static final int ON_HIDE = EventMessenger.ID();
 	protected FeatureSet _dependencies = new FeatureSet();
 	private List<Subscription> _subscriptions = new ArrayList<Subscription>();
 	private EventMessenger _eventMessenger = new EventMessenger();
@@ -63,6 +67,12 @@ public abstract class FeatureState extends BaseState implements IFeature
 	}
 
 	@Override
+	public String toString()
+	{
+		return getType() + " " + getName();
+	}
+
+	@Override
 	public Prefs getPrefs()
 	{
 		return Environment.getInstance().getFeaturePrefs(getStateName());
@@ -77,16 +87,10 @@ public abstract class FeatureState extends BaseState implements IFeature
 		return _eventMessenger;
 	}
 
-	@Override
-	public void onEvent(int msgId, Bundle bundle)
-	{
-		Log.i(TAG, getName() + ".onEvent: msgId = " + msgId);
-	}
-
 	/**
 	 * Subscribes this feature to event triggered from another feature
 	 *
-	 * @param Feature
+	 * @param Receiver
 	 *            the feature to subscribe to
 	 * @param msgId
 	 *            the id of the message to subscribe
@@ -112,7 +116,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 	/**
 	 * Unsubscribes this feature from event triggered from another feature
 	 *
-	 * @param Feature
+	 * @param Receiver
 	 *            the feature to unsubscribe from
 	 * @param msgId
 	 *            the id of the message to unsubscribe
@@ -182,6 +186,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 				subscription.Feature.getEventMessenger().register(this, subscription.MsgId);
 			}
 		}
+		getEventMessenger().trigger(ON_SHOW);
 	}
 
 	/**
@@ -201,6 +206,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 				subscription.Feature.getEventMessenger().unregister(this, subscription.MsgId);
 			}
 		}
+		getEventMessenger().trigger(ON_HIDE);
 	}
 
 	public abstract FeatureName.State getStateName();
@@ -215,5 +221,11 @@ public abstract class FeatureState extends BaseState implements IFeature
 			Feature = feature;
 			MsgId = msgId;
 		}
+	}
+
+	@Override
+	public void onEvent(int msgId, Bundle bundle)
+	{
+		Log.i(TAG, this + ".onEvent: " + msgId + " (" + TextUtils.implodeBundle(bundle) + ")");
 	}
 }

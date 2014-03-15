@@ -28,7 +28,6 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -105,25 +104,11 @@ public class FeatureRegister extends FeatureComponent
 			bundle.putString("NETWORK", getActiveNetworkType());
 
 			_registrationUrl = getPrefs().getString(Param.ABMP_REGISTER_URL, bundle);
-			int registerInterval = getPrefs().getInt(Param.ABMP_REGISTER_INTERVAL);
 
 			FeatureInternet featureInternet = (FeatureInternet) Environment.getInstance().getFeatureScheduler(
 			        FeatureName.Scheduler.INTERNET);
-			featureInternet.addCheckUrl(_registrationUrl, registerInterval, new ServiceController.OnResultReceived()
-			{
-				@Override
-				public void onReceiveResult(int resultCode, Bundle resultData)
-				{
-					Log.i(TAG,
-					        ".onReceiveResult: resultCode = " + resultCode + ", url = " + resultData.getString("URL"));
-					if (resultCode != ResultCode.OK)
-					{
-						// TODO: Take decision what to do if the box is disabled
-						// or no access to ABMP services
-					}
-				}
-			});
-			onFeatureInitialized.onInitialized(this, ResultCode.OK);
+			featureInternet.startCheckUrl(_registrationUrl);
+			super.initialize(onFeatureInitialized);
 		}
 		catch (FeatureNotFoundException e)
 		{
@@ -143,15 +128,29 @@ public class FeatureRegister extends FeatureComponent
 		return FeatureName.Component.REGISTER;
 	}
 
+	/**
+	 * @return the box ID (MAC address)
+	 */
 	public String getBoxId()
 	{
 		// if (true) return "902B34F69D99"; //TODO used to test FW download
 		return _boxId;
 	}
 
+	/**
+	 * @return the url to ABMP
+	 */
 	public String getRegistrationUrl()
 	{
 		return _registrationUrl;
+	}
+
+	/**
+	 * @return the user token for this box
+	 */
+	public String getUserToken()
+	{
+		return _userToken;
 	}
 
 	private String readMacAddress() throws FileNotFoundException

@@ -19,7 +19,6 @@ import android.os.Message;
 import android.util.Log;
 import android.util.SparseArray;
 
-import com.aviq.tv.android.sdk.core.feature.IFeature;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
@@ -29,66 +28,79 @@ public class EventMessenger extends Handler
 {
 	public static final String TAG = EventMessenger.class.getSimpleName();
 	private static int ID_GENERATOR = 0;
-	private SparseArray<List<IFeature>> _listners = new SparseArray<List<IFeature>>();
+	private SparseArray<List<EventReceiver>> _listners = new SparseArray<List<EventReceiver>>();
 	private List<RegisterCouple> _registerLater = new ArrayList<RegisterCouple>();
 	private List<RegisterCouple> _unregisterLater = new ArrayList<RegisterCouple>();
 	private boolean _inEventIteration = false;
+	private static int _lastId = 0;
 
 	public static synchronized int ID()
 	{
-		return ++ID_GENERATOR;
+		_lastId = ++ID_GENERATOR;
+		return _lastId;
 	}
 
 	/**
-	 * Register feature to listen for messages with id msgId
+	 * Register EventReceiver to listen for messages with id msgId
 	 *
-	 * @param feature
-	 *            the feature to be registered
+	 * @param EventReceiver
+	 *            to be registered
 	 * @param msgId
 	 */
-	public void register(IFeature feature, int msgId)
+	public void register(EventReceiver eventReceiver, int msgId)
 	{
 		if (_inEventIteration)
 		{
-			_registerLater.add(new RegisterCouple(feature, msgId));
+			_registerLater.add(new RegisterCouple(eventReceiver, msgId));
 		}
 		else
 		{
-			Log.d(TAG, ".register " + feature.getName() + " " + feature.getType() + " on " + msgId);
-			List<IFeature> msgListeners = _listners.get(msgId);
+			Log.d(TAG, ".register " + eventReceiver + " on " + msgId);
+			List<EventReceiver> msgListeners = _listners.get(msgId);
 			if (msgListeners == null)
 			{
-				msgListeners = new ArrayList<IFeature>();
+				msgListeners = new ArrayList<EventReceiver>();
 				_listners.put(msgId, msgListeners);
 			}
-			msgListeners.add(feature);
+			msgListeners.add(eventReceiver);
 		}
 	}
 
 	/**
-	 * Unregisters feature from listening to message msgId
+	 * Unregisters EventReceiver from listening to message msgId
 	 *
-	 * @param feature
-	 *            the feature to be unregistered
+	 * @param EventReceiver
+	 *            to be unregistered
 	 * @param msgId
 	 */
-	public void unregister(IFeature feature, int msgId)
+	public void unregister(EventReceiver eventReceiver, int msgId)
 	{
 		if (_inEventIteration)
 		{
-			_unregisterLater.add(new RegisterCouple(feature, msgId));
+			_unregisterLater.add(new RegisterCouple(eventReceiver, msgId));
 		}
 		else
 		{
-			Log.d(TAG, ".unregister " + feature.getName() + " " + feature.getType() + " from " + msgId);
-			List<IFeature> msgListeners = _listners.get(msgId);
-			if (msgListeners != null)
-				msgListeners.remove(feature);
+			Log.d(TAG, ".unregister " + eventReceiver + " from " + ((msgId > 0) ? "msgId" : "all events"));
+			int msgIdFirst = 1;
+			int msgIdLast = _lastId;
+			if (msgId > 0)
+			{
+				msgIdFirst = msgId;
+				msgIdLast = msgId;
+			}
+
+			for (int id = msgIdFirst; id <= msgIdLast; id++)
+			{
+				List<EventReceiver> msgListeners = _listners.get(id);
+				if (msgListeners != null)
+					msgListeners.remove(eventReceiver);
+			}
 		}
 	}
 
 	/**
-	 * Triggers event message to listeners for this feature
+	 * Triggers event message to listeners for this EventReceiver
 	 *
 	 * @param msgId
 	 *            the id of the message to trigger
@@ -101,7 +113,7 @@ public class EventMessenger extends Handler
 	}
 
 	/**
-	 * Triggers event message to listeners for this feature
+	 * Triggers event message to listeners for this EventReceiver
 	 *
 	 * @param msgId
 	 *            the id of the message to trigger
@@ -116,7 +128,7 @@ public class EventMessenger extends Handler
 	}
 
 	/**
-	 * Triggers event message to listeners for this feature
+	 * Triggers event message to listeners for this EventReceiver
 	 *
 	 * @param msgId
 	 *            the id of the message to trigger
@@ -131,7 +143,7 @@ public class EventMessenger extends Handler
 	}
 
 	/**
-	 * Triggers event message to listeners for this feature
+	 * Triggers event message to listeners for this EventReceiver
 	 *
 	 * @param msgId
 	 *            the id of the message to trigger
@@ -152,21 +164,21 @@ public class EventMessenger extends Handler
 	{
 		super.handleMessage(msg);
 		_inEventIteration = true;
-		List<IFeature> msgListeners = _listners.get(msg.what);
+		List<EventReceiver> msgListeners = _listners.get(msg.what);
 		if (msgListeners != null)
 		{
 			Log.v(TAG, ".handleMessage: notifying " + msgListeners.size() + " listeners on " + msg.what);
-			for (IFeature feature : msgListeners)
-				feature.onEvent(msg.what, (Bundle) msg.obj);
+			for (EventReceiver eventReceiver : msgListeners)
+				eventReceiver.onEvent(msg.what, (Bundle) msg.obj);
 		}
 		_inEventIteration = false;
 		for (RegisterCouple registerCouple : _registerLater)
 		{
-			register(registerCouple.Feature, registerCouple.MsgId);
+			register(registerCouple.Receiver, registerCouple.MsgId);
 		}
 		for (RegisterCouple registerCouple : _unregisterLater)
 		{
-			unregister(registerCouple.Feature, registerCouple.MsgId);
+			unregister(registerCouple.Receiver, registerCouple.MsgId);
 		}
 		_registerLater.clear();
 		_unregisterLater.clear();
@@ -174,12 +186,12 @@ public class EventMessenger extends Handler
 
 	private class RegisterCouple
 	{
-		IFeature Feature;
+		EventReceiver Receiver;
 		int MsgId;
 
-		RegisterCouple(IFeature feature, int msgId)
+		RegisterCouple(EventReceiver receiver, int msgId)
 		{
-			Feature = feature;
+			Receiver = receiver;
 			MsgId = msgId;
 		}
 	}

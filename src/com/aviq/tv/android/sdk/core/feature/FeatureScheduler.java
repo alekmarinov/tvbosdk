@@ -16,6 +16,7 @@ import android.os.Bundle;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
@@ -23,7 +24,7 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 /**
  * Defines the base class for scheduler feature type
  */
-public abstract class FeatureScheduler implements IFeature
+public abstract class FeatureScheduler implements IFeature, EventReceiver
 {
 	private static final String TAG = FeatureScheduler.class.getSimpleName();
 
@@ -71,6 +72,12 @@ public abstract class FeatureScheduler implements IFeature
 			return name.toString();
 		else
 			return getClass().getName();
+	}
+
+	@Override
+	public String toString()
+	{
+		return getType() + " " + getName();
 	}
 
 	@Override

@@ -10,8 +10,6 @@
 
 package com.aviq.tv.android.sdk.core.feature;
 
-import android.os.Bundle;
-
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Prefs;
 
@@ -62,14 +60,4 @@ public interface IFeature
 	 * @return an event messenger associated with this feature
 	 */
 	EventMessenger getEventMessenger();
-
-	/**
-	 * Inherit this method to receive messages
-	 *
-	 * @param msgId
-	 *            the id of the received message
-	 * @param bundle
-	 *            additional message data
-	 */
-	void onEvent(int msgId, Bundle bundle);
 }
