@@ -127,20 +127,20 @@ public class FeatureUpgrade extends FeatureScheduler
 		NO_ERROR, EXCEPTION, CONNECTION_ERROR, MD5_CHECK_FAILED
 	}
 
-	private class UpdateData
+	public class UpdateInfo
 	{
-		String Version;
-		String FileName;
-		long FileSize;
-		String Brand;
-		String SoftwareType;
-		boolean IsForced;
+		public String Version;
+		public String FileName;
+		public long FileSize;
+		public String Brand;
+		public String SoftwareType;
+		public boolean IsForced;
 	}
 
 	private FeatureRegister _featureRegister;
 	private FeatureInternet _featureInternet;
 	private boolean _hasUpdate;
-	private UpdateData _updateData;
+	private UpdateInfo _updateInfo;
 	private Status _status = Status.IDLE;
 	private ErrorReason _errorReason = ErrorReason.NO_ERROR;
 	private int _errorCode = ResultCode.OK;
@@ -213,6 +213,15 @@ public class FeatureUpgrade extends FeatureScheduler
 	public boolean isUpgradeAvailable()
 	{
 		return _hasUpdate;
+	}
+
+	/**
+	 * @return last update information
+	 */
+	public UpdateInfo getUpdateInfo()
+	{
+		Log.i(TAG, ".getUpdateInfo: _updateInfo = " + _updateInfo);
+		return _updateInfo;
 	}
 
 	/**
@@ -336,7 +345,7 @@ public class FeatureUpgrade extends FeatureScheduler
 
 						Node versionNode = ((NodeList) xPath
 						        .evaluate("/SW/version", docElement, XPathConstants.NODESET)).item(0);
-						UpdateData updateData = new UpdateData();
+						UpdateInfo updateData = new UpdateInfo();
 						updateData.Version = xPath.evaluate("@name", versionNode);
 						updateData.FileName = xPath.evaluate("@url", versionNode);
 						updateData.SoftwareType = xPath.evaluate("@type", versionNode);
@@ -347,7 +356,7 @@ public class FeatureUpgrade extends FeatureScheduler
 						Log.i(TAG, "Reported software version=" + updateData.Version + ", brand=" + updateData.Brand
 						        + ", fileName=`" + updateData.FileName + "', fileSize=" + updateData.FileSize
 						        + ", softwareType=" + updateData.SoftwareType + ", forced=" + updateData.IsForced);
-						_updateData = updateData;
+						_updateInfo = updateData;
 
 						// Store box category type - for read only purposes
 						_userPrefs.put(UserParam.UPGRADE_BOX_CATEGORY, updateData.SoftwareType);
@@ -455,7 +464,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		Bundle updateUrlParams = new Bundle();
 		updateUrlParams.putString("SERVER", _featureRegister.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
 		updateUrlParams.putString("BOX_ID", _featureRegister.getBoxId());
-		updateUrlParams.putString("FILE_NAME", _updateData.FileName);
+		updateUrlParams.putString("FILE_NAME", _updateInfo.FileName);
 		final String updateUrl = getPrefs().getString(Param.ABMP_UPDATE_DOWNLOAD_URL, updateUrlParams);
 
 		// download md5 file
@@ -474,7 +483,7 @@ public class FeatureUpgrade extends FeatureScheduler
 					final String md5 = md5Content;
 
 					final String updateFile = getPrefs().getString(Param.UPDATES_DIR) + "/"
-					        + Files.baseName(_updateData.FileName);
+					        + Files.baseName(_updateInfo.FileName);
 					Bundle downloadParams = new Bundle();
 					downloadParams.putString(DownloadService.Extras.URL.name(), updateUrl);
 					downloadParams.putString(DownloadService.Extras.LOCAL_FILE.name(), updateFile);
@@ -509,8 +518,8 @@ public class FeatureUpgrade extends FeatureScheduler
 									Log.i(TAG, ".downloadUpdate: md5 verification pass: " + downloadedMd5);
 									// download success
 									_userPrefs.put(UserParam.UPGRADE_FILE, updateFile);
-									_userPrefs.put(UserParam.UPGRADE_VERSION, _updateData.Version);
-									_userPrefs.put(UserParam.UPGRADE_BRAND, _updateData.Brand);
+									_userPrefs.put(UserParam.UPGRADE_VERSION, _updateInfo.Version);
+									_userPrefs.put(UserParam.UPGRADE_BRAND, _updateInfo.Brand);
 									setOkStatus();
 								}
 							}
