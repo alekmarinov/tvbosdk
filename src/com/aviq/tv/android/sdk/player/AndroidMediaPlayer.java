@@ -59,6 +59,7 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 	public AndroidMediaPlayer(SurfaceView surfaceView)
 	{
 		_surfaceView = surfaceView;
+		_mediaPlayer = new MediaPlayer();
 
 		_surfaceHolder = _surfaceView.getHolder();
 		_surfaceHolder.addCallback(this);
@@ -80,12 +81,13 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		Log.i(TAG, ".play: url = " + url);
 		super.play(url);
 
-		if (_mediaPlayer == null)
+		// if (_mediaPlayer == null)
     	{
-			_mediaPlayer = new MediaPlayer();
+			//_mediaPlayer = new MediaPlayer();
 
 			try
 			{
+				_mediaPlayer.reset();
 				_mediaPlayer.setDataSource(url);
 			}
 			catch (IllegalArgumentException e)
@@ -135,11 +137,11 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		Log.i(TAG, ".stop");
 		super.stop();
 
-		if (_mediaPlayer != null)
+		//if (_mediaPlayer != null)
 		{
 			_mediaPlayer.stop();
-			_mediaPlayer.release();
-			_mediaPlayer = null;
+			//_mediaPlayer.release();
+			//_mediaPlayer = null;
 		}
 	}
 
@@ -258,11 +260,11 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		else
 			Log.e(TAG, "Media player playback error " + what);
 
-		if (_mediaPlayer != null)
-		{
-			_mediaPlayer.release();
-			_mediaPlayer = null;
-		}
+//		if (_mediaPlayer != null)
+//		{
+//			_mediaPlayer.release();
+//			_mediaPlayer = null;
+//		}
 
 		Bundle bundle = new Bundle();
 		bundle.putInt(PARAM_WHAT, what);
@@ -329,11 +331,11 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
             _mediaController.hide();
         }
 
-		if (_mediaPlayer != null)
+//		if (_mediaPlayer != null)
 		{
 			_mediaPlayer.stop();
-			_mediaPlayer.release();
-			_mediaPlayer = null;
+//			_mediaPlayer.release();
+//			_mediaPlayer = null;
 		}
 
 		Environment.getInstance().getEventMessenger().trigger(ON_COMPLETION);

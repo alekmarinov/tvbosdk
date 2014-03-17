@@ -196,7 +196,7 @@ public class EventMessenger extends Handler
 		_unregisterLater.clear();
 	}
 
-	private class RegisterCouple
+	private static class RegisterCouple
 	{
 		EventReceiver Receiver;
 		int MsgId;
@@ -205,6 +205,49 @@ public class EventMessenger extends Handler
 		{
 			Receiver = receiver;
 			MsgId = msgId;
+		}
+	}
+
+	public static class RegisterCollector
+	{
+		private List<RegisterTouple> _registrations = new ArrayList<RegisterTouple>();
+
+		/**
+		 * Register EventReceiver to listen for messages on arbitrary EventMessenger with id msgId
+		 *
+		 * @param EventReceiver
+		 *            to be registered
+		 * @param EventMessenger
+		 *            the target EventMessenger registering to
+		 * @param msgId
+		 */
+		public void register(EventReceiver receiver, EventMessenger eventMessenger, int msgId)
+		{
+			_registrations.add(new RegisterTouple(receiver, eventMessenger, msgId));
+			eventMessenger.register(receiver, msgId);
+		}
+
+		/**
+		 * Cleanup all registrations collected by this RegisterCollector
+		 */
+		public void cleanupRegistrations()
+		{
+			for (RegisterTouple registerTouple: _registrations)
+			{
+				registerTouple.EventMessenger.unregister(registerTouple.Receiver, registerTouple.MsgId);
+			}
+			_registrations.clear();
+		}
+
+		private class RegisterTouple extends RegisterCouple
+		{
+			EventMessenger EventMessenger;
+
+			RegisterTouple(EventReceiver receiver, EventMessenger eventMessenger, int msgId)
+            {
+	            super(receiver, msgId);
+	            EventMessenger = eventMessenger;
+            }
 		}
 	}
 }

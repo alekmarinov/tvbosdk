@@ -215,6 +215,7 @@ public class Environment
 		private int _nInitialized = -1;
 		private long _initStartedTime;
 		private int _timeout = 0;
+		private EventMessenger.RegisterCollector _registerCollector = new EventMessenger.RegisterCollector();
 
 		public void setTimeout(int timeout)
 		{
@@ -245,7 +246,8 @@ public class Environment
 				Log.i(TAG, ">" + _nFeature + ". Initializing " + feature.getName() + " " + feature.getType() + " ("
 				        + feature.getClass().getName() + ") with timeout " + _timeout + " secs");
 				feature.initialize(this);
-				feature.getEventMessenger().register(new EventReceiver()
+
+				_registerCollector.register(new EventReceiver()
 				{
 					@Override
 					public void onEvent(int msgId, Bundle bundle)
@@ -253,8 +255,9 @@ public class Environment
 						stopTimeout();
 						feature.getEventMessenger().unregister(this, FeatureState.ON_SHOW);
 					}
-				}, FeatureState.ON_SHOW);
-				feature.getEventMessenger().register(new EventReceiver()
+				}, feature.getEventMessenger(), FeatureState.ON_SHOW);
+
+				_registerCollector.register(new EventReceiver()
 				{
 					@Override
 					public void onEvent(int msgId, Bundle bundle)
@@ -262,10 +265,11 @@ public class Environment
 						startTimeout();
 						feature.getEventMessenger().unregister(this, FeatureState.ON_HIDE);
 					}
-				}, FeatureState.ON_HIDE);
+				}, feature.getEventMessenger(), FeatureState.ON_HIDE);
 			}
 			else
 			{
+				_registerCollector.cleanupRegistrations();
 				_eventMessenger.trigger(ON_LOADED);
 				_isInitialized = true;
 			}
