@@ -498,13 +498,15 @@ public class FeatureUpgrade extends FeatureScheduler
 							{
 								Log.i(TAG, ".downloadUpdate: download success");
 								// Download finished, checking md5
-								if (!md5.equalsIgnoreCase(resultData.getString(DownloadService.ResultExtras.MD5.name())))
+								String downloadedMd5 = resultData.getString(DownloadService.ResultExtras.MD5.name());
+								if (!md5.equalsIgnoreCase(downloadedMd5))
 								{
 									// md5 check failed
 									setStatus(Status.ERROR, ErrorReason.MD5_CHECK_FAILED, ResultCode.GENERAL_FAILURE);
 								}
 								else
 								{
+									Log.i(TAG, ".downloadUpdate: md5 verification pass: " + downloadedMd5);
 									// download success
 									_userPrefs.put(UserParam.UPGRADE_FILE, updateFile);
 									_userPrefs.put(UserParam.UPGRADE_VERSION, _updateData.Version);

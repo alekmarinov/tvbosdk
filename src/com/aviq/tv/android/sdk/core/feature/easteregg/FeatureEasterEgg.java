@@ -14,11 +14,13 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Key;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Opens the Settings app when detected special key sequence by the RCU
@@ -80,6 +82,7 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 	@Override
 	public void onEvent(int msgId, Bundle bundle)
 	{
+		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
 		if (Environment.ON_KEY_PRESSED == msgId)
 		{
 			long delay = System.currentTimeMillis() - lastKeyPress;

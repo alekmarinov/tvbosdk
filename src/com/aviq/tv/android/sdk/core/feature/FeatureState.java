@@ -101,7 +101,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 		if (isSubscribed(featureTo, msgId))
 		{
 			throw new RuntimeException(getName() + " attempts to subscribe to " + featureTo.getName() + " "
-			        + featureTo.getType() + " on event id " + msgId + " more than once");
+			        + featureTo.getType() + " on event " + EventMessenger.idName(msgId) + "(" + msgId + ") more than once");
 		}
 
 		// add subscription for registration when this state is shown
@@ -123,7 +123,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	 */
 	protected void unsubscribe(IFeature featureFrom, int msgId)
 	{
-		Log.i(TAG, getName() + ".unsubscribe: from " + featureFrom.getName() + " on " + msgId);
+		Log.i(TAG, getName() + ".unsubscribe: from " + featureFrom.getName() + " on " + EventMessenger.idName(msgId) + "(" + msgId + ")");
 		for (int i = 0; i < _subscriptions.size(); i++)
 		{
 			Subscription subscription = _subscriptions.get(i);
@@ -139,7 +139,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 			}
 		}
 		throw new RuntimeException(getName() + " attempts to unsubscribe from " + featureFrom.getName() + " "
-		        + featureFrom.getType() + " on event id " + msgId
+		        + featureFrom.getType() + " on event " + EventMessenger.idName(msgId) + "(" + msgId + ")"
 		        + " without being subscribed. Verify if you are not unsubscribing it more than once");
 	}
 
@@ -182,7 +182,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 			{
 				Log.i(TAG,
 				        getName() + " registers to " + subscription.Feature.getName() + " "
-				                + subscription.Feature.getType() + " on event id = " + subscription.MsgId);
+				                + subscription.Feature.getType() + " on event " + EventMessenger.idName(subscription.MsgId) + "(" + subscription.MsgId + ")");
 				subscription.Feature.getEventMessenger().register(this, subscription.MsgId);
 			}
 		}
@@ -202,7 +202,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 			for (Subscription subscription : _subscriptions)
 			{
 				Log.i(TAG, "Unregister " + getName() + " " + getType() + " from " + subscription.Feature.getName()
-				        + " " + subscription.Feature.getType() + " on event id = " + subscription.MsgId);
+				        + " " + subscription.Feature.getType() + " on event id = " + EventMessenger.idName(subscription.MsgId) + "(" + subscription.MsgId + ")");
 				subscription.Feature.getEventMessenger().unregister(this, subscription.MsgId);
 			}
 		}
@@ -226,6 +226,6 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	@Override
 	public void onEvent(int msgId, Bundle bundle)
 	{
-		Log.i(TAG, this + ".onEvent: " + msgId + " (" + TextUtils.implodeBundle(bundle) + ")");
+		Log.i(TAG, this + ".onEvent: " + EventMessenger.idName(msgId) + "(" + msgId + ")" + " (" + TextUtils.implodeBundle(bundle) + ")");
 	}
 }
