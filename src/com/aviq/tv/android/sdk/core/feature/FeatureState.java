@@ -31,8 +31,8 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 public abstract class FeatureState extends BaseState implements IFeature, EventReceiver
 {
 	public static final String TAG = FeatureState.class.getSimpleName();
-	public static final int ON_SHOW = EventMessenger.ID();
-	public static final int ON_HIDE = EventMessenger.ID();
+	public static final int ON_SHOW = EventMessenger.ID("ON_SHOW");
+	public static final int ON_HIDE = EventMessenger.ID("ON_HIDE");
 	protected FeatureSet _dependencies = new FeatureSet();
 	private List<Subscription> _subscriptions = new ArrayList<Subscription>();
 	private EventMessenger _eventMessenger = new EventMessenger();

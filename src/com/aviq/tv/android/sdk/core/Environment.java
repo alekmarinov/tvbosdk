@@ -52,10 +52,10 @@ import com.aviq.tv.android.sdk.core.state.StateManager;
 public class Environment
 {
 	public static final String TAG = Environment.class.getSimpleName();
-	public static final int ON_LOADING = EventMessenger.ID();
-	public static final int ON_LOADED = EventMessenger.ID();
-	public static final int ON_KEY_PRESSED = EventMessenger.ID();
-	public static final int ON_KEY_RELEASED = EventMessenger.ID();
+	public static final int ON_LOADING = EventMessenger.ID("ON_LOADING");
+	public static final int ON_LOADED = EventMessenger.ID("ON_LOADED");
+	public static final int ON_KEY_PRESSED = EventMessenger.ID("ON_KEY_PRESSED");
+	public static final int ON_KEY_RELEASED = EventMessenger.ID("ON_KEY_RELEASED");
 	public static final String EXTRA_KEY = "KEY";
 	public static final String EXTRA_KEYCODE = "KEYCODE";
 	public static final String EXTRA_KEYCONSUMED = "KEYCONSUMED";
