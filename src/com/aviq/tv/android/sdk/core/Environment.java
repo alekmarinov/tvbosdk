@@ -193,21 +193,16 @@ public class Environment
 	}
 
 	/**
-	 * Disable/Enable the timeout during feature initializations.
+	 * Stops the timeout during feature initializations.
 	 * This method must be called from IFeature.initialize before
-	 * the response of the onInitialized callback. If a feature is shown while
-	 * initializing the timeout is automatically stopped and restarted when the
-	 * feature hides.
+	 * the response of the onInitialized callback.
 	 *
 	 * @param isEnabled
 	 */
-	public void setInitTimeout(boolean isEnabled)
+	public void stopInitTimeout()
 	{
-		Log.i(TAG, ".setInitTimeout: isEnabled = " + isEnabled);
-		if (isEnabled)
-			_onFeatureInitialized.startTimeout();
-		else
-			_onFeatureInitialized.stopTimeout();
+		Log.i(TAG, ".stopInitTimeout");
+		_onFeatureInitialized.stopTimeout();
 	}
 
 	private class FeatureInitializeCallBack implements Runnable, IFeature.OnFeatureInitialized
@@ -216,7 +211,6 @@ public class Environment
 		private int _nInitialized = -1;
 		private long _initStartedTime;
 		private int _timeout = 0;
-		private EventMessenger.RegisterCollector _registerCollector = new EventMessenger.RegisterCollector();
 
 		public void setTimeout(int timeout)
 		{
@@ -225,11 +219,14 @@ public class Environment
 
 		public void stopTimeout()
 		{
+			Log.i(TAG, ".stopTimeout");
 			_eventMessenger.removeCallbacks(this);
 		}
 
 		public void startTimeout()
 		{
+			Log.i(TAG, ".startTimeout");
+			_eventMessenger.removeCallbacks(this);
 			_eventMessenger.postDelayed(this, _timeout * 1000);
 		}
 
@@ -237,40 +234,19 @@ public class Environment
 		// otherwise
 		public void initializeNext()
 		{
-			stopTimeout();
 			if ((_nFeature + 1) < _features.size())
 			{
 				_nFeature++;
-				startTimeout();
 				_initStartedTime = System.currentTimeMillis();
 				final IFeature feature = _features.get(_nFeature);
 				Log.i(TAG, ">" + _nFeature + ". Initializing " + feature.getName() + " " + feature.getType() + " ("
 				        + feature.getClass().getName() + ") with timeout " + _timeout + " secs");
+
+				startTimeout();
 				feature.initialize(this);
-
-				_registerCollector.register(new EventReceiver()
-				{
-					@Override
-					public void onEvent(int msgId, Bundle bundle)
-					{
-						stopTimeout();
-						feature.getEventMessenger().unregister(this, FeatureState.ON_SHOW);
-					}
-				}, feature.getEventMessenger(), FeatureState.ON_SHOW);
-
-				_registerCollector.register(new EventReceiver()
-				{
-					@Override
-					public void onEvent(int msgId, Bundle bundle)
-					{
-						startTimeout();
-						feature.getEventMessenger().unregister(this, FeatureState.ON_HIDE);
-					}
-				}, feature.getEventMessenger(), FeatureState.ON_HIDE);
 			}
 			else
 			{
-				_registerCollector.cleanupRegistrations();
 				_eventMessenger.trigger(ON_LOADED);
 				_isInitialized = true;
 			}
@@ -289,6 +265,7 @@ public class Environment
 		@Override
 		public void onInitialized(IFeature feature, int resultCode)
 		{
+			stopTimeout();
 			onInitializeProgress(feature, 1.0f);
 			String featureName = feature.getName() + " " + feature.getType();
 			if (_nInitialized == _nFeature)
@@ -885,7 +862,7 @@ public class Environment
 
 				if (sorted.indexOf(feature) < 0)
 				{
-					Log.i(TAG, sorted.size() +  ". " + feature);
+					Log.i(TAG, sorted.size() + ". " + feature);
 					sorted.add(feature);
 				}
 			}

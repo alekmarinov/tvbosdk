@@ -236,6 +236,7 @@ public class EventMessenger extends Handler
 			{
 				registerTouple.EventMessenger.unregister(registerTouple.Receiver, registerTouple.MsgId);
 			}
+			Log.i(TAG, ".cleanupRegistrations: " + _registrations.size() + " cleaned up total");
 			_registrations.clear();
 		}
 
