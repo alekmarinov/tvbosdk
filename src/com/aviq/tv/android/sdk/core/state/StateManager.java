@@ -35,7 +35,7 @@ public class StateManager
 	private final Stack<BaseState> _activeStates = new Stack<BaseState>();
 	private final Activity _activity;
 	private final Handler _handler = new Handler();
-	private int _overlayBackgroundColor;
+	private int _overlayBackgroundColor = 0;
 	private int _overlayBackgroundImage = 0;
 	private int _mainFragmentId;
 	private int _overlayFragmentId;
@@ -407,8 +407,12 @@ public class StateManager
 							{
 								if (_overlayBackgroundImage != 0)
 									state.getView().setBackgroundResource(_overlayBackgroundImage);
-								else
+								else if (_overlayBackgroundColor != 0)
 									state.getView().setBackgroundColor(_overlayBackgroundColor);
+								else
+								{
+									Log.i(TAG, "Overlay background is not defined in StateManager");
+								}
 							}
 							else
 							{
