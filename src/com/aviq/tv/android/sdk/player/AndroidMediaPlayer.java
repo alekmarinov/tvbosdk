@@ -81,36 +81,31 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		Log.i(TAG, ".play: url = " + url);
 		super.play(url);
 
-		// if (_mediaPlayer == null)
-    	{
-			//_mediaPlayer = new MediaPlayer();
+		try
+		{
+			_mediaPlayer.reset();
+			_mediaPlayer.setDataSource(url);
+		}
+		catch (IllegalArgumentException e)
+		{
+			Log.e(TAG, "Error", e);
+		}
+		catch (IllegalStateException e)
+		{
+			Log.e(TAG, "Error", e);
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, "Error", e);
+		}
 
-			try
-			{
-				_mediaPlayer.reset();
-				_mediaPlayer.setDataSource(url);
-			}
-			catch (IllegalArgumentException e)
-			{
-				Log.e(TAG, "Error", e);
-			}
-			catch (IllegalStateException e)
-			{
-				Log.e(TAG, "Error", e);
-			}
-			catch (IOException e)
-			{
-				Log.e(TAG, "Error", e);
-			}
-
-    		_mediaPlayer.setOnBufferingUpdateListener(this);
-    		_mediaPlayer.setOnCompletionListener(this);
-    		_mediaPlayer.setOnPreparedListener(this);
-    		_mediaPlayer.setOnVideoSizeChangedListener(this);
-    		_mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-    		_mediaPlayer.setOnErrorListener(this);
-    		_mediaPlayer.setOnInfoListener(this);
-    	}
+		_mediaPlayer.setOnBufferingUpdateListener(this);
+		_mediaPlayer.setOnCompletionListener(this);
+		_mediaPlayer.setOnPreparedListener(this);
+		_mediaPlayer.setOnVideoSizeChangedListener(this);
+		_mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+		_mediaPlayer.setOnErrorListener(this);
+		_mediaPlayer.setOnInfoListener(this);
 
        	_mediaPlayer.prepareAsync();
 	}
@@ -136,13 +131,7 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 	{
 		Log.i(TAG, ".stop");
 		super.stop();
-
-		//if (_mediaPlayer != null)
-		{
-			_mediaPlayer.stop();
-			//_mediaPlayer.release();
-			//_mediaPlayer = null;
-		}
+		_mediaPlayer.stop();
 	}
 
 	/**
@@ -260,12 +249,6 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		else
 			Log.e(TAG, "Media player playback error " + what);
 
-//		if (_mediaPlayer != null)
-//		{
-//			_mediaPlayer.release();
-//			_mediaPlayer = null;
-//		}
-
 		Bundle bundle = new Bundle();
 		bundle.putInt(PARAM_WHAT, what);
 		bundle.putInt(PARAM_EXTRA, extra);
@@ -331,12 +314,7 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
             _mediaController.hide();
         }
 
-//		if (_mediaPlayer != null)
-		{
-			_mediaPlayer.stop();
-//			_mediaPlayer.release();
-//			_mediaPlayer = null;
-		}
+		_mediaPlayer.stop();
 
 		Environment.getInstance().getEventMessenger().trigger(ON_COMPLETION);
     }
