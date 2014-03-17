@@ -38,9 +38,9 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 public class FeatureWatchlist extends FeatureComponent
 {
 	public static final String TAG = FeatureWatchlist.class.getSimpleName();
-	public static final int ON_PROGRAM_ADDED = EventMessenger.ID();
-	public static final int ON_PROGRAM_REMOVED = EventMessenger.ID();
-	public static final int ON_PROGRAM_NOTIFY = EventMessenger.ID();
+	public static final int ON_PROGRAM_ADDED = EventMessenger.ID("ON_PROGRAM_ADDED");
+	public static final int ON_PROGRAM_REMOVED = EventMessenger.ID("ON_PROGRAM_REMOVED");
+	public static final int ON_PROGRAM_NOTIFY = EventMessenger.ID("ON_PROGRAM_NOTIFY");
 
 	public enum UserParam
 	{

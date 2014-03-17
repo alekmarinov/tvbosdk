@@ -27,17 +27,29 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 public class EventMessenger extends Handler
 {
 	public static final String TAG = EventMessenger.class.getSimpleName();
-	private static int ID_GENERATOR = 0;
-	private SparseArray<List<EventReceiver>> _listeners = new SparseArray<List<EventReceiver>>();
+
+	/**
+	 * Message ID identifying any message id
+	 */
+	public static final int ON_ANY = 0;
+
+	private SparseArray<List<EventReceiver>> _listners = new SparseArray<List<EventReceiver>>();
 	private List<RegisterCouple> _registerLater = new ArrayList<RegisterCouple>();
 	private List<RegisterCouple> _unregisterLater = new ArrayList<RegisterCouple>();
 	private boolean _inEventIteration = false;
-	private static int _lastId = 0;
+	private static List<String> _messageNames = new ArrayList<String>();
 
-	public static synchronized int ID()
+	public static synchronized int ID(String msgName)
 	{
-		_lastId = ++ID_GENERATOR;
-		return _lastId;
+		_messageNames.add(msgName);
+		return _messageNames.size();
+	}
+
+	public static synchronized String idName(int msgId)
+	{
+		if (msgId > 0)
+			return _messageNames.get(msgId - 1);
+		return "ANY";
 	}
 
 	/**
@@ -55,12 +67,12 @@ public class EventMessenger extends Handler
 		}
 		else
 		{
-			Log.d(TAG, ".register " + eventReceiver + " on " + msgId);
-			List<EventReceiver> msgListeners = _listeners.get(msgId);
+			Log.d(TAG, ".register " + eventReceiver + " on " + idName(msgId) + " (" + msgId + ")");
+			List<EventReceiver> msgListeners = _listners.get(msgId);
 			if (msgListeners == null)
 			{
 				msgListeners = new ArrayList<EventReceiver>();
-				_listeners.put(msgId, msgListeners);
+				_listners.put(msgId, msgListeners);
 			}
 			msgListeners.add(eventReceiver);
 		}
@@ -81,9 +93,9 @@ public class EventMessenger extends Handler
 		}
 		else
 		{
-			Log.d(TAG, ".unregister " + eventReceiver + " from " + ((msgId > 0) ? msgId : "all events"));
+			Log.d(TAG, ".unregister " + eventReceiver + " from " + idName(msgId) + " (" + msgId + ")");
 			int msgIdFirst = 1;
-			int msgIdLast = _lastId;
+			int msgIdLast = _messageNames.size();
 			if (msgId > 0)
 			{
 				msgIdFirst = msgId;
@@ -92,7 +104,7 @@ public class EventMessenger extends Handler
 
 			for (int id = msgIdFirst; id <= msgIdLast; id++)
 			{
-				List<EventReceiver> msgListeners = _listeners.get(id);
+				List<EventReceiver> msgListeners = _listners.get(id);
 				if (msgListeners != null)
 					msgListeners.remove(eventReceiver);
 			}
@@ -107,7 +119,7 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId)
 	{
-		Log.v(TAG, ".trigger: " + msgId);
+		Log.v(TAG, ".trigger: " + idName(msgId) + " (" + msgId + ")");
 		removeMessages(msgId);
 		sendMessage(obtainMessage(msgId));
 	}
@@ -122,7 +134,7 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId, Bundle bundle)
 	{
-		Log.v(TAG, ".trigger: " + msgId + TextUtils.implodeBundle(bundle));
+		Log.v(TAG, ".trigger: " + idName(msgId) + " (" + msgId + ")" + TextUtils.implodeBundle(bundle));
 		removeMessages(msgId);
 		sendMessage(obtainMessage(msgId, bundle));
 	}
@@ -137,7 +149,7 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId, long delayMs)
 	{
-		Log.v(TAG, ".trigger: " + msgId + " in " + delayMs + " ms");
+		Log.v(TAG, ".trigger: " + idName(msgId) + " (" + msgId + ")" + " in " + delayMs + " ms");
 		removeMessages(msgId);
 		sendMessageDelayed(obtainMessage(msgId), delayMs);
 	}
@@ -154,7 +166,7 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId, Bundle bundle, long delayMs)
 	{
-		Log.v(TAG, ".trigger: " + msgId + TextUtils.implodeBundle(bundle) + " in " + delayMs + " ms");
+		Log.v(TAG, ".trigger: " + idName(msgId) + " (" + msgId + ")" + TextUtils.implodeBundle(bundle) + " in " + delayMs + " ms");
 		removeMessages(msgId);
 		sendMessageDelayed(obtainMessage(msgId, bundle), delayMs);
 	}
@@ -164,10 +176,10 @@ public class EventMessenger extends Handler
 	{
 		super.handleMessage(msg);
 		_inEventIteration = true;
-		List<EventReceiver> msgListeners = _listeners.get(msg.what);
+		List<EventReceiver> msgListeners = _listners.get(msg.what);
 		if (msgListeners != null)
 		{
-			Log.v(TAG, ".handleMessage: notifying " + msgListeners.size() + " listeners on " + msg.what);
+			Log.v(TAG, ".handleMessage: notifying " + msgListeners.size() + " listeners on " + idName(msg.what) + " (" + msg.what + ")");
 			for (EventReceiver eventReceiver : msgListeners)
 				eventReceiver.onEvent(msg.what, (Bundle) msg.obj);
 		}

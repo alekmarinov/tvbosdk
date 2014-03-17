@@ -30,8 +30,8 @@ import com.aviq.tv.android.sdk.player.IPlayer;
 public class FeaturePlayer extends FeatureComponent
 {
 	public static final String TAG = FeaturePlayer.class.getSimpleName();
-	public static final int ON_PLAY_STARTED = EventMessenger.ID();
-	public static final int ON_PLAY_TIMEOUT = EventMessenger.ID();
+	public static final int ON_PLAY_STARTED = EventMessenger.ID("ON_PLAY_STARTED");
+	public static final int ON_PLAY_TIMEOUT = EventMessenger.ID("ON_PLAY_TIMEOUT");
 
 	public enum Param
 	{

@@ -28,8 +28,8 @@ public abstract class FeatureScheduler implements IFeature, EventReceiver
 {
 	private static final String TAG = FeatureScheduler.class.getSimpleName();
 
-	public static final int ON_SCHEDULE = EventMessenger.ID();
-	public static final int ON_SCHEDULE_FINISHED = EventMessenger.ID();
+	public static final int ON_SCHEDULE = EventMessenger.ID("ON_SCHEDULE");
+	public static final int ON_SCHEDULE_FINISHED = EventMessenger.ID("ON_SCHEDULE_FINISHED");
 
 	protected FeatureSet _dependencies = new FeatureSet();
 	private Calendar _scheduledTime;

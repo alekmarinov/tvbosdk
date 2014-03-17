@@ -23,11 +23,11 @@ import com.aviq.tv.android.sdk.core.EventMessenger;
  */
 public abstract class BasePlayer implements IPlayer
 {
-	public static final int ON_ERROR = EventMessenger.ID();
-	public static final int ON_INFO = EventMessenger.ID();
-	public static final int ON_SEEK_COMPLETED = EventMessenger.ID();
-	public static final int ON_PREPARED = EventMessenger.ID();
-	public static final int ON_COMPLETION = EventMessenger.ID();
+	public static final int ON_ERROR = EventMessenger.ID("ON_ERROR");
+	public static final int ON_INFO = EventMessenger.ID("ON_INFO");
+	public static final int ON_SEEK_COMPLETED = EventMessenger.ID("ON_SEEK_COMPLETED");
+	public static final int ON_PREPARED = EventMessenger.ID("ON_PREPARED");
+	public static final int ON_COMPLETION = EventMessenger.ID("ON_COMPLETION");
 
 	public static final String PARAM_WHAT = "what";
 	public static final String PARAM_EXTRA = "extra";

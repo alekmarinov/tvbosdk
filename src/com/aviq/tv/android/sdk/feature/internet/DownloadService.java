@@ -51,9 +51,9 @@ public class DownloadService extends BaseService
 	private static final int BUFFER_SIZE = 10 * 100 * 8192;
 	private static final int ONE_MEGABYTE = 1024 * 1024;
 
-	public static final int DOWNLOAD_PROGRESS = EventMessenger.ID();
-	public static final int DOWNLOAD_SUCCESS = EventMessenger.ID();
-	public static final int DOWNLOAD_FAILED = EventMessenger.ID();
+	public static final int DOWNLOAD_PROGRESS = EventMessenger.ID("DOWNLOAD_PROGRESS");
+	public static final int DOWNLOAD_SUCCESS = EventMessenger.ID("DOWNLOAD_SUCCESS");
+	public static final int DOWNLOAD_FAILED = EventMessenger.ID("DOWNLOAD_FAILED");
 
 	/**
 	 * Service extras

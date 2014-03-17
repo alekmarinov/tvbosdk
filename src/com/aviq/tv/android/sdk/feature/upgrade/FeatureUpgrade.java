@@ -56,9 +56,9 @@ import com.aviq.tv.android.sdk.utils.Files;
 public class FeatureUpgrade extends FeatureScheduler
 {
 	public static final String TAG = FeatureUpgrade.class.getSimpleName();
-	public static final int ON_STATUS_CHANGED = EventMessenger.ID();
-	public static final int ON_UPDATE_CHECKED = EventMessenger.ID();
-	public static final int ON_UPDATE_FOUND = EventMessenger.ID();
+	public static final int ON_STATUS_CHANGED = EventMessenger.ID("ON_STATUS_CHANGED");
+	public static final int ON_UPDATE_CHECKED = EventMessenger.ID("ON_UPDATE_CHECKED");
+	public static final int ON_UPDATE_FOUND = EventMessenger.ID("ON_UPDATE_FOUND");
 	public static final int ON_UPDATE_PROGRESS = DownloadService.DOWNLOAD_PROGRESS;
 
 	public enum Param
