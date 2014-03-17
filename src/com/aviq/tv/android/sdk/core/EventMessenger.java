@@ -28,7 +28,7 @@ public class EventMessenger extends Handler
 {
 	public static final String TAG = EventMessenger.class.getSimpleName();
 	private static int ID_GENERATOR = 0;
-	private SparseArray<List<EventReceiver>> _listners = new SparseArray<List<EventReceiver>>();
+	private SparseArray<List<EventReceiver>> _listeners = new SparseArray<List<EventReceiver>>();
 	private List<RegisterCouple> _registerLater = new ArrayList<RegisterCouple>();
 	private List<RegisterCouple> _unregisterLater = new ArrayList<RegisterCouple>();
 	private boolean _inEventIteration = false;
@@ -56,11 +56,11 @@ public class EventMessenger extends Handler
 		else
 		{
 			Log.d(TAG, ".register " + eventReceiver + " on " + msgId);
-			List<EventReceiver> msgListeners = _listners.get(msgId);
+			List<EventReceiver> msgListeners = _listeners.get(msgId);
 			if (msgListeners == null)
 			{
 				msgListeners = new ArrayList<EventReceiver>();
-				_listners.put(msgId, msgListeners);
+				_listeners.put(msgId, msgListeners);
 			}
 			msgListeners.add(eventReceiver);
 		}
@@ -81,7 +81,7 @@ public class EventMessenger extends Handler
 		}
 		else
 		{
-			Log.d(TAG, ".unregister " + eventReceiver + " from " + ((msgId > 0) ? "msgId" : "all events"));
+			Log.d(TAG, ".unregister " + eventReceiver + " from " + ((msgId > 0) ? msgId : "all events"));
 			int msgIdFirst = 1;
 			int msgIdLast = _lastId;
 			if (msgId > 0)
@@ -92,7 +92,7 @@ public class EventMessenger extends Handler
 
 			for (int id = msgIdFirst; id <= msgIdLast; id++)
 			{
-				List<EventReceiver> msgListeners = _listners.get(id);
+				List<EventReceiver> msgListeners = _listeners.get(id);
 				if (msgListeners != null)
 					msgListeners.remove(eventReceiver);
 			}
@@ -164,7 +164,7 @@ public class EventMessenger extends Handler
 	{
 		super.handleMessage(msg);
 		_inEventIteration = true;
-		List<EventReceiver> msgListeners = _listners.get(msg.what);
+		List<EventReceiver> msgListeners = _listeners.get(msg.what);
 		if (msgListeners != null)
 		{
 			Log.v(TAG, ".handleMessage: notifying " + msgListeners.size() + " listeners on " + msg.what);
