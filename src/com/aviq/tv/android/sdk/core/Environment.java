@@ -138,6 +138,7 @@ public class Environment
 		_prefs = createPrefs("system");
 		_serviceController = new ServiceController(_activity);
 		_requestQueue = Volley.newRequestQueue(_activity);
+		_requestQueue.getCache().clear();
 
 		// Use 1/8th of the available memory for this memory cache.
 		int memClass = ((ActivityManager) activity.getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE))
