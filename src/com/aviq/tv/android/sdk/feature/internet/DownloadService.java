@@ -226,14 +226,17 @@ public class DownloadService extends BaseService
 		}
 		catch (MalformedURLException e)
 		{
+			Log.e(TAG, e.getMessage(), e);
 			resultData.putSerializable(ResultExtras.EXCEPTION.name(), e);
 		}
 		catch (IOException e)
 		{
+			Log.e(TAG, e.getMessage(), e);
 			resultData.putSerializable(ResultExtras.EXCEPTION.name(), e);
 		}
 		catch (NoSuchAlgorithmException e)
 		{
+			Log.e(TAG, e.getMessage(), e);
 			resultData.putSerializable(ResultExtras.EXCEPTION.name(), e);
 		}
 		finally

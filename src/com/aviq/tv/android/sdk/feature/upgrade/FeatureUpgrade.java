@@ -432,6 +432,7 @@ public class FeatureUpgrade extends FeatureScheduler
 
 	private void setStatus(UpgradeException exception)
 	{
+		Log.e(TAG, exception.getMessage(), exception);
 		_exception = exception;
 		setStatus(Status.ERROR, ErrorReason.EXCEPTION, exception.getResultCode());
 	}
