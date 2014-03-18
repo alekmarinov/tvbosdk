@@ -33,7 +33,6 @@ import javax.net.ssl.X509TrustManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.ResultReceiver;
-import android.text.TextUtils;
 
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Log;
@@ -157,16 +156,15 @@ public class DownloadService extends BaseService
 			inputStream = new BufferedInputStream(conn.getInputStream(), bufSize);
 
 			// prepare destination directory
-			String dirName = Files.dirName(localFile);
-			if (!TextUtils.isEmpty(dirName))
-			{
-				File dir = new File(getFilesDir(), dirName);
-				if (!dir.exists())
-					dir.mkdir();
-			}
+			String dirName = Files.dirName(this, localFile);
+			File dir = new File(dirName);
+			if (!dir.exists())
+				dir.mkdirs();
+
+			localFile = Files.filePath(this, localFile);
 
 			// create output stream
-			File partFile = new File(getFilesDir(), localFile + ".part");
+			File partFile = new File(localFile + ".part");
 			outputStream = new FileOutputStream(partFile);
 
 			long downloadStart = System.currentTimeMillis();

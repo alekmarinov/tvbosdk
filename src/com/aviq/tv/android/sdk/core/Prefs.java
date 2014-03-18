@@ -127,6 +127,7 @@ public class Prefs
 		}
 		else
 		{
+			// FIXME: Consider throwing exception if the new value differs from the previous
 			Log.v(TAG, "Skip setting " + key + " = " + value + ", previous value = " + getString(key));
 		}
 	}
@@ -150,6 +151,7 @@ public class Prefs
 		}
 		else
 		{
+			// FIXME: Consider throwing exception if the new value differs from the previous
 			Log.v(TAG, "Skip setting " + key + " = " + value + ", previous value = " + getInt(key));
 		}
 	}
@@ -173,6 +175,7 @@ public class Prefs
 		}
 		else
 		{
+			// FIXME: Consider throwing exception if the new value differs from the previous
 			Log.v(TAG, "Skip setting " + key + " = " + value + ", previous value = " + getBool(key));
 		}
 	}
