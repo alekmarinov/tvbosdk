@@ -200,11 +200,25 @@ public class FeatureUpgrade extends FeatureScheduler
 	public boolean isUpgradeReady()
 	{
 		if (!_userPrefs.has(UserParam.UPGRADE_VERSION))
+		{
+			Log.i(TAG, ".isUpgradeReady: no");
 			return false;
+		}
 		String version = _userPrefs.getString(UserParam.UPGRADE_VERSION);
 		String brand = _userPrefs.getString(UserParam.UPGRADE_BRAND);
 		File upgradeFile = getUpgradeFile();
-		return upgradeFile != null && upgradeFile.exists() && isNewVersion(version, brand);
+		boolean isNewVersion = isNewVersion(version, brand);
+		boolean isFileExists = upgradeFile != null && upgradeFile.exists();
+		boolean isReady = isFileExists && isNewVersion;
+		StringBuffer log = new StringBuffer();
+		log.append("version=").append(version);
+		log.append(", brand=").append(brand);
+		log.append(", upgradeFile=").append(upgradeFile);
+		log.append(", isFileExists=").append(isFileExists);
+		log.append(", isNewVersion=").append(isNewVersion);
+		log.append(", isReady=").append(isReady);
+		Log.e(TAG, ".isUpgradeReady: " + log.toString());
+		return isReady;
 	}
 
 	/**

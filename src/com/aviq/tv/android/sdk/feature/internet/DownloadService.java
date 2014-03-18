@@ -165,6 +165,7 @@ public class DownloadService extends BaseService
 
 			// create output stream
 			File partFile = new File(localFile + ".part");
+			File targetFile = new File(localFile);
 			outputStream = new FileOutputStream(partFile);
 
 			long downloadStart = System.currentTimeMillis();
@@ -212,16 +213,15 @@ public class DownloadService extends BaseService
 				resultData.putString(ResultExtras.MD5.name(), downloadedMd5.toString());
 			}
 
-			File downloadedFile = new File(getFilesDir(), localFile);
 			// delete if file with the same name already exists
-			if (downloadedFile.exists())
-				downloadedFile.delete();
+			if (targetFile.exists())
+				targetFile.delete();
 
 			// rename file to requested name
-			partFile.renameTo(downloadedFile);
+			partFile.renameTo(targetFile);
 
 			// finish success
-			Log.i(TAG, "Download success: " + downloadedFile);
+			Log.i(TAG, "Download success: " + targetFile);
 			result = DOWNLOAD_SUCCESS;
 		}
 		catch (MalformedURLException e)
