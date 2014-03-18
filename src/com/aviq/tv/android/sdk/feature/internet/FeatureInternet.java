@@ -42,7 +42,7 @@ public class FeatureInternet extends FeatureScheduler
 		/**
 		 * Check URL attempts number
 		 */
-		CHECK_ATTEMPTS(3),
+		CHECK_ATTEMPTS(6),
 
 		/**
 		 * Delay between internet check attempts
