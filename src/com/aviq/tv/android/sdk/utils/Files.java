@@ -35,6 +35,22 @@ public class Files
 	}
 
 	/**
+	 * Return absolute file path. If the fileName is given relative (without
+	 * leading '/') then it is prefixed with the path to app files directory
+	 */
+	public static String normalizeName(Context context, String fileName)
+	{
+		if (!fileName.startsWith("/"))
+		{
+			// prefix with app files dir since the file name is given relative
+			if (!fileName.isEmpty())
+				fileName = '/' + fileName;
+			fileName = context.getFilesDir().getAbsolutePath() + fileName;
+		}
+		return fileName;
+	}
+
+	/**
 	 * Return file directory
 	 */
 	public static String dirName(String fileName)
@@ -46,23 +62,17 @@ public class Files
 	}
 
 	/**
-	 * Return file directory related to application files directory if the file name is give relative
+	 * Return file directory related to application files directory if the file
+	 * name is give relative
 	 */
 	public static String dirName(Context context, String fileName)
 	{
-		String dirName = dirName(fileName);
-		if (!dirName.startsWith("/"))
-		{
-			// prefix with app files dir since the file name is given relative
-			if (!dirName.isEmpty())
-				dirName = '/' + dirName;
-			dirName = context.getFilesDir().getAbsolutePath() + dirName;
-		}
-		return dirName;
+		return dirName(normalizeName(context, fileName));
 	}
 
 	/**
-	 * Return absolute path to file related to application files directory if the file name is give relative
+	 * Return absolute path to file related to application files directory if
+	 * the file name is give relative
 	 */
 	public static String filePath(Context context, String fileName)
 	{

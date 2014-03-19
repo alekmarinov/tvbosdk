@@ -505,6 +505,25 @@ public class FeatureUpgrade extends FeatureScheduler
 					// FIXME: Add other params like proxy, connection timeouts
 					// etc.
 
+					// clean up the update directory before starting new download
+					String updatesDir = Files.normalizeName(Environment.getInstance().getActivity(),
+					        getPrefs().getString(Param.UPDATES_DIR));
+					String[] files = new File(updatesDir).list();
+
+					// remove all collected files
+					if (files != null)
+					{
+						for (String delFileName : files)
+						{
+							delFileName = updatesDir + "/" + delFileName;
+							boolean success = new File(delFileName).delete();
+							if (!success)
+								Log.e(TAG, "Failed to delete file `" + delFileName + "'");
+							else
+								Log.i(TAG, "Deleted file `" + delFileName + "'");
+						}
+					}
+
 					// start download
 					_featureInternet.downloadFile(downloadParams, new OnResultReceived()
 					{

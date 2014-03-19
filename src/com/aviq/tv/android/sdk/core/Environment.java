@@ -741,7 +741,7 @@ public class Environment
 	 */
 	/* package */boolean onKeyUp(AVKeyEvent keyEvent)
 	{
-		Log.i(TAG, ".onKeyDown: key = " + keyEvent);
+		Log.i(TAG, ".onKeyUp: key = " + keyEvent);
 		Bundle bundle = new Bundle();
 		bundle.putString(EXTRA_KEY, keyEvent.Code.name());
 		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
