@@ -73,6 +73,7 @@ public class FeatureName
 		RCU_WIZARD,
 		LANGUAGE_WIZARD,
 		NETWORK_WIZARD,
-		BOOT_WIZARD
+		BOOT_WIZARD,
+		STANDBY
 	}
 }
