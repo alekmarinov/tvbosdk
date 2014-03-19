@@ -33,7 +33,6 @@ import javax.net.ssl.X509TrustManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.ResultReceiver;
-import android.text.TextUtils;
 
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Log;
@@ -157,16 +156,16 @@ public class DownloadService extends BaseService
 			inputStream = new BufferedInputStream(conn.getInputStream(), bufSize);
 
 			// prepare destination directory
-			String dirName = Files.dirName(localFile);
-			if (!TextUtils.isEmpty(dirName))
-			{
-				File dir = new File(getFilesDir(), dirName);
-				if (!dir.exists())
-					dir.mkdir();
-			}
+			String dirName = Files.dirName(this, localFile);
+			File dir = new File(dirName);
+			if (!dir.exists())
+				dir.mkdirs();
+
+			localFile = Files.filePath(this, localFile);
 
 			// create output stream
-			File partFile = new File(getFilesDir(), localFile + ".part");
+			File partFile = new File(localFile + ".part");
+			File targetFile = new File(localFile);
 			outputStream = new FileOutputStream(partFile);
 
 			long downloadStart = System.currentTimeMillis();
@@ -214,28 +213,30 @@ public class DownloadService extends BaseService
 				resultData.putString(ResultExtras.MD5.name(), downloadedMd5.toString());
 			}
 
-			File downloadedFile = new File(getFilesDir(), localFile);
 			// delete if file with the same name already exists
-			if (downloadedFile.exists())
-				downloadedFile.delete();
+			if (targetFile.exists())
+				targetFile.delete();
 
 			// rename file to requested name
-			partFile.renameTo(downloadedFile);
+			partFile.renameTo(targetFile);
 
 			// finish success
-			Log.i(TAG, "Download success: " + downloadedFile);
+			Log.i(TAG, "Download success: " + targetFile);
 			result = DOWNLOAD_SUCCESS;
 		}
 		catch (MalformedURLException e)
 		{
+			Log.e(TAG, e.getMessage(), e);
 			resultData.putSerializable(ResultExtras.EXCEPTION.name(), e);
 		}
 		catch (IOException e)
 		{
+			Log.e(TAG, e.getMessage(), e);
 			resultData.putSerializable(ResultExtras.EXCEPTION.name(), e);
 		}
 		catch (NoSuchAlgorithmException e)
 		{
+			Log.e(TAG, e.getMessage(), e);
 			resultData.putSerializable(ResultExtras.EXCEPTION.name(), e);
 		}
 		finally

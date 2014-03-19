@@ -17,6 +17,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 
+import android.content.Context;
+
 import com.aviq.tv.android.sdk.core.Log;
 
 public class Files
@@ -41,6 +43,40 @@ public class Files
 		if (sep >= 0)
 			return fileName.substring(0, sep);
 		return "";
+	}
+
+	/**
+	 * Return file directory related to application files directory if the file name is give relative
+	 */
+	public static String dirName(Context context, String fileName)
+	{
+		String dirName = dirName(fileName);
+		if (!dirName.startsWith("/"))
+		{
+			// prefix with app files dir since the file name is given relative
+			if (!dirName.isEmpty())
+				dirName = '/' + dirName;
+			dirName = context.getFilesDir().getAbsolutePath() + dirName;
+		}
+		return dirName;
+	}
+
+	/**
+	 * Return absolute path to file related to application files directory if the file name is give relative
+	 */
+	public static String filePath(Context context, String fileName)
+	{
+		String dirName = dirName(fileName);
+		if (!dirName.startsWith("/"))
+		{
+			// prefix with app files dir since the file name is given relative
+			if (!dirName.isEmpty())
+				dirName = '/' + dirName;
+			dirName = context.getFilesDir().getAbsolutePath() + dirName;
+		}
+		if (!dirName.endsWith("/"))
+			dirName = dirName + "/";
+		return dirName + baseName(fileName);
 	}
 
 	/**

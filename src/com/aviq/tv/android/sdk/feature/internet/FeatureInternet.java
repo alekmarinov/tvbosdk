@@ -37,7 +37,17 @@ public class FeatureInternet extends FeatureScheduler
 		/**
 		 * Check URL interval in seconds
 		 */
-		CHECK_INTERVAL(60);
+		CHECK_INTERVAL(60),
+
+		/**
+		 * Check URL attempts number
+		 */
+		CHECK_ATTEMPTS(6),
+
+		/**
+		 * Delay between internet check attempts
+		 */
+		CHECK_ATTEMPT_DELAY(1000);
 
 		Param(int value)
 		{
@@ -69,7 +79,8 @@ public class FeatureInternet extends FeatureScheduler
 			@Override
 			public void onReceiveResult(int resultCode, Bundle resultData)
 			{
-				Log.i(TAG, ".onReceiveResult: resultCode = " + resultCode + " (" + TextUtils.implodeBundle(resultData) + ")");
+				Log.i(TAG, ".onReceiveResult: resultCode = " + resultCode + " (" + TextUtils.implodeBundle(resultData)
+				        + ")");
 				onFeatureInitialized.onInitialized(FeatureInternet.this, resultCode);
 				scheduleDelayed(getPrefs().getInt(Param.CHECK_INTERVAL) * 1000);
 			}
@@ -100,9 +111,37 @@ public class FeatureInternet extends FeatureScheduler
 	 * @param onResultReceived
 	 *            result callback interface
 	 */
-	public void checkInternet(OnResultReceived onResultReceived)
+	public void checkInternet(final OnResultReceived onResultReceived)
 	{
-		getUrlContent(_checkUrl, onResultReceived);
+		class InternetCheckResponse implements OnResultReceived, Runnable
+		{
+			private int _attemptsCounter = 0;
+
+			@Override
+			public void run()
+			{
+				getUrlContent(_checkUrl, this);
+			}
+
+			@Override
+			public void onReceiveResult(int resultCode, Bundle resultData)
+			{
+				if (resultCode != ResultCode.OK)
+				{
+					int checkAttempts = getPrefs().getInt(Param.CHECK_ATTEMPTS);
+					if (_attemptsCounter < checkAttempts)
+					{
+						_attemptsCounter++;
+						Log.w(TAG, "Check internet failed. Trying " + (checkAttempts - _attemptsCounter)
+						        + " more times");
+						getEventMessenger().postDelayed(this, getPrefs().getInt(Param.CHECK_ATTEMPT_DELAY));
+						return;
+					}
+				}
+				onResultReceived.onReceiveResult(resultCode, resultData);
+			}
+		}
+		getEventMessenger().post(new InternetCheckResponse());
 	}
 
 	/**

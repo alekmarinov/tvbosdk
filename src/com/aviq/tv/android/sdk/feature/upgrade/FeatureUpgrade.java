@@ -199,12 +199,26 @@ public class FeatureUpgrade extends FeatureScheduler
 	 */
 	public boolean isUpgradeReady()
 	{
-		File upgradeFile = getUpgradeFile();
 		if (!_userPrefs.has(UserParam.UPGRADE_VERSION))
+		{
+			Log.i(TAG, ".isUpgradeReady: no");
 			return false;
+		}
 		String version = _userPrefs.getString(UserParam.UPGRADE_VERSION);
 		String brand = _userPrefs.getString(UserParam.UPGRADE_BRAND);
-		return upgradeFile != null && upgradeFile.exists() && isNewVersion(version, brand);
+		File upgradeFile = getUpgradeFile();
+		boolean isNewVersion = isNewVersion(version, brand);
+		boolean isFileExists = upgradeFile != null && upgradeFile.exists();
+		boolean isReady = isFileExists && isNewVersion;
+		StringBuffer log = new StringBuffer();
+		log.append("version=").append(version);
+		log.append(", brand=").append(brand);
+		log.append(", upgradeFile=").append(upgradeFile);
+		log.append(", isFileExists=").append(isFileExists);
+		log.append(", isNewVersion=").append(isNewVersion);
+		log.append(", isReady=").append(isReady);
+		Log.e(TAG, ".isUpgradeReady: " + log.toString());
+		return isReady;
 	}
 
 	/**
@@ -432,19 +446,19 @@ public class FeatureUpgrade extends FeatureScheduler
 
 	private void setStatus(UpgradeException exception)
 	{
+		Log.e(TAG, exception.getMessage(), exception);
 		_exception = exception;
 		setStatus(Status.ERROR, ErrorReason.EXCEPTION, exception.getResultCode());
 	}
 
-	// returns the last downloaded and verified firmware file
+	// returns the last downloaded and verified with checksum firmware file
 	private File getUpgradeFile()
 	{
 		if (!_userPrefs.has(UserParam.UPGRADE_FILE))
 			return null;
 
 		String updateFile = _userPrefs.getString(UserParam.UPGRADE_FILE);
-		File filesDir = Environment.getInstance().getActivity().getFilesDir();
-		return new File(filesDir, updateFile);
+		return new File(Files.filePath(Environment.getInstance().getActivity(), updateFile));
 	}
 
 	private void downloadUpdate()
