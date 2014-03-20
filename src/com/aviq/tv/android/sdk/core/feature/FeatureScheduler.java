@@ -69,9 +69,9 @@ public abstract class FeatureScheduler implements IFeature, EventReceiver
 	{
 		FeatureName.Scheduler name = getSchedulerName();
 		if (FeatureName.Scheduler.SPECIAL.equals(name))
-			return name.toString();
-		else
 			return getClass().getName();
+		else
+			return name.toString();
 	}
 
 	@Override

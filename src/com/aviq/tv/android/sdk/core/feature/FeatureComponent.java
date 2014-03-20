@@ -51,9 +51,9 @@ public abstract class FeatureComponent implements IFeature
 	{
 		FeatureName.Component name = getComponentName();
 		if (FeatureName.Component.SPECIAL.equals(name))
-			return name.toString();
-		else
 			return getClass().getName();
+		else
+			return name.toString();
 	}
 
 	@Override
