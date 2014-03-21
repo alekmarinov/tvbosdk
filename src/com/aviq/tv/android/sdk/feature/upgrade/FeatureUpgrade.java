@@ -60,6 +60,8 @@ public class FeatureUpgrade extends FeatureScheduler
 	public static final int ON_UPDATE_CHECKED = EventMessenger.ID("ON_UPDATE_CHECKED");
 	public static final int ON_UPDATE_FOUND = EventMessenger.ID("ON_UPDATE_FOUND");
 	public static final int ON_UPDATE_PROGRESS = DownloadService.DOWNLOAD_PROGRESS;
+	public static final int ON_START_UPDATE = EventMessenger.ID("ON_START_UPDATE");
+	public static final int ON_START_FROM_UPDATE = EventMessenger.ID("ON_START_FROM_UPDATE");
 
 	public enum Param
 	{
@@ -81,7 +83,12 @@ public class FeatureUpgrade extends FeatureScheduler
 		/**
 		 * Local updates directory relative to /files
 		 */
-		UPDATES_DIR("update");
+		UPDATES_DIR("update"),
+
+		/**
+		 * Milliseconds to wait before rebooting the box from calling rebootToInstall
+		 */
+		UPGRADE_REBOOT_DELAY(5000);
 
 		Param(int value)
 		{
@@ -114,7 +121,12 @@ public class FeatureUpgrade extends FeatureScheduler
 		/**
 		 * Brand for which a software update has been downloaded.
 		 */
-		UPGRADE_BRAND;
+		UPGRADE_BRAND,
+
+		/**
+		 * Whether the system has started after upgrade
+		 */
+		IS_AFTER_UPGRADE;
 	}
 
 	public enum Status
@@ -165,6 +177,12 @@ public class FeatureUpgrade extends FeatureScheduler
 			        FeatureName.Component.REGISTER);
 			_featureInternet = (FeatureInternet) Environment.getInstance().getFeatureScheduler(
 			        FeatureName.Scheduler.INTERNET);
+
+			if (_userPrefs.has(UserParam.IS_AFTER_UPGRADE) && _userPrefs.getBool(UserParam.IS_AFTER_UPGRADE))
+			{
+				getEventMessenger().trigger(ON_START_FROM_UPDATE);
+				_userPrefs.put(UserParam.IS_AFTER_UPGRADE, false);
+			}
 
 			super.initialize(onFeatureInitialized);
 		}
@@ -247,14 +265,27 @@ public class FeatureUpgrade extends FeatureScheduler
 		{
 			throw new UpgradeException(ResultCode.GENERAL_FAILURE, "rebootToInstall: Not ready for software upgrade");
 		}
-		try
+
+		_userPrefs.put(UserParam.IS_AFTER_UPGRADE, true);
+		getEventMessenger().trigger(ON_START_UPDATE);
+
+
+		int delay = Environment.getInstance().getPrefs().getInt(Param.UPGRADE_REBOOT_DELAY);
+		getEventMessenger().postDelayed(new Runnable()
 		{
-			RecoverySystem.installPackage(Environment.getInstance().getActivity(), getUpgradeFile());
-		}
-		catch (Exception e)
-		{
-			throw new UpgradeException(ResultCode.GENERAL_FAILURE, "rebootToInstall: failed", e);
-		}
+			@Override
+			public void run()
+			{
+				try
+                {
+                    RecoverySystem.installPackage(Environment.getInstance().getActivity(), getUpgradeFile());
+                }
+                catch (IOException e)
+                {
+					setStatus(new UpgradeException(ResultCode.GENERAL_FAILURE, "rebootToInstall: failed", e));
+                }
+			}
+		}, delay);
 	}
 
 	/**

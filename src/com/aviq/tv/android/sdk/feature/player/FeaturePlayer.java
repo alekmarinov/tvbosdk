@@ -10,6 +10,7 @@
 
 package com.aviq.tv.android.sdk.feature.player;
 
+import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.widget.MediaController;
@@ -17,7 +18,6 @@ import android.widget.MediaController;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Prefs;
-import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
@@ -30,8 +30,18 @@ import com.aviq.tv.android.sdk.player.IPlayer;
 public class FeaturePlayer extends FeatureComponent
 {
 	public static final String TAG = FeaturePlayer.class.getSimpleName();
+	public static final int ON_PLAY_URL = EventMessenger.ID("ON_PLAY_URL");
+	public static final int ON_PLAY_STOP = EventMessenger.ID("ON_PLAY_STOP");
+	public static final int ON_PLAY_PAUSE = EventMessenger.ID("ON_PLAY_PAUSE");
+
 	public static final int ON_PLAY_STARTED = EventMessenger.ID("ON_PLAY_STARTED");
 	public static final int ON_PLAY_TIMEOUT = EventMessenger.ID("ON_PLAY_TIMEOUT");
+	private VideoStartPoller _videoStartPoller = new VideoStartPoller();
+
+	public enum Extras
+	{
+		URL
+	}
 
 	public enum Param
 	{
@@ -57,14 +67,13 @@ public class FeaturePlayer extends FeatureComponent
 	protected BasePlayer _player;
 	private Prefs _userPrefs;
 
-
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
 		if (_player == null)
 			throw new RuntimeException("Set AndroidPlayer first via method setPlayer");
 		_userPrefs = Environment.getInstance().getUserPrefs();
-		onFeatureInitialized.onInitialized(this, ResultCode.OK);
+		super.initialize(onFeatureInitialized);
 	}
 
 	@Override
@@ -79,14 +88,28 @@ public class FeaturePlayer extends FeatureComponent
 		_userPrefs.put(UserParam.LAST_URL, url);
 		_player.play(url);
 
-		getEventMessenger().post(_videoStartedPoller);
-		getEventMessenger().postDelayed(_videoStartTimeout, getPrefs().getInt(Param.TIMEOUT) * 1000);
+		// trigger event on new url
+		Bundle bundle = new Bundle();
+		bundle.putString(Extras.URL.name(), url);
+		getEventMessenger().trigger(ON_PLAY_URL, bundle);
+
+		// restart polling player status
+		_videoStartPoller.stop();
+		_videoStartPoller.poll();
 	}
 
 	public void stop()
 	{
 		Log.i(TAG, ".stop");
 		_player.stop();
+		getEventMessenger().trigger(ON_PLAY_STOP);
+	}
+
+	public void pause()
+	{
+		Log.i(TAG, ".pause");
+		_player.pause();
+		getEventMessenger().trigger(ON_PLAY_PAUSE);
 	}
 
 	public IPlayer getPlayer()
@@ -101,6 +124,7 @@ public class FeaturePlayer extends FeatureComponent
 
 	/**
 	 * This can be either a VideoView or a SurfaceView.
+	 *
 	 * @return SurfaceView
 	 */
 	public SurfaceView getView()
@@ -133,33 +157,49 @@ public class FeaturePlayer extends FeatureComponent
 		_player.removeMediaController();
 	}
 
-	private Runnable _videoStartedPoller = new Runnable()
+	private class VideoStartPoller implements Runnable
 	{
+		private long _startPolling = System.currentTimeMillis();
+
 		@Override
 		public void run()
 		{
 			if (_player.getPosition() > 0)
 			{
-				Log.i(TAG, "trigger ON_PLAY_STARTED (" + ON_PLAY_STARTED + ")");
+				// trigger play started
 				getEventMessenger().trigger(ON_PLAY_STARTED);
-				getEventMessenger().removeCallbacks(_videoStartTimeout);
 			}
 			else
 			{
-				Log.v(TAG, "waiting player to start: position = " + _player.getPosition());
-				getEventMessenger().postDelayed(this, 100);
+				long timeout = getPrefs().getInt(Param.TIMEOUT) * 1000;
+				if (System.currentTimeMillis() - _startPolling > timeout)
+				{
+					// trigger timeout
+					getEventMessenger().trigger(ON_PLAY_TIMEOUT);
+				}
+				else
+				{
+					// continue polling
+					Log.v(TAG, "waiting player to start: position = " + _player.getPosition());
+					poll();
+				}
 			}
 		}
-	};
 
-	private Runnable _videoStartTimeout = new Runnable()
-	{
-		@Override
-		public void run()
+		/**
+		 * poll to check player status in next moment
+		 */
+		public void poll()
 		{
-			Log.i(TAG, "trigger ON_PLAY_TIMEOUT (" + ON_PLAY_TIMEOUT + ")");
-			getEventMessenger().trigger(ON_PLAY_TIMEOUT);
-			getEventMessenger().removeCallbacks(_videoStartedPoller);
+			getEventMessenger().postDelayed(this, 100);
+		}
+
+		/**
+		 * forcing polling stop
+		 */
+		public void stop()
+		{
+			getEventMessenger().removeCallbacks(this);
 		}
 	};
 }

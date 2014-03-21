@@ -21,6 +21,7 @@ public class FeatureName
 		SPECIAL,
 		RCU,
 		PLAYER,
+		TIMESHIFT,
 		HTTP_SERVER,
 		REGISTER,
 		WATCHLIST,
