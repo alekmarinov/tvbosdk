@@ -20,6 +20,7 @@ import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Defines the base class for scheduler feature type
@@ -98,6 +99,7 @@ public abstract class FeatureScheduler implements IFeature, EventReceiver
 	@Override
 	public void onEvent(int msgId, Bundle bundle)
 	{
+		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
 		if (ON_SCHEDULE == msgId)
 		{
 			onSchedule(new OnFeatureInitialized()
@@ -120,6 +122,7 @@ public abstract class FeatureScheduler implements IFeature, EventReceiver
 
 	public void scheduleDelayed(int delayMs)
 	{
+		Log.i(getClass().getName(), ".scheduleDelayed: delayMs = " + delayMs);
 		_scheduledTime = Calendar.getInstance();
 		_scheduledTime.setTimeInMillis(_scheduledTime.getTimeInMillis() + delayMs);
 		getEventMessenger().trigger(ON_SCHEDULE, delayMs);
