@@ -60,10 +60,10 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	public String getName()
 	{
 		FeatureName.State name = getStateName();
-		if (FeatureName.Scheduler.SPECIAL.equals(name))
-			return name.toString();
-		else
+		if (FeatureName.State.SPECIAL.equals(name))
 			return getClass().getName();
+		else
+			return name.toString();
 	}
 
 	@Override

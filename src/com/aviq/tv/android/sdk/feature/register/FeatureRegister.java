@@ -78,6 +78,7 @@ public class FeatureRegister extends FeatureComponent
 	private String _userToken;
 	private String _version;
 	private String _registrationUrl;
+	private String _brand;
 
 	/**
 	 * @param environment
@@ -92,6 +93,7 @@ public class FeatureRegister extends FeatureComponent
 	{
 		try
 		{
+			_brand = getPrefs().getString(Param.BRAND);
 			_boxId = readMacAddress();
 			_userToken = createUserToken(_boxId);
 			_version = Environment.getInstance().getBuildVersion();
@@ -100,7 +102,7 @@ public class FeatureRegister extends FeatureComponent
 			bundle.putString("SERVER", getPrefs().getString(Param.ABMP_SERVER));
 			bundle.putString("BOX_ID", _boxId);
 			bundle.putString("VERSION", _version);
-			bundle.putString("BRAND", getPrefs().getString(Param.BRAND));
+			bundle.putString("BRAND", _brand);
 			bundle.putString("NETWORK", getActiveNetworkType());
 
 			_registrationUrl = getPrefs().getString(Param.ABMP_REGISTER_URL, bundle);
@@ -151,6 +153,11 @@ public class FeatureRegister extends FeatureComponent
 	public String getUserToken()
 	{
 		return _userToken;
+	}
+
+	public String getBrand()
+	{
+		return _brand;
 	}
 
 	private String readMacAddress() throws FileNotFoundException
