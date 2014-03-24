@@ -265,7 +265,7 @@ public class FeatureChannels extends FeatureComponent
 		{
 			String lastChannelId = _userPrefs.getString(UserParam.LAST_CHANNEL_ID);
 			Log.i(TAG, ".play: last channel = " + lastChannelId + ", new channel = " + channel.getChannelId());
-			if (_featurePlayer.getPlayer().isPlaying() && channel.getChannelId().equals(lastChannelId))
+			if (_featurePlayer.isPlaying() && channel.getChannelId().equals(lastChannelId))
 			{
 				Log.d(TAG, ".play: already playing");
 				return;

@@ -32,9 +32,14 @@ public interface IPlayer
 	void stop();
 
 	/**
-	 * Pause/Resume media playback
+	 * Pause media playback
 	 */
 	void pause();
+
+	/**
+	 * Resume paused media playback
+	 */
+	void resume();
 
 	/**
 	 * Returns true if player is currently playing media

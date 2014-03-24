@@ -82,7 +82,7 @@ public class AndroidPlayer extends BasePlayer
 	}
 
 	/**
-	 * Pause/Resume media playback
+	 * Pause media playback
 	 *
 	 * @see com.aviq.tv.android.sdk.player.IPlayer#pause()
 	 */
@@ -94,10 +94,30 @@ public class AndroidPlayer extends BasePlayer
 		_videoView.pause();
 	}
 
+	/**
+	 * Resume paused media playback
+	 *
+	 * @see com.aviq.tv.android.sdk.player.IPlayer#resume()
+	 */
+	@Override
+	public void resume()
+	{
+		Log.i(TAG, ".resume");
+		super.resume();
+		_videoView.start();
+	}
+
 	@Override
 	public boolean isPlaying()
 	{
+		Log.i(TAG, "isPlaying -> " + _videoView.isPlaying());
 		return _videoView.isPlaying();
+	}
+
+	@Override
+	public boolean isPaused()
+	{
+		return super.isPaused();
 	}
 
 	@Override

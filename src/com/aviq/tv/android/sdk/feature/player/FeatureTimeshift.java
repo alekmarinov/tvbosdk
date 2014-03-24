@@ -13,15 +13,15 @@ package com.aviq.tv.android.sdk.feature.player;
 import android.os.Bundle;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
-import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.core.feature.IFeature;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
-import com.aviq.tv.android.sdk.core.feature.IFeature.OnFeatureInitialized;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Timeshift logic component
@@ -33,6 +33,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	private long _pauseTimeStart;
 	private long _playTimeDelta;
 	private boolean _isPause;
+	private FeaturePlayer _FeaturePlayer;
 
 	public FeatureTimeshift()
 	{
@@ -45,8 +46,11 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".initialize");
 		try
 		{
-			FeaturePlayer player = (FeaturePlayer) Environment.getInstance().getFeatureComponent(FeatureName.Component.PLAYER);
-			player.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_STARTED);
+			_FeaturePlayer = (FeaturePlayer) Environment.getInstance()
+			        .getFeatureComponent(FeatureName.Component.PLAYER);
+			_FeaturePlayer.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_STARTED);
+			_FeaturePlayer.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_STOP);
+			_FeaturePlayer.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_PAUSE);
 			reset();
 			super.initialize(onFeatureInitialized);
 		}
@@ -155,14 +159,24 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	}
 
 	@Override
-    public void onEvent(int msgId, Bundle bundle)
-    {
-    }
+	public void onEvent(int msgId, Bundle bundle)
+	{
+		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
+		if (FeaturePlayer.ON_PLAY_STARTED == msgId || FeaturePlayer.ON_PLAY_STOP == msgId)
+			reset();
+		else if (FeaturePlayer.ON_PLAY_PAUSE == msgId)
+		{
+			if (_FeaturePlayer.isPaused())
+				pause();
+			else
+				resume();
+		}
+	}
 
 	/**
 	 * @return current time stamp in seconds
 	 */
-	private long currentTime()
+	public long currentTime()
 	{
 		return System.currentTimeMillis() / 1000;
 	}

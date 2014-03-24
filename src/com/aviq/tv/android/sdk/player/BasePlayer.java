@@ -15,11 +15,8 @@ import android.widget.MediaController;
 
 import com.aviq.tv.android.sdk.core.EventMessenger;
 
-
-
 /**
  * Defines abstract player
- *
  */
 public abstract class BasePlayer implements IPlayer
 {
@@ -34,11 +31,16 @@ public abstract class BasePlayer implements IPlayer
 
 	private boolean _isPause = false;
 
-    public abstract SurfaceView getView();
+	public abstract SurfaceView getView();
+
 	public abstract void hide();
+
 	public abstract void setPositionAndSize(int x, int y, int w, int h);
+
 	public abstract void setFullScreen();
+
 	public abstract MediaController createMediaController(boolean useFastForward);
+
 	public abstract void removeMediaController();
 
 	/**
@@ -52,7 +54,8 @@ public abstract class BasePlayer implements IPlayer
 	}
 
 	/**
-	 * Starts playing from a paused state and triggers EventEnum.PLAY with param URL=url
+	 * Starts playing from a paused state and triggers EventEnum.PLAY with param
+	 * URL=url
 	 *
 	 * @see com.aviq.tv.android.sdk.player.IPlayer#play(java.lang.String)
 	 */
@@ -72,33 +75,42 @@ public abstract class BasePlayer implements IPlayer
 	}
 
 	/**
-	 * Pause/Resume media playback
+	 * Pause media playback
 	 *
 	 * @see com.aviq.tv.android.sdk.player.IPlayer#pause()
 	 */
 	@Override
 	public void pause()
 	{
-		if (isPlaying())
-		{
-			_isPause = !_isPause;
-		}
+		_isPause = true;
 	}
 
 	/**
-	 * Return player's playback status. This method must be implemented by player backend
+	 * Resume paused media playback
+	 *
+	 * @see com.aviq.tv.android.sdk.player.IPlayer#resume()
+	 */
+	@Override
+	public void resume()
+	{
+		_isPause = false;
+	}
+
+	/**
+	 * Return player's playback status. This method must be implemented by
+	 * player backend
 	 *
 	 * @see com.aviq.tv.android.sdk.player.IPlayer#isPlaying()
 	 */
 	@Override
-    public abstract boolean isPlaying();
+	public abstract boolean isPlaying();
 
 	/**
 	 * @see com.aviq.tv.android.sdk.player.IPlayer#isPaused()
 	 */
 	@Override
-    public boolean isPaused()
-    {
-	    return _isPause;
-    }
+	public boolean isPaused()
+	{
+		return _isPause;
+	}
 }

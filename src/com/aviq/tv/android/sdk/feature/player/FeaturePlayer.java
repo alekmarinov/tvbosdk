@@ -22,7 +22,6 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.player.BasePlayer;
-import com.aviq.tv.android.sdk.player.IPlayer;
 
 /**
  * Component feature providing player
@@ -36,7 +35,10 @@ public class FeaturePlayer extends FeatureComponent
 
 	public static final int ON_PLAY_STARTED = EventMessenger.ID("ON_PLAY_STARTED");
 	public static final int ON_PLAY_TIMEOUT = EventMessenger.ID("ON_PLAY_TIMEOUT");
-	private VideoStartPoller _videoStartPoller = new VideoStartPoller();
+	private PlayerStatusPoller _playerStartPoller = new PlayerStatusPoller(new PlayerStartVerifier());
+	private PlayerStatusPoller _playerStopPoller = new PlayerStatusPoller(new PlayerStopVerifier());
+	private PlayerStatusPoller _playerPausePoller = new PlayerStatusPoller(new PlayerPauseVerifier());
+	private PlayerStatusPoller _playerResumePoller = new PlayerStatusPoller(new PlayerResumeVerifier());
 
 	public enum Extras
 	{
@@ -48,7 +50,12 @@ public class FeaturePlayer extends FeatureComponent
 		/**
 		 * Start playing timeout in seconds
 		 */
-		TIMEOUT(20);
+		PLAY_TIMEOUT(30),
+
+		/**
+		 * Pause timeout in seconds
+		 */
+		PLAY_PAUSE_TIMEOUT(2);
 
 		Param(int value)
 		{
@@ -93,28 +100,46 @@ public class FeaturePlayer extends FeatureComponent
 		bundle.putString(Extras.URL.name(), url);
 		getEventMessenger().trigger(ON_PLAY_URL, bundle);
 
-		// restart polling player status
-		_videoStartPoller.stop();
-		_videoStartPoller.poll();
+		// start polling for playing status
+		_playerStartPoller.start();
 	}
 
 	public void stop()
 	{
 		Log.i(TAG, ".stop");
 		_player.stop();
-		getEventMessenger().trigger(ON_PLAY_STOP);
+		// start polling for stopped status
+		_playerStopPoller.start();
 	}
 
 	public void pause()
 	{
 		Log.i(TAG, ".pause");
 		_player.pause();
-		getEventMessenger().trigger(ON_PLAY_PAUSE);
+		// start polling for paused status
+		_playerPausePoller.start();
 	}
 
-	public IPlayer getPlayer()
+	public void resume()
 	{
-		return _player;
+		Log.i(TAG, ".resume");
+		_player.resume();
+		// start polling for resumed status
+		_playerResumePoller.start();
+	}
+
+	public boolean isPlaying()
+	{
+		boolean playing = _player.isPlaying();
+		Log.i(TAG, ".isPlaying -> " + playing);
+		return playing;
+	}
+
+	public boolean isPaused()
+	{
+		boolean paused = _player.isPaused();
+		Log.i(TAG, ".isPaused -> " + paused);
+		return paused;
 	}
 
 	public void setPlayer(BasePlayer player)
@@ -157,49 +182,195 @@ public class FeaturePlayer extends FeatureComponent
 		_player.removeMediaController();
 	}
 
-	private class VideoStartPoller implements Runnable
+	private interface PlayerStatusVerifier
 	{
-		private long _startPolling = System.currentTimeMillis();
+		/**
+		 * returns true if the player reached the expected status
+		 */
+		boolean isStatus();
+
+		/**
+		 * returns the timeout for waiting of player status
+		 */
+		int getTimeout();
+
+		/**
+		 * invoked on timeout waiting for player status
+		 */
+		void onTimeout();
+	}
+
+	private class PlayerStatusPoller implements Runnable
+	{
+		private PlayerStatusVerifier _playerStatusVerifier;
+		private long _startPolling;
+
+		PlayerStatusPoller(PlayerStatusVerifier playerStatusVerifier)
+		{
+			_playerStatusVerifier = playerStatusVerifier;
+		}
+
+		/**
+		 * start polling player status
+		 */
+		public void start()
+		{
+			_startPolling = System.currentTimeMillis();
+			getEventMessenger().removeCallbacks(this);
+			getEventMessenger().post(this);
+		}
 
 		@Override
 		public void run()
 		{
-			if (_player.getPosition() > 0)
+			Log.v(TAG, "waiting player for status: " + _playerStatusVerifier + " -> " + _playerStatusVerifier.isStatus());
+			if (!_playerStatusVerifier.isStatus())
 			{
-				// trigger play started
-				getEventMessenger().trigger(ON_PLAY_STARTED);
-			}
-			else
-			{
-				long timeout = getPrefs().getInt(Param.TIMEOUT) * 1000;
-				if (System.currentTimeMillis() - _startPolling > timeout)
+				if (System.currentTimeMillis() - _startPolling > _playerStatusVerifier.getTimeout())
 				{
-					// trigger timeout
-					getEventMessenger().trigger(ON_PLAY_TIMEOUT);
+					// on timeout
+					_playerStatusVerifier.onTimeout();
 				}
 				else
 				{
 					// continue polling
-					Log.v(TAG, "waiting player to start: position = " + _player.getPosition());
-					poll();
+					getEventMessenger().postDelayed(this, 100);
 				}
 			}
 		}
+	}
 
-		/**
-		 * poll to check player status in next moment
-		 */
-		public void poll()
+	private class PlayerStartVerifier implements PlayerStatusVerifier
+	{
+		@Override
+        public boolean isStatus()
+        {
+        	Log.e(TAG, "PlayerStartVerifier.isStatus() -> " + (_player.getPosition() > 0));
+	        if (_player.getPosition() > 0)
+	        {
+				// trigger player started
+				getEventMessenger().trigger(ON_PLAY_STARTED);
+				return true;
+	        }
+	        return false;
+        }
+
+		@Override
+        public int getTimeout()
+        {
+			return 1000 * getPrefs().getInt(Param.PLAY_TIMEOUT);
+        }
+
+		@Override
+        public void onTimeout()
+        {
+			// trigger timeout
+			getEventMessenger().trigger(ON_PLAY_TIMEOUT);
+        }
+
+		@Override
+        public String toString()
 		{
-			getEventMessenger().postDelayed(this, 100);
+			return "playing";
 		}
+	};
 
-		/**
-		 * forcing polling stop
-		 */
-		public void stop()
+	private class PlayerStopVerifier implements PlayerStatusVerifier
+	{
+		@Override
+        public boolean isStatus()
+        {
+	        if (!_player.isPlaying())
+	        {
+				// trigger player stopped
+				getEventMessenger().trigger(ON_PLAY_STOP);
+				return true;
+	        }
+	        return false;
+        }
+
+		@Override
+        public int getTimeout()
+        {
+			return 1000 * getPrefs().getInt(Param.PLAY_PAUSE_TIMEOUT);
+        }
+
+		@Override
+        public void onTimeout()
+        {
+			Log.w(TAG, "PlayerStopVerifier.onTimeout");
+        }
+
+		@Override
+        public String toString()
 		{
-			getEventMessenger().removeCallbacks(this);
+			return "stopped";
+		}
+	};
+
+	private class PlayerPauseVerifier implements PlayerStatusVerifier
+	{
+		@Override
+        public boolean isStatus()
+        {
+	        if (_player.isPaused())
+	        {
+				// trigger player paused
+				getEventMessenger().trigger(ON_PLAY_PAUSE);
+				return true;
+	        }
+	        return false;
+        }
+
+		@Override
+        public int getTimeout()
+        {
+			return 1000 * getPrefs().getInt(Param.PLAY_TIMEOUT);
+        }
+
+		@Override
+        public void onTimeout()
+        {
+			Log.w(TAG, "PlayerPauseVerifier.onTimeout");
+        }
+
+		@Override
+        public String toString()
+		{
+			return "paused";
+		}
+	};
+
+	private class PlayerResumeVerifier implements PlayerStatusVerifier
+	{
+		@Override
+        public boolean isStatus()
+        {
+	        if (!_player.isPaused())
+	        {
+				// trigger player resume
+				getEventMessenger().trigger(ON_PLAY_PAUSE);
+				return true;
+	        }
+	        return false;
+        }
+
+		@Override
+        public int getTimeout()
+        {
+			return 1000 * getPrefs().getInt(Param.PLAY_PAUSE_TIMEOUT);
+        }
+
+		@Override
+        public void onTimeout()
+        {
+			Log.w(TAG, "PlayerResumeVerifier.onTimeout");
+        }
+
+		@Override
+        public String toString()
+		{
+			return "resumed";
 		}
 	};
 }
