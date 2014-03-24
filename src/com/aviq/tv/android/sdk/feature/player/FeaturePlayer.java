@@ -245,7 +245,6 @@ public class FeaturePlayer extends FeatureComponent
 		@Override
         public boolean isStatus()
         {
-        	Log.e(TAG, "PlayerStartVerifier.isStatus() -> " + (_player.getPosition() > 0));
 	        if (_player.getPosition() > 0)
 	        {
 				// trigger player started
