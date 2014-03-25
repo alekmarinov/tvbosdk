@@ -537,9 +537,11 @@ public class FeatureUpgrade extends FeatureScheduler
 					// etc.
 
 					// clean up the update directory before starting new download
-					String updatesDir = Files.normalizeName(Environment.getInstance().getActivity(),
-					        getPrefs().getString(Param.UPDATES_DIR));
-					String[] files = new File(updatesDir).list();
+					File updatesDir = new File(Files.normalizeName(Environment.getInstance().getActivity(),
+					        getPrefs().getString(Param.UPDATES_DIR)));
+					if (!updatesDir.exists())
+						updatesDir.mkdirs();
+					String[] files = updatesDir.list();
 
 					// remove all collected *.part and *.zip files
 					if (files != null)
