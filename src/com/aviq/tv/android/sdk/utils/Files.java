@@ -12,6 +12,7 @@ package com.aviq.tv.android.sdk.utils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -118,6 +119,22 @@ public class Files
 		return fileData.toString();
 	}
 
+	/**
+	 * Save string to file
+	 */
+	public static void saveToFile(String text, String filePath) throws java.io.IOException
+	{
+		FileWriter writer = new FileWriter(filePath);
+		writer.write(text);
+		writer.close();
+	}
+
+	/**
+	 * Closes output stream with shutting up the IO exceptions
+	 *
+	 * @param os
+	 * @param TAG
+	 */
 	public static void closeQuietly(OutputStream os, String TAG)
 	{
 		if (os != null)
@@ -133,6 +150,12 @@ public class Files
 		}
 	}
 
+	/**
+	 * Closes output stream with shutting up the IO exceptions
+	 *
+	 * @param is
+	 * @param TAG
+	 */
 	public static void closeQuietly(InputStream is, String TAG)
 	{
 		if (is != null)
@@ -148,6 +171,12 @@ public class Files
 		}
 	}
 
+	/**
+	 * Closes reader with shutting up the IO exceptions
+	 *
+	 * @param reader
+	 * @param TAG
+	 */
 	public static void closeQuietly(Reader reader, String TAG)
 	{
 		if (reader != null)

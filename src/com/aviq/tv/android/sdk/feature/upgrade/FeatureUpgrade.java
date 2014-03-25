@@ -270,7 +270,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		getEventMessenger().trigger(ON_START_UPDATE);
 
 
-		int delay = Environment.getInstance().getPrefs().getInt(Param.UPGRADE_REBOOT_DELAY);
+		int delay = getPrefs().getInt(Param.UPGRADE_REBOOT_DELAY);
 		getEventMessenger().postDelayed(new Runnable()
 		{
 			@Override
