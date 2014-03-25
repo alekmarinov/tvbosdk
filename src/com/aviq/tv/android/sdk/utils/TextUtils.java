@@ -27,6 +27,15 @@ public class TextUtils
 	private static final String TAG = TextUtils.class.getSimpleName();
 
 	/**
+	 * @param text
+	 * @return true if a string is null or empty
+	 */
+	public static boolean isEmpty(String text)
+	{
+		return text == null || text.length() == 0;
+	}
+
+	/**
 	 * Implodes byte[] into String
 	 *
 	 * @param bytes the byte array to implode to string
