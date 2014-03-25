@@ -541,17 +541,20 @@ public class FeatureUpgrade extends FeatureScheduler
 					        getPrefs().getString(Param.UPDATES_DIR));
 					String[] files = new File(updatesDir).list();
 
-					// remove all collected files
+					// remove all collected *.part and *.zip files
 					if (files != null)
 					{
 						for (String delFileName : files)
 						{
-							delFileName = updatesDir + "/" + delFileName;
-							boolean success = new File(delFileName).delete();
-							if (!success)
-								Log.e(TAG, "Failed to delete file `" + delFileName + "'");
-							else
-								Log.i(TAG, "Deleted file `" + delFileName + "'");
+							if (delFileName.toLowerCase().endsWith(".part") || delFileName.toLowerCase().endsWith(".zip"))
+							{
+								delFileName = updatesDir + "/" + delFileName;
+								boolean success = new File(delFileName).delete();
+								if (!success)
+									Log.e(TAG, "Failed to delete file `" + delFileName + "'");
+								else
+									Log.i(TAG, "Deleted file `" + delFileName + "'");
+							}
 						}
 					}
 
