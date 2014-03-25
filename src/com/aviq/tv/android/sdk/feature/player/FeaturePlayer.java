@@ -17,22 +17,27 @@ import android.widget.MediaController;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.EventReceiver;
+import com.aviq.tv.android.sdk.core.Key;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.player.BasePlayer;
+import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Component feature providing player
  */
-public class FeaturePlayer extends FeatureComponent
+public class FeaturePlayer extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeaturePlayer.class.getSimpleName();
 	public static final int ON_PLAY_URL = EventMessenger.ID("ON_PLAY_URL");
 	public static final int ON_PLAY_STOP = EventMessenger.ID("ON_PLAY_STOP");
+	public static final int ON_PLAY_STOPPING = EventMessenger.ID("ON_PLAY_STOPPING");
 	public static final int ON_PLAY_PAUSE = EventMessenger.ID("ON_PLAY_PAUSE");
-
+	public static final int ON_PLAY_PAUSING = EventMessenger.ID("ON_PLAY_PAUSING");
+	public static final int ON_PLAY_RESUMING = EventMessenger.ID("ON_PLAY_RESUMING");
 	public static final int ON_PLAY_STARTED = EventMessenger.ID("ON_PLAY_STARTED");
 	public static final int ON_PLAY_TIMEOUT = EventMessenger.ID("ON_PLAY_TIMEOUT");
 	private PlayerStatusPoller _playerStartPoller = new PlayerStatusPoller(new PlayerStartVerifier());
@@ -80,6 +85,7 @@ public class FeaturePlayer extends FeatureComponent
 		if (_player == null)
 			throw new RuntimeException("Set AndroidPlayer first via method setPlayer");
 		_userPrefs = Environment.getInstance().getUserPrefs();
+		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -107,6 +113,7 @@ public class FeaturePlayer extends FeatureComponent
 	public void stop()
 	{
 		Log.i(TAG, ".stop");
+		getEventMessenger().trigger(ON_PLAY_STOPPING);
 		_player.stop();
 		// start polling for stopped status
 		_playerStopPoller.start();
@@ -115,6 +122,7 @@ public class FeaturePlayer extends FeatureComponent
 	public void pause()
 	{
 		Log.i(TAG, ".pause");
+		getEventMessenger().trigger(ON_PLAY_PAUSING);
 		_player.pause();
 		// start polling for paused status
 		_playerPausePoller.start();
@@ -123,6 +131,7 @@ public class FeaturePlayer extends FeatureComponent
 	public void resume()
 	{
 		Log.i(TAG, ".resume");
+		getEventMessenger().trigger(ON_PLAY_RESUMING);
 		_player.resume();
 		// start polling for resumed status
 		_playerResumePoller.start();
@@ -144,6 +153,7 @@ public class FeaturePlayer extends FeatureComponent
 
 	public void setPlayer(BasePlayer player)
 	{
+		Log.i(TAG, "Using player " + player.getClass().getName());
 		_player = player;
 	}
 
@@ -371,5 +381,22 @@ public class FeaturePlayer extends FeatureComponent
 		{
 			return "resumed";
 		}
-	};
+	}
+
+	@Override
+    public void onEvent(int msgId, Bundle bundle)
+    {
+		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
+		if (Environment.ON_KEY_PRESSED == msgId)
+		{
+			Key key = Key.valueOf(bundle.getString(Environment.EXTRA_KEY));
+			if (Key.PLAY_PAUSE.equals(key))
+			{
+				if (isPaused())
+					resume();
+				else
+					pause();
+			}
+		}
+    };
 }

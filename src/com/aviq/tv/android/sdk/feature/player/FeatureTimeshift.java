@@ -29,11 +29,30 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureTimeshift.class.getSimpleName();
+	/**
+	 * triggered when the player must be resumed due to exceeded timeshift
+	 * buffer during pause
+	 */
+	public static final int ON_AUTO_RESUME = EventMessenger.ID("ON_AUTO_RESUME");
 	private long _timeshiftTimeStart;
 	private long _pauseTimeStart;
 	private long _playTimeDelta;
-	private boolean _isPause;
-	private FeaturePlayer _FeaturePlayer;
+	private FeaturePlayer _featurePlayer;
+	private int _timeshiftMaxBufSize;
+	private AutoResumer _autoResumer = new AutoResumer();
+
+	public enum Param
+	{
+		/**
+		 * Timeshift max buffer size in seconds
+		 */
+		TIMESHIFT_DURATION(60 * 5);
+
+		Param(int value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.TIMESHIFT).put(name(), value);
+		}
+	}
 
 	public FeatureTimeshift()
 	{
@@ -46,11 +65,12 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".initialize");
 		try
 		{
-			_FeaturePlayer = (FeaturePlayer) Environment.getInstance()
+			_featurePlayer = (FeaturePlayer) Environment.getInstance()
 			        .getFeatureComponent(FeatureName.Component.PLAYER);
-			_FeaturePlayer.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_STARTED);
-			_FeaturePlayer.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_STOP);
-			_FeaturePlayer.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_PAUSE);
+			_featurePlayer.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_URL);
+			_featurePlayer.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_STOP);
+			_featurePlayer.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_PAUSE);
+			_timeshiftMaxBufSize = getPrefs().getInt(Param.TIMESHIFT_DURATION);
 			reset();
 			super.initialize(onFeatureInitialized);
 		}
@@ -69,27 +89,6 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".reset");
 		_timeshiftTimeStart = currentTime();
 		_playTimeDelta = 0;
-		_isPause = false;
-	}
-
-	/**
-	 * Pause cursor
-	 */
-	public void pause()
-	{
-		Log.i(TAG, ".pause");
-		_pauseTimeStart = currentTime();
-		_isPause = true;
-	}
-
-	/**
-	 * Resume from pause
-	 */
-	public void resume()
-	{
-		Log.i(TAG, ".resume");
-		_isPause = false;
-		_playTimeDelta += currentTime() - _pauseTimeStart;
 	}
 
 	/**
@@ -130,7 +129,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	 */
 	public long getPlayingTime()
 	{
-		if (_isPause)
+		if (_featurePlayer.isPaused())
 		{
 			// returns constant position from the moment of pause subtracted
 			// with the current delay from live
@@ -149,7 +148,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	 */
 	public long getTimeshiftDuration()
 	{
-		return currentTime() - _timeshiftTimeStart;
+		return Math.min(_timeshiftMaxBufSize, currentTime() - _timeshiftTimeStart);
 	}
 
 	@Override
@@ -158,27 +157,49 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		return FeatureName.Component.TIMESHIFT;
 	}
 
-	@Override
-	public void onEvent(int msgId, Bundle bundle)
-	{
-		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
-		if (FeaturePlayer.ON_PLAY_STARTED == msgId || FeaturePlayer.ON_PLAY_STOP == msgId)
-			reset();
-		else if (FeaturePlayer.ON_PLAY_PAUSE == msgId)
-		{
-			if (_FeaturePlayer.isPaused())
-				pause();
-			else
-				resume();
-		}
-	}
-
 	/**
 	 * @return current time stamp in seconds
 	 */
 	public long currentTime()
 	{
 		return System.currentTimeMillis() / 1000;
+	}
+
+	@Override
+	public void onEvent(int msgId, Bundle bundle)
+	{
+		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
+		if (FeaturePlayer.ON_PLAY_URL == msgId || FeaturePlayer.ON_PLAY_STOPPING == msgId)
+		{
+			reset();
+		}
+		else if (FeaturePlayer.ON_PLAY_PAUSE == msgId)
+		{
+			if (_featurePlayer.isPaused())
+				onPause();
+			else
+				onResume();
+		}
+	}
+
+	/**
+	 * Pause cursor
+	 */
+	private void onPause()
+	{
+		Log.i(TAG, ".pause");
+		_pauseTimeStart = currentTime();
+		_autoResumer.start();
+	}
+
+	/**
+	 * Resume from pause
+	 */
+	private void onResume()
+	{
+		Log.i(TAG, ".resume");
+		_autoResumer.stop();
+		_playTimeDelta += currentTime() - _pauseTimeStart;
 	}
 
 	/**
@@ -190,4 +211,35 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		timestamp = Math.max(timestamp, currentTime() - getTimeshiftDuration());
 		return timestamp;
 	}
+
+	private class AutoResumer implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			if (_playTimeDelta > getTimeshiftDuration())
+			{
+				Log.i(TAG, "Auto resuming");
+				_featurePlayer.resume();
+				seekAt(currentTime() - getTimeshiftDuration());
+				getEventMessenger().trigger(ON_AUTO_RESUME);
+			}
+
+			getEventMessenger().postDelayed(this, 1000);
+		}
+
+		public void start()
+		{
+			Log.i(TAG, "AutoResumer.start");
+			getEventMessenger().removeCallbacks(this);
+			getEventMessenger().post(this);
+		}
+
+		public void stop()
+		{
+			Log.i(TAG, "AutoResumer.stop");
+			getEventMessenger().removeCallbacks(this);
+		}
+	}
+
 }
