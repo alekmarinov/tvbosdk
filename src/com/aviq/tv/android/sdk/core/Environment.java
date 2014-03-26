@@ -183,7 +183,7 @@ public class Environment
 
 				Log.i(TAG, "Set brand property " + featureType.toLowerCase() + "." + featureName.toUpperCase() + "."
 				        + featureParam + "=`" + value + "'");
-				prefs.remove(key);
+				prefs.remove(featureParam);
 				prefs.put(featureParam, value);
 			}
 		}
