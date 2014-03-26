@@ -132,7 +132,7 @@ public class FeatureInternet extends FeatureScheduler
 					if (_attemptsCounter < checkAttempts)
 					{
 						_attemptsCounter++;
-						Log.w(TAG, "Check internet failed. Trying " + (checkAttempts - _attemptsCounter)
+						Log.w(TAG, "Check internet failed. Trying " + (checkAttempts - _attemptsCounter + 1)
 						        + " more times");
 						getEventMessenger().postDelayed(this, getPrefs().getInt(Param.CHECK_ATTEMPT_DELAY));
 						return;

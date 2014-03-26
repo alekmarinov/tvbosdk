@@ -127,7 +127,8 @@ public class Prefs
 		}
 		else
 		{
-			// FIXME: Consider throwing exception if the new value differs from the previous
+			// FIXME: Consider throwing exception if the new value differs from
+			// the previous
 			Log.v(TAG, "Skip setting " + key + " = " + value + ", previous value = " + getString(key));
 		}
 	}
@@ -151,7 +152,8 @@ public class Prefs
 		}
 		else
 		{
-			// FIXME: Consider throwing exception if the new value differs from the previous
+			// FIXME: Consider throwing exception if the new value differs from
+			// the previous
 			Log.v(TAG, "Skip setting " + key + " = " + value + ", previous value = " + getInt(key));
 		}
 	}
@@ -175,9 +177,23 @@ public class Prefs
 		}
 		else
 		{
-			// FIXME: Consider throwing exception if the new value differs from the previous
+			// FIXME: Consider throwing exception if the new value differs from
+			// the previous
 			Log.v(TAG, "Skip setting " + key + " = " + value + ", previous value = " + getBool(key));
 		}
+	}
+
+	/**
+	 * Remove setting
+	 *
+	 * @param key
+	 *            parameter name
+	 */
+	public void remove(Object key)
+	{
+		Editor edit = _prefs.edit();
+		edit.remove(key.toString());
+		edit.commit();
 	}
 
 	/**
