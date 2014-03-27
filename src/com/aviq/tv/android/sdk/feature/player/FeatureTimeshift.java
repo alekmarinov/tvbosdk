@@ -46,7 +46,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		/**
 		 * Timeshift max buffer size in seconds
 		 */
-		TIMESHIFT_DURATION(60 * 5);
+		TIMESHIFT_DURATION(60 * 60);
 
 		Param(int value)
 		{
@@ -217,11 +217,13 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		@Override
 		public void run()
 		{
-			if (_playTimeDelta > getTimeshiftDuration())
+			long delta = currentTime() - getPlayingTime();
+			Log.i(TAG, "Auto resum check: delta = " + delta + ", timeshift duration = " + getTimeshiftDuration());
+			if (delta > getTimeshiftDuration())
 			{
 				Log.i(TAG, "Auto resuming");
 				_featurePlayer.resume();
-				seekAt(currentTime() - getTimeshiftDuration());
+				// seekAt(currentTime() - getTimeshiftDuration());
 				getEventMessenger().trigger(ON_AUTO_RESUME);
 			}
 
