@@ -28,6 +28,7 @@ public abstract class BasePlayer implements IPlayer
 
 	public static final String PARAM_WHAT = "what";
 	public static final String PARAM_EXTRA = "extra";
+	public static final String PARAM_ERROR = "error";
 
 	private boolean _isPause = false;
 
