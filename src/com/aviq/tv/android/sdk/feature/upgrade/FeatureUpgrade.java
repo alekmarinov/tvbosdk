@@ -63,6 +63,8 @@ public class FeatureUpgrade extends FeatureScheduler
 	public static final int ON_START_UPDATE = EventMessenger.ID("ON_START_UPDATE");
 	public static final int ON_START_FROM_UPDATE = EventMessenger.ID("ON_START_FROM_UPDATE");
 
+	public static final String EXTRA_VERSION = "VERSION";
+
 	public enum Param
 	{
 		/**
@@ -267,8 +269,14 @@ public class FeatureUpgrade extends FeatureScheduler
 		}
 
 		_userPrefs.put(UserParam.IS_AFTER_UPGRADE, true);
-		getEventMessenger().trigger(ON_START_UPDATE);
 
+		Bundle params = null;
+		if (_updateInfo != null)
+		{
+			params = new Bundle();
+			params.putString(EXTRA_VERSION, _updateInfo.Version);
+		}
+		getEventMessenger().trigger(ON_START_UPDATE, params);
 
 		int delay = getPrefs().getInt(Param.UPGRADE_REBOOT_DELAY);
 		getEventMessenger().postDelayed(new Runnable()

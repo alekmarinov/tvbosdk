@@ -240,18 +240,21 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
             _mediaController.hide();
         }
 
+		String error;
 		if (what == MediaPlayer.MEDIA_ERROR_UNKNOWN && extra == 404)
-			Log.e(TAG, "File not found (404)");
+			error = "File not found (404)";
 		else if (what == MediaPlayer.MEDIA_ERROR_UNKNOWN)
-			Log.e(TAG, "Error " + extra);
+			error = "Error " + extra;
 		else if (what == MediaPlayer.MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK)
-			Log.e(TAG, "Video not suitable for streaming " + what);
+			error = "Video not suitable for streaming " + what;
 		else
-			Log.e(TAG, "Media player playback error " + what);
+			error = "Media player playback error " + what;
+		Log.e(TAG, error);
 
 		Bundle bundle = new Bundle();
 		bundle.putInt(PARAM_WHAT, what);
 		bundle.putInt(PARAM_EXTRA, extra);
+		bundle.putString(PARAM_ERROR, error);
 		Environment.getInstance().getEventMessenger().trigger(ON_ERROR, bundle);
 	    return true;
     }
