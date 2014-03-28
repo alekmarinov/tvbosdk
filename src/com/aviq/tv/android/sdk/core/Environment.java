@@ -66,7 +66,7 @@ public class Environment
 		/**
 		 * whether we are in release build
 		 */
-		IS_RELEASE(true),
+		RELEASE("release"),
 
 		/**
 		 * Timeout in seconds for feature initialization
@@ -74,11 +74,6 @@ public class Environment
 		FEATURE_INITIALIZE_TIMEOUT(130);
 
 		Param(int value)
-		{
-			Environment.getInstance().getPrefs().put(name(), value);
-		}
-
-		Param(boolean value)
 		{
 			Environment.getInstance().getPrefs().put(name(), value);
 		}
