@@ -59,15 +59,26 @@ public class Environment
 	public static final String EXTRA_KEY = "KEY";
 	public static final String EXTRA_KEYCODE = "KEYCODE";
 	public static final String EXTRA_KEYCONSUMED = "KEYCONSUMED";
+	private static final String SYSTEM_PREFS = "system";
 
 	public enum Param
 	{
+		/**
+		 * whether we are in release build
+		 */
+		IS_RELEASE(true),
+
 		/**
 		 * Timeout in seconds for feature initialization
 		 */
 		FEATURE_INITIALIZE_TIMEOUT(130);
 
 		Param(int value)
+		{
+			Environment.getInstance().getPrefs().put(name(), value);
+		}
+
+		Param(boolean value)
 		{
 			Environment.getInstance().getPrefs().put(name(), value);
 		}
@@ -135,7 +146,7 @@ public class Environment
 		// initializes environment context
 		_activity = activity;
 		_userPrefs = createUserPrefs();
-		_prefs = createPrefs("system");
+		_prefs = createPrefs(SYSTEM_PREFS);
 		_serviceController = new ServiceController(_activity);
 		_requestQueue = Volley.newRequestQueue(_activity);
 		_requestQueue.getCache().clear();
@@ -162,27 +173,42 @@ public class Environment
 				String value = _brandProperties.getProperty(key);
 				Log.i(TAG, key + " = `" + value + "'");
 				String[] parts = key.split("\\.");
-				if (parts.length != 3)
-					throw new RuntimeException(
-					        "Invalid brand.properties key, expected <featureType>.<featureName>.<featureParam>, got `"
-					                + key + "'");
-				String featureType = parts[0];
-				String featureName = parts[1];
-				String featureParam = parts[2];
 				Prefs prefs;
-				if (featureType.equalsIgnoreCase(IFeature.Type.COMPONENT.name()))
-					prefs = getFeaturePrefs(FeatureName.Component.valueOf(featureName));
-				else if (featureType.equalsIgnoreCase(IFeature.Type.SCHEDULER.name()))
-					prefs = getFeaturePrefs(FeatureName.Scheduler.valueOf(featureName));
-				else if (featureType.equalsIgnoreCase(IFeature.Type.STATE.name()))
-					prefs = getFeaturePrefs(FeatureName.State.valueOf(featureName));
-				else
-					throw new RuntimeException(
-					        "Invalid feature type in brand.properties key, expected component, scheduler or state, got `"
-					                + featureType + "'");
+				String featureType;
+				String featureName;
+				String featureParam;
+				if (parts.length == 2 && parts[0].equalsIgnoreCase(SYSTEM_PREFS))
+				{
+					prefs = getPrefs();
+					featureParam = parts[1];
+					Log.i(TAG, "Set brand property " + SYSTEM_PREFS + "." + featureParam + "=`" + value + "'");
+				}
+				else if (parts.length == 3)
+				{
+					featureType = parts[0];
+					featureName = parts[1];
+					featureParam = parts[2];
 
-				Log.i(TAG, "Set brand property " + featureType.toLowerCase() + "." + featureName.toUpperCase() + "."
-				        + featureParam + "=`" + value + "'");
+					if (featureType.equalsIgnoreCase(IFeature.Type.COMPONENT.name()))
+						prefs = getFeaturePrefs(FeatureName.Component.valueOf(featureName));
+					else if (featureType.equalsIgnoreCase(IFeature.Type.SCHEDULER.name()))
+						prefs = getFeaturePrefs(FeatureName.Scheduler.valueOf(featureName));
+					else if (featureType.equalsIgnoreCase(IFeature.Type.STATE.name()))
+						prefs = getFeaturePrefs(FeatureName.State.valueOf(featureName));
+					else
+						throw new RuntimeException(
+						        "Invalid feature type in brand.properties key, expected component, scheduler or state, got `"
+						                + featureType + "'");
+
+					Log.i(TAG, "Set brand property " + featureType + "." + featureName + "." + featureParam + "=`"
+					        + value + "'");
+				}
+				else
+				{
+					throw new RuntimeException("Invalid brand.properties key, expected [<featureType>.<featureName> | "
+					        + SYSTEM_PREFS + "].<featureParam>, got `" + key + "'");
+				}
+
 				prefs.remove(featureParam);
 				prefs.put(featureParam, value);
 			}
