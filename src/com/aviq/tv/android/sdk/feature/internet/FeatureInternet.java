@@ -17,6 +17,7 @@ import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
@@ -31,6 +32,9 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 public class FeatureInternet extends FeatureScheduler
 {
 	private static final String TAG = FeatureInternet.class.getSimpleName();
+
+	public static final int ON_CONNECTED = EventMessenger.ID("ON_CONNECTED");
+	public static final int ON_DISCONNECTED = EventMessenger.ID("ON_DISCONNECTED");
 
 	public enum Param
 	{
@@ -62,7 +66,7 @@ public class FeatureInternet extends FeatureScheduler
 
 	public enum ResultExtras
 	{
-		URL, CONTENT, ERROR
+		URL, CONTENT, ERROR_MESSAGE, ERROR_CODE
 	}
 
 	private String _checkUrl;
@@ -82,6 +86,7 @@ public class FeatureInternet extends FeatureScheduler
 				Log.i(TAG, ".onReceiveResult: resultCode = " + resultCode + " (" + TextUtils.implodeBundle(resultData)
 				        + ")");
 				onFeatureInitialized.onInitialized(FeatureInternet.this, resultCode);
+				getEventMessenger().trigger(resultCode == ResultCode.OK ? ON_CONNECTED : ON_DISCONNECTED, resultData);
 				scheduleDelayed(getPrefs().getInt(Param.CHECK_INTERVAL) * 1000);
 			}
 		});
@@ -239,7 +244,8 @@ public class FeatureInternet extends FeatureScheduler
 			Log.e(TAG, _url + " -> " + statusCode + " ( " + error.getMessage() + ")");
 			Bundle resultData = new Bundle();
 			resultData.putString(ResultExtras.URL.name(), _url);
-			resultData.putString(ResultExtras.ERROR.name(), error.getMessage());
+			resultData.putString(ResultExtras.ERROR_MESSAGE.name(), error.getMessage());
+			resultData.putInt(ResultExtras.ERROR_CODE.name(), statusCode);
 			_onResultReceived.onReceiveResult(statusCode, resultData);
 		}
 	}

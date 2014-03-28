@@ -146,7 +146,8 @@ public class DownloadService extends BaseService
 			MessageDigest md5 = null;
 			if (isComputeMd5)
 			{
-				// FIXME: Extend with ability to request various check sum algorithms, e.g. SHA
+				// FIXME: Extend with ability to request various check sum
+				// algorithms, e.g. SHA
 				Log.i(TAG, "Requested md5 check sum calculation");
 				md5 = MessageDigest.getInstance("MD5");
 			}
@@ -177,6 +178,7 @@ public class DownloadService extends BaseService
 			int bytesWritten = 0;
 			Bundle progressData = new Bundle();
 			// downloading
+			long lastIterTime = System.currentTimeMillis();
 			while ((count = inputStream.read(data, 0, bufSize)) != -1)
 			{
 				if (md5 != null)
@@ -187,15 +189,26 @@ public class DownloadService extends BaseService
 				duration = System.currentTimeMillis() - downloadStart;
 				downloadRateMbPerSec = (bytesWritten / ((double) duration / 1000)) / ONE_MEGABYTE;
 
-				// send progress events back to receiver
-				progressData.putFloat(ResultExtras.PROGRESS.name(), (float) bytesWritten / total);
-				progressData.putFloat(ResultExtras.BYTES_DOWNLOADED.name(), bytesWritten);
-				progressData.putFloat(ResultExtras.BYTES_TOTAL.name(), total);
-				progressData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
-				resultReceiver.send(DOWNLOAD_PROGRESS, progressData);
+				if (System.currentTimeMillis() - lastIterTime > 300)
+				{
+					// send progress events back to receiver
+					progressData.putFloat(ResultExtras.PROGRESS.name(), (float) bytesWritten / total);
+					progressData.putFloat(ResultExtras.BYTES_DOWNLOADED.name(), bytesWritten);
+					progressData.putFloat(ResultExtras.BYTES_TOTAL.name(), total);
+					progressData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
+					resultReceiver.send(DOWNLOAD_PROGRESS, progressData);
+					lastIterTime = System.currentTimeMillis();
+				}
 			}
+
+			// send full progress event to fill up the progress bars
+			progressData.putFloat(ResultExtras.PROGRESS.name(), 1.0f);
+			progressData.putFloat(ResultExtras.BYTES_DOWNLOADED.name(), total);
+			progressData.putFloat(ResultExtras.BYTES_TOTAL.name(), total);
+			progressData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
+			resultReceiver.send(DOWNLOAD_PROGRESS, progressData);
+
 			duration = System.currentTimeMillis() - downloadStart;
-			downloadRateMbPerSec = (bytesWritten / ((double) duration / 1000)) / ONE_MEGABYTE;
 			resultData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
 			Log.i(TAG, bytesWritten + " bytes in " + duration + " ms downloaded from " + url + ", download rate = "
 			        + downloadRateMbPerSec + " MB/sec");
