@@ -316,7 +316,7 @@ public class FeatureEthernet extends FeatureComponent
 			catch (InvocationTargetException e)
 			{
 				if (e.getTargetException() instanceof SecurityException)
-					throw (SecurityException)e.getTargetException();
+					throw (SecurityException) e.getTargetException();
 				Log.e(TAG, e.getMessage(), e);
 			}
 		}
@@ -385,6 +385,13 @@ public class FeatureEthernet extends FeatureComponent
 			if (intIp == 0)
 				return null;
 			byte[] ipBytes = BigInteger.valueOf(intIp).toByteArray();
+
+			if (ipBytes.length != 4)
+			{
+				ipBytes = new byte[4];
+				ipBytes[0] = ipBytes[1] = ipBytes[2] = ipBytes[3] = 0;
+			}
+
 			// reverse bytes order
 			byte temp;
 			temp = ipBytes[0];
