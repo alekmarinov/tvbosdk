@@ -198,6 +198,7 @@ public class FeatureUpgrade extends FeatureScheduler
 	@Override
 	protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
 	{
+		Log.i(TAG, ".onSchedule");
 		super.onSchedule(onFeatureInitialized);
 
 		// check for new software update. This method will run only if the
@@ -535,7 +536,7 @@ public class FeatureUpgrade extends FeatureScheduler
 						md5Content = md5Parts[0];
 					final String md5 = md5Content;
 
-					final String updateFile = getPrefs().getString(Param.UPDATES_DIR) + "/"
+					final String updateFile = getPrefs().getString(Param.UPDATES_DIR) + File.separator
 					        + Files.baseName(_updateInfo.FileName);
 					Bundle downloadParams = new Bundle();
 					downloadParams.putString(DownloadService.Extras.URL.name(), updateUrl);
