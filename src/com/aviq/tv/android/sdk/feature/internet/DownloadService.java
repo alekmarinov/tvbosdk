@@ -67,7 +67,7 @@ public class DownloadService extends BaseService
 	 */
 	public enum ResultExtras
 	{
-		PROGRESS, MD5, BYTES_DOWNLOADED, BYTES_TOTAL, EXCEPTION, DOWNLOAD_RATE_MB_PER_SEC
+		PROGRESS, MD5, BYTES_DOWNLOADED, BYTES_TOTAL, EXCEPTION, DOWNLOAD_RATE_MB_PER_SEC, TOTAL_TIME
 	}
 
 	public DownloadService()
@@ -196,19 +196,23 @@ public class DownloadService extends BaseService
 					progressData.putFloat(ResultExtras.BYTES_DOWNLOADED.name(), bytesWritten);
 					progressData.putFloat(ResultExtras.BYTES_TOTAL.name(), total);
 					progressData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
+					progressData.putDouble(ResultExtras.TOTAL_TIME.name(), duration);
 					resultReceiver.send(DOWNLOAD_PROGRESS, progressData);
 					lastIterTime = System.currentTimeMillis();
 				}
 			}
+
+			duration = System.currentTimeMillis() - downloadStart;
 
 			// send full progress event to fill up the progress bars
 			progressData.putFloat(ResultExtras.PROGRESS.name(), 1.0f);
 			progressData.putFloat(ResultExtras.BYTES_DOWNLOADED.name(), total);
 			progressData.putFloat(ResultExtras.BYTES_TOTAL.name(), total);
 			progressData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
+			progressData.putLong(ResultExtras.TOTAL_TIME.name(), duration);
 			resultReceiver.send(DOWNLOAD_PROGRESS, progressData);
 
-			duration = System.currentTimeMillis() - downloadStart;
+
 			resultData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
 			Log.i(TAG, bytesWritten + " bytes in " + duration + " ms downloaded from " + url + ", download rate = "
 			        + downloadRateMbPerSec + " MB/sec");
