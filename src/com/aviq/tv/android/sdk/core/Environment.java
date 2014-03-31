@@ -90,7 +90,7 @@ public class Environment
 	private ServiceController _serviceController;
 	private Prefs _prefs;
 	private Prefs _userPrefs;
-	private Properties _brandProperties;
+	private List<Properties> _brandPropertyLists = new ArrayList<Properties>();
 	private RequestQueue _requestQueue;
 	private ImageLoader _imageLoader;
 	private List<IFeature> _features = new ArrayList<IFeature>();
@@ -119,7 +119,7 @@ public class Environment
 
 	public void setBrandProperties(Properties brandProperties)
 	{
-		_brandProperties = brandProperties;
+		_brandPropertyLists.add(brandProperties);
 	}
 
 	/**
@@ -157,15 +157,15 @@ public class Environment
 		_features = topologicalSort(_features);
 
 		// Initialize brand properties
-		if (_brandProperties != null)
+		for (Properties brandProperties: _brandPropertyLists)
 		{
 			Log.i(TAG, "Apply brand properties");
-			Enumeration<Object> keys = _brandProperties.keys();
+			Enumeration<Object> keys = brandProperties.keys();
 
 			while (keys.hasMoreElements())
 			{
 				String key = (String) keys.nextElement();
-				String value = _brandProperties.getProperty(key);
+				String value = brandProperties.getProperty(key);
 				Log.i(TAG, key + " = `" + value + "'");
 				String[] parts = key.split("\\.");
 				Prefs prefs;
