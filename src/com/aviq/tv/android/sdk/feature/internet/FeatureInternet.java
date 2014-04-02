@@ -10,6 +10,9 @@
 
 package com.aviq.tv.android.sdk.feature.internet;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import android.os.Bundle;
 
 import com.android.volley.Response.ErrorListener;
@@ -51,7 +54,10 @@ public class FeatureInternet extends FeatureScheduler
 		/**
 		 * Delay between internet check attempts
 		 */
-		CHECK_ATTEMPT_DELAY(1000);
+		CHECK_ATTEMPT_DELAY(1000),
+
+		/** URL to check against for the box's public IP. */
+		PUBLIC_IP_CHECK_URL("http://checkip.dyndns.org");
 
 		Param(int value)
 		{
@@ -70,6 +76,7 @@ public class FeatureInternet extends FeatureScheduler
 	}
 
 	private String _checkUrl;
+	private String _publicIP;
 
 	// FIXME: to be removed from this component
 	private double _averageDownloadRateMbPerSec;
@@ -143,6 +150,14 @@ public class FeatureInternet extends FeatureScheduler
 						return;
 					}
 				}
+				else
+				{
+					// Get public IP the first time
+					if (_publicIP == null)
+					{
+						retrievePublicIPAsync();
+					}
+				}
 				onResultReceived.onReceiveResult(resultCode, resultData);
 			}
 		}
@@ -203,6 +218,43 @@ public class FeatureInternet extends FeatureScheduler
 	public double getAverageDownloadRate()
 	{
 		return _averageDownloadRateMbPerSec;
+	}
+
+	private void retrievePublicIPAsync()
+	{
+		Log.i(TAG, ".retrievePublicIPAsync");
+		String url = getPrefs().getString(Param.PUBLIC_IP_CHECK_URL);
+
+		getUrlContent(url, new OnResultReceived()
+		{
+			@Override
+            public void onReceiveResult(int resultCode, Bundle resultData)
+            {
+                if (resultCode == ResultCode.OK)
+                {
+                	String content = resultData.getString(ResultExtras.CONTENT.name());
+
+                	String ip = null;
+
+                	// <html><head><title>Current IP Check</title></head><body>Current IP Address: 78.90.178.220</body></html>
+                	Pattern pattern = Pattern.compile("\\<body\\>Current IP Address\\:\\s.*?(\\w+\\.\\w+.\\w+.\\w+)\\s*?\\<\\/body\\>");
+    				Matcher matcher = pattern.matcher(content);
+    				if (matcher.find())
+    				{
+    					ip = matcher.group(1).trim();
+    				}
+    				if (ip != null && !"".equals(ip))
+    					_publicIP = ip;
+
+    				Log.i(TAG, ".retrievePublicIPAsync: public IP = " + _publicIP);
+                }
+            }
+		});
+	}
+
+	public String getPublicIP()
+	{
+		return _publicIP;
 	}
 
 	/**

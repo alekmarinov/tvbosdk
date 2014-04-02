@@ -110,6 +110,7 @@ public class FeatureRegister extends FeatureComponent
 			FeatureInternet featureInternet = (FeatureInternet) Environment.getInstance().getFeatureScheduler(
 			        FeatureName.Scheduler.INTERNET);
 			featureInternet.startCheckUrl(_registrationUrl);
+
 			super.initialize(onFeatureInitialized);
 		}
 		catch (FeatureNotFoundException e)

@@ -196,7 +196,7 @@ public class DownloadService extends BaseService
 					progressData.putFloat(ResultExtras.BYTES_DOWNLOADED.name(), bytesWritten);
 					progressData.putFloat(ResultExtras.BYTES_TOTAL.name(), total);
 					progressData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
-					progressData.putDouble(ResultExtras.TOTAL_TIME.name(), duration);
+					progressData.putLong(ResultExtras.TOTAL_TIME.name(), duration);
 					resultReceiver.send(DOWNLOAD_PROGRESS, progressData);
 					lastIterTime = System.currentTimeMillis();
 				}

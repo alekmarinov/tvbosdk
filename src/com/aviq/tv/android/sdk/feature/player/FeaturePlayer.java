@@ -233,8 +233,11 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 		@Override
 		public void run()
 		{
-			Log.v(TAG, "waiting player for status: " + _playerStatusVerifier + " -> " + _playerStatusVerifier.isStatus());
-			if (!_playerStatusVerifier.isStatus())
+			// Call only once to prevent multiple triggering of events
+			boolean isPlaying = _playerStatusVerifier.isStatus();
+			Log.v(TAG, "waiting player for status: " + _playerStatusVerifier + " -> " + isPlaying);
+
+			if (!isPlaying)
 			{
 				if (System.currentTimeMillis() - _startPolling > _playerStatusVerifier.getTimeout())
 				{

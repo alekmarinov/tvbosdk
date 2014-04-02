@@ -32,7 +32,8 @@ public class FeatureName
 		MENU,
 		RPC,
 		SYSTEM,
-		EASTER_EGG
+		EASTER_EGG,
+		CRASHLOG
 	}
 
 	public static enum Scheduler
