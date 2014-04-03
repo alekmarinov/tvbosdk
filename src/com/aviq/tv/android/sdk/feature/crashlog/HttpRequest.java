@@ -36,6 +36,9 @@ import org.apache.http.util.EntityUtils;
 
 import com.aviq.tv.android.sdk.core.Log;
 
+/**
+ * FIXME: Move to FeatureInternet the POST functionality from this class
+ */
 public final class HttpRequest
 {
 	private static final String TAG = HttpRequest.class.getSimpleName();

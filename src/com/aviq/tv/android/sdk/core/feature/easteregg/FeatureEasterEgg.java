@@ -95,7 +95,6 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 			if (chr != '\0')
 			{
 				_sequence.append(chr);
-				Log.e(TAG, "_sequence = " + _sequence + ", _keySequence = " + _keySequence);
 				if (_sequence.toString().equals(_keySequence))
 				{
 					Environment.getInstance().startAppPackage(_startPackage);

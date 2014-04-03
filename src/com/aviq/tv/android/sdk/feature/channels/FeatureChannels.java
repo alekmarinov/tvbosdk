@@ -101,7 +101,7 @@ public class FeatureChannels extends FeatureComponent
 			_featureEPG = (FeatureEPG) Environment.getInstance().getFeatureScheduler(FeatureName.Scheduler.EPG);
 			_featurePlayer = (FeaturePlayer) Environment.getInstance()
 			        .getFeatureComponent(FeatureName.Component.PLAYER);
-			_channels = loadFavoriteChannels(_featureEPG.getEpgData());
+			_channels = loadFavoriteChannels();
 
 			if (getPrefs().getBool(Param.AUTOPLAY))
 			{
@@ -154,10 +154,7 @@ public class FeatureChannels extends FeatureComponent
 	 */
 	public boolean isChannelFavorite(Channel channel)
 	{
-		if (isEverChanged())
-			return _channels.indexOf(channel) >= 0;
-
-		return false;
+		return _channels.indexOf(channel) >= 0;
 	}
 
 	/**
@@ -165,33 +162,27 @@ public class FeatureChannels extends FeatureComponent
 	 */
 	public Channel getFavoriteChannel(String channelId)
 	{
-		if (isEverChanged())
-		{
-			int index = findChannelIndex(channelId);
-			if (index > -1)
-				return _channels.get(index);
-		}
+		int index = findChannelIndex(channelId);
+		if (index > -1)
+			return _channels.get(index);
 
 		return null;
 	}
 
 	/**
-	 * Initialize channels with channel collection if needed
+	 * @return list of user favorite channels
 	 */
-	public void setChannels(List<Channel> channels)
+	public List<Channel> getUserChannels()
 	{
-		if (_channels.size() == 0)
-		{
-			_channels.addAll(channels);
-		}
+		return _channels;
 	}
 
 	/**
-	 * @return list of user channels
+	 * @return list of channels depending on user settings
 	 */
-	public List<Channel> getFavoriteChannels()
+	public List<Channel> getActiveChannels()
 	{
-		if (isEverChanged() && isUseFavorites())
+		if (isUseFavorites())
 			return _channels;
 		return _featureEPG.getEpgData().getChannels();
 	}
@@ -201,7 +192,7 @@ public class FeatureChannels extends FeatureComponent
 	 */
 	public void swapChannelPositions(int position1, int position2)
 	{
-		if (position1 != position2)
+		if (position1 != position2 && position1 < _channels.size() && position2 < _channels.size())
 		{
 			Collections.swap(_channels, position1, position2);
 			_isModified = true;
@@ -227,7 +218,7 @@ public class FeatureChannels extends FeatureComponent
 	 */
 	public void save()
 	{
-		saveFavoriteChannels(_featureEPG.getEpgData(), _channels);
+		saveFavoriteChannels(_channels);
 		_isModified = false;
 	}
 
@@ -240,21 +231,13 @@ public class FeatureChannels extends FeatureComponent
 	}
 
 	/**
-	 * Returns true if the favorite channel list has been ever changed
-	 */
-	public boolean isEverChanged()
-	{
-		return _channels.size() > 0;
-	}
-
-	/**
 	 * Start playing channel at specified index in the channels favorite list
 	 *
 	 * @param index
 	 */
 	public void play(int index)
 	{
-		List<Channel> channels = getFavoriteChannels();
+		List<Channel> channels = getActiveChannels();
 		if (channels.size() == 0)
 			return;
 		if (index < 0 || index >= channels.size())
@@ -379,8 +362,8 @@ public class FeatureChannels extends FeatureComponent
 	 */
 	public void resetFavorites()
 	{
-		_userPrefs.put(UserParam.CHANNELS, "");
-		_channels = loadFavoriteChannels(_featureEPG.getEpgData());
+		_userPrefs.remove(UserParam.CHANNELS);
+		_channels = loadFavoriteChannels();
 	}
 
 	/**
@@ -404,11 +387,17 @@ public class FeatureChannels extends FeatureComponent
 		Log.i(TAG, "Updated synched channels list: " + buffer);
 	}
 
-	private List<Channel> loadFavoriteChannels(EpgData epgData)
+	private List<Channel> loadFavoriteChannels()
 	{
+		EpgData epgData = _featureEPG.getEpgData();
 		List<Channel> channels = new ArrayList<Channel>();
 		boolean isEmpty = !_userPrefs.has(UserParam.CHANNELS) || _userPrefs.getString(UserParam.CHANNELS).length() == 0;
-		if (!isEmpty)
+		if (isEmpty)
+		{
+			channels.addAll(epgData.getChannels());
+			return channels;
+		}
+		else
 		{
 			String buffer = _userPrefs.getString(UserParam.CHANNELS);
 			String[] channelIds = buffer.split(",");
@@ -424,7 +413,7 @@ public class FeatureChannels extends FeatureComponent
 		return channels;
 	}
 
-	private void saveFavoriteChannels(EpgData epgData, List<Channel> channels)
+	private void saveFavoriteChannels(List<Channel> channels)
 	{
 		StringBuffer buffer = new StringBuffer();
 		for (Channel channel : channels)
@@ -441,7 +430,7 @@ public class FeatureChannels extends FeatureComponent
 	{
 		if (channelId != null)
 		{
-			List<Channel> favoriteChannels = getFavoriteChannels();
+			List<Channel> favoriteChannels = getActiveChannels();
 			for (int i = 0; i < favoriteChannels.size(); i++)
 			{
 				Channel channel = favoriteChannels.get(i);
