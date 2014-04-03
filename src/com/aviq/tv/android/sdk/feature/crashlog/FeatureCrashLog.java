@@ -17,9 +17,11 @@ import org.acra.ErrorReporter;
 import org.acra.ReportingInteractionMode;
 
 import android.app.Application;
+import android.os.Bundle;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
@@ -30,7 +32,7 @@ import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 /**
  * Handle unhandled exceptions.
  */
-public class FeatureCrashLog extends FeatureComponent
+public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureCrashLog.class.getSimpleName();
 
@@ -48,8 +50,9 @@ public class FeatureCrashLog extends FeatureComponent
 		/** Socket timeout in milliseconds */
 		SOCKET_TIMEOUT_MILLIS(20000);
 
-		/* TODO
-		config.setLogcatArguments(new String[] {"-t", "1000", "-v", "time"});
+		/*
+		 * TODO
+		 * config.setLogcatArguments(new String[] {"-t", "1000", "-v", "time"});
 		 */
 
 		Param(int value)
@@ -63,10 +66,30 @@ public class FeatureCrashLog extends FeatureComponent
 		}
 	}
 
+	private FeatureInternet _featureInternet;
+	private FeatureRegister _featureRegister;
+
+	public FeatureCrashLog()
+	{
+		_dependencies.Schedulers.add(FeatureName.Scheduler.INTERNET);
+		_dependencies.Components.add(FeatureName.Component.REGISTER);
+	}
+
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
+
+		Environment env = Environment.getInstance();
+		try
+		{
+			_featureInternet = (FeatureInternet) env.getFeatureScheduler(FeatureName.Scheduler.INTERNET);
+			_featureRegister = (FeatureRegister) env.getFeatureComponent(FeatureName.Component.REGISTER);
+		}
+		catch (FeatureNotFoundException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
 
 		initAcra();
 
@@ -79,11 +102,27 @@ public class FeatureCrashLog extends FeatureComponent
 		return FeatureName.Component.CRASHLOG;
 	}
 
+	@Override
+	public void onEvent(int msgId, Bundle bundle)
+	{
+		if (msgId == FeatureInternet.ON_CONNECTED)
+		{
+			String publicIP = _featureInternet.getPublicIP();
+			if (publicIP != null)
+			{
+				// Got the public IP, no need to check for it anymore
+				getEventMessenger().unregister(this, FeatureInternet.ON_CONNECTED);
+				ACRA.getErrorReporter().putCustomData("PUBLIC IP", publicIP);
+			}
+		}
+	}
+
 	private void initAcra()
 	{
 		Log.i(TAG, ".initAcra");
 
-		Application app = Environment.getInstance().getActivity().getApplication();
+		Environment env = Environment.getInstance();
+		Application app = env.getActivity().getApplication();
 
 		String serverUri = getPrefs().getString(Param.REMOTE_SERVER);
 		String username = getPrefs().getString(Param.REMOTE_SERVER_USERNAME);
@@ -95,53 +134,49 @@ public class FeatureCrashLog extends FeatureComponent
 		config.setFormUriBasicAuthPassword(password);
 		config.setDisableSSLCertValidation(true);
 		config.setHttpMethod(org.acra.sender.HttpSender.Method.PUT);
-		config.setReportType(org.acra.sender.HttpSender.Type.FORM);
+		config.setReportType(org.acra.sender.HttpSender.Type.JSON);
 		config.setSocketTimeout(20000);
-		config.setLogcatArguments(new String[] {"-t", "1000", "-v", "time"});
+		config.setLogcatArguments(new String[]
+		{ "-t", "1000", "-v", "time" });
 		config.setApplicationLogFile(null);
 		config.setApplicationLogFileLines(0);
 		config.setAdditionalSharedPreferences(null);
 
 		try
-        {
-	        config.setMode(ReportingInteractionMode.SILENT);
-        }
-        catch (ACRAConfigurationException e)
-        {
-        	Log.e(TAG, e.getMessage(), e);
-        }
+		{
+			config.setMode(ReportingInteractionMode.SILENT);
+		}
+		catch (ACRAConfigurationException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
 		ACRA.setConfig(config);
 
 		ACRA.init(app);
 
 		// Set a custom sender; always right after ACRA.init().
-		CrashLogReportSender crashLogSender = new CrashLogReportSender(app);
-        ACRA.getErrorReporter().setReportSender(crashLogSender);
+		CrashLogJsonReportSender crashLogSender = new CrashLogJsonReportSender(app);
+		ACRA.getErrorReporter().setReportSender(crashLogSender);
 
 		// Add a new sender; keep the previous senders
-		//ACRA.getErrorReporter().addReportSender(yourSender);
+		// ACRA.getErrorReporter().addReportSender(yourSender);
 
-        try
-        {
-        	ErrorReporter errorReporter = ACRA.getErrorReporter();
+		ErrorReporter errorReporter = ACRA.getErrorReporter();
 
-        	// Add custom report data from FeatureRegister
-        	Environment env = Environment.getInstance();
-	        env.use(FeatureName.Component.REGISTER);
-	        FeatureRegister featureRegister = (FeatureRegister) env.getFeatureComponent(FeatureName.Component.REGISTER);
+		// Add custom report data
 
-	        env.use(FeatureName.Scheduler.INTERNET);
-	        FeatureInternet featureInternet = (FeatureInternet) env.getFeatureScheduler(FeatureName.Scheduler.INTERNET);
+		errorReporter.putCustomData("BOX_ID", _featureRegister.getBoxId());
+		errorReporter.putCustomData("BRAND", _featureRegister.getBrand());
 
-	        errorReporter.putCustomData("BOX_ID", featureRegister.getBoxId());
-	        errorReporter.putCustomData("BRAND", featureRegister.getBrand());
+		// If the public IP is null, wait for Internet to show up, then check
+		// again
+		String publicIP = _featureInternet.getPublicIP();
+		errorReporter.putCustomData("PUBLIC IP", publicIP);
 
-	        errorReporter.putCustomData("PUBLIC IP", featureInternet.getPublicIP());
-	        //errorReporter.putCustomData("CUSTOMER", Globals.CUSTOMER);
-        }
-        catch (FeatureNotFoundException e)
-        {
-	        Log.e(TAG, "Cannot add custom data for crashlogs from FeatureRegister.", e);
-        }
+		if (publicIP == null)
+			getEventMessenger().register(this, FeatureInternet.ON_CONNECTED);
+
+		// errorReporter.putCustomData("CUSTOMER", Globals.CUSTOMER);
 	}
+
 }

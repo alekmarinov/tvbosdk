@@ -17,6 +17,7 @@ import org.acra.ReportField;
 import org.acra.collector.CrashReportData;
 import org.acra.sender.ReportSender;
 import org.acra.sender.ReportSenderException;
+import org.acra.util.JSONReportBuilder.JSONReportException;
 
 import android.content.Context;
 
@@ -24,9 +25,9 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Environment.Param;
 import com.aviq.tv.android.sdk.core.Log;
 
-public class CrashLogReportSender implements ReportSender
+public class CrashLogJsonReportSender implements ReportSender
 {
-	private static final String TAG = CrashLogReportSender.class.getSimpleName();
+	private static final String TAG = CrashLogJsonReportSender.class.getSimpleName();
 
 	public static final String REPORT_NAME_PREFIX = "aviq";
 	public static final String REPORT_NAME_TEMPLATE = "%s-%s-%s-%s-%s-%s-%d.crashlog";
@@ -35,7 +36,7 @@ public class CrashLogReportSender implements ReportSender
 	private final String mPackageName;
 	private final Context mContext;
 
-	public CrashLogReportSender(Context context)
+	public CrashLogJsonReportSender(Context context)
 	{
 		mContext = context;
 		mReportNameTemplate = REPORT_NAME_TEMPLATE;
@@ -48,9 +49,6 @@ public class CrashLogReportSender implements ReportSender
 	@Override
 	public void send(CrashReportData report) throws ReportSenderException
 	{
-		// Build the report string
-		StringBuilder reportBuilder = new StringBuilder();
-
 		String boxId = "";
 		String appVersionCode = "";
 		String userCrashDate = "";
@@ -64,20 +62,14 @@ public class CrashLogReportSender implements ReportSender
 			ReportField reportField = entry.getKey();
 			String value = entry.getValue();
 
-			// Add the field to the report
-
-			reportBuilder.append(reportField.toString()).append("\n");
-			reportBuilder.append("------------------------------\n");
-			reportBuilder.append(value);
-
 			// Appends some extra stuff to the "CUSTOM_DATA" field
-			if (ReportField.CUSTOM_DATA.equals(reportField))
-			{
-				reportBuilder.append("TOTAL_MEMORY = " + Runtime.getRuntime().maxMemory()).append("\n");
-				reportBuilder.append("AVAILABLE_MEMORY = " + Runtime.getRuntime().freeMemory()).append("\n");
-			}
 
-			reportBuilder.append("\n\n");
+//			Does not work when using ACRA json generation later
+//			if (ReportField.CUSTOM_DATA.equals(reportField))
+//			{
+//				ACRA.getErrorReporter().putCustomData("TOTAL_MEMORY", "" + Runtime.getRuntime().maxMemory());
+//				ACRA.getErrorReporter().putCustomData("AVAILABLE_MEMORY", "" + Runtime.getRuntime().freeMemory());
+//			}
 
 			// Get some values needed for the file name of the log
 
@@ -102,6 +94,7 @@ public class CrashLogReportSender implements ReportSender
 			}
 			else if (ReportField.CUSTOM_DATA.equals(reportField))
 			{
+Log.e(TAG, "----- cd: " + value);
 				// Find (w/o the quotes): "BOX_ID = 902B34F69D99\n"
 				Pattern patternBoxId = Pattern.compile("BOX_ID\\s.*?=\\s.*?(\\w+)\\s.*?");
 				Matcher matcherBoxId = patternBoxId.matcher(value);
@@ -129,8 +122,16 @@ public class CrashLogReportSender implements ReportSender
 		String reportFileName = String.format(mReportNameTemplate, mPackageName, buildType, brandName, appVersionCode,
 		        boxId, userCrashDate, randomNum);
 
-		// Send the report to the server
-		sendData(reportFileName, reportBuilder.toString());
+		try
+		{
+			// Send the report to the server
+			sendData(reportFileName, report.toJSON().toString());
+		}
+		catch (JSONReportException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+
 		System.gc();
 	}
 
