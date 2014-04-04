@@ -90,17 +90,17 @@ public class Environment
 	private ServiceController _serviceController;
 	private Prefs _prefs;
 	private Prefs _userPrefs;
-	private List<Properties> _brandPropertyLists = new ArrayList<Properties>();
+	private final List<Properties> _brandPropertyLists = new ArrayList<Properties>();
 	private RequestQueue _requestQueue;
 	private ImageLoader _imageLoader;
 	private List<IFeature> _features = new ArrayList<IFeature>();
-	private EventMessenger _eventMessenger = new EventMessenger();
-	private Map<FeatureName.Component, Prefs> _componentPrefs = new HashMap<FeatureName.Component, Prefs>();
-	private Map<FeatureName.Scheduler, Prefs> _schedulerPrefs = new HashMap<FeatureName.Scheduler, Prefs>();
-	private Map<FeatureName.State, Prefs> _statePrefs = new HashMap<FeatureName.State, Prefs>();
+	private final EventMessenger _eventMessenger = new EventMessenger();
+	private final Map<FeatureName.Component, Prefs> _componentPrefs = new HashMap<FeatureName.Component, Prefs>();
+	private final Map<FeatureName.Scheduler, Prefs> _schedulerPrefs = new HashMap<FeatureName.Scheduler, Prefs>();
+	private final Map<FeatureName.State, Prefs> _statePrefs = new HashMap<FeatureName.State, Prefs>();
 	private IFeatureFactory _featureFactory;
 	// Chain based features initializer
-	private FeatureInitializeCallBack _onFeatureInitialized = new FeatureInitializeCallBack();
+	private final FeatureInitializeCallBack _onFeatureInitialized = new FeatureInitializeCallBack();
 	private boolean _isInitialized = false;
 
 	/**
@@ -492,6 +492,9 @@ public class Environment
 	 */
 	public IFeature use(Class<?> featureClass) throws FeatureNotFoundException
 	{
+		if (_featureFactory == null)
+			throw new RuntimeException("Set IFeatureFactory with setFeatureFactory before using features");
+
 		try
 		{
 			// Check if feature is already used
@@ -499,6 +502,7 @@ public class Environment
 		}
 		catch (FeatureNotFoundException fe)
 		{
+			Log.i(TAG, ".use: " + featureClass.getName());
 			IFeature feature = null;
 			if (featureClass.isAssignableFrom(IFeature.class))
 			{
@@ -532,7 +536,9 @@ public class Environment
 	 */
 	public FeatureComponent use(FeatureName.Component featureName) throws FeatureNotFoundException
 	{
-		Log.i(TAG, ".use: Component " + featureName);
+		if (_featureFactory == null)
+			throw new RuntimeException("Set IFeatureFactory with setFeatureFactory before using features");
+
 		try
 		{
 			// Check if feature is already used
@@ -540,6 +546,7 @@ public class Environment
 		}
 		catch (FeatureNotFoundException e)
 		{
+			Log.i(TAG, ".use: Component " + featureName);
 			FeatureComponent feature = _featureFactory.createComponent(featureName);
 			useDependencies(feature);
 			_features.add(feature);
@@ -556,7 +563,8 @@ public class Environment
 	 */
 	public FeatureScheduler use(FeatureName.Scheduler featureName) throws FeatureNotFoundException
 	{
-		Log.i(TAG, ".use: Scheduler " + featureName);
+		if (_featureFactory == null)
+			throw new RuntimeException("Set IFeatureFactory with setFeatureFactory before using features");
 
 		try
 		{
@@ -565,6 +573,7 @@ public class Environment
 		}
 		catch (FeatureNotFoundException e)
 		{
+			Log.i(TAG, ".use: Scheduler " + featureName);
 			FeatureScheduler feature = _featureFactory.createScheduler(featureName);
 			useDependencies(feature);
 			_features.add(feature);
@@ -582,9 +591,8 @@ public class Environment
 	 */
 	public FeatureState use(FeatureName.State featureName) throws FeatureNotFoundException
 	{
-		Log.i(TAG, ".use: State " + featureName);
 		if (_featureFactory == null)
-			throw new RuntimeException("Set IFeatureFactory with setFeatureFactory before declaring feature usages");
+			throw new RuntimeException("Set IFeatureFactory with setFeatureFactory before using features");
 
 		try
 		{
@@ -593,6 +601,8 @@ public class Environment
 		}
 		catch (FeatureNotFoundException e)
 		{
+			Log.i(TAG, ".use: State " + featureName);
+
 			// Use feature
 			FeatureState feature = _featureFactory.createState(featureName);
 			useDependencies(feature);
