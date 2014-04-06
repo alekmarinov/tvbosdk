@@ -88,79 +88,119 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	}
 
 	/**
-	 * Subscribes this feature to event triggered from another feature
+	 * Subscribes this feature to event triggered by a given EventMessenger
 	 *
-	 * @param Receiver
-	 *            the feature to subscribe to
+	 * @param eventMessenger
+	 *            the EventMessenger to subscribe to
 	 * @param msgId
 	 *            the id of the message to subscribe
 	 */
-	protected void subscribe(IFeature featureTo, int msgId)
+	protected void subscribe(EventMessenger eventMessenger, int msgId)
 	{
-		Log.i(TAG, getName() + ".subscribe: for " + featureTo.getName() + " on " + msgId);
-		if (isSubscribed(featureTo, msgId))
+		Log.i(TAG, getName() + ".subscribe: on " + EventMessenger.idName(msgId) + "(" + msgId + ")");
+		if (isSubscribed(eventMessenger, msgId))
 		{
-			throw new RuntimeException(getName() + " attempts to subscribe to " + featureTo.getName() + " "
-			        + featureTo.getType() + " on event " + EventMessenger.idName(msgId) + "(" + msgId + ") more than once");
+			throw new RuntimeException(getName() + " attempts to subscribe on event " + EventMessenger.idName(msgId)
+			        + "(" + msgId + ") more than once");
 		}
 
 		// add subscription for registration when this state is shown
-		_subscriptions.add(new Subscription(featureTo, msgId));
+		_subscriptions.add(new Subscription(eventMessenger, msgId));
 		if (isCreated())
 		{
 			// register immediately if the state is already shown
-			featureTo.getEventMessenger().register(this, msgId);
+			eventMessenger.register(this, msgId);
 		}
 	}
 
 	/**
-	 * Unsubscribes this feature from event triggered from another feature
+	 * Subscribes this feature to event triggered by a given feature
 	 *
-	 * @param Receiver
-	 *            the feature to unsubscribe from
+	 * @param feature
+	 *            the IFeature to subscribe to
+	 * @param msgId
+	 *            the id of the message to subscribe
+	 */
+	protected void subscribe(IFeature feature, int msgId)
+	{
+		subscribe(feature.getEventMessenger(), msgId);
+	}
+
+	/**
+	 * Unsubscribes this feature from event triggered from EventMessenger
+	 *
+	 * @param eventMessenger
+	 *            the EventMessenger to unsubscribe from
 	 * @param msgId
 	 *            the id of the message to unsubscribe
 	 */
-	protected void unsubscribe(IFeature featureFrom, int msgId)
+	protected void unsubscribe(EventMessenger eventMessenger, int msgId)
 	{
-		Log.i(TAG, getName() + ".unsubscribe: from " + featureFrom.getName() + " on " + EventMessenger.idName(msgId) + "(" + msgId + ")");
+		Log.i(TAG, getName() + ".unsubscribe: from " + EventMessenger.idName(msgId) + "(" + msgId + ")");
 		for (int i = 0; i < _subscriptions.size(); i++)
 		{
 			Subscription subscription = _subscriptions.get(i);
-			if (subscription.Feature == featureFrom && subscription.MsgId == msgId)
+			if (subscription.EventMessenger == eventMessenger && subscription.MsgId == msgId)
 			{
 				_subscriptions.remove(i);
 				if (isCreated())
 				{
 					// if already shown unregister immediately
-					featureFrom.getEventMessenger().unregister(this, msgId);
+					eventMessenger.unregister(this, msgId);
 				}
 				return;
 			}
 		}
-		throw new RuntimeException(getName() + " attempts to unsubscribe from " + featureFrom.getName() + " "
-		        + featureFrom.getType() + " on event " + EventMessenger.idName(msgId) + "(" + msgId + ")"
+		throw new RuntimeException(getName() + " attempts to unsubscribe from event " + EventMessenger.idName(msgId)
+		        + "(" + msgId + ")"
 		        + " without being subscribed. Verify if you are not unsubscribing it more than once");
 	}
 
 	/**
-	 * @param featureTo
-	 *            the feature to verify if subscribed to
+	 * Unsubscribes this feature from event triggered from a given feature
+	 *
+	 * @param feature
+	 *            the IFeature to unsubscribe from
+	 * @param msgId
+	 *            the id of the message to unsubscribe
+	 */
+	protected void unsubscribe(IFeature feature, int msgId)
+	{
+		unsubscribe(feature.getEventMessenger(), msgId);
+	}
+
+	/**
+	 * @param eventMessenger
+	 *            the EventMessenger to verify if subscribed to
 	 * @param msgId
 	 *            the id of the message to verify if subscribed to
-	 * @return true if this feature is subscribed to featureTo with event msgId
+	 * @return true if this feature is subscribed to EventMessenger with event
+	 *         msgId
 	 */
-	protected boolean isSubscribed(IFeature featureTo, int msgId)
+	protected boolean isSubscribed(EventMessenger eventMessenger, int msgId)
 	{
 		for (int i = 0; i < _subscriptions.size(); i++)
 		{
 			Subscription subscription = _subscriptions.get(i);
-			if (subscription.Feature == featureTo && subscription.MsgId == msgId)
+			if (subscription.EventMessenger == eventMessenger && subscription.MsgId == msgId)
 			{
 				return true;
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * @param feature
+	 *            the IFeature to verify if subscribed to
+	 * @param msgId
+	 *            the id of the message to verify if subscribed to
+	 * @return true if this feature is subscribed to IFeature with event
+	 *         msgId
+	 */
+	protected boolean isSubscribed(IFeature feature, int msgId)
+	{
+		return isSubscribed(feature.getEventMessenger(), msgId);
 	}
 
 	/**
@@ -180,10 +220,9 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 		{
 			for (Subscription subscription : _subscriptions)
 			{
-				Log.i(TAG,
-				        getName() + " registers to " + subscription.Feature.getName() + " "
-				                + subscription.Feature.getType() + " on event " + EventMessenger.idName(subscription.MsgId) + "(" + subscription.MsgId + ")");
-				subscription.Feature.getEventMessenger().register(this, subscription.MsgId);
+				Log.i(TAG, getName() + " registers on event " + EventMessenger.idName(subscription.MsgId) + "("
+				        + subscription.MsgId + ")");
+				subscription.EventMessenger.register(this, subscription.MsgId);
 			}
 		}
 		getEventMessenger().trigger(ON_SHOW);
@@ -201,9 +240,10 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 		{
 			for (Subscription subscription : _subscriptions)
 			{
-				Log.i(TAG, "Unregister " + getName() + " " + getType() + " from " + subscription.Feature.getName()
-				        + " " + subscription.Feature.getType() + " on event id = " + EventMessenger.idName(subscription.MsgId) + "(" + subscription.MsgId + ")");
-				subscription.Feature.getEventMessenger().unregister(this, subscription.MsgId);
+				Log.i(TAG,
+				        "Unregister " + getName() + " " + getType() + " from event "
+				                + EventMessenger.idName(subscription.MsgId) + "(" + subscription.MsgId + ")");
+				subscription.EventMessenger.unregister(this, subscription.MsgId);
 			}
 		}
 		getEventMessenger().trigger(ON_HIDE);
@@ -213,12 +253,12 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 
 	private class Subscription
 	{
-		IFeature Feature;
+		EventMessenger EventMessenger;
 		int MsgId;
 
-		Subscription(IFeature feature, int msgId)
+		Subscription(EventMessenger eventMessenger, int msgId)
 		{
-			Feature = feature;
+			EventMessenger = eventMessenger;
 			MsgId = msgId;
 		}
 	}
@@ -226,6 +266,8 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	@Override
 	public void onEvent(int msgId, Bundle bundle)
 	{
-		Log.i(TAG, this + ".onEvent: " + EventMessenger.idName(msgId) + "(" + msgId + ")" + " (" + TextUtils.implodeBundle(bundle) + ")");
+		Log.i(TAG,
+		        this + ".onEvent: " + EventMessenger.idName(msgId) + "(" + msgId + ")" + " ("
+		                + TextUtils.implodeBundle(bundle) + ")");
 	}
 }

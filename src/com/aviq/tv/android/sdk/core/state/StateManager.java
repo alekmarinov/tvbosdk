@@ -15,10 +15,14 @@ import java.util.Stack;
 
 import android.app.Activity;
 import android.app.FragmentTransaction;
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 
 import com.aviq.tv.android.sdk.core.AVKeyEvent;
 import com.aviq.tv.android.sdk.core.Environment;
@@ -41,6 +45,8 @@ public class StateManager
 	private int _overlayFragmentId;
 	private int _messageFragmentId;
 	private BaseState _messageState;
+	private ViewGroup _contentView;
+	private int _viewLayerId = 0x00af0001;
 
 	public enum StateLayer
 	{
@@ -179,7 +185,53 @@ public class StateManager
 	public StateManager(Activity activity)
 	{
 		_activity = activity;
-		Log.i(TAG, "StateManager created");
+		_contentView = createContentView(_activity);
+		_activity.setContentView(_contentView);
+
+		View mainFragment = createFrameLayout();
+		View overlayFragment = createFrameLayout();
+		View messageFragment = createFrameLayout();
+
+		addViewLayer(mainFragment, false);
+		addViewLayer(overlayFragment, false);
+		addViewLayer(messageFragment, false);
+
+		_mainFragmentId = mainFragment.getId();
+		_overlayFragmentId = overlayFragment.getId();
+		_messageFragmentId = messageFragment.getId();
+
+		Log.i(TAG, "StateManager created: " + _mainFragmentId + ", " + _overlayFragmentId + ", " + _messageFragmentId);
+	}
+
+	private ViewGroup createContentView(Context context)
+	{
+		return new RelativeLayout(context);
+	}
+
+	/**
+	 * Add custom view to the main activity
+	 *
+	 * @param viewLayer
+	 * @param isBottom
+	 *            true if the view must be added at the bottom of the other
+	 *            views
+	 */
+	public void addViewLayer(View viewLayer, boolean isBottom)
+	{
+		RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
+		        RelativeLayout.LayoutParams.MATCH_PARENT);
+
+		viewLayer.setId(_viewLayerId);
+		if (isBottom)
+			_contentView.addView(viewLayer, 0, lp);
+		else
+			_contentView.addView(viewLayer, lp);
+		_viewLayerId++;
+	}
+
+	private View createFrameLayout()
+	{
+		return new FrameLayout(_activity);
 	}
 
 	/**
@@ -212,7 +264,7 @@ public class StateManager
 				if (isOverlay)
 				{
 					throw new StateException(null, "Can't set overlay state `" + stateName
-					        + "' without background State");
+					        + "' without main State");
 				}
 				else
 				{

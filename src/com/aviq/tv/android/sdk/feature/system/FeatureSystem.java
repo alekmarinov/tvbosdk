@@ -169,7 +169,7 @@ public class FeatureSystem extends FeatureComponent
 				}
 				finally
 				{
-					Environment.getInstance().getActivity().runOnUiThread(callback);
+					Environment.getInstance().runOnUiThread(callback);
 				}
 			}
 		}).start();

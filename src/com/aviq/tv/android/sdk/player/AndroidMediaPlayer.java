@@ -200,7 +200,7 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 	@Override
 	public MediaController createMediaController(boolean useFastForward)
 	{
-		Context context = Environment.getInstance().getActivity();
+		Context context = _surfaceView.getContext();
 		_mediaController = new AviqMediaController(context, useFastForward);
 		_mediaController.setVisibility(View.VISIBLE);
 		_mediaController.setAnchorView(_surfaceView);
@@ -219,7 +219,8 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 	@Override
     public void onSeekComplete(MediaPlayer mp)
     {
-		Environment.getInstance().getEventMessenger().trigger(ON_SEEK_COMPLETED);
+		Environment env = (Environment)_surfaceView.getContext();
+		env.getEventMessenger().trigger(ON_SEEK_COMPLETED);
     }
 
 	@Override
@@ -228,7 +229,8 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		Bundle bundle = new Bundle();
 		bundle.putInt(PARAM_WHAT, what);
 		bundle.putInt(PARAM_EXTRA, extra);
-		Environment.getInstance().getEventMessenger().trigger(ON_INFO, bundle);
+		Environment env = (Environment)_surfaceView.getContext();
+		env.getEventMessenger().trigger(ON_INFO, bundle);
 	    return false;
     }
 
@@ -255,7 +257,8 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		bundle.putInt(PARAM_WHAT, what);
 		bundle.putInt(PARAM_EXTRA, extra);
 		bundle.putString(PARAM_ERROR, error);
-		Environment.getInstance().getEventMessenger().trigger(ON_ERROR, bundle);
+		Environment env = (Environment)_surfaceView.getContext();
+		env.getEventMessenger().trigger(ON_ERROR, bundle);
 	    return true;
     }
 
@@ -306,7 +309,8 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 			});
 		}
 
-		Environment.getInstance().getEventMessenger().trigger(ON_PREPARED);
+		Environment env = (Environment)_surfaceView.getContext();
+		env.getEventMessenger().trigger(ON_PREPARED);
     }
 
 	@Override
@@ -319,7 +323,8 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 
 		_mediaPlayer.stop();
 
-		Environment.getInstance().getEventMessenger().trigger(ON_COMPLETION);
+		Environment env = (Environment)_surfaceView.getContext();
+		env.getEventMessenger().trigger(ON_COMPLETION);
     }
 
 	@Override

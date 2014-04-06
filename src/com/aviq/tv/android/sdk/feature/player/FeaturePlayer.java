@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.widget.MediaController;
+import android.widget.VideoView;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
@@ -23,6 +24,7 @@ import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.player.AndroidPlayer;
 import com.aviq.tv.android.sdk.player.BasePlayer;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -60,7 +62,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 		/**
 		 * Pause timeout in seconds
 		 */
-		PLAY_PAUSE_TIMEOUT(2);
+		PLAY_PAUSE_TIMEOUT(2000);
 
 		Param(int value)
 		{
@@ -82,11 +84,25 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		if (_player == null)
-			throw new RuntimeException("Set AndroidPlayer first via method setPlayer");
 		_userPrefs = Environment.getInstance().getUserPrefs();
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
+
+		_player = createPlayer();
+
 		super.initialize(onFeatureInitialized);
+	}
+
+	/**
+	 * Creates backend player instance. Override this method to create custom
+	 * player implementation.
+	 *
+	 * @return BasePlayer
+	 */
+	protected BasePlayer createPlayer()
+	{
+		VideoView videoView = new VideoView(Environment.getInstance());
+		Environment.getInstance().getStateManager().addViewLayer(videoView, true);
+		return new AndroidPlayer(videoView);
 	}
 
 	@Override
@@ -256,32 +272,32 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	private class PlayerStartVerifier implements PlayerStatusVerifier
 	{
 		@Override
-        public boolean isStatus()
-        {
-	        if (_player.getPosition() > 0)
-	        {
+		public boolean isStatus()
+		{
+			if (_player.getPosition() > 0)
+			{
 				// trigger player started
 				getEventMessenger().trigger(ON_PLAY_STARTED);
 				return true;
-	        }
-	        return false;
-        }
+			}
+			return false;
+		}
 
 		@Override
-        public int getTimeout()
-        {
+		public int getTimeout()
+		{
 			return 1000 * getPrefs().getInt(Param.PLAY_TIMEOUT);
-        }
+		}
 
 		@Override
-        public void onTimeout()
-        {
+		public void onTimeout()
+		{
 			// trigger timeout
 			getEventMessenger().trigger(ON_PLAY_TIMEOUT);
-        }
+		}
 
 		@Override
-        public String toString()
+		public String toString()
 		{
 			return "playing";
 		}
@@ -290,31 +306,31 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	private class PlayerStopVerifier implements PlayerStatusVerifier
 	{
 		@Override
-        public boolean isStatus()
-        {
-	        if (!_player.isPlaying())
-	        {
+		public boolean isStatus()
+		{
+			if (!_player.isPlaying())
+			{
 				// trigger player stopped
 				getEventMessenger().trigger(ON_PLAY_STOP);
 				return true;
-	        }
-	        return false;
-        }
+			}
+			return false;
+		}
 
 		@Override
-        public int getTimeout()
-        {
-			return 1000 * getPrefs().getInt(Param.PLAY_PAUSE_TIMEOUT);
-        }
+		public int getTimeout()
+		{
+			return getPrefs().getInt(Param.PLAY_PAUSE_TIMEOUT);
+		}
 
 		@Override
-        public void onTimeout()
-        {
+		public void onTimeout()
+		{
 			Log.w(TAG, "PlayerStopVerifier.onTimeout");
-        }
+		}
 
 		@Override
-        public String toString()
+		public String toString()
 		{
 			return "stopped";
 		}
@@ -323,31 +339,31 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	private class PlayerPauseVerifier implements PlayerStatusVerifier
 	{
 		@Override
-        public boolean isStatus()
-        {
-	        if (_player.isPaused())
-	        {
+		public boolean isStatus()
+		{
+			if (_player.isPaused())
+			{
 				// trigger player paused
 				getEventMessenger().trigger(ON_PLAY_PAUSE);
 				return true;
-	        }
-	        return false;
-        }
+			}
+			return false;
+		}
 
 		@Override
-        public int getTimeout()
-        {
+		public int getTimeout()
+		{
 			return 1000 * getPrefs().getInt(Param.PLAY_TIMEOUT);
-        }
+		}
 
 		@Override
-        public void onTimeout()
-        {
+		public void onTimeout()
+		{
 			Log.w(TAG, "PlayerPauseVerifier.onTimeout");
-        }
+		}
 
 		@Override
-        public String toString()
+		public String toString()
 		{
 			return "paused";
 		}
@@ -356,39 +372,39 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	private class PlayerResumeVerifier implements PlayerStatusVerifier
 	{
 		@Override
-        public boolean isStatus()
-        {
-	        if (!_player.isPaused())
-	        {
+		public boolean isStatus()
+		{
+			if (!_player.isPaused())
+			{
 				// trigger player resume
 				getEventMessenger().trigger(ON_PLAY_PAUSE);
 				return true;
-	        }
-	        return false;
-        }
+			}
+			return false;
+		}
 
 		@Override
-        public int getTimeout()
-        {
-			return 1000 * getPrefs().getInt(Param.PLAY_PAUSE_TIMEOUT);
-        }
+		public int getTimeout()
+		{
+			return getPrefs().getInt(Param.PLAY_PAUSE_TIMEOUT);
+		}
 
 		@Override
-        public void onTimeout()
-        {
+		public void onTimeout()
+		{
 			Log.w(TAG, "PlayerResumeVerifier.onTimeout");
-        }
+		}
 
 		@Override
-        public String toString()
+		public String toString()
 		{
 			return "resumed";
 		}
 	}
 
 	@Override
-    public void onEvent(int msgId, Bundle bundle)
-    {
+	public void onEvent(int msgId, Bundle bundle)
+	{
 		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
 		if (Environment.ON_KEY_PRESSED == msgId)
 		{
@@ -401,5 +417,5 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 					pause();
 			}
 		}
-    };
+	};
 }

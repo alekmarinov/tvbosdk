@@ -171,7 +171,7 @@ public class FeatureRegister extends FeatureComponent
 
 	private String getActiveNetworkType()
 	{
-		final ConnectivityManager connectivityManager = (ConnectivityManager) Environment.getInstance().getActivity()
+		final ConnectivityManager connectivityManager = (ConnectivityManager) Environment.getInstance()
 		        .getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo netInfo = connectivityManager.getActiveNetworkInfo();
 		return (netInfo != null) ? netInfo.getTypeName().toLowerCase() : "";

@@ -10,6 +10,8 @@
 
 package com.aviq.tv.android.sdk.core;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -17,41 +19,53 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import android.annotation.SuppressLint;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
+import org.acra.annotation.ReportsCrashes;
+import org.xml.sax.Attributes;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.DefaultHandler;
+
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v4.util.LruCache;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.KeyEvent;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.ImageLoader.ImageCache;
 import com.android.volley.toolbox.Volley;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
+import com.aviq.tv.android.sdk.core.feature.FeatureFactoryCustom;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureSet;
 import com.aviq.tv.android.sdk.core.feature.FeatureState;
 import com.aviq.tv.android.sdk.core.feature.IFeature;
-import com.aviq.tv.android.sdk.core.feature.IFeatureFactory;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
-import com.aviq.tv.android.sdk.core.state.StateException;
 import com.aviq.tv.android.sdk.core.state.StateManager;
+import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 
 /**
  * Defines application environment
  */
-public class Environment
+@ReportsCrashes(formKey = "")
+public class Environment extends Activity
 {
 	public static final String TAG = Environment.class.getSimpleName();
+	public static final int ON_INITIALIZE = EventMessenger.ID("ON_INITIALIZE");
 	public static final int ON_LOADING = EventMessenger.ID("ON_LOADING");
 	public static final int ON_LOADED = EventMessenger.ID("ON_LOADED");
 	public static final int ON_KEY_PRESSED = EventMessenger.ID("ON_KEY_PRESSED");
@@ -60,6 +74,7 @@ public class Environment
 	public static final String EXTRA_KEYCODE = "KEYCODE";
 	public static final String EXTRA_KEYCONSUMED = "KEYCONSUMED";
 	private static final String SYSTEM_PREFS = "system";
+	private static final String AVIQTV_XML_RESOURCE = "aviqtv";
 
 	public enum Param
 	{
@@ -85,7 +100,6 @@ public class Environment
 	}
 
 	private static Environment _instance;
-	private Activity _activity;
 	private StateManager _stateManager;
 	private ServiceController _serviceController;
 	private Prefs _prefs;
@@ -98,66 +112,164 @@ public class Environment
 	private final Map<FeatureName.Component, Prefs> _componentPrefs = new HashMap<FeatureName.Component, Prefs>();
 	private final Map<FeatureName.Scheduler, Prefs> _schedulerPrefs = new HashMap<FeatureName.Scheduler, Prefs>();
 	private final Map<FeatureName.State, Prefs> _statePrefs = new HashMap<FeatureName.State, Prefs>();
-	private IFeatureFactory _featureFactory;
+	private FeatureFactoryCustom _featureFactory = new FeatureFactoryCustom();
 	// Chain based features initializer
 	private final FeatureInitializeCallBack _onFeatureInitialized = new FeatureInitializeCallBack();
 	private boolean _isInitialized = false;
+	private FeatureRCU _featureRCU;
 
 	/**
 	 * Environment constructor method
 	 */
-	private Environment()
+	public Environment()
 	{
+		_instance = this;
 	}
 
 	public static synchronized Environment getInstance()
 	{
-		if (_instance == null)
-			_instance = new Environment();
 		return _instance;
 	}
 
-	public void setBrandProperties(Properties brandProperties)
+	@Override
+	public void onCreate(Bundle savedInstanceState)
 	{
-		_brandPropertyLists.add(brandProperties);
+		super.onCreate(savedInstanceState);
+
+		Log.i(TAG, ".onCreate");
+		try
+		{
+			// initialize environment by default app's raw/aviqtv.xml
+			int appXmlId = getResources().getIdentifier(AVIQTV_XML_RESOURCE, "raw", getPackageName());
+			InputStream inputStream = getResources().openRawResource(appXmlId);
+			addXmlDefinition(inputStream);
+
+			_stateManager = new StateManager(this);
+			_stateManager.setMessageState(use(FeatureName.State.MESSAGE_BOX));
+			_featureRCU = (FeatureRCU) use(FeatureName.Component.RCU);
+
+			// Log target device parameters
+			DisplayMetrics metrics = new DisplayMetrics();
+			getWindowManager().getDefaultDisplay().getMetrics(metrics);
+			Log.i(TAG, "Initializing environment: " + metrics.widthPixels + "x" + metrics.heightPixels + ", density = "
+			        + metrics.density + ", densityDpi = " + metrics.densityDpi + ", scaledDensity = "
+			        + metrics.scaledDensity + ", xdpi = " + metrics.xdpi + ", ydpi = " + metrics.ydpi);
+
+			// initializes environment context
+			_userPrefs = createUserPrefs();
+			_prefs = createPrefs(SYSTEM_PREFS);
+			_serviceController = new ServiceController(this);
+			_requestQueue = Volley.newRequestQueue(this);
+			_requestQueue.getCache().clear();
+
+			// Use 1/8th of the available memory for this memory cache.
+			int memClass = ((ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE))
+			        .getMemoryClass();
+			int cacheSize = 1024 * 1024 * memClass / 8;
+			_imageLoader = new ImageLoader(_requestQueue, new BitmapLruCache(cacheSize));
+
+			// initializes features
+			Log.i(TAG, "Sorting features topologically based on their declared dependencies");
+			_features = topologicalSort(_features);
+
+			Log.i(TAG, "Initializing features");
+			_onFeatureInitialized.setTimeout(getPrefs().getInt(Param.FEATURE_INITIALIZE_TIMEOUT));
+
+			getEventMessenger().trigger(ON_INITIALIZE);
+
+			_onFeatureInitialized.initializeNext();
+		}
+		catch (FeatureNotFoundException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		catch (IllegalArgumentException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		catch (SAXException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+	}
+
+	@Override
+	public void onResume()
+	{
+		super.onResume();
+		Log.i(TAG, ".onResume");
+	}
+
+	@Override
+	public void onPause()
+	{
+		super.onPause();
+		Log.i(TAG, ".onPause");
+	}
+
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event)
+	{
+		Key key = _featureRCU.getKey(keyCode);
+		return Environment.getInstance().onKeyDown(new AVKeyEvent(event, key));
+	}
+
+	@Override
+	public boolean onKeyUp(int keyCode, KeyEvent event)
+	{
+		Key key = _featureRCU.getKey(keyCode);
+		return Environment.getInstance().onKeyUp(new AVKeyEvent(event, key));
 	}
 
 	/**
-	 * Initialize environment
-	 *
-	 * @throws FeatureNotFoundException
-	 * @throws StateException
+	 * @throws IOException
+	 *             Initializes the environment by AVIQTV xml
+	 * @param inputSource
+	 * @throws SAXException
+	 * @throws IOException
 	 */
-	@SuppressLint("DefaultLocale")
-	public void initialize(Activity activity) throws FeatureNotFoundException, StateException
+	public void addXmlDefinition(InputStream inputStream) throws SAXException, IOException
 	{
-		DisplayMetrics metrics = new DisplayMetrics();
-		activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
+		try
+		{
+			InputSource inputSource = new InputSource();
+			SAXParserFactory parserFactory = SAXParserFactory.newInstance();
+			SAXParser parser = parserFactory.newSAXParser();
+			XMLReader reader = parser.getXMLReader();
+			AVIQTVXmlHandler aviqtvXMLHandler = new AVIQTVXmlHandler();
+			reader.setContentHandler(aviqtvXMLHandler);
+			inputSource.setByteStream(inputStream);
+			reader.parse(inputSource);
+		}
+		catch (ParserConfigurationException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+	}
 
-		Log.i(TAG, "Initializing environment: " + metrics.widthPixels + "x" + metrics.heightPixels + ", density = "
-		        + metrics.density + ", densityDpi = " + metrics.densityDpi + ", scaledDensity = "
-		        + metrics.scaledDensity + ", xdpi = " + metrics.xdpi + ", ydpi = " + metrics.ydpi);
+	/**
+	 * Stops the timeout during feature initializations.
+	 * This method must be called from IFeature.initialize before
+	 * the response of the onInitialized callback.
+	 *
+	 * @param isEnabled
+	 */
+	public void stopInitTimeout()
+	{
+		Log.i(TAG, ".stopInitTimeout");
+		_onFeatureInitialized.stopTimeout();
+	}
 
-		// initializes environment context
-		_activity = activity;
-		_userPrefs = createUserPrefs();
-		_prefs = createPrefs(SYSTEM_PREFS);
-		_serviceController = new ServiceController(_activity);
-		_requestQueue = Volley.newRequestQueue(_activity);
-		_requestQueue.getCache().clear();
-
-		// Use 1/8th of the available memory for this memory cache.
-		int memClass = ((ActivityManager) activity.getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE))
-		        .getMemoryClass();
-		int cacheSize = 1024 * 1024 * memClass / 8;
-		_imageLoader = new ImageLoader(_requestQueue, new BitmapLruCache(cacheSize));
-
-		// initializes features
-		Log.i(TAG, "Sorting features topologically based on their declared dependencies");
-		_features = topologicalSort(_features);
-
-		// Initialize brand properties
-		for (Properties brandProperties: _brandPropertyLists)
+	/**
+	 * Apply brand properties
+	 */
+	private void initBrandProperties()
+	{
+		for (Properties brandProperties : _brandPropertyLists)
 		{
 			Log.i(TAG, "Apply brand properties");
 			Enumeration<Object> keys = brandProperties.keys();
@@ -208,23 +320,6 @@ public class Environment
 				prefs.put(featureParam, value);
 			}
 		}
-
-		Log.i(TAG, "Initializing features");
-		_onFeatureInitialized.setTimeout(getPrefs().getInt(Param.FEATURE_INITIALIZE_TIMEOUT));
-		_onFeatureInitialized.initializeNext();
-	}
-
-	/**
-	 * Stops the timeout during feature initializations.
-	 * This method must be called from IFeature.initialize before
-	 * the response of the onInitialized callback.
-	 *
-	 * @param isEnabled
-	 */
-	public void stopInitTimeout()
-	{
-		Log.i(TAG, ".stopInitTimeout");
-		_onFeatureInitialized.stopTimeout();
 	}
 
 	private class FeatureInitializeCallBack implements Runnable, IFeature.OnFeatureInitialized
@@ -314,33 +409,6 @@ public class Environment
 	}
 
 	/**
-	 * @return application resources
-	 */
-	public Resources getResources()
-	{
-		return _activity.getResources();
-	}
-
-	/**
-	 * sets the only application activity
-	 *
-	 * @param activity
-	 *            application activity
-	 */
-	public void setActivity(Activity activity)
-	{
-		_activity = activity;
-	}
-
-	/**
-	 * @return the only application activity
-	 */
-	public Activity getActivity()
-	{
-		return _activity;
-	}
-
-	/**
 	 * Returns global preferences manager
 	 *
 	 * @return Prefs
@@ -368,16 +436,6 @@ public class Environment
 	public StateManager getStateManager()
 	{
 		return _stateManager;
-	}
-
-	/**
-	 * Sets global state manager
-	 *
-	 * @param StateManager
-	 */
-	public void setStateManager(StateManager stateManager)
-	{
-		_stateManager = stateManager;
 	}
 
 	/**
@@ -420,7 +478,7 @@ public class Environment
 	{
 		try
 		{
-			return getActivity().getPackageManager().getPackageInfo(getActivity().getApplication().getPackageName(), 0).versionName;
+			return getPackageManager().getPackageInfo(getApplication().getPackageName(), 0).versionName;
 		}
 		catch (NameNotFoundException e)
 		{
@@ -723,11 +781,6 @@ public class Environment
 		return _userPrefs;
 	}
 
-	public void setFeatureFactory(IFeatureFactory featureFactory)
-	{
-		_featureFactory = featureFactory;
-	}
-
 	/**
 	 * @return true if all features has been initialized
 	 */
@@ -742,14 +795,14 @@ public class Environment
 	public void startAppPackage(String packageName)
 	{
 		Log.i(TAG, "Starting " + packageName);
-		Intent intent = _activity.getPackageManager().getLaunchIntentForPackage(packageName);
+		Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
 		if (intent == null)
 		{
 			Log.w(getClass().getSimpleName(), "Can't find pacakge `" + packageName + "'");
 		}
 		else
 		{
-			_activity.startActivity(intent);
+			startActivity(intent);
 		}
 	}
 
@@ -907,13 +960,13 @@ public class Environment
 	private Prefs createUserPrefs()
 	{
 		Log.i(TAG, ".createUserPrefs");
-		return new Prefs(_activity.getSharedPreferences("user", Activity.MODE_PRIVATE), true);
+		return new Prefs(getSharedPreferences("user", Activity.MODE_PRIVATE), true);
 	}
 
 	private Prefs createPrefs(String name)
 	{
 		Log.i(TAG, ".createPrefs: name = " + name);
-		return new Prefs(_activity.getSharedPreferences(name, Activity.MODE_PRIVATE), false);
+		return new Prefs(getSharedPreferences(name, Activity.MODE_PRIVATE), false);
 	}
 
 	private class BitmapLruCache extends LruCache<String, Bitmap> implements ImageCache
@@ -939,6 +992,286 @@ public class Environment
 		public void putBitmap(String url, Bitmap bitmap)
 		{
 			put(url, bitmap);
+		}
+	}
+
+	private class AVIQTVXmlHandler extends DefaultHandler
+	{
+		private static final String TAG_AVIQTV = "aviqtv";
+		private static final String TAG_FACTORY = "factory";
+		private static final String TAG_FEATURE = "feature";
+		private static final String TAG_COMPNENT = "component";
+		private static final String TAG_SCHEDULER = "scheduler";
+		private static final String TAG_STATE = "state";
+		private static final String TAG_USE = "use";
+		private static final String TAG_STRING = "string";
+		private static final String TAG_INT = "int";
+		private static final String TAG_BOOLEAN = "boolean";
+		private static final String ATTR_NAME = "name";
+		private static final String ATTR_CLASS = "class";
+		private static final String ATTR_VALUE = "value";
+		private IFeature _feature;
+		private boolean _inFactory;
+		private boolean _inUse;
+		private boolean _inString;
+		private StringBuffer _stringValue = new StringBuffer();
+		private String _paramName;
+
+		@Override
+		public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
+		{
+			if (TAG_FACTORY.equalsIgnoreCase(localName))
+			{
+				if (_inFactory)
+					throw new SAXException("Nested tags " + TAG_FEATURE + " is not allowed");
+				_inFactory = true;
+			}
+			else if (TAG_FEATURE.equalsIgnoreCase(localName))
+			{
+				if (!_inFactory)
+					throw new SAXException("Tag " + TAG_FEATURE + " must be inside tag " + TAG_FACTORY);
+
+				String className = attributes.getValue(ATTR_CLASS);
+				try
+				{
+					_feature = (IFeature) Class.forName(className).newInstance();
+				}
+				catch (InstantiationException e)
+				{
+					throw new SAXException(e);
+				}
+				catch (IllegalAccessException e)
+				{
+					throw new SAXException(e);
+				}
+				catch (ClassNotFoundException e)
+				{
+					throw new SAXException(e);
+				}
+
+				_featureFactory.registerFeature(_feature);
+			}
+			else if (TAG_STRING.equalsIgnoreCase(localName))
+			{
+				if (_feature == null)
+					throw new SAXException("Tag " + TAG_STRING + " must be inside tag " + TAG_FEATURE);
+				_paramName = attributes.getValue(ATTR_NAME);
+				_stringValue.setLength(0);
+				_inString = true;
+			}
+			else if (TAG_INT.equalsIgnoreCase(localName))
+			{
+				if (_feature == null)
+					throw new SAXException("Tag " + TAG_INT + " must be inside tag " + TAG_FEATURE);
+				_paramName = attributes.getValue(ATTR_NAME);
+
+				Prefs prefs = _feature.getPrefs();
+				String sValue = attributes.getValue(ATTR_VALUE);
+				int value = 0;
+
+				try
+				{
+					value = Integer.parseInt(sValue);
+				}
+				catch (NumberFormatException e)
+				{
+					throw new SAXException(e);
+				}
+
+				if (prefs.has(_paramName))
+				{
+					int prevValue = prefs.getInt(_paramName);
+					if (prevValue != value)
+					{
+						Log.i(TAG, "Overwriting param " + _feature.getName() + "." + _paramName + ": " + prevValue
+						        + " -> " + value);
+						prefs.remove(_paramName);
+						prefs.put(_paramName, value);
+					}
+					else
+					{
+						Log.w(TAG, "No change to param " + _feature.getName() + "." + _paramName + " with value "
+						        + value);
+					}
+				}
+				else
+				{
+					Log.i(TAG, "Add new param " + _feature.getName() + "." + _paramName + " = " + value);
+					prefs.put(_paramName, value);
+				}
+			}
+			else if (TAG_BOOLEAN.equalsIgnoreCase(localName))
+			{
+				if (_feature == null)
+					throw new SAXException("Tag " + TAG_BOOLEAN + " must be inside tag " + TAG_FEATURE);
+				_paramName = attributes.getValue(ATTR_NAME);
+
+				Prefs prefs = _feature.getPrefs();
+				String sValue = attributes.getValue(ATTR_VALUE);
+				boolean value = Boolean.parseBoolean(sValue);
+
+				if (prefs.has(_paramName))
+				{
+					boolean prevValue = prefs.getBool(_paramName);
+					if (prevValue != value)
+					{
+						Log.i(TAG, "Overwriting param " + _feature.getName() + "." + _paramName + ": " + prevValue
+						        + " -> " + value);
+						prefs.remove(_paramName);
+						prefs.put(_paramName, value);
+					}
+					else
+					{
+						Log.w(TAG, "No change to param " + _feature.getName() + "." + _paramName + " with value "
+						        + value);
+					}
+				}
+				else
+				{
+					Log.i(TAG, "Add new param " + _feature.getName() + "." + _paramName + " = " + value);
+					prefs.put(_paramName, value);
+				}
+			}
+			else if (TAG_USE.equalsIgnoreCase(localName))
+			{
+				_inUse = true;
+			}
+			else if (TAG_COMPNENT.equalsIgnoreCase(localName))
+			{
+				if (!_inUse)
+					throw new SAXException("Tag " + TAG_COMPNENT + " must be inside tag " + TAG_USE);
+
+				String name = attributes.getValue(ATTR_NAME);
+				String className = attributes.getValue(ATTR_CLASS);
+
+				try
+				{
+					if (name != null)
+					{
+						FeatureName.Component componentName = FeatureName.Component.valueOf(name);
+						use(componentName);
+					}
+					else
+					{
+						use(Class.forName(className));
+					}
+				}
+				catch (FeatureNotFoundException e)
+				{
+					throw new SAXException(e);
+				}
+				catch (ClassNotFoundException e)
+				{
+					throw new SAXException(e);
+				}
+			}
+			else if (TAG_SCHEDULER.equalsIgnoreCase(localName))
+			{
+				if (!_inUse)
+					throw new SAXException("Tag " + TAG_SCHEDULER + " must be inside tag " + TAG_USE);
+
+				String name = attributes.getValue(ATTR_NAME);
+				String className = attributes.getValue(ATTR_CLASS);
+				try
+				{
+					if (name != null)
+					{
+						FeatureName.Scheduler schedulerName = FeatureName.Scheduler.valueOf(name);
+						use(schedulerName);
+					}
+					else
+					{
+						use(Class.forName(className));
+					}
+				}
+				catch (FeatureNotFoundException e)
+				{
+					throw new SAXException(e);
+				}
+				catch (ClassNotFoundException e)
+				{
+					throw new SAXException(e);
+				}
+			}
+			else if (TAG_STATE.equalsIgnoreCase(localName))
+			{
+				if (!_inUse)
+					throw new SAXException("Tag " + TAG_STATE + " must be inside tag " + TAG_USE);
+
+				String name = attributes.getValue(ATTR_NAME);
+				String className = attributes.getValue(ATTR_CLASS);
+				try
+				{
+					if (name != null)
+					{
+						FeatureName.State stateName = FeatureName.State.valueOf(name);
+						use(stateName);
+					}
+					else
+					{
+						use(Class.forName(className));
+					}
+				}
+				catch (FeatureNotFoundException e)
+				{
+					throw new SAXException(e);
+				}
+				catch (ClassNotFoundException e)
+				{
+					throw new SAXException(e);
+				}
+			}
+		}
+
+		@Override
+		public void endElement(String uri, String localName, String qName) throws SAXException
+		{
+			if (TAG_FACTORY.equalsIgnoreCase(localName))
+			{
+				_inFactory = false;
+			}
+			else if (TAG_FEATURE.equalsIgnoreCase(localName))
+			{
+				_feature = null;
+			}
+			else if (TAG_STRING.equalsIgnoreCase(localName))
+			{
+				_inString = false;
+				Prefs prefs = _feature.getPrefs();
+				String value = _stringValue.toString();
+				if (prefs.has(_paramName))
+				{
+					String prevValue = prefs.getString(_paramName);
+					if (!prevValue.equals(value))
+					{
+						Log.i(TAG, "Overwriting param " + _feature.getName() + "." + _paramName + ": " + prevValue
+						        + " -> " + value);
+						prefs.remove(_paramName);
+						prefs.put(_paramName, value);
+					}
+					else
+					{
+						Log.w(TAG, "No change to param " + _feature.getName() + "." + _paramName + " with value "
+						        + value);
+					}
+				}
+				else
+				{
+					Log.i(TAG, "Add new param " + _feature.getName() + "." + _paramName + " = " + value);
+					prefs.put(_paramName, value);
+				}
+			}
+			else if (TAG_USE.equalsIgnoreCase(localName))
+			{
+				_inUse = false;
+			}
+		}
+
+		@Override
+		public void characters(char[] ch, int start, int length) throws SAXException
+		{
+			if (_inString)
+				_stringValue.append(ch, start, length);
 		}
 	}
 }
