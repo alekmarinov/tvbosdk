@@ -173,17 +173,7 @@ public class Environment extends Activity
 			Log.i(TAG, "Initializing features");
 			_onFeatureInitialized.setTimeout(getPrefs().getInt(Param.FEATURE_INITIALIZE_TIMEOUT));
 
-			getEventMessenger().trigger(ON_INITIALIZE);
-
-			// start initializing features by post to allow ON_INITIALIZE handlers to prepare
-			getEventMessenger().post(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					_onFeatureInitialized.initializeNext();
-				}
-			});
+			initialize();
 		}
 		catch (FeatureNotFoundException e)
 		{
@@ -215,6 +205,22 @@ public class Environment extends Activity
 	{
 		super.onPause();
 		Log.i(TAG, ".onPause");
+	}
+
+	public void initialize()
+	{
+		getEventMessenger().trigger(ON_INITIALIZE);
+
+		// start initializing features by post to allow ON_INITIALIZE handlers
+		// to prepare
+		getEventMessenger().post(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				_onFeatureInitialized.startInitialization();
+			}
+		});
 	}
 
 	@Override
@@ -330,8 +336,8 @@ public class Environment extends Activity
 
 	private class FeatureInitializeCallBack implements Runnable, IFeature.OnFeatureInitialized
 	{
-		private int _nFeature = -1;
-		private int _nInitialized = -1;
+		private int _nFeature;
+		private int _nInitialized;
 		private long _initStartedTime;
 		private int _timeout = 0;
 
@@ -353,9 +359,27 @@ public class Environment extends Activity
 			_eventMessenger.postDelayed(this, _timeout * 1000);
 		}
 
+		public void startInitialization()
+		{
+			_nFeature = _nInitialized = -1;
+
+			getEventMessenger().trigger(ON_INITIALIZE);
+
+			// start initializing features by post to allow ON_INITIALIZE handlers
+			// to prepare
+			getEventMessenger().post(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					initializeNext();
+				}
+			});
+		}
+
 		// return true if there are more features to initialize or false
 		// otherwise
-		public void initializeNext()
+		private void initializeNext()
 		{
 			if ((_nFeature + 1) < _features.size())
 			{

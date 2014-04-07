@@ -5,7 +5,7 @@ import org.acra.annotation.ReportsCrashes;
 import android.app.Application;
 
 @ReportsCrashes(formKey = "")
-public class AviqTVApplication extends Application
+public class App extends Application
 {
 
 }
