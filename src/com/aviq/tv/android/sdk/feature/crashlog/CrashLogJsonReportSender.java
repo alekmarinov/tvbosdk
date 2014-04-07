@@ -117,7 +117,7 @@ public class CrashLogJsonReportSender implements ReportSender
 		}
 
 		// Generate the report's file name.
-		Environment env = (Environment)mContext;
+		Environment env = Environment.getInstance();
 		String buildType = env.getPrefs().getString(Param.RELEASE);
 		String reportFileName = String.format(mReportNameTemplate, mPackageName, buildType, brandName, appVersionCode,
 		        boxId, userCrashDate, randomNum);
