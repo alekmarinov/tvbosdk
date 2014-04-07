@@ -267,7 +267,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	public void onEvent(int msgId, Bundle bundle)
 	{
 		Log.i(TAG,
-		        this + ".onEvent: " + EventMessenger.idName(msgId) + "(" + msgId + ")" + " ("
-		                + TextUtils.implodeBundle(bundle) + ")");
+		        this + ".onEvent: " + EventMessenger.idName(msgId) + "(" + msgId + ")"
+		                + TextUtils.implodeBundle(bundle));
 	}
 }

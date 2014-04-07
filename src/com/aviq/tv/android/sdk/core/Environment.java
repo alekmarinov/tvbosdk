@@ -23,7 +23,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.acra.annotation.ReportsCrashes;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -61,7 +60,6 @@ import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 /**
  * Defines application environment
  */
-@ReportsCrashes(formKey = "")
 public class Environment extends Activity
 {
 	public static final String TAG = Environment.class.getSimpleName();
@@ -177,7 +175,15 @@ public class Environment extends Activity
 
 			getEventMessenger().trigger(ON_INITIALIZE);
 
-			_onFeatureInitialized.initializeNext();
+			// start initializing features by post to allow ON_INITIALIZE handlers to prepare
+			getEventMessenger().post(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					_onFeatureInitialized.initializeNext();
+				}
+			});
 		}
 		catch (FeatureNotFoundException e)
 		{
@@ -998,7 +1004,7 @@ public class Environment extends Activity
 	private class AVIQTVXmlHandler extends DefaultHandler
 	{
 		private static final String TAG_AVIQTV = "aviqtv";
-		private static final String TAG_FACTORY = "factory";
+		private static final String TAG_FEATURES = "features";
 		private static final String TAG_FEATURE = "feature";
 		private static final String TAG_COMPNENT = "component";
 		private static final String TAG_SCHEDULER = "scheduler";
@@ -1020,7 +1026,7 @@ public class Environment extends Activity
 		@Override
 		public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
 		{
-			if (TAG_FACTORY.equalsIgnoreCase(localName))
+			if (TAG_FEATURES.equalsIgnoreCase(localName))
 			{
 				if (_inFactory)
 					throw new SAXException("Nested tags " + TAG_FEATURE + " is not allowed");
@@ -1029,7 +1035,7 @@ public class Environment extends Activity
 			else if (TAG_FEATURE.equalsIgnoreCase(localName))
 			{
 				if (!_inFactory)
-					throw new SAXException("Tag " + TAG_FEATURE + " must be inside tag " + TAG_FACTORY);
+					throw new SAXException("Tag " + TAG_FEATURE + " must be inside tag " + TAG_FEATURES);
 
 				String className = attributes.getValue(ATTR_CLASS);
 				try
@@ -1226,7 +1232,7 @@ public class Environment extends Activity
 		@Override
 		public void endElement(String uri, String localName, String qName) throws SAXException
 		{
-			if (TAG_FACTORY.equalsIgnoreCase(localName))
+			if (TAG_FEATURES.equalsIgnoreCase(localName))
 			{
 				_inFactory = false;
 			}
