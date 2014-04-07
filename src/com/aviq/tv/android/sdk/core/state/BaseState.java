@@ -48,10 +48,11 @@ public class BaseState extends Fragment
 	public void create(Bundle params, boolean isOverlay) throws StateException
 	{
 		Log.i(getClass().getSimpleName(), ".create: isOverlay = " + isOverlay);
+		Environment env = (Environment)getActivity();
 		if (isOverlay)
-			Environment.getInstance().getStateManager().setStateOverlay(this, params);
+			env.getStateManager().setStateOverlay(this, params);
 		else
-			Environment.getInstance().getStateManager().setStateMain(this, params);
+			env.getStateManager().setStateMain(this, params);
 	}
 
 	/**
@@ -84,7 +85,8 @@ public class BaseState extends Fragment
 	public void close()
 	{
 		Log.i(getClass().getSimpleName(), ".close");
-		StateManager stateManager = Environment.getInstance().getStateManager();
+		Environment env = (Environment)getActivity();
+		StateManager stateManager = env.getStateManager();
 		StateLayer stateLayer = stateManager.getStateLayer(this);
 		try
 		{

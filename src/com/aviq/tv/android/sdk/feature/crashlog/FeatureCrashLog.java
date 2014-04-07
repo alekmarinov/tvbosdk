@@ -122,7 +122,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".initAcra");
 
 		Environment env = Environment.getInstance();
-		Application app = env.getActivity().getApplication();
+		Application app = env.getApplication();
 
 		String serverUri = getPrefs().getString(Param.REMOTE_SERVER);
 		String username = getPrefs().getString(Param.REMOTE_SERVER_USERNAME);

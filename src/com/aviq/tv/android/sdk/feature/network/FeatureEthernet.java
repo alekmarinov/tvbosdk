@@ -182,7 +182,7 @@ public class FeatureEthernet extends FeatureComponent
 
 		EthernetManagerWrapper()
 		{
-			_ethernetManager = Environment.getInstance().getActivity().getSystemService(ETH_SERVICE);
+			_ethernetManager = Environment.getInstance().getSystemService(ETH_SERVICE);
 			try
 			{
 				Class<?> ethernetDevInfoClass = Class.forName("android.net.ethernet.EthernetDevInfo");
@@ -408,8 +408,7 @@ public class FeatureEthernet extends FeatureComponent
 	private List<String> getDNSAddresses()
 	{
 		List<String> dnsAddresses = new ArrayList<String>();
-		ConnectivityManager mgr = (ConnectivityManager) Environment.getInstance().getActivity()
-		        .getSystemService(Context.CONNECTIVITY_SERVICE);
+		ConnectivityManager mgr = (ConnectivityManager) Environment.getInstance().getSystemService(Context.CONNECTIVITY_SERVICE);
 		try
 		{
 			Method getLinkPropeties;

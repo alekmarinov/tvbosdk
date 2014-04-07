@@ -17,7 +17,6 @@ import android.widget.MediaController;
 import android.widget.RelativeLayout;
 import android.widget.VideoView;
 
-import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.player.AviqMediaController;
 
@@ -166,7 +165,7 @@ public class AndroidPlayer extends BasePlayer
 	@Override
 	public MediaController createMediaController(boolean useFastForward)
 	{
-		Context context = Environment.getInstance().getActivity();
+		Context context = _videoView.getContext();
 		_mediaController = new AviqMediaController(context, useFastForward);
 		_mediaController.setVisibility(View.VISIBLE);
 		_mediaController.setAnchorView(_videoView);

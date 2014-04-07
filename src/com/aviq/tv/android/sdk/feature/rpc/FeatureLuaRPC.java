@@ -272,7 +272,7 @@ public class FeatureLuaRPC extends FeatureComponent
 					{
 						String name = L.toString(-1);
 
-						AssetManager am = Environment.getInstance().getActivity().getAssets();
+						AssetManager am = Environment.getInstance().getAssets();
 						try
 						{
 							String scriptPath = "lua/" + name.replace('.', '/') + ".lua";
@@ -312,7 +312,7 @@ public class FeatureLuaRPC extends FeatureComponent
 					if (stubok != 0)
 						throw new LuaException(errorReason(stubok) + ": " + L.toString(-1));
 
-					Environment.getInstance().getActivity().runOnUiThread(new Runnable()
+					Environment.getInstance().runOnUiThread(new Runnable()
 					{
 						@Override
 						public void run()
@@ -343,7 +343,7 @@ public class FeatureLuaRPC extends FeatureComponent
 				if (ok != 0)
 					throw new LuaException(errorReason(ok) + ": " + L.toString(-1));
 
-				Environment.getInstance().getActivity().runOnUiThread(new Runnable()
+				Environment.getInstance().runOnUiThread(new Runnable()
 				{
 					@Override
 					public void run()

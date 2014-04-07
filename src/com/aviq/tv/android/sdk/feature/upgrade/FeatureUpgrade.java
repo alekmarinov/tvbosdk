@@ -85,7 +85,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		/**
 		 * Local updates directory relative to /files
 		 */
-		UPDATES_DIR("update"),
+		UPDATES_DIR("/update"),
 
 		/**
 		 * Milliseconds to wait before rebooting the box from calling rebootToInstall
@@ -287,7 +287,7 @@ public class FeatureUpgrade extends FeatureScheduler
 			{
 				try
                 {
-                    RecoverySystem.installPackage(Environment.getInstance().getActivity(), getUpgradeFile());
+                    RecoverySystem.installPackage(Environment.getInstance(), getUpgradeFile());
                 }
                 catch (IOException e)
                 {
@@ -498,7 +498,7 @@ public class FeatureUpgrade extends FeatureScheduler
 			return null;
 
 		String updateFile = _userPrefs.getString(UserParam.UPGRADE_FILE);
-		return new File(Files.filePath(Environment.getInstance().getActivity(), updateFile));
+		return new File(Files.filePath(Environment.getInstance(), updateFile));
 	}
 
 	private void downloadUpdate()
@@ -546,7 +546,7 @@ public class FeatureUpgrade extends FeatureScheduler
 					// etc.
 
 					// clean up the update directory before starting new download
-					File updatesDir = new File(Files.normalizeName(Environment.getInstance().getActivity(),
+					File updatesDir = new File(Files.normalizeName(Environment.getInstance(),
 					        getPrefs().getString(Param.UPDATES_DIR)));
 					if (!updatesDir.exists())
 						updatesDir.mkdirs();
