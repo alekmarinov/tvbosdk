@@ -23,7 +23,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.acra.annotation.ReportsCrashes;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -61,7 +60,6 @@ import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 /**
  * Defines application environment
  */
-@ReportsCrashes(formKey = "")
 public class Environment extends Activity
 {
 	public static final String TAG = Environment.class.getSimpleName();
