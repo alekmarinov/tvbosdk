@@ -95,6 +95,12 @@ public class FeatureInternet extends FeatureScheduler
 				onFeatureInitialized.onInitialized(FeatureInternet.this, resultCode);
 				getEventMessenger().trigger(resultCode == ResultCode.OK ? ON_CONNECTED : ON_DISCONNECTED, resultData);
 				scheduleDelayed(getPrefs().getInt(Param.CHECK_INTERVAL) * 1000);
+
+				// Get public IP the first time
+				if (_publicIP == null)
+				{
+					retrievePublicIPAsync();
+				}
 			}
 		});
 	}
@@ -148,14 +154,6 @@ public class FeatureInternet extends FeatureScheduler
 						        + " more times");
 						getEventMessenger().postDelayed(this, getPrefs().getInt(Param.CHECK_ATTEMPT_DELAY));
 						return;
-					}
-				}
-				else
-				{
-					// Get public IP the first time
-					if (_publicIP == null)
-					{
-						retrievePublicIPAsync();
 					}
 				}
 				onResultReceived.onReceiveResult(resultCode, resultData);

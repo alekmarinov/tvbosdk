@@ -94,7 +94,6 @@ public class CrashLogJsonReportSender implements ReportSender
 			}
 			else if (ReportField.CUSTOM_DATA.equals(reportField))
 			{
-Log.e(TAG, "----- cd: " + value);
 				// Find (w/o the quotes): "BOX_ID = 902B34F69D99\n"
 				Pattern patternBoxId = Pattern.compile("BOX_ID\\s.*?=\\s.*?(\\w+)\\s.*?");
 				Matcher matcherBoxId = patternBoxId.matcher(value);
