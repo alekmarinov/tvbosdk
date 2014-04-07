@@ -209,18 +209,7 @@ public class Environment extends Activity
 
 	public void initialize()
 	{
-		getEventMessenger().trigger(ON_INITIALIZE);
-
-		// start initializing features by post to allow ON_INITIALIZE handlers
-		// to prepare
-		getEventMessenger().post(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_onFeatureInitialized.startInitialization();
-			}
-		});
+		_onFeatureInitialized.initialize();
 	}
 
 	@Override
@@ -359,7 +348,7 @@ public class Environment extends Activity
 			_eventMessenger.postDelayed(this, _timeout * 1000);
 		}
 
-		public void startInitialization()
+		public void initialize()
 		{
 			_nFeature = _nInitialized = -1;
 
