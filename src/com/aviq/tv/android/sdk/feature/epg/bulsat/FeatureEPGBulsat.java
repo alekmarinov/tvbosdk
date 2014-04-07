@@ -67,74 +67,76 @@ public class FeatureEPGBulsat extends FeatureEPG
 	@Override
     public String getChannelStreamUrl(int channelIndex)
     {
+		if (true)
+			return "http://185.4.83.195:1935/tv/test/playlist.m3u8";
 		switch (channelIndex)
 		{
 			case 0:
-				return "http://46.40.123.186:1935/tv/amoreyohd.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/amoreyohd.stream/playlist.m3u8";
 			case 1:
-				return "http://46.40.123.186:1935/tv/amoreyosd.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/amoreyosd.stream/playlist.m3u8";
 			case 2:
-				return "http://46.40.123.186:1935/tv/animal_planet.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/animal_planet.stream/playlist.m3u8";
 			case 3:
-				return "http://46.40.123.186:1935/tv/axn.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/axn.stream/playlist.m3u8";
 			case 4:
-				return "http://46.40.123.186:1935/tv/cubayohd.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/cubayohd.stream/playlist.m3u8";
 			case 5:
-				return "http://46.40.123.186:1935/tv/cubayosd.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/cubayosd.stream/playlist.m3u8";
 			case 6:
-				return "http://46.40.123.186:1935/tv/bnt1.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/bnt1.stream/playlist.m3u8";
 			case 7:
-				return "http://46.40.123.186:1935/tv/partyshd.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/partyshd.stream/playlist.m3u8";
 			case 8:
-				return "http://46.40.123.186:1935/tv/partyssd.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/partyssd.stream/playlist.m3u8";
 			case 9:
-				return "http://46.40.123.186:1935/tv/btv.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/btv.stream/playlist.m3u8";
 			case 10:
-				return "http://46.40.123.186:1935/tv/btv_action.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/btv_action.stream/playlist.m3u8";
 			case 11:
-				return "http://46.40.123.186:1935/tv/btv_cinema.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/btv_cinema.stream/playlist.m3u8";
 			case 12:
-				return "http://46.40.123.186:1935/tv/btv_comedy.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/btv_comedy.stream/playlist.m3u8";
 			case 22:
-				return "http://46.40.123.186:1935/tv/diema.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/diema.stream/playlist.m3u8";
 			case 23:
-				return "http://46.40.123.186:1935/tv/diema_family.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/diema_family.stream/playlist.m3u8";
 			case 24:
-				return "http://46.40.123.186:1935/tv/discovery.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/discovery.stream/playlist.m3u8";
 			case 25:
-				return "http://46.40.123.186:1935/tv/discovery_world.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/discovery_world.stream/playlist.m3u8";
 			case 34:
-				return "http://46.40.123.186:1935/tv/filmplus.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/filmplus.stream/playlist.m3u8";
 			case 42:
-				return "http://46.40.123.186:1935/tv/hbo.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/hbo.stream/playlist.m3u8";
 			case 47:
-				return "http://46.40.123.186:1935/tv/hobbytv.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/hobbytv.stream/playlist.m3u8";
 			case 52:
-				return "http://46.40.123.186:1935/tv/kinonova.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/kinonova.stream/playlist.m3u8";
 			case 55:
-				return "http://46.40.123.186:1935/tv/mtv_rock.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/mtv_rock.stream/playlist.m3u8";
 			case 56:
-				return "http://46.40.123.186:1935/tv/nat_geo.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/nat_geo.stream/playlist.m3u8";
 			case 60:
-				return "http://46.40.123.186:1935/tv/nickelodeon.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/nickelodeon.stream/playlist.m3u8";
 			case 62:
-				return "http://46.40.123.186:1935/tv/novasport.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/novasport.stream/playlist.m3u8";
 			case 61:
-				return "http://46.40.123.186:1935/tv/novatv.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/novatv.stream/playlist.m3u8";
 			case 67:
-				return "http://46.40.123.186:1935/tv/planetatv.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/planetatv.stream/playlist.m3u8";
 			case 70:
-				return "http://46.40.123.186:1935/tv/ringbg.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/ringbg.stream/playlist.m3u8";
 			case 74:
-				return "http://46.40.123.186:1935/tv/the_voice.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/the_voice.stream/playlist.m3u8";
 			case 77:
-				return "http://46.40.123.186:1935/tv/tv7.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/tv7.stream/playlist.m3u8";
 			case 79:
-				return "http://46.40.123.186:1935/tv/tvplus.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/tvplus.stream/playlist.m3u8";
 			case 80:
-				return "http://46.40.123.186:1935/tv/viasat_history.stream/playlist.m3u8";
+				return "http://185.4.83.195:1935/dvr4/viasat_history.stream/playlist.m3u8";
 		}
-		return "http://46.40.123.186:1935/dvr/sportaltv.stream/playlist.m3u8";
+		return "http://185.4.83.195:1935/dvr/sportaltv.stream/playlist.m3u8";
     }
 
 	@Override

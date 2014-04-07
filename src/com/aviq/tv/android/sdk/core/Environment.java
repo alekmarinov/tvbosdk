@@ -73,13 +73,14 @@ public class Environment extends Activity
 	public static final String EXTRA_KEYCONSUMED = "KEYCONSUMED";
 	private static final String SYSTEM_PREFS = "system";
 	private static final String AVIQTV_XML_RESOURCE = "aviqtv";
+	private static final String RELEASE_XML_RESOURCE = "release";
 
 	public enum Param
 	{
 		/**
 		 * whether we are in release build
 		 */
-		RELEASE("release"),
+		RELEASE("devel"),
 
 		/**
 		 * Timeout in seconds for feature initialization
@@ -140,6 +141,11 @@ public class Environment extends Activity
 			// initialize environment by default app's raw/aviqtv.xml
 			int appXmlId = getResources().getIdentifier(AVIQTV_XML_RESOURCE, "raw", getPackageName());
 			InputStream inputStream = getResources().openRawResource(appXmlId);
+			addXmlDefinition(inputStream);
+
+			// initialize environment by app's raw/release.xml
+			appXmlId = getResources().getIdentifier(RELEASE_XML_RESOURCE, "raw", getPackageName());
+			inputStream = getResources().openRawResource(appXmlId);
 			addXmlDefinition(inputStream);
 
 			_stateManager = new StateManager(this);
@@ -354,7 +360,8 @@ public class Environment extends Activity
 
 			getEventMessenger().trigger(ON_INITIALIZE);
 
-			// start initializing features by post to allow ON_INITIALIZE handlers
+			// start initializing features by post to allow ON_INITIALIZE
+			// handlers
 			// to prepare
 			getEventMessenger().post(new Runnable()
 			{
@@ -1072,7 +1079,7 @@ public class Environment extends Activity
 			}
 			else if (TAG_STRING.equalsIgnoreCase(localName))
 			{
-				if (_feature == null)
+				if (_feature == null || !_inUse)
 					throw new SAXException("Tag " + TAG_STRING + " must be inside tag " + TAG_FEATURE);
 				_paramName = attributes.getValue(ATTR_NAME);
 				_stringValue.setLength(0);
@@ -1080,11 +1087,11 @@ public class Environment extends Activity
 			}
 			else if (TAG_INT.equalsIgnoreCase(localName))
 			{
-				if (_feature == null)
+				if (_feature == null || !_inUse)
 					throw new SAXException("Tag " + TAG_INT + " must be inside tag " + TAG_FEATURE);
 				_paramName = attributes.getValue(ATTR_NAME);
 
-				Prefs prefs = _feature.getPrefs();
+				Prefs prefs = _feature != null ? _feature.getPrefs() : getPrefs();
 				String sValue = attributes.getValue(ATTR_VALUE);
 				int value = 0;
 
@@ -1121,11 +1128,11 @@ public class Environment extends Activity
 			}
 			else if (TAG_BOOLEAN.equalsIgnoreCase(localName))
 			{
-				if (_feature == null)
+				if (_feature == null || !_inUse)
 					throw new SAXException("Tag " + TAG_BOOLEAN + " must be inside tag " + TAG_FEATURE);
 				_paramName = attributes.getValue(ATTR_NAME);
 
-				Prefs prefs = _feature.getPrefs();
+				Prefs prefs = _feature != null ? _feature.getPrefs() : getPrefs();
 				String sValue = attributes.getValue(ATTR_VALUE);
 				boolean value = Boolean.parseBoolean(sValue);
 
@@ -1168,11 +1175,11 @@ public class Environment extends Activity
 					if (name != null)
 					{
 						FeatureName.Component componentName = FeatureName.Component.valueOf(name);
-						use(componentName);
+						_feature = use(componentName);
 					}
 					else
 					{
-						use(Class.forName(className));
+						_feature = use(Class.forName(className));
 					}
 				}
 				catch (FeatureNotFoundException e)
@@ -1196,11 +1203,11 @@ public class Environment extends Activity
 					if (name != null)
 					{
 						FeatureName.Scheduler schedulerName = FeatureName.Scheduler.valueOf(name);
-						use(schedulerName);
+						_feature = use(schedulerName);
 					}
 					else
 					{
-						use(Class.forName(className));
+						_feature = use(Class.forName(className));
 					}
 				}
 				catch (FeatureNotFoundException e)
@@ -1224,11 +1231,11 @@ public class Environment extends Activity
 					if (name != null)
 					{
 						FeatureName.State stateName = FeatureName.State.valueOf(name);
-						use(stateName);
+						_feature = use(stateName);
 					}
 					else
 					{
-						use(Class.forName(className));
+						_feature = use(Class.forName(className));
 					}
 				}
 				catch (FeatureNotFoundException e)
@@ -1249,14 +1256,15 @@ public class Environment extends Activity
 			{
 				_inFactory = false;
 			}
-			else if (TAG_FEATURE.equalsIgnoreCase(localName))
+			else if (TAG_FEATURE.equalsIgnoreCase(localName) || TAG_COMPNENT.equalsIgnoreCase(localName)
+			        || TAG_SCHEDULER.equalsIgnoreCase(localName) || TAG_STATE.equalsIgnoreCase(localName))
 			{
 				_feature = null;
 			}
 			else if (TAG_STRING.equalsIgnoreCase(localName))
 			{
 				_inString = false;
-				Prefs prefs = _feature.getPrefs();
+				Prefs prefs = _feature != null ? _feature.getPrefs() : getPrefs();
 				String value = _stringValue.toString();
 				if (prefs.has(_paramName))
 				{
