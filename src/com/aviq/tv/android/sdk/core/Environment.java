@@ -13,7 +13,6 @@ package com.aviq.tv.android.sdk.core;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,6 +137,10 @@ public class Environment extends Activity
 		Log.i(TAG, ".onCreate");
 		try
 		{
+			// initialize preferences
+			_userPrefs = createUserPrefs();
+			_prefs = createPrefs(SYSTEM_PREFS);
+
 			// initialize environment by default app's raw/aviqtv.xml
 			int appXmlId = getResources().getIdentifier(AVIQTV_XML_RESOURCE, "raw", getPackageName());
 			InputStream inputStream = getResources().openRawResource(appXmlId);
@@ -148,10 +151,6 @@ public class Environment extends Activity
 			inputStream = getResources().openRawResource(appXmlId);
 			addXmlDefinition(inputStream);
 
-			_stateManager = new StateManager(this);
-			_stateManager.setMessageState(use(FeatureName.State.MESSAGE_BOX));
-			_featureRCU = (FeatureRCU) use(FeatureName.Component.RCU);
-
 			// Log target device parameters
 			DisplayMetrics metrics = new DisplayMetrics();
 			getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -160,8 +159,10 @@ public class Environment extends Activity
 			        + metrics.scaledDensity + ", xdpi = " + metrics.xdpi + ", ydpi = " + metrics.ydpi);
 
 			// initializes environment context
-			_userPrefs = createUserPrefs();
-			_prefs = createPrefs(SYSTEM_PREFS);
+			_stateManager = new StateManager(this);
+			_stateManager.setMessageState(use(FeatureName.State.MESSAGE_BOX));
+			_featureRCU = (FeatureRCU) use(FeatureName.Component.RCU);
+
 			_serviceController = new ServiceController(this);
 			_requestQueue = Volley.newRequestQueue(this);
 			_requestQueue.getCache().clear();
@@ -269,64 +270,6 @@ public class Environment extends Activity
 	{
 		Log.i(TAG, ".stopInitTimeout");
 		_onFeatureInitialized.stopTimeout();
-	}
-
-	/**
-	 * Apply brand properties
-	 */
-	private void initBrandProperties()
-	{
-		for (Properties brandProperties : _brandPropertyLists)
-		{
-			Log.i(TAG, "Apply brand properties");
-			Enumeration<Object> keys = brandProperties.keys();
-
-			while (keys.hasMoreElements())
-			{
-				String key = (String) keys.nextElement();
-				String value = brandProperties.getProperty(key);
-				Log.i(TAG, key + " = `" + value + "'");
-				String[] parts = key.split("\\.");
-				Prefs prefs;
-				String featureType;
-				String featureName;
-				String featureParam;
-				if (parts.length == 2 && parts[0].equalsIgnoreCase(SYSTEM_PREFS))
-				{
-					prefs = getPrefs();
-					featureParam = parts[1];
-					Log.i(TAG, "Set brand property " + SYSTEM_PREFS + "." + featureParam + "=`" + value + "'");
-				}
-				else if (parts.length == 3)
-				{
-					featureType = parts[0];
-					featureName = parts[1];
-					featureParam = parts[2];
-
-					if (featureType.equalsIgnoreCase(IFeature.Type.COMPONENT.name()))
-						prefs = getFeaturePrefs(FeatureName.Component.valueOf(featureName));
-					else if (featureType.equalsIgnoreCase(IFeature.Type.SCHEDULER.name()))
-						prefs = getFeaturePrefs(FeatureName.Scheduler.valueOf(featureName));
-					else if (featureType.equalsIgnoreCase(IFeature.Type.STATE.name()))
-						prefs = getFeaturePrefs(FeatureName.State.valueOf(featureName));
-					else
-						throw new RuntimeException(
-						        "Invalid feature type in brand.properties key, expected component, scheduler or state, got `"
-						                + featureType + "'");
-
-					Log.i(TAG, "Set brand property " + featureType + "." + featureName + "." + featureParam + "=`"
-					        + value + "'");
-				}
-				else
-				{
-					throw new RuntimeException("Invalid brand.properties key, expected [<featureType>.<featureName> | "
-					        + SYSTEM_PREFS + "].<featureParam>, got `" + key + "'");
-				}
-
-				prefs.remove(featureParam);
-				prefs.put(featureParam, value);
-			}
-		}
 	}
 
 	private class FeatureInitializeCallBack implements Runnable, IFeature.OnFeatureInitialized
@@ -1122,7 +1065,18 @@ public class Environment extends Activity
 					throw new SAXException("Tag " + TAG_INT + " must be inside tag " + TAG_FEATURE);
 				_paramName = attributes.getValue(ATTR_NAME);
 
-				Prefs prefs = _feature != null ? _feature.getPrefs() : getPrefs();
+				String featureName;
+				Prefs prefs;
+				if (_feature != null)
+				{
+					prefs = _feature.getPrefs();
+					featureName = _feature.getName();
+				}
+				else
+				{
+					prefs = getPrefs();
+					featureName = getClass().getSimpleName();
+				}
 				String sValue = attributes.getValue(ATTR_VALUE);
 				int value = 0;
 
@@ -1140,20 +1094,20 @@ public class Environment extends Activity
 					int prevValue = prefs.getInt(_paramName);
 					if (prevValue != value)
 					{
-						Log.i(TAG, "Overwriting param " + _feature.getName() + "." + _paramName + ": " + prevValue
+						Log.i(TAG, "Overwriting param " + featureName + "." + _paramName + ": " + prevValue
 						        + " -> " + value);
 						prefs.remove(_paramName);
 						prefs.put(_paramName, value);
 					}
 					else
 					{
-						Log.w(TAG, "No change to param " + _feature.getName() + "." + _paramName + " with value "
+						Log.w(TAG, "No change to param " + featureName + "." + _paramName + " with value "
 						        + value);
 					}
 				}
 				else
 				{
-					Log.i(TAG, "Add new param " + _feature.getName() + "." + _paramName + " = " + value);
+					Log.i(TAG, "Add new param " + featureName + "." + _paramName + " = " + value);
 					prefs.put(_paramName, value);
 				}
 			}
@@ -1163,7 +1117,19 @@ public class Environment extends Activity
 					throw new SAXException("Tag " + TAG_BOOLEAN + " must be inside tag " + TAG_FEATURE);
 				_paramName = attributes.getValue(ATTR_NAME);
 
-				Prefs prefs = _feature != null ? _feature.getPrefs() : getPrefs();
+				String featureName;
+				Prefs prefs;
+				if (_feature != null)
+				{
+					prefs = _feature.getPrefs();
+					featureName = _feature.getName();
+				}
+				else
+				{
+					prefs = getPrefs();
+					featureName = getClass().getSimpleName();
+				}
+
 				String sValue = attributes.getValue(ATTR_VALUE);
 				boolean value = Boolean.parseBoolean(sValue);
 
@@ -1172,20 +1138,20 @@ public class Environment extends Activity
 					boolean prevValue = prefs.getBool(_paramName);
 					if (prevValue != value)
 					{
-						Log.i(TAG, "Overwriting param " + _feature.getName() + "." + _paramName + ": " + prevValue
+						Log.i(TAG, "Overwriting param " + featureName + "." + _paramName + ": " + prevValue
 						        + " -> " + value);
 						prefs.remove(_paramName);
 						prefs.put(_paramName, value);
 					}
 					else
 					{
-						Log.w(TAG, "No change to param " + _feature.getName() + "." + _paramName + " with value "
+						Log.w(TAG, "No change to param " + featureName + "." + _paramName + " with value "
 						        + value);
 					}
 				}
 				else
 				{
-					Log.i(TAG, "Add new param " + _feature.getName() + "." + _paramName + " = " + value);
+					Log.i(TAG, "Add new param " + featureName + "." + _paramName + " = " + value);
 					prefs.put(_paramName, value);
 				}
 			}
@@ -1295,27 +1261,39 @@ public class Environment extends Activity
 			else if (TAG_STRING.equalsIgnoreCase(localName))
 			{
 				_inString = false;
-				Prefs prefs = _feature != null ? _feature.getPrefs() : getPrefs();
+				String featureName;
+				Prefs prefs;
+				if (_feature != null)
+				{
+					prefs = _feature.getPrefs();
+					featureName = _feature.getName();
+				}
+				else
+				{
+					prefs = getPrefs();
+					featureName = getClass().getSimpleName();
+				}
+
 				String value = _stringValue.toString();
 				if (prefs.has(_paramName))
 				{
 					String prevValue = prefs.getString(_paramName);
 					if (!prevValue.equals(value))
 					{
-						Log.i(TAG, "Overwriting param " + _feature.getName() + "." + _paramName + ": " + prevValue
+						Log.i(TAG, "Overwriting param " + featureName + "." + _paramName + ": " + prevValue
 						        + " -> " + value);
 						prefs.remove(_paramName);
 						prefs.put(_paramName, value);
 					}
 					else
 					{
-						Log.w(TAG, "No change to param " + _feature.getName() + "." + _paramName + " with value "
+						Log.w(TAG, "No change to param " + featureName + "." + _paramName + " with value "
 						        + value);
 					}
 				}
 				else
 				{
-					Log.i(TAG, "Add new param " + _feature.getName() + "." + _paramName + " = " + value);
+					Log.i(TAG, "Add new param " + featureName + "." + _paramName + " = " + value);
 					prefs.put(_paramName, value);
 				}
 			}
