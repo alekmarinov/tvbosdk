@@ -899,6 +899,7 @@ public class Environment extends Activity
 			for (IFeature feature : features)
 			{
 				int resolvedCounter;
+				int resolvedPosition = -1;
 
 				if (feature.dependencies() != null)
 				{
@@ -906,11 +907,14 @@ public class Environment extends Activity
 					resolvedCounter = feature.dependencies().Specials.size();
 					for (Class<?> special : feature.dependencies().Specials)
 					{
-						for (IFeature sortedFeature : sorted)
+						for (int i = 0; i < sorted.size(); i++)
 						{
+							IFeature sortedFeature = sorted.get(i);
 							if (special.isInstance(sortedFeature))
 							{
 								resolvedCounter--;
+								if (i > resolvedPosition)
+									resolvedPosition = i;
 								break;
 							}
 						}
@@ -922,12 +926,15 @@ public class Environment extends Activity
 					resolvedCounter = feature.dependencies().Components.size();
 					for (FeatureName.Component component : feature.dependencies().Components)
 					{
-						for (IFeature sortedFeature : sorted)
+						for (int i = 0; i < sorted.size(); i++)
 						{
+							IFeature sortedFeature = sorted.get(i);
 							if (IFeature.Type.COMPONENT.equals(sortedFeature.getType()))
 								if (component.equals(((FeatureComponent) sortedFeature).getComponentName()))
 								{
 									resolvedCounter--;
+									if (i > resolvedPosition)
+										resolvedPosition = i;
 									break;
 								}
 						}
@@ -939,12 +946,15 @@ public class Environment extends Activity
 					resolvedCounter = feature.dependencies().Schedulers.size();
 					for (FeatureName.Scheduler scheduler : feature.dependencies().Schedulers)
 					{
-						for (IFeature sortedFeature : sorted)
+						for (int i = 0; i < sorted.size(); i++)
 						{
+							IFeature sortedFeature = sorted.get(i);
 							if (IFeature.Type.SCHEDULER.equals(sortedFeature.getType()))
 								if (scheduler.equals(((FeatureScheduler) sortedFeature).getSchedulerName()))
 								{
 									resolvedCounter--;
+									if (i > resolvedPosition)
+										resolvedPosition = i;
 									break;
 								}
 						}
@@ -956,30 +966,51 @@ public class Environment extends Activity
 					resolvedCounter = feature.dependencies().States.size();
 					for (FeatureName.State state : feature.dependencies().States)
 					{
-						for (IFeature sortedFeature : sorted)
+						for (int i = 0; i < sorted.size(); i++)
 						{
+							IFeature sortedFeature = sorted.get(i);
 							if (IFeature.Type.STATE.equals(sortedFeature.getType()))
 								if (state.equals(((FeatureState) sortedFeature).getStateName()))
 								{
 									resolvedCounter--;
+									if (i > resolvedPosition)
+										resolvedPosition = i;
 									break;
 								}
 						}
 					}
 					if (resolvedCounter > 0) // has unresolved dependencies
 						continue;
-
 				}
 
 				if (sorted.indexOf(feature) < 0)
 				{
-					Log.i(TAG, sorted.size() + ". " + feature);
-					sorted.add(feature);
+					if (feature.getClass().getAnnotation(PriorityFeature.class) != null)
+					{
+						resolvedPosition++;
+						if (resolvedPosition < sorted.size())
+							sorted.add(resolvedPosition, feature);
+						else
+							sorted.add(feature);
+
+						Log.i(TAG, "Feature " + feature + " is prioritized and shifted to position " + resolvedPosition);
+					}
+					else
+					{
+						sorted.add(feature);
+					}
 				}
 			}
 			if (prevSortedSize == sorted.size())
 				throw new RuntimeException("Internal error. Unable to sort features!");
 		}
+
+		for (int i = 0; i < sorted.size(); i++)
+		{
+			IFeature feature = sorted.get(i);
+			Log.i(TAG, i + ". " + feature);
+		}
+
 		return sorted;
 	}
 
