@@ -1079,15 +1079,15 @@ public class Environment extends Activity
 			}
 			else if (TAG_STRING.equalsIgnoreCase(localName))
 			{
-				if (_feature == null || !_inUse)
-					throw new SAXException("Tag " + TAG_STRING + " must be inside tag " + TAG_FEATURE);
+				if (_feature == null && !_inUse)
+					throw new SAXException("Tag '" + TAG_STRING + "' must be inside tag '" + TAG_FEATURE + "'");
 				_paramName = attributes.getValue(ATTR_NAME);
 				_stringValue.setLength(0);
 				_inString = true;
 			}
 			else if (TAG_INT.equalsIgnoreCase(localName))
 			{
-				if (_feature == null || !_inUse)
+				if (_feature == null && !_inUse)
 					throw new SAXException("Tag " + TAG_INT + " must be inside tag " + TAG_FEATURE);
 				_paramName = attributes.getValue(ATTR_NAME);
 
@@ -1128,7 +1128,7 @@ public class Environment extends Activity
 			}
 			else if (TAG_BOOLEAN.equalsIgnoreCase(localName))
 			{
-				if (_feature == null || !_inUse)
+				if (_feature == null && !_inUse)
 					throw new SAXException("Tag " + TAG_BOOLEAN + " must be inside tag " + TAG_FEATURE);
 				_paramName = attributes.getValue(ATTR_NAME);
 
