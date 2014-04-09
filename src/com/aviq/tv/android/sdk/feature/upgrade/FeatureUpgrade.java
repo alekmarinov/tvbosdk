@@ -85,7 +85,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		/**
 		 * Local updates directory relative to /files
 		 */
-		UPDATES_DIR("/update"),
+		UPDATES_DIR("/cache/update"),
 
 		/**
 		 * Milliseconds to wait before rebooting the box from calling rebootToInstall
