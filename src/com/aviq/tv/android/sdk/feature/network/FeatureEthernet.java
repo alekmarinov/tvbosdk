@@ -196,7 +196,6 @@ public class FeatureEthernet extends FeatureComponent
 					_getDhcpInfo = _ethernetManager.getClass().getMethod("getDhcpInfo");
 				}
 
-				_ethernetDevInfo = ethernetDevInfoClass.newInstance();
 				_setConnectMode = ethernetDevInfoClass.getMethod("setConnectMode", String.class);
 				_getConnectMode = ethernetDevInfoClass.getMethod("getConnectMode");
 				_setIfName = ethernetDevInfoClass.getMethod("setIfName", String.class);
@@ -217,14 +216,6 @@ public class FeatureEthernet extends FeatureComponent
 				Log.e(TAG, e.getMessage(), e);
 			}
 			catch (ClassNotFoundException e)
-			{
-				Log.e(TAG, e.getMessage(), e);
-			}
-			catch (InstantiationException e)
-			{
-				Log.e(TAG, e.getMessage(), e);
-			}
-			catch (IllegalAccessException e)
 			{
 				Log.e(TAG, e.getMessage(), e);
 			}
@@ -297,13 +288,17 @@ public class FeatureEthernet extends FeatureComponent
 		{
 			try
 			{
+				enable(false);
+				Class<?> ethernetDevInfoClass = Class.forName("android.net.ethernet.EthernetDevInfo");
+				_ethernetDevInfo = ethernetDevInfoClass.newInstance();
 				_setIfName.invoke(_ethernetDevInfo, networkConfig.Iface);
 				_setConnectMode.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? "dhcp" : "manual");
-				_setIpAddress.invoke(_ethernetDevInfo, networkConfig.Addr);
-				_setNetMask.invoke(_ethernetDevInfo, networkConfig.Mask);
-				_setRouteAddr.invoke(_ethernetDevInfo, networkConfig.Gateway);
-				_setDnsAddr.invoke(_ethernetDevInfo, networkConfig.Dns1);
+				_setIpAddress.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? null: networkConfig.Addr);
+				_setNetMask.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? null: networkConfig.Mask);
+				_setRouteAddr.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? null: networkConfig.Gateway);
+				_setDnsAddr.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? null: networkConfig.Dns1);
 				_updateEthDevInfo.invoke(_ethernetManager, _ethernetDevInfo);
+				enable(true);
 			}
 			catch (IllegalAccessException e)
 			{
@@ -313,6 +308,14 @@ public class FeatureEthernet extends FeatureComponent
 			{
 				Log.e(TAG, e.getMessage(), e);
 			}
+            catch (InstantiationException e)
+            {
+				Log.e(TAG, e.getMessage(), e);
+            }
+            catch (ClassNotFoundException e)
+            {
+				Log.e(TAG, e.getMessage(), e);
+            }
 			catch (InvocationTargetException e)
 			{
 				if (e.getTargetException() instanceof SecurityException)
