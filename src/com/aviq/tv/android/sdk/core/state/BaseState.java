@@ -17,7 +17,6 @@ import android.view.View;
 import com.aviq.tv.android.sdk.core.AVKeyEvent;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
-import com.aviq.tv.android.sdk.core.state.StateManager.StateLayer;
 
 /**
  * Base class of all application visible states.
@@ -37,6 +36,8 @@ public class BaseState extends Fragment
 	}
 
 	/**
+	 * FIXME: What was the purpose of this method?!
+	 *
 	 * Create state
 	 *
 	 * @param params
@@ -45,7 +46,7 @@ public class BaseState extends Fragment
 	 *            set to true to show this state as Overlay
 	 * @throws StateException
 	 */
-	public void create(Bundle params, boolean isOverlay) throws StateException
+	private void create(Bundle params, boolean isOverlay) throws StateException
 	{
 		Log.i(getClass().getSimpleName(), ".create: isOverlay = " + isOverlay);
 		Environment env = (Environment)getActivity();
@@ -56,25 +57,29 @@ public class BaseState extends Fragment
 	}
 
 	/**
+	 * FIXME: What was the purpose of this method?!
+	 *
 	 * Create state on main layer of the screen
 	 *
 	 * @param params
 	 *            The params set to this State when showing
 	 * @throws StateException
 	 */
-	public void create(Bundle params) throws StateException
+	private void create(Bundle params) throws StateException
 	{
 		create(params, false);
 	}
 
 	/**
+	 * FIXME: What was the purpose of this method?!
+	 *
 	 * Create state on overlay layer of the screen
 	 *
 	 * @param params
 	 *            The params set to this State when showing
 	 * @throws StateException
 	 */
-	public void createOverlay(Bundle params) throws StateException
+	private void createOverlay(Bundle params) throws StateException
 	{
 		create(params, true);
 	}
@@ -86,23 +91,7 @@ public class BaseState extends Fragment
 	{
 		Log.i(getClass().getSimpleName(), ".close");
 		Environment env = (Environment)getActivity();
-		StateManager stateManager = env.getStateManager();
-		StateLayer stateLayer = stateManager.getStateLayer(this);
-		try
-		{
-			if (StateLayer.MAIN.equals(stateLayer))
-			{
-				stateManager.setStateMain(null, null);
-			}
-			else if (StateLayer.OVERLAY.equals(stateLayer))
-			{
-				stateManager.setStateOverlay(null, null);
-			}
-		}
-		catch (StateException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-		}
+		env.getStateManager().closeState(this);
 	}
 
 	/**

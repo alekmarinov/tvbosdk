@@ -84,7 +84,12 @@ public class Environment extends Activity
 		/**
 		 * Timeout in seconds for feature initialization
 		 */
-		FEATURE_INITIALIZE_TIMEOUT(130);
+		FEATURE_INITIALIZE_TIMEOUT(120),
+
+		/**
+		 * The overlay background color
+		 */
+		OVERLAY_BACKGROUND_COLOR(0x00000000),;
 
 		Param(int value)
 		{
@@ -114,6 +119,7 @@ public class Environment extends Activity
 	// Chain based features initializer
 	private final FeatureInitializeCallBack _onFeatureInitialized = new FeatureInitializeCallBack();
 	private boolean _isInitialized = false;
+	private static boolean _isCreated = false;
 	private FeatureRCU _featureRCU;
 
 	/**
@@ -133,6 +139,11 @@ public class Environment extends Activity
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+		if (_isCreated)
+		{
+			throw new RuntimeException("This process has already started!");
+		}
+		_isCreated = true;
 
 		Log.i(TAG, ".onCreate");
 		try
@@ -161,6 +172,7 @@ public class Environment extends Activity
 			// initializes environment context
 			_stateManager = new StateManager(this);
 			_stateManager.setMessageState(use(FeatureName.State.MESSAGE_BOX));
+			_stateManager.setOverlayBackgroundColor(getPrefs().getInt(Param.OVERLAY_BACKGROUND_COLOR));
 			_featureRCU = (FeatureRCU) use(FeatureName.Component.RCU);
 
 			_serviceController = new ServiceController(this);
@@ -216,6 +228,9 @@ public class Environment extends Activity
 
 	public void initialize()
 	{
+		if (_isInitialized)
+			throw new RuntimeException("Environment is already initialized!");
+		Log.i(TAG, ".initialize");
 		_onFeatureInitialized.initialize();
 	}
 
@@ -302,18 +317,7 @@ public class Environment extends Activity
 			_nFeature = _nInitialized = -1;
 
 			getEventMessenger().trigger(ON_INITIALIZE);
-
-			// start initializing features by post to allow ON_INITIALIZE
-			// handlers
-			// to prepare
-			getEventMessenger().post(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					initializeNext();
-				}
-			});
+			initializeNext();
 		}
 
 		// return true if there are more features to initialize or false
@@ -329,7 +333,16 @@ public class Environment extends Activity
 				        + feature.getClass().getName() + ") with timeout " + _timeout + " secs");
 
 				startTimeout();
-				feature.initialize(this);
+
+				// initializing next feature
+				getEventMessenger().post(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						feature.initialize(FeatureInitializeCallBack.this);
+					}
+				});
 			}
 			else
 			{
@@ -1078,11 +1091,11 @@ public class Environment extends Activity
 					featureName = getClass().getSimpleName();
 				}
 				String sValue = attributes.getValue(ATTR_VALUE);
-				int value = 0;
+				long value = 0;
 
 				try
 				{
-					value = Integer.parseInt(sValue);
+					value = Long.parseLong(sValue);
 				}
 				catch (NumberFormatException e)
 				{
@@ -1097,7 +1110,7 @@ public class Environment extends Activity
 						Log.i(TAG, "Overwriting param " + featureName + "." + _paramName + ": " + prevValue
 						        + " -> " + value);
 						prefs.remove(_paramName);
-						prefs.put(_paramName, value);
+						prefs.put(_paramName, (int)value);
 					}
 					else
 					{
@@ -1108,7 +1121,7 @@ public class Environment extends Activity
 				else
 				{
 					Log.i(TAG, "Add new param " + featureName + "." + _paramName + " = " + value);
-					prefs.put(_paramName, value);
+					prefs.put(_paramName, (int)value);
 				}
 			}
 			else if (TAG_BOOLEAN.equalsIgnoreCase(localName))

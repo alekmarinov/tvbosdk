@@ -11,6 +11,7 @@
 package com.aviq.tv.android.sdk.core.state;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Stack;
 
 import android.app.Activity;
@@ -42,10 +43,11 @@ public class StateManager
 	private int _overlayBackgroundColor = 0;
 	private int _overlayBackgroundImage = 0;
 	private int _mainFragmentId;
-	private int _overlayFragmentId;
 	private int _messageFragmentId;
 	private BaseState _messageState;
 	private ViewGroup _contentView;
+	private List<Integer> _overlayFragmentIds = new ArrayList<Integer>();
+	private RelativeLayout _overlayLayout;
 	private int _viewLayerId = 0x00af0001;
 
 	public enum StateLayer
@@ -182,25 +184,63 @@ public class StateManager
 	 * @param mainActivity
 	 *            The owner MainActivity of this StateManager
 	 */
+	// public StateManager(Activity activity)
+	// {
+	// _activity = activity;
+	// _contentView = createContentView(_activity);
+	// _activity.setContentView(_contentView);
+	//
+	// View mainFragment = createFrameLayout();
+	// View overlayFragment = createFrameLayout();
+	// View messageFragment = createFrameLayout();
+	//
+	// addViewLayer(mainFragment, false);
+	// addViewLayer(overlayFragment, false);
+	// addViewLayer(messageFragment, false);
+	//
+	// _mainFragmentId = mainFragment.getId();
+	// _overlayFragmentId = overlayFragment.getId();
+	// _messageFragmentId = messageFragment.getId();
+	//
+	// Log.i(TAG, "StateManager created: " + _mainFragmentId + ", " +
+	// _overlayFragmentId + ", " + _messageFragmentId);
+	// }
+
 	public StateManager(Activity activity)
 	{
 		_activity = activity;
-		_contentView = createContentView(_activity);
-		_activity.setContentView(_contentView);
+		// Create enveloping activity layout
+		RelativeLayout contentView = new RelativeLayout(_activity);
+		_contentView = contentView;
+		_activity.setContentView(contentView);
 
-		View mainFragment = createFrameLayout();
-		View overlayFragment = createFrameLayout();
-		View messageFragment = createFrameLayout();
+		// Create frame layout for main state
+		View mainFrame = new FrameLayout(_activity);
 
-		addViewLayer(mainFragment, false);
-		addViewLayer(overlayFragment, false);
-		addViewLayer(messageFragment, false);
+		// Create layout holder for arbitrary number of overlay states
+		_overlayLayout = new RelativeLayout(_activity);
 
-		_mainFragmentId = mainFragment.getId();
-		_overlayFragmentId = overlayFragment.getId();
-		_messageFragmentId = messageFragment.getId();
+		// Create frame layout for one overlay state
+		View overlayFrame = new FrameLayout(_activity);
+		overlayFrame.setId(_viewLayerId++);
+		RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
+		        RelativeLayout.LayoutParams.MATCH_PARENT);
+		_overlayLayout.addView(overlayFrame, lp);
 
-		Log.i(TAG, "StateManager created: " + _mainFragmentId + ", " + _overlayFragmentId + ", " + _messageFragmentId);
+		// Create frame layout for message state
+		View messageFrame = new FrameLayout(_activity);
+
+		// add main state frame layout
+		addViewLayer(mainFrame, false);
+		addViewLayer(_overlayLayout, false);
+		// addViewLayer(overlayFrame, false);
+		addViewLayer(messageFrame, false);
+
+		_mainFragmentId = mainFrame.getId();
+		_overlayFragmentIds.add(overlayFrame.getId());
+		_messageFragmentId = messageFrame.getId();
+
+		Log.i(TAG, "StateManager created");
 	}
 
 	private ViewGroup createContentView(Context context)
@@ -245,7 +285,8 @@ public class StateManager
 	 * @param isOverlay
 	 *            If this State overlays the current
 	 */
-	private void setState(BaseState newState, Bundle params, boolean isOverlay) throws StateException
+	private void setState(BaseState newState, Bundle params, boolean isOverlay, boolean isOverlayAdd)
+	        throws StateException
 	{
 		StringBuffer logMsg = new StringBuffer();
 		String stateName;
@@ -263,8 +304,7 @@ public class StateManager
 			case 0:
 				if (isOverlay)
 				{
-					throw new StateException(null, "Can't set overlay state `" + stateName
-					        + "' without main State");
+					throw new StateException(null, "Can't set overlay state `" + stateName + "' without main State");
 				}
 				else
 				{
@@ -280,13 +320,14 @@ public class StateManager
 				{
 					if (newState != null)
 					{
+						_activeStates.get(_activeStates.size() - 1).onHide(true);
 						_activeStates.add(newState);
 						createState(newState, StateLayer.OVERLAY, params);
 					}
 				}
 				else
 				{
-					closeState(_activeStates.pop());
+					removeState(_activeStates.pop());
 					if (newState != null)
 					{
 						_activeStates.add(newState);
@@ -294,25 +335,33 @@ public class StateManager
 					}
 				}
 			break;
-			case 2:
+			default:
 				if (isOverlay)
 				{
-					closeState(_activeStates.pop());
+					if (!isOverlayAdd)
+					{
+						while (_activeStates.size() > 1)
+							removeState(_activeStates.pop());
+					}
 					if (newState != null)
 					{
+						_activeStates.get(_activeStates.size() - 1).onHide(true);
 						_activeStates.add(newState);
 						createState(newState, StateLayer.OVERLAY, params);
 					}
 					else
 					{
+						if (isOverlayAdd)
+							removeState(_activeStates.pop());
+
 						// restore focus of the uncovered view
-						_activeStates.get(0).onShow(true);
+						_activeStates.get(_activeStates.size() - 1).onShow(true);
 					}
 				}
 				else
 				{
-					closeState(_activeStates.pop());
-					closeState(_activeStates.pop());
+					while (_activeStates.size() > 0)
+						removeState(_activeStates.pop());
 					if (newState != null)
 					{
 						_activeStates.add(newState);
@@ -325,13 +374,11 @@ public class StateManager
 
 	public StateLayer getStateLayer(BaseState state)
 	{
-		switch (_activeStates.indexOf(state))
-		{
-			case 0:
-				return StateLayer.MAIN;
-			case 1:
-				return StateLayer.OVERLAY;
-		}
+		int stateIndex = _activeStates.indexOf(state);
+		if (stateIndex == 0)
+			return StateLayer.MAIN;
+		else if (stateIndex > 0)
+			return StateLayer.OVERLAY;
 		return null;
 	}
 
@@ -369,7 +416,7 @@ public class StateManager
 	 */
 	public void setStateMain(BaseState state, Bundle params) throws StateException
 	{
-		setState(state, params, false);
+		setState(state, params, false, false);
 	}
 
 	/**
@@ -382,7 +429,20 @@ public class StateManager
 	 */
 	public void setStateOverlay(BaseState state, Bundle params) throws StateException
 	{
-		setState(state, params, true);
+		setState(state, params, true, false);
+	}
+
+	/**
+	 * Add new State as active overlay.
+	 *
+	 * @param state
+	 *            The new State to activate
+	 * @param params
+	 *            Bundle holding params to be sent to the State when showing
+	 */
+	public void addStateOverlay(BaseState state, Bundle params) throws StateException
+	{
+		setState(state, params, true, true);
 	}
 
 	/**
@@ -392,7 +452,7 @@ public class StateManager
 	{
 		try
 		{
-			setState(null, null, true);
+			setState(null, null, true, false);
 		}
 		catch (StateException e)
 		{
@@ -433,7 +493,18 @@ public class StateManager
 						fragmentId = _mainFragmentId;
 					break;
 					case OVERLAY:
-						fragmentId = _overlayFragmentId;
+						int nOverlays = _activeStates.size() - 1;
+						while (nOverlays > _overlayFragmentIds.size())
+						{
+							// add new overlay frame
+							View overlayFrame = new FrameLayout(_activity);
+							overlayFrame.setId(_viewLayerId++);
+							RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
+							        RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+							_overlayLayout.addView(overlayFrame, lp);
+							_overlayFragmentIds.add(overlayFrame.getId());
+						}
+						fragmentId = _overlayFragmentIds.get(_overlayFragmentIds.size() - 1);
 					break;
 					case MESSAGE:
 						fragmentId = _messageFragmentId;
@@ -470,7 +541,7 @@ public class StateManager
 							{
 								Log.e(TAG, "The view of overlay " + state.getClass().getName() + " is null!");
 							}
-							_activeStates.get(0).onHide(true);
+							// _activeStates.get(_activeStates.size() - 1).onHide(true);
 						}
 
 						// notify state is shown
@@ -481,7 +552,7 @@ public class StateManager
 		};
 		if (state.isAdded())
 		{
-			closeState(state);
+			removeState(state);
 			_handler.post(showFragmentChunk);
 		}
 		else
@@ -530,7 +601,14 @@ public class StateManager
 	 */
 	public boolean onKeyDown(AVKeyEvent keyEvent)
 	{
-		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", state = " + getMainState() + ", overlay = " + getOverlayState());
+		StringBuffer statesDump = new StringBuffer();
+		for (int i = 0; i < _activeStates.size(); i++)
+		{
+			if (i > 0)
+				statesDump.append(", ");
+			statesDump.append(_activeStates.get(i));
+		}
+		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", states = " + statesDump);
 
 		if (_messageState.isAdded())
 		{
@@ -539,6 +617,7 @@ public class StateManager
 		}
 		if (_activeStates.size() > 0)
 		{
+			Log.i(TAG, ".onKeyDown: delegating " + keyEvent + " to " + _activeStates.get(_activeStates.size() - 1));
 			return _activeStates.get(_activeStates.size() - 1).onKeyDown(keyEvent);
 		}
 
@@ -559,7 +638,14 @@ public class StateManager
 	 */
 	public boolean onKeyUp(AVKeyEvent keyEvent)
 	{
-		Log.i(TAG, ".onKeyUp: key = " + keyEvent + ", state = " + getMainState() + ", overlay = " + getOverlayState());
+		StringBuffer statesDump = new StringBuffer();
+		for (int i = 0; i < _activeStates.size(); i++)
+		{
+			if (i > 0)
+				statesDump.append(", ");
+			statesDump.append(_activeStates.get(i));
+		}
+		Log.i(TAG, ".onKeyUp: key = " + keyEvent + ", states = " + statesDump);
 
 		if (_messageState.isAdded())
 		{
@@ -567,6 +653,7 @@ public class StateManager
 		}
 		else if (_activeStates.size() > 0)
 		{
+			Log.i(TAG, ".onKeyUp: delegating " + keyEvent + " to " + _activeStates.get(_activeStates.size() - 1));
 			return _activeStates.get(_activeStates.size() - 1).onKeyUp(keyEvent);
 		}
 
@@ -587,8 +674,14 @@ public class StateManager
 	 */
 	public boolean onKeyLongPress(AVKeyEvent keyEvent)
 	{
-		Log.i(TAG, ".onKeyLongPress: key = " + keyEvent + ", state = " + getMainState() + ", overlay = "
-		        + getOverlayState());
+		StringBuffer statesDump = new StringBuffer();
+		for (int i = 0; i < _activeStates.size(); i++)
+		{
+			if (i > 0)
+				statesDump.append(", ");
+			statesDump.append(_activeStates.get(i));
+		}
+		Log.i(TAG, ".onKeyLongPress: key = " + keyEvent + ", states = " + statesDump);
 
 		if (_messageState.isAdded())
 		{
@@ -596,6 +689,7 @@ public class StateManager
 		}
 		else if (_activeStates.size() > 0)
 		{
+			Log.i(TAG, ".onKeyLongPress: delegating " + keyEvent + " to " + _activeStates.get(_activeStates.size() - 1));
 			return _activeStates.get(_activeStates.size() - 1).onKeyLongPress(keyEvent);
 		}
 
@@ -632,9 +726,30 @@ public class StateManager
 	 */
 	public void hideMessage()
 	{
-		if (closeState(_messageState))
+		if (removeState(_messageState))
 			if (_activeStates.size() > 0)
 				_activeStates.get(_activeStates.size() - 1).onShow(true);
+	}
+
+	public void closeState(BaseState state)
+	{
+		Log.i(TAG, ".closeState: state = " + state);
+		StateLayer stateLayer = getStateLayer(state);
+		try
+		{
+			if (StateLayer.MAIN.equals(stateLayer))
+			{
+				setStateMain(null, null);
+			}
+			else if (StateLayer.OVERLAY.equals(stateLayer))
+			{
+				setState(null, null, true, true);
+			}
+		}
+		catch (StateException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
 	}
 
 	/**
@@ -643,7 +758,7 @@ public class StateManager
 	 * @param state
 	 *            to be removed from screen
 	 */
-	/* package */boolean closeState(BaseState state)
+	private boolean removeState(BaseState state)
 	{
 		Log.i(TAG, ".hideState: " + state.getClass().getSimpleName());
 
@@ -658,13 +773,6 @@ public class StateManager
 			return true;
 		}
 		return false;
-	}
-
-	public void setFragmentLayerResources(int mainFragmentId, int overlayFragmentId, int messageFragmentId)
-	{
-		_mainFragmentId = mainFragmentId;
-		_overlayFragmentId = overlayFragmentId;
-		_messageFragmentId = messageFragmentId;
 	}
 
 	public void setMessageState(BaseState messageState)

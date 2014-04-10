@@ -32,7 +32,9 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 {
 	public static final String TAG = FeatureState.class.getSimpleName();
 	public static final int ON_SHOW = EventMessenger.ID("ON_SHOW");
+	public static final String EXTRA_ON_SHOW_UNCOVER = "ON_SHOW_UNCOVER";
 	public static final int ON_HIDE = EventMessenger.ID("ON_HIDE");
+	public static final String EXTRA_ON_HIDE_COVER = "ON_HIDE_COVER";
 	protected FeatureSet _dependencies = new FeatureSet();
 	private List<Subscription> _subscriptions = new ArrayList<Subscription>();
 	private EventMessenger _eventMessenger = new EventMessenger();
@@ -225,7 +227,9 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 				subscription.EventMessenger.register(this, subscription.MsgId);
 			}
 		}
-		getEventMessenger().trigger(ON_SHOW);
+		Bundle bundle = new Bundle();
+		bundle.putBoolean(EXTRA_ON_SHOW_UNCOVER, isViewUncovered);
+		getEventMessenger().trigger(ON_SHOW, bundle);
 	}
 
 	/**
@@ -246,7 +250,9 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 				subscription.EventMessenger.unregister(this, subscription.MsgId);
 			}
 		}
-		getEventMessenger().trigger(ON_HIDE);
+		Bundle bundle = new Bundle();
+		bundle.putBoolean(EXTRA_ON_HIDE_COVER, isViewCovered);
+		getEventMessenger().trigger(ON_HIDE, bundle);
 	}
 
 	public abstract FeatureName.State getStateName();
