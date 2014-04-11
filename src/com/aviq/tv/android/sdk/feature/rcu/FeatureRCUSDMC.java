@@ -114,6 +114,10 @@ public class FeatureRCUSDMC extends FeatureRCU
 				return Key.NUM_0;
 			case 67:
 				return Key.DELETE;
+
+			// FIXME: Test mappings to test with keyboard
+			case KeyEvent.KEYCODE_E:
+				return Key.EPG;
 		}
 		return Key.UNKNOWN;
 	}
