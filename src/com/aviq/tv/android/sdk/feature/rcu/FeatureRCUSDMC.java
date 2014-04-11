@@ -56,8 +56,6 @@ public class FeatureRCUSDMC extends FeatureRCU
 				return Key.FUNCTION2; // Subtitles
 			case 318: // FIXME: detect key code
 				return Key.FUNCTION3; // Audio
-			case 317: // FIXME: detect key code
-				return Key.TXT;
 			case 17: // FIXME: detect key code
 				return Key.FUNCTION4; // Timer
 			case 82:
@@ -84,8 +82,6 @@ public class FeatureRCUSDMC extends FeatureRCU
 				return Key.VOLUME_DOWN;
 			case KeyEvent.KEYCODE_HOME: /* FIXME: SDMC is not sending this event! */
 				return Key.HOME;
-			case 304:
-				return Key.FAVORITE;
 			case 92:
 				return Key.PAGE_UP;
 			case 93:
@@ -115,9 +111,27 @@ public class FeatureRCUSDMC extends FeatureRCU
 			case 67:
 				return Key.DELETE;
 
-			// FIXME: Test mappings to test with keyboard
-			case KeyEvent.KEYCODE_E:
+			// Added for AVIQ apps
+			case 334: 
+				return Key.LIB;
+			case 335: 
+				return Key.TXT;
+			case 336: 
+				return Key.APPS;
+			case 337: 
+				return Key.VOD;
+			case 338: 
+				return Key.WEBTV;
+			case 339: 
+				return Key.MEDIA;
+			case 340: 
+				return Key.YOUTUBE;
+			case 341: 
+				return Key.TV;
+			case 342: 
 				return Key.EPG;
+			case 343: 
+				return Key.FAVORITE;
 		}
 		return Key.UNKNOWN;
 	}

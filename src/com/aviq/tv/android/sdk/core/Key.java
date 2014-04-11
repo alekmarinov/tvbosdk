@@ -61,6 +61,8 @@ public enum Key
 	LIB,
 	TXT,
 	APPS,
+	WEBTV,
+	YOUTUBE,
 	DVR,
 	LAST_CHANNEL,
 	FUNCTION1,
