@@ -15,7 +15,7 @@ import android.view.KeyEvent;
 import com.aviq.tv.android.sdk.core.Key;
 
 /**
- * Defines Wilmaa RCU specific keys mapping
+ * Defines VTX RCU specific keys mapping
  */
 public class FeatureRCUVTX extends FeatureRCU
 {
@@ -44,21 +44,21 @@ public class FeatureRCUVTX extends FeatureRCU
 				return Key.NUM_8;
 			case KeyEvent.KEYCODE_9:
 				return Key.NUM_9;
-			case 1017: // FIXME: detect key code
+			case KeyEvent.KEYCODE_STAR:
 				return Key.CHARACTERS;
 			case KeyEvent.KEYCODE_0:
 				return Key.NUM_0;
 			case KeyEvent.KEYCODE_DEL:
 				return Key.DELETE;
-			case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+			case KeyEvent.KEYCODE_MEDIA_REWIND:
 				return Key.PLAY_BACKWARD;
 			case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
 				return Key.PLAY_PAUSE;
 			case KeyEvent.KEYCODE_MEDIA_STOP:
 				return Key.PLAY_STOP;
-			case KeyEvent.KEYCODE_MEDIA_NEXT:
+			case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:
 				return Key.PLAY_FORWARD;
-			case KeyEvent.KEYCODE_MUTE:
+			case KeyEvent.KEYCODE_VOLUME_MUTE:
 				return Key.MUTE;
 			case KeyEvent.KEYCODE_VOLUME_UP:
 				return Key.VOLUME_UP;
@@ -68,16 +68,8 @@ public class FeatureRCUVTX extends FeatureRCU
 				return Key.PAGE_UP;
 			case KeyEvent.KEYCODE_PAGE_DOWN:
 				return Key.PAGE_DOWN;
-			case 1011: // FIXME: detect key code
+			case 303: // DVB__RECALL
 				return Key.LAST_CHANNEL;
-			case KeyEvent.KEYCODE_TV:
-				return Key.TV;
-			case 1012: // FIXME: detect key code
-				return Key.VOD;
-			case KeyEvent.KEYCODE_MUSIC:
-				return Key.MEDIA;
-			case 1013: // FIXME: detect key code
-				return Key.EPG;
 			case KeyEvent.KEYCODE_BACK:
 				return Key.BACK;
 			case KeyEvent.KEYCODE_MENU:
@@ -90,7 +82,7 @@ public class FeatureRCUVTX extends FeatureRCU
 				return Key.UP;
 			case KeyEvent.KEYCODE_DPAD_DOWN:
 				return Key.DOWN;
-			case KeyEvent.KEYCODE_ENTER:
+			case KeyEvent.KEYCODE_DPAD_CENTER:
 				return Key.OK;
 			case KeyEvent.KEYCODE_PROG_RED:
 				return Key.RED;
@@ -102,12 +94,28 @@ public class FeatureRCUVTX extends FeatureRCU
 				return Key.BLUE;
 			case KeyEvent.KEYCODE_MEDIA_RECORD:
 				return Key.REC;
-			case 1014: // FIXME: detect key code
-				return Key.FUNCTION1; // Lib
-			case 1015: // FIXME: detect key code
+
+			// Added for AVIQ apps
+			case 184: 
+				return Key.LIB;
+			case 178: 
 				return Key.TXT;
-			case 1016: // FIXME: detect key code
+			case 179: 
 				return Key.APPS;
+			case 180: 
+				return Key.VOD;
+			case 181: 
+				return Key.WEBTV;
+			case 182: 
+				return Key.MEDIA;
+			case 183: 
+				return Key.YOUTUBE;
+			case 177: 
+				return Key.TV;
+			case 185: 
+				return Key.EPG;
+			case 186: 
+				return Key.FAVORITE;
 		}
 		return Key.UNKNOWN;
 	}

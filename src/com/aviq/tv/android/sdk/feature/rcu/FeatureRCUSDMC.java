@@ -26,46 +26,54 @@ public class FeatureRCUSDMC extends FeatureRCU
 		{
 			case KeyEvent.KEYCODE_POWER:
 				return Key.SLEEP;
-			case 164:
-				return Key.MUTE;
-			case 312:
-				return Key.RED;
-			case 313:
-				return Key.GREEN;
-			case 314:
-				return Key.YELLOW;
-			case 315:
-				return Key.BLUE;
+			case KeyEvent.KEYCODE_1:
+				return Key.NUM_1;
+			case KeyEvent.KEYCODE_2:
+				return Key.NUM_2;
+			case KeyEvent.KEYCODE_3:
+				return Key.NUM_3;
+			case KeyEvent.KEYCODE_4:
+				return Key.NUM_4;
+			case KeyEvent.KEYCODE_5:
+				return Key.NUM_5;
+			case KeyEvent.KEYCODE_6:
+				return Key.NUM_6;
+			case KeyEvent.KEYCODE_7:
+				return Key.NUM_7;
+			case KeyEvent.KEYCODE_8:
+				return Key.NUM_8;
+			case KeyEvent.KEYCODE_9:
+				return Key.NUM_9;
+			case KeyEvent.KEYCODE_STAR:
+				return Key.CHARACTERS;
+			case KeyEvent.KEYCODE_0:
+				return Key.NUM_0;
+			case KeyEvent.KEYCODE_DEL:
+				return Key.DELETE;
+			case KeyEvent.KEYCODE_MEDIA_REWIND:
+				return Key.PLAY_BACKWARD;
 			case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
 				return Key.PLAY_PAUSE;
-			case 86:
+			case KeyEvent.KEYCODE_MEDIA_STOP:
 				return Key.PLAY_STOP;
-			case 89:
-				return Key.PLAY_BACKWARD;
-			case 90:
+			case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:
 				return Key.PLAY_FORWARD;
-			case 323:
-				return Key.REC;
-			case 319:
-				return Key.FUNCTION1; // Picture Size
-			case 326:
-				return Key.DVR;
-			case 303: // FIXME: detect key code
+			case KeyEvent.KEYCODE_VOLUME_MUTE:
+				return Key.MUTE;
+			case KeyEvent.KEYCODE_VOLUME_UP:
+				return Key.VOLUME_UP;
+			case KeyEvent.KEYCODE_VOLUME_DOWN:
+				return Key.VOLUME_DOWN;
+			case KeyEvent.KEYCODE_PAGE_UP:
+				return Key.PAGE_UP;
+			case KeyEvent.KEYCODE_PAGE_DOWN:
+				return Key.PAGE_DOWN;
+			case 303: // DVB__RECALL
 				return Key.LAST_CHANNEL;
-			case 316: // FIXME: detect key code
-				return Key.FUNCTION2; // Subtitles
-			case 318: // FIXME: detect key code
-				return Key.FUNCTION3; // Audio
-			case 17: // FIXME: detect key code
-				return Key.FUNCTION4; // Timer
-			case 82:
-				return Key.MENU;
 			case KeyEvent.KEYCODE_BACK:
 				return Key.BACK;
-			case 307:
-				return Key.INFO;
-			case 306:
-				return Key.EPG;
+			case KeyEvent.KEYCODE_MENU:
+				return Key.MENU;
 			case KeyEvent.KEYCODE_DPAD_LEFT:
 				return Key.LEFT;
 			case KeyEvent.KEYCODE_DPAD_RIGHT:
@@ -74,63 +82,39 @@ public class FeatureRCUSDMC extends FeatureRCU
 				return Key.UP;
 			case KeyEvent.KEYCODE_DPAD_DOWN:
 				return Key.DOWN;
-			case 23:
+			case KeyEvent.KEYCODE_DPAD_CENTER:
 				return Key.OK;
-			case KeyEvent.KEYCODE_VOLUME_UP:
-				return Key.VOLUME_UP;
-			case KeyEvent.KEYCODE_VOLUME_DOWN:
-				return Key.VOLUME_DOWN;
-			case KeyEvent.KEYCODE_HOME: /* FIXME: SDMC is not sending this event! */
-				return Key.HOME;
-			case 92:
-				return Key.PAGE_UP;
-			case 93:
-				return Key.PAGE_DOWN;
-			case 8:
-				return Key.NUM_1;
-			case 9:
-				return Key.NUM_2;
-			case 10:
-				return Key.NUM_3;
-			case 11:
-				return Key.NUM_4;
-			case 12:
-				return Key.NUM_5;
-			case 13:
-				return Key.NUM_6;
-			case 14:
-				return Key.NUM_7;
-			case 15:
-				return Key.NUM_8;
-			case 16:
-				return Key.NUM_9;
-			case 301:
-				return Key.FUNCTION5; // TV/Radio
-			case 7:
-				return Key.NUM_0;
-			case 67:
-				return Key.DELETE;
+			case KeyEvent.KEYCODE_PROG_RED:
+				return Key.RED;
+			case KeyEvent.KEYCODE_PROG_GREEN:
+				return Key.GREEN;
+			case KeyEvent.KEYCODE_PROG_YELLOW:
+				return Key.YELLOW;
+			case KeyEvent.KEYCODE_PROG_BLUE:
+				return Key.BLUE;
+			case KeyEvent.KEYCODE_MEDIA_RECORD:
+				return Key.REC;
 
 			// Added for AVIQ apps
-			case 334: 
+			case 184: 
 				return Key.LIB;
-			case 335: 
+			case 178: 
 				return Key.TXT;
-			case 336: 
+			case 179: 
 				return Key.APPS;
-			case 337: 
+			case 180: 
 				return Key.VOD;
-			case 338: 
+			case 181: 
 				return Key.WEBTV;
-			case 339: 
+			case 182: 
 				return Key.MEDIA;
-			case 340: 
+			case 183: 
 				return Key.YOUTUBE;
-			case 341: 
+			case 177: 
 				return Key.TV;
-			case 342: 
+			case 185: 
 				return Key.EPG;
-			case 343: 
+			case 186: 
 				return Key.FAVORITE;
 		}
 		return Key.UNKNOWN;
