@@ -96,25 +96,25 @@ public class FeatureRCUSDMC extends FeatureRCU
 				return Key.REC;
 
 			// Added for AVIQ apps
-			case 184: 
-				return Key.LIB;
-			case 178: 
-				return Key.TXT;
-			case 179: 
-				return Key.APPS;
-			case 180: 
-				return Key.VOD;
-			case 181: 
-				return Key.WEBTV;
-			case 182: 
-				return Key.MEDIA;
-			case 183: 
-				return Key.YOUTUBE;
-			case 177: 
+			case 304: 
 				return Key.TV;
-			case 185: 
+			case 305: 
+				return Key.TXT;
+			case 306: 
+				return Key.APPS;
+			case 307: 
+				return Key.VOD;
+			case 308: 
+				return Key.WEBTV;
+			case 309: 
+				return Key.MEDIA;
+			case 310: 
+				return Key.YOUTUBE;
+			case 311: 
+				return Key.LIB;
+			case 312: 
 				return Key.EPG;
-			case 186: 
+			case 313: 
 				return Key.FAVORITE;
 		}
 		return Key.UNKNOWN;
