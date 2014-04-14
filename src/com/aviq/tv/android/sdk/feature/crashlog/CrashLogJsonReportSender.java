@@ -2,6 +2,7 @@ package com.aviq.tv.android.sdk.feature.crashlog;
 
 import java.io.IOException;
 import java.net.URL;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -49,6 +50,9 @@ public class CrashLogJsonReportSender implements ReportSender
 	@Override
 	public void send(CrashReportData report) throws ReportSenderException
 	{
+		String device = null;
+		String event = null;
+
 		String boxId = "";
 		String appVersionCode = "";
 		String userCrashDate = "";
@@ -113,6 +117,27 @@ public class CrashLogJsonReportSender implements ReportSender
 				}
 				if (brandName == null || brandName.equals("") || brandName.equalsIgnoreCase("null"))
 					brandName = "brand";
+
+				// Find (w/o the quotes): "device = some_json\n"
+				Pattern patternDevice = Pattern.compile("device\\s.*?=\\s.*?(\\{.*?\\})\\s.*?");
+				Matcher matcherDevice = patternDevice.matcher(value);
+				if (matcherDevice.find())
+				{
+					device = matcherDevice.group(1).trim();
+				}
+				if (device == null || device.equals("") || device.equalsIgnoreCase("null"))
+					device = "{}";
+
+				// Find (w/o the quotes): "event = some_json\n"
+				Pattern patternEvent = Pattern.compile("event\\s.*?=\\s.*?(\\{.*?\\})\\s.*?");
+				Matcher matcherEvent = patternEvent.matcher(value);
+				if (matcherEvent.find())
+				{
+					event = matcherEvent.group(1).trim();
+				}
+				if (event == null || event.equals("") || event.equalsIgnoreCase("null"))
+					event = "{}";
+				event = event.replaceAll("\\{\\{TIMESTAMP\\}\\}", getTimeAsISO(System.currentTimeMillis()));
 			}
 		}
 
@@ -125,7 +150,9 @@ public class CrashLogJsonReportSender implements ReportSender
 		try
 		{
 			// Send the report to the server
-			sendData(reportFileName, report.toJSON().toString());
+			String data = report.toJSON().toString();
+			data = data.substring(0, data.length() - 1) + ", \"device\": " + device + ", \"event\": " + event + "}";
+			sendData(reportFileName, data);
 		}
 		catch (JSONReportException e)
 		{
@@ -173,5 +200,14 @@ public class CrashLogJsonReportSender implements ReportSender
 		{
 			Log.e(TAG, e.getMessage(), e);
 		}
+	}
+
+	public static String getTimeAsISO(long timestampMillis)
+	{
+		// TimeZone tz = TimeZone.getTimeZone("UTC");
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ");
+		// df.setTimeZone(tz);
+		String timeAsISO = df.format(timestampMillis);
+		return timeAsISO;
 	}
 }

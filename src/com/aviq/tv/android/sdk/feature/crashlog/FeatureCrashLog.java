@@ -15,6 +15,8 @@ import org.acra.ACRAConfiguration;
 import org.acra.ACRAConfigurationException;
 import org.acra.ErrorReporter;
 import org.acra.ReportingInteractionMode;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.app.Application;
 import android.os.Bundle;
@@ -27,6 +29,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
+import com.aviq.tv.android.sdk.feature.network.FeatureEthernet;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 
 /**
@@ -48,7 +51,10 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		REMOTE_SERVER_PASSWORD("datQrsP1_pH3247ttee"),
 
 		/** Socket timeout in milliseconds */
-		SOCKET_TIMEOUT_MILLIS(20000);
+		SOCKET_TIMEOUT_MILLIS(20000),
+
+		CRASHLOG_CUSTOMER("VTX"),
+		CRASHLOG_BRAND("VTX");
 
 		/*
 		 * TODO
@@ -68,11 +74,13 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 
 	private FeatureInternet _featureInternet;
 	private FeatureRegister _featureRegister;
+	private FeatureEthernet _featureEthernet;
 
 	public FeatureCrashLog()
 	{
 		_dependencies.Schedulers.add(FeatureName.Scheduler.INTERNET);
 		_dependencies.Components.add(FeatureName.Component.REGISTER);
+		_dependencies.Components.add(FeatureName.Component.ETHERNET);
 	}
 
 	@Override
@@ -85,6 +93,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		{
 			_featureInternet = (FeatureInternet) env.getFeatureScheduler(FeatureName.Scheduler.INTERNET);
 			_featureRegister = (FeatureRegister) env.getFeatureComponent(FeatureName.Component.REGISTER);
+			_featureEthernet = (FeatureEthernet) env.getFeatureComponent(FeatureName.Component.ETHERNET);
 		}
 		catch (FeatureNotFoundException e)
 		{
@@ -113,6 +122,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 				// Got the public IP, no need to check for it anymore
 				_featureInternet.getEventMessenger().unregister(this, FeatureInternet.ON_CONNECTED);
 				ACRA.getErrorReporter().putCustomData("PUBLIC IP", publicIP);
+				ACRA.getErrorReporter().putCustomData(Key.DEVICE, prepareDeviceObject());
 			}
 		}
 	}
@@ -165,6 +175,9 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 
 		// Add custom report data
 
+		errorReporter.putCustomData(Key.DEVICE, prepareDeviceObject());
+		errorReporter.putCustomData(Key.EVENT, prepareEventObject());
+
 		errorReporter.putCustomData("BOX_ID", _featureRegister.getBoxId());
 		errorReporter.putCustomData("BRAND", _featureRegister.getBrand());
 
@@ -178,4 +191,71 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		// errorReporter.putCustomData("CUSTOMER", Globals.CUSTOMER);
 	}
 
+	private String prepareDeviceObject()
+	{
+		JSONObject device = new JSONObject();
+		try
+		{
+			device.accumulate(Key.MAC, _featureRegister.getBoxId());
+			device.accumulate(Key.IP, _featureEthernet.getNetworkConfig().Addr);
+			device.accumulate(Key.PUBLIC_IP, _featureInternet.getPublicIP());
+
+			JSONObject sw = new JSONObject();
+			sw.accumulate(Key.VERSION, Environment.getInstance().getBuildVersion());
+			sw.accumulate(Key.KIND, Environment.getInstance().getPrefs().getString(Environment.Param.RELEASE));
+			sw.accumulate(Key.CUSTOMER, getCustomer()); // _featureRegister.getBrand()
+			sw.accumulate(Key.BRAND, getBrand()); // _featureRegister.getBrand()
+
+			device.accumulate(Key.SW, sw);
+		}
+		catch (JSONException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		return device.toString();
+	}
+
+	private String prepareEventObject()
+	{
+		JSONObject event = new JSONObject();
+		try
+		{
+			event.accumulate(Key.TIMESTAMP, "{{TIMESTAMP}}");
+			event.accumulate(Key.SOURCE, "system");
+			event.accumulate(Key.ITEM, "crash");
+		}
+		catch (JSONException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		return event.toString();
+	}
+
+	private String getCustomer()
+	{
+		return getPrefs().getString(Param.CRASHLOG_CUSTOMER);
+	}
+
+	private String getBrand()
+	{
+		return getPrefs().getString(Param.CRASHLOG_BRAND);
+	}
+
+	private static interface Key
+	{
+		String DEVICE = "device";
+		String MAC = "mac";
+		String IP = "ip";
+		String PUBLIC_IP = "public_ip";
+		String SW = "sw";
+		String VERSION = "version";
+		String KIND = "kind";
+		String CUSTOMER = "customer";
+		String BRAND = "brand";
+		String EVENT = "event";
+		String TIMESTAMP = "timestamp";
+		String SOURCE = "source";
+		String ITEM = "item";
+		String NAME = "name";
+	}
 }
