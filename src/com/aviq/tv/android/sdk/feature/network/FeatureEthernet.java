@@ -12,7 +12,6 @@ package com.aviq.tv.android.sdk.feature.network;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -26,11 +25,11 @@ import android.net.DhcpInfo;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
-import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
@@ -79,55 +78,24 @@ public class FeatureEthernet extends FeatureComponent
 		DNS2
 	}
 
-	private Prefs _userPrefs;
 	private EthernetManagerWrapper _ethernetManagerWrapper;
 
-	public class NetworkConfig
+	public FeatureEthernet()
 	{
-		public String Iface;
-		public boolean IsDHCP;
-		public boolean IsUp;
-		public String Addr;
-		public String Mask;
-		public String Gateway;
-		public String Dns1;
-		public String Dns2;
-
-		@Override
-		public String toString()
-		{
-			StringBuffer sb = new StringBuffer();
-			sb.append(Iface);
-			if (IsDHCP)
-				sb.append(" dhcp");
-			else
-				sb.append(" manual");
-			if (IsUp)
-				sb.append(" up");
-			else
-				sb.append(" down");
-			sb.append(" ip:").append(Addr);
-			sb.append(" mask:").append(Mask);
-			sb.append(" gw:").append(Gateway);
-			sb.append(" dns1:").append(Dns1);
-			sb.append(" dns2:").append(Dns2);
-			return sb.toString();
-		}
+		_ethernetManagerWrapper = new EthernetManagerWrapper();
 	}
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		_userPrefs = Environment.getInstance().getUserPrefs();
-		_ethernetManagerWrapper = new EthernetManagerWrapper();
 		if (!_ethernetManagerWrapper.isSupported())
 		{
 			onFeatureInitialized.onInitialized(this, ResultCode.NOT_SUPPORTED);
 		}
 		else
 		{
-			_ethernetManagerWrapper.enable(true);
+			_ethernetManagerWrapper.setEnabled(true);
 			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 		}
 	}
@@ -153,6 +121,33 @@ public class FeatureEthernet extends FeatureComponent
 		return _ethernetManagerWrapper.getConfiguration();
 	}
 
+	public boolean isEnabled()
+	{
+		return _ethernetManagerWrapper.isEnabled();
+	}
+
+	public void setEnabled(boolean isEnabled)
+	{
+		try
+		{
+			FeatureWireless featureWireless = (FeatureWireless) Environment.getInstance().getFeatureComponent(
+			        FeatureName.Component.WIRELESS);
+			if (featureWireless.isEnabled() == isEnabled)
+				featureWireless.setEnabledDirect(!isEnabled);
+		}
+		catch (FeatureNotFoundException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		setEnabledDirect(isEnabled);
+	}
+
+	void setEnabledDirect(boolean isEnabled)
+	{
+		Log.i(TAG, ".setEnabled: " + isEnabled);
+		_ethernetManagerWrapper.setEnabled(isEnabled);
+	}
+
 	private class EthernetManagerWrapper
 	{
 		private boolean _isSupported = false;
@@ -161,6 +156,7 @@ public class FeatureEthernet extends FeatureComponent
 		private Object _ethernetManager;
 		private Method _getDeviceNameList;
 		private Method _setEthEnabled;
+		private Method _getEthState;
 		private Method _updateEthDevInfo;
 		private Method _getSavedEthConfig;
 		private Method _getDhcpInfo;
@@ -190,6 +186,7 @@ public class FeatureEthernet extends FeatureComponent
 				if (_ethernetManager != null)
 				{
 					_setEthEnabled = _ethernetManager.getClass().getMethod("setEthEnabled", boolean.class);
+					_getEthState = _ethernetManager.getClass().getMethod("getEthState");
 					_getDeviceNameList = _ethernetManager.getClass().getMethod("getDeviceNameList");
 					_updateEthDevInfo = _ethernetManager.getClass().getMethod("updateEthDevInfo", ethernetDevInfoClass);
 					_getSavedEthConfig = _ethernetManager.getClass().getMethod("getSavedEthConfig");
@@ -261,7 +258,7 @@ public class FeatureEthernet extends FeatureComponent
 			return networkInterfaces;
 		}
 
-		private void enable(boolean isEnabled)
+		private void setEnabled(boolean isEnabled)
 		{
 			if (_setEthEnabled != null)
 			{
@@ -284,21 +281,12 @@ public class FeatureEthernet extends FeatureComponent
 			}
 		}
 
-		private void setConfiguration(NetworkConfig networkConfig) throws SecurityException
+		private boolean isEnabled()
 		{
 			try
 			{
-				enable(false);
-				Class<?> ethernetDevInfoClass = Class.forName("android.net.ethernet.EthernetDevInfo");
-				_ethernetDevInfo = ethernetDevInfoClass.newInstance();
-				_setIfName.invoke(_ethernetDevInfo, networkConfig.Iface);
-				_setConnectMode.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? "dhcp" : "manual");
-				_setIpAddress.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? null: networkConfig.Addr);
-				_setNetMask.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? null: networkConfig.Mask);
-				_setRouteAddr.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? null: networkConfig.Gateway);
-				_setDnsAddr.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? null: networkConfig.Dns1);
-				_updateEthDevInfo.invoke(_ethernetManager, _ethernetDevInfo);
-				enable(true);
+				Boolean result = (Boolean) _getEthState.invoke(_ethernetManager);
+				return result.booleanValue();
 			}
 			catch (IllegalAccessException e)
 			{
@@ -308,14 +296,45 @@ public class FeatureEthernet extends FeatureComponent
 			{
 				Log.e(TAG, e.getMessage(), e);
 			}
-            catch (InstantiationException e)
-            {
+			catch (InvocationTargetException e)
+			{
 				Log.e(TAG, e.getMessage(), e);
-            }
-            catch (ClassNotFoundException e)
-            {
+			}
+			return false;
+		}
+
+		private void setConfiguration(NetworkConfig networkConfig) throws SecurityException
+		{
+			try
+			{
+				setEnabled(false);
+				Class<?> ethernetDevInfoClass = Class.forName("android.net.ethernet.EthernetDevInfo");
+				_ethernetDevInfo = ethernetDevInfoClass.newInstance();
+				_setIfName.invoke(_ethernetDevInfo, networkConfig.Iface);
+				_setConnectMode.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? "dhcp" : "manual");
+				_setIpAddress.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? null : networkConfig.Addr);
+				_setNetMask.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? null : networkConfig.Mask);
+				_setRouteAddr.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? null : networkConfig.Gateway);
+				_setDnsAddr.invoke(_ethernetDevInfo, networkConfig.IsDHCP ? null : networkConfig.Dns1);
+				_updateEthDevInfo.invoke(_ethernetManager, _ethernetDevInfo);
+				setEnabled(true);
+			}
+			catch (IllegalAccessException e)
+			{
 				Log.e(TAG, e.getMessage(), e);
-            }
+			}
+			catch (IllegalArgumentException e)
+			{
+				Log.e(TAG, e.getMessage(), e);
+			}
+			catch (InstantiationException e)
+			{
+				Log.e(TAG, e.getMessage(), e);
+			}
+			catch (ClassNotFoundException e)
+			{
+				Log.e(TAG, e.getMessage(), e);
+			}
 			catch (InvocationTargetException e)
 			{
 				if (e.getTargetException() instanceof SecurityException)
@@ -341,11 +360,11 @@ public class FeatureEthernet extends FeatureComponent
 				if (networkConfig.IsDHCP)
 				{
 					DhcpInfo dhcpInfo = (DhcpInfo) _getDhcpInfo.invoke(_ethernetManager);
-					networkConfig.Addr = intToIP(dhcpInfo.ipAddress);
-					networkConfig.Mask = intToIP(dhcpInfo.netmask);
-					networkConfig.Gateway = intToIP(dhcpInfo.gateway);
-					networkConfig.Dns1 = intToIP(dhcpInfo.dns1);
-					networkConfig.Dns2 = intToIP(dhcpInfo.dns2);
+					networkConfig.Addr = NetworkConfig.IntToIP(dhcpInfo.ipAddress);
+					networkConfig.Mask = NetworkConfig.IntToIP(dhcpInfo.netmask);
+					networkConfig.Gateway = NetworkConfig.IntToIP(dhcpInfo.gateway);
+					networkConfig.Dns1 = NetworkConfig.IntToIP(dhcpInfo.dns1);
+					networkConfig.Dns2 = NetworkConfig.IntToIP(dhcpInfo.dns2);
 				}
 				else
 				{
@@ -382,36 +401,13 @@ public class FeatureEthernet extends FeatureComponent
 			}
 			return networkConfig;
 		}
-
-		private String intToIP(int intIp)
-		{
-			if (intIp == 0)
-				return null;
-			byte[] ipBytes = BigInteger.valueOf(intIp).toByteArray();
-
-			if (ipBytes.length != 4)
-			{
-				ipBytes = new byte[4];
-				ipBytes[0] = ipBytes[1] = ipBytes[2] = ipBytes[3] = 0;
-			}
-
-			// reverse bytes order
-			byte temp;
-			temp = ipBytes[0];
-			ipBytes[0] = ipBytes[3];
-			ipBytes[3] = temp;
-			temp = ipBytes[1];
-			ipBytes[1] = ipBytes[2];
-			ipBytes[2] = temp;
-
-			return TextUtils.implodeBytesArray(ipBytes, "%d", ".");
-		}
 	}
 
 	private List<String> getDNSAddresses()
 	{
 		List<String> dnsAddresses = new ArrayList<String>();
-		ConnectivityManager mgr = (ConnectivityManager) Environment.getInstance().getSystemService(Context.CONNECTIVITY_SERVICE);
+		ConnectivityManager mgr = (ConnectivityManager) Environment.getInstance().getSystemService(
+		        Context.CONNECTIVITY_SERVICE);
 		try
 		{
 			Method getLinkPropeties;
