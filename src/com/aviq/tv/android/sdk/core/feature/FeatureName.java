@@ -34,7 +34,8 @@ public class FeatureName
 		RPC,
 		SYSTEM,
 		EASTER_EGG,
-		CRASHLOG
+		CRASHLOG,
+		TIMEZONE
 	}
 
 	public static enum Scheduler
