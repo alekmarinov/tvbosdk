@@ -72,6 +72,7 @@ public class Environment extends Activity
 	public static final String EXTRA_KEYCONSUMED = "KEYCONSUMED";
 	private static final String SYSTEM_PREFS = "system";
 	private static final String AVIQTV_XML_RESOURCE = "aviqtv";
+	private static final String ECLIPSE_XML_RESOURCE = "eclipse";
 	private static final String RELEASE_XML_RESOURCE = "release";
 
 	public enum Param
@@ -152,15 +153,33 @@ public class Environment extends Activity
 			_userPrefs = createUserPrefs();
 			_prefs = createPrefs(SYSTEM_PREFS);
 
-			// initialize environment by default app's raw/aviqtv.xml
-			int appXmlId = getResources().getIdentifier(AVIQTV_XML_RESOURCE, "raw", getPackageName());
-			InputStream inputStream = getResources().openRawResource(appXmlId);
-			addXmlDefinition(inputStream);
+			int appDebugXmlId = getResources().getIdentifier(ECLIPSE_XML_RESOURCE, "raw", getPackageName());
+			if (appDebugXmlId != 0)
+			{
+				String warnMsg = "Using debug xml definition - " + ECLIPSE_XML_RESOURCE;
+				Log.w(TAG, String.format(String.format("%%0%dd", warnMsg.length()), 0).replace("0", "-"));
+				Log.w(TAG, warnMsg);
+				Log.w(TAG, String.format(String.format("%%0%dd", warnMsg.length()), 0).replace("0", "-"));
 
-			// initialize environment by app's raw/release.xml
-			appXmlId = getResources().getIdentifier(RELEASE_XML_RESOURCE, "raw", getPackageName());
-			inputStream = getResources().openRawResource(appXmlId);
-			addXmlDefinition(inputStream);
+				// initialize environment by debug app's raw/eclipse.xml
+				Log.i(TAG, "Parsing " + ECLIPSE_XML_RESOURCE + " xml definition");
+				InputStream inputStream = getResources().openRawResource(appDebugXmlId);
+				addXmlDefinition(inputStream);
+			}
+			else
+			{
+				// initialize environment by default app's raw/aviqtv.xml
+				Log.i(TAG, "Parsing " + AVIQTV_XML_RESOURCE + " xml definition");
+				int appXmlId = getResources().getIdentifier(AVIQTV_XML_RESOURCE, "raw", getPackageName());
+				InputStream inputStream = getResources().openRawResource(appXmlId);
+				addXmlDefinition(inputStream);
+
+				// initialize environment by app's raw/release.xml
+				Log.i(TAG, "Parsing " + RELEASE_XML_RESOURCE + " xml definition");
+				appXmlId = getResources().getIdentifier(RELEASE_XML_RESOURCE, "raw", getPackageName());
+				inputStream = getResources().openRawResource(appXmlId);
+				addXmlDefinition(inputStream);
+			}
 
 			// Log target device parameters
 			DisplayMetrics metrics = new DisplayMetrics();
@@ -1291,7 +1310,7 @@ public class Environment extends Activity
 				if (prefs.has(_paramName))
 				{
 					String prevValue = prefs.getString(_paramName);
-					if (!prevValue.equals(value))
+					if (prevValue == null || !prevValue.equals(value))
 					{
 						Log.i(TAG, "Overwriting param " + featureName + "." + _paramName + ": " + prevValue
 						        + " -> " + value);
