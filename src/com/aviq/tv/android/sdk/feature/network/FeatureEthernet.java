@@ -264,7 +264,7 @@ public class FeatureEthernet extends FeatureComponent
 			{
 				try
 				{
-					_setEthEnabled.invoke(_ethernetManager, Boolean.TRUE);
+					_setEthEnabled.invoke(_ethernetManager, isEnabled);
 				}
 				catch (IllegalAccessException e)
 				{
