@@ -24,6 +24,7 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Environment.Param;
 import com.aviq.tv.android.sdk.core.Log;
 
+@Deprecated
 public class CrashLogTextReportSender implements ReportSender
 {
 	private static final String TAG = CrashLogTextReportSender.class.getSimpleName();

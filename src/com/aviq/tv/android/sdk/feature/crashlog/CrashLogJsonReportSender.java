@@ -32,11 +32,9 @@ public class CrashLogJsonReportSender implements ReportSender
 {
 	private static final String TAG = CrashLogJsonReportSender.class.getSimpleName();
 
-	public static final String REPORT_NAME_PREFIX = "aviq";
 	public static final String REPORT_NAME_TEMPLATE = "%s-%s-%s-%s-%s-%s-%d.crashlog";
 
 	private final String mReportNameTemplate;
-	private final String mPackageName;
 	private final Context mContext;
 
 	public CrashLogJsonReportSender(Context context)
@@ -46,7 +44,6 @@ public class CrashLogJsonReportSender implements ReportSender
 
 		String pkg = context.getPackageName();
 		int pos = pkg.lastIndexOf('.');
-		mPackageName =  pos > -1 ? REPORT_NAME_PREFIX + "." + pkg.substring(pos + 1) : pkg;
 	}
 
 	@Override
@@ -56,6 +53,7 @@ public class CrashLogJsonReportSender implements ReportSender
 		String appVersionCode = "";
 		String userCrashDate = "";
 		String brandName = "";
+		String customer = "";
 		Random rnd = new Random();
 		int randomNum = rnd.nextInt(1000);
 
@@ -107,6 +105,16 @@ public class CrashLogJsonReportSender implements ReportSender
 				if (boxId == null || boxId.equals("") || boxId.equalsIgnoreCase("null"))
 					boxId = "000000000000";
 
+				// Find (w/o the quotes): "CUSTOMER = some_customer\n"
+				Pattern patternCustomer = Pattern.compile("CUSTOMER\\s.*?=\\s.*?(\\w+)\\s.*?");
+				Matcher matcherCustomer = patternCustomer.matcher(value);
+				if (matcherCustomer.find())
+				{
+					customer = matcherCustomer.group(1).trim();
+				}
+				if (customer == null || customer.equals("") || customer.equalsIgnoreCase("null"))
+					customer = "customer";
+
 				// Find (w/o the quotes): "BRAND = some_brand\n"
 				Pattern patternBrand = Pattern.compile("BRAND\\s.*?=\\s.*?(\\w+)\\s.*?");
 				Matcher matcherBrand = patternBrand.matcher(value);
@@ -122,7 +130,8 @@ public class CrashLogJsonReportSender implements ReportSender
 		// Generate the report's file name.
 		Environment env = Environment.getInstance();
 		String buildType = env.getPrefs().getString(Param.RELEASE);
-		String reportFileName = String.format(mReportNameTemplate, mPackageName, buildType, brandName, appVersionCode,
+
+		String reportFileName = String.format(mReportNameTemplate, buildType, customer, brandName, appVersionCode,
 		        boxId, userCrashDate, randomNum);
 
 		try

@@ -179,7 +179,8 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		errorReporter.putCustomData(Key.EVENT, prepareEventObject());
 
 		errorReporter.putCustomData("BOX_ID", _featureRegister.getBoxId());
-		errorReporter.putCustomData("BRAND", _featureRegister.getBrand());
+		errorReporter.putCustomData("BRAND", getBrand());
+		errorReporter.putCustomData("CUSTOMER", getCustomer());
 
 		String publicIP = _featureInternet.getPublicIP();
 		errorReporter.putCustomData("PUBLIC IP", publicIP);
@@ -187,8 +188,6 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		// If the public IP is null, wait for Internet to show up and recheck
 		if (publicIP == null)
 			_featureInternet.getEventMessenger().register(this, FeatureInternet.ON_CONNECTED);
-
-		// errorReporter.putCustomData("CUSTOMER", Globals.CUSTOMER);
 	}
 
 	private String prepareDeviceObject()
