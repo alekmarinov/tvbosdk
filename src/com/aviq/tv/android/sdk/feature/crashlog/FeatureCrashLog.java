@@ -53,8 +53,8 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		/** Socket timeout in milliseconds */
 		SOCKET_TIMEOUT_MILLIS(20000),
 
-		CRASHLOG_CUSTOMER("VTX"),
-		CRASHLOG_BRAND("VTX");
+		CRASHLOG_CUSTOMER(""),
+		CRASHLOG_BRAND("");
 
 		/*
 		 * TODO

@@ -19,6 +19,8 @@ import org.acra.collector.CrashReportData;
 import org.acra.sender.ReportSender;
 import org.acra.sender.ReportSenderException;
 import org.acra.util.JSONReportBuilder.JSONReportException;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.content.Context;
 
@@ -50,9 +52,6 @@ public class CrashLogJsonReportSender implements ReportSender
 	@Override
 	public void send(CrashReportData report) throws ReportSenderException
 	{
-		String device = null;
-		String event = null;
-
 		String boxId = "";
 		String appVersionCode = "";
 		String userCrashDate = "";
@@ -117,27 +116,6 @@ public class CrashLogJsonReportSender implements ReportSender
 				}
 				if (brandName == null || brandName.equals("") || brandName.equalsIgnoreCase("null"))
 					brandName = "brand";
-
-				// Find (w/o the quotes): "device = some_json\n"
-				Pattern patternDevice = Pattern.compile("device\\s.*?=\\s.*?(\\{.*?\\})\\s.*?");
-				Matcher matcherDevice = patternDevice.matcher(value);
-				if (matcherDevice.find())
-				{
-					device = matcherDevice.group(1).trim();
-				}
-				if (device == null || device.equals("") || device.equalsIgnoreCase("null"))
-					device = "{}";
-
-				// Find (w/o the quotes): "event = some_json\n"
-				Pattern patternEvent = Pattern.compile("event\\s.*?=\\s.*?(\\{.*?\\})\\s.*?");
-				Matcher matcherEvent = patternEvent.matcher(value);
-				if (matcherEvent.find())
-				{
-					event = matcherEvent.group(1).trim();
-				}
-				if (event == null || event.equals("") || event.equalsIgnoreCase("null"))
-					event = "{}";
-				event = event.replaceAll("\\{\\{TIMESTAMP\\}\\}", getTimeAsISO(System.currentTimeMillis()));
 			}
 		}
 
@@ -150,14 +128,17 @@ public class CrashLogJsonReportSender implements ReportSender
 		try
 		{
 			// Send the report to the server
-			String data = report.toJSON().toString();
-			data = data.substring(0, data.length() - 1) + ", \"device\": " + device + ", \"event\": " + event + "}";
+			String data = getDataString(report);
 			sendData(reportFileName, data);
 		}
 		catch (JSONReportException e)
 		{
 			Log.e(TAG, e.getMessage(), e);
 		}
+        catch (JSONException e)
+        {
+        	Log.e(TAG, e.getMessage(), e);
+        }
 
 		System.gc();
 	}
@@ -209,5 +190,33 @@ public class CrashLogJsonReportSender implements ReportSender
 		// df.setTimeZone(tz);
 		String timeAsISO = df.format(timestampMillis);
 		return timeAsISO;
+	}
+
+	private String getDataString(CrashReportData report) throws JSONReportException, JSONException
+	{
+		JSONObject dataObject = report.toJSON();
+
+		// Move elements to another location in dataObject
+
+		JSONObject device = new JSONObject(dataObject.getJSONObject("CUSTOM_DATA").remove("device").toString());
+		dataObject.put("device", device);
+
+		JSONObject event = new JSONObject(dataObject.getJSONObject("CUSTOM_DATA").remove("event").toString());
+		event.put("timestamp", getTimeAsISO(System.currentTimeMillis()));
+		dataObject.put("event", event);
+
+		// Remove unwanted elements
+
+		dataObject.remove("ENVIRONMENT");
+		dataObject.remove("INITIAL_CONFIGURATION");
+		dataObject.remove("USER_EMAIL");
+		dataObject.remove("DEVICE_FEATURES");
+		dataObject.remove("SETTINGS_SECURE");
+		dataObject.remove("SETTINGS_SYSTEM");
+		dataObject.remove("CRASH_CONFIGURATION");
+		dataObject.remove("BUILD");
+		dataObject.remove("DISPLAY");
+
+		return dataObject.toString();
 	}
 }
