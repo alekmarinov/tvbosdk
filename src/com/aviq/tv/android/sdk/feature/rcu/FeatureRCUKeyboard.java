@@ -98,7 +98,7 @@ public class FeatureRCUKeyboard extends FeatureRCU
 			case KeyEvent.KEYCODE_D:
 				return Key.D;
 			case KeyEvent.KEYCODE_E:
-				return Key.E;
+				return Key.EPG;
 			case KeyEvent.KEYCODE_F:
 				return Key.F;
 			case KeyEvent.KEYCODE_G:

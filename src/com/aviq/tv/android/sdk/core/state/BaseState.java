@@ -37,7 +37,6 @@ public class BaseState extends Fragment
 
 	/**
 	 * FIXME: What was the purpose of this method?!
-	 *
 	 * Create state
 	 *
 	 * @param params
@@ -49,7 +48,7 @@ public class BaseState extends Fragment
 	private void create(Bundle params, boolean isOverlay) throws StateException
 	{
 		Log.i(getClass().getSimpleName(), ".create: isOverlay = " + isOverlay);
-		Environment env = (Environment)getActivity();
+		Environment env = (Environment) getActivity();
 		if (isOverlay)
 			env.getStateManager().setStateOverlay(this, params);
 		else
@@ -58,7 +57,6 @@ public class BaseState extends Fragment
 
 	/**
 	 * FIXME: What was the purpose of this method?!
-	 *
 	 * Create state on main layer of the screen
 	 *
 	 * @param params
@@ -72,7 +70,6 @@ public class BaseState extends Fragment
 
 	/**
 	 * FIXME: What was the purpose of this method?!
-	 *
 	 * Create state on overlay layer of the screen
 	 *
 	 * @param params
@@ -89,14 +86,22 @@ public class BaseState extends Fragment
 	 */
 	public void close()
 	{
-		Log.i(getClass().getSimpleName(), ".close");
-		Environment env = (Environment)getActivity();
-		env.getStateManager().closeState(this);
+		if (isCreated())
+		{
+			Log.i(getClass().getSimpleName(), ".close");
+			Environment env = (Environment) getActivity();
+			env.getStateManager().closeState(this);
+		}
+		else
+		{
+			Log.w(TAG, "Attempt to close already closed state");
+		}
 	}
 
 	/**
 	 * Show state view
 	 */
+	@Deprecated
 	public void show()
 	{
 		Log.i(getClass().getSimpleName(), ".show");
@@ -106,6 +111,7 @@ public class BaseState extends Fragment
 	/**
 	 * Hide state view
 	 */
+	@Deprecated
 	public void hide()
 	{
 		Log.i(getClass().getSimpleName(), ".hide");
@@ -115,6 +121,7 @@ public class BaseState extends Fragment
 	/**
 	 * @return true if the this state is shown
 	 */
+	@Deprecated
 	public boolean isShown()
 	{
 		return super.getView().getVisibility() == View.VISIBLE;

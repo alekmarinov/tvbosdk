@@ -189,7 +189,7 @@ public class AccessPoint implements Comparable<AccessPoint>
 		if (getNetworkId() == -1)
 			return false; // not configured
 
-		return getConfig().status == WifiConfiguration.Status.DISABLED &&  getDisableReason() == DISABLED_AUTH_FAILURE;
+		return getConfig().status == WifiConfiguration.Status.DISABLED && getDisableReason() == DISABLED_AUTH_FAILURE;
 	}
 
 	public String getSsid()
@@ -246,6 +246,27 @@ public class AccessPoint implements Comparable<AccessPoint>
 		return WifiManager.calculateSignalLevel(_rssi, 6);
 	}
 
+	@Override
+	public String toString()
+	{
+		StringBuffer sb = new StringBuffer();
+
+		sb.append("AccessPoint[");
+		sb.append("ssid: ").append(_ssid);
+		sb.append(", bssid: ").append(_bssid);
+		sb.append(", security: ").append(_security);
+		sb.append(", networkId: ").append(_networkId);
+		sb.append(", pskType: ").append(_pskType);
+		sb.append(", config: ").append(_config);
+		sb.append(", scanResult: ").append(_scanResult);
+		sb.append(", rssi: ").append(_rssi);
+		sb.append(", wifiInfo: ").append(_wifiInfo);
+		sb.append(", state: ").append(_state);
+		sb.append("]");
+
+		return sb.toString();
+	}
+
 	int getDisableReason()
 	{
 		try
@@ -269,7 +290,7 @@ public class AccessPoint implements Comparable<AccessPoint>
 		return -1;
 	}
 
-	boolean setScanResult(ScanResult result)
+	boolean updateScanResult(ScanResult result)
 	{
 		if (_ssid.equals(result.SSID) && _security == getSecurity(result))
 		{
@@ -292,7 +313,7 @@ public class AccessPoint implements Comparable<AccessPoint>
 		return false;
 	}
 
-	void setWifiInfo(WifiInfo info, DetailedState state)
+	void updateWifiInfo(WifiInfo info, DetailedState state)
 	{
 		boolean reorder = false;
 		if (info != null && _networkId != INVALID_NETWORK_ID && _networkId == info.getNetworkId())

@@ -19,6 +19,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.net.DhcpInfo;
 import android.net.NetworkInfo;
 import android.net.NetworkInfo.DetailedState;
@@ -38,6 +39,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.system.SystemProperties;
+import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Wireless Settings component
@@ -216,7 +218,11 @@ public class FeatureWireless extends FeatureComponent
 		_lastPassword = password;
 
 		if (password == null)
-			return _wifiManager.enableNetwork(accessPoint.getNetworkId(), true);
+		{
+			boolean status = _wifiManager.enableNetwork(accessPoint.getNetworkId(), true);
+			Log.i(TAG, "connectToNetwork returns with " + status);
+			return status;
+		}
 
 		WifiConfiguration config = new WifiConfiguration();
 		config.SSID = "\"" + accessPoint.getSsid() + "\"";
@@ -246,13 +252,29 @@ public class FeatureWireless extends FeatureComponent
 		if (accessPoint.getConfig() != null)
 		{
 			_wifiManager.removeNetwork(accessPoint.getNetworkId());
-			_wifiManager.saveConfiguration();
+			if (!_wifiManager.saveConfiguration())
+			{
+				Log.w(TAG, "WifiManager.saveConfiguration results failure after removed configured network");
+			}
 		}
 
-		setEnabled(true);
 		int networkId = _wifiManager.addNetwork(config);
-		return (networkId != AccessPoint.INVALID_NETWORK_ID) && _wifiManager.saveConfiguration()
-		        && _wifiManager.enableNetwork(networkId, true);
+		if (networkId == AccessPoint.INVALID_NETWORK_ID)
+		{
+			Log.w(TAG, "WifiManager.addNetwork results invalid network id " + AccessPoint.INVALID_NETWORK_ID);
+			return false;
+		}
+		else if (!_wifiManager.saveConfiguration())
+		{
+			Log.w(TAG, "WifiManager.saveConfiguration results failure status");
+			return false;
+		}
+		else
+		{
+			boolean status = _wifiManager.enableNetwork(networkId, true);
+			Log.i(TAG, "connectToNetwork returns with " + status);
+			return status;
+		}
 	}
 
 	public WifiState getWifiState()
@@ -280,6 +302,22 @@ public class FeatureWireless extends FeatureComponent
 			config.Dns2 = NetworkConfig.IntToIP(dhcpInfo.dns2);
 		}
 		return config;
+	}
+
+	public String getCurrentSsid()
+	{
+		String ssid = null;
+		ConnectivityManager connectivityManager = (ConnectivityManager) Environment.getInstance().getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo networkInfo = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+		if (networkInfo.isConnected())
+		{
+			WifiInfo connectionInfo = _wifiManager.getConnectionInfo();
+			if (connectionInfo != null && !TextUtils.isEmpty(connectionInfo.getSSID()))
+			{
+				ssid = connectionInfo.getSSID();
+			}
+		}
+		return ssid;
 	}
 
 	private WifiState wrapWifiState(int wifiStateInt)
@@ -336,8 +374,6 @@ public class FeatureWireless extends FeatureComponent
 		Log.i(TAG, ".onNetworkStateChanged: detailedState = " + detailedState + ", isWifiEnabled = " + isWifiEnabled);
 		if (isWifiEnabled)
 		{
-			updateAccessPoints();
-
 			for (AccessPoint ap : _accessPoints)
 			{
 				// find authentication failed reason
@@ -349,10 +385,11 @@ public class FeatureWireless extends FeatureComponent
 					bundle.putString(EXTRA_LAST_PASSWORD, _lastPassword);
 					bundle.putBoolean(EXTRA_WRONG_PASSWORD, true);
 					getEventMessenger().trigger(ON_REQUEST_PASSWORD, bundle);
-					break;
+					return;
 				}
 			}
 		}
+		updateAccessPoints();
 	}
 
 	/** A restricted multimap for use in collectAccessPoints */
@@ -418,7 +455,7 @@ public class FeatureWireless extends FeatureComponent
 				boolean found = false;
 				for (AccessPoint accessPoint : apMap.getAll(scanResult.SSID))
 				{
-					if (accessPoint.setScanResult(scanResult))
+					if (accessPoint.updateScanResult(scanResult))
 						found = true;
 				}
 				if (!found)

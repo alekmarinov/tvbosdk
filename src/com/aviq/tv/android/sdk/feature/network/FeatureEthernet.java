@@ -10,6 +10,9 @@
 
 package com.aviq.tv.android.sdk.feature.network;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
@@ -30,6 +33,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.utils.Files;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
@@ -95,7 +99,7 @@ public class FeatureEthernet extends FeatureComponent
 		}
 		else
 		{
-			_ethernetManagerWrapper.setEnabled(true);
+			setEnabled(true);
 			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 		}
 	}
@@ -119,6 +123,30 @@ public class FeatureEthernet extends FeatureComponent
 	public NetworkConfig getNetworkConfig()
 	{
 		return _ethernetManagerWrapper.getConfiguration();
+	}
+
+	public boolean isEthPlugged()
+	{
+		int status = -1;
+		FileInputStream fis = null;
+		try
+		{
+			fis = new FileInputStream("/sys/class/net/" + getNetworkConfig().Iface + "/carrier");
+			status = fis.read();
+		}
+		catch (FileNotFoundException e)
+		{
+			Log.e(TAG, e.getMessage());
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, e.getMessage());
+		}
+		finally
+		{
+			Files.closeQuietly(fis, TAG);
+		}
+		return status == 49; // '1'
 	}
 
 	public boolean isEnabled()
@@ -145,7 +173,8 @@ public class FeatureEthernet extends FeatureComponent
 	void setEnabledDirect(boolean isEnabled)
 	{
 		Log.i(TAG, ".setEnabled: " + isEnabled);
-		_ethernetManagerWrapper.setEnabled(isEnabled);
+		// _ethernetManagerWrapper.setEnabled(isEnabled);
+		Log.w(TAG, ".setEnabled is currently commented out!");
 	}
 
 	private class EthernetManagerWrapper
