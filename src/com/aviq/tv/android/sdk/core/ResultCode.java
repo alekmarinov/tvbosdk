@@ -19,6 +19,11 @@ public class ResultCode
 	public static final int NOT_FOUND_404 = 404;
 
 	/**
+	 * Error which happened while a feature was initializing.
+	 */
+	public static final int INIT_ERROR = -5;
+
+	/**
 	 * Error which should not happens
 	 */
 	public static final int INTERNAL_ERROR = -4;
