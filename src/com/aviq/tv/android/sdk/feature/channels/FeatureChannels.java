@@ -184,6 +184,13 @@ public class FeatureChannels extends FeatureComponent
 	{
 		if (isUseFavorites())
 			return _channels;
+
+		if (_featureEPG.getEpgData() == null)
+		{
+			Log.e(TAG, "No EPG data exists.");
+			return new ArrayList<Channel>();
+		}
+
 		return _featureEPG.getEpgData().getChannels();
 	}
 
@@ -376,6 +383,12 @@ public class FeatureChannels extends FeatureComponent
 
 	public void saveSyncedChannel()
 	{
+		if (_featureEPG.getEpgData() == null)
+		{
+			Log.e(TAG, "No EPG data exists.");
+			return;
+		}
+
 		StringBuffer buffer = new StringBuffer();
 		for (Channel channel : _featureEPG.getEpgData().getChannels())
 		{
@@ -389,8 +402,15 @@ public class FeatureChannels extends FeatureComponent
 
 	private List<Channel> loadFavoriteChannels()
 	{
-		EpgData epgData = _featureEPG.getEpgData();
 		List<Channel> channels = new ArrayList<Channel>();
+
+		EpgData epgData = _featureEPG.getEpgData();
+		if (epgData == null)
+		{
+			Log.e(TAG, "No EPG data exists.");
+			return channels;
+		}
+
 		boolean isEmpty = !_userPrefs.has(UserParam.CHANNELS) || _userPrefs.getString(UserParam.CHANNELS).length() == 0;
 		if (isEmpty)
 		{
