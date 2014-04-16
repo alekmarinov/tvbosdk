@@ -93,7 +93,7 @@ public class Environment extends Activity
 		/**
 		 * The overlay background color
 		 */
-		OVERLAY_BACKGROUND_COLOR(0x00000000),;
+		OVERLAY_BACKGROUND_COLOR(0x00000000), ;
 
 		Param(int value)
 		{
@@ -271,14 +271,14 @@ public class Environment extends Activity
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
 		Key key = _featureRCU.getKey(keyCode);
-		return Environment.getInstance().onKeyDown(new AVKeyEvent(event, key));
+		return onKeyDown(new AVKeyEvent(event, key));
 	}
 
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event)
 	{
 		Key key = _featureRCU.getKey(keyCode);
-		return Environment.getInstance().onKeyUp(new AVKeyEvent(event, key));
+		return onKeyUp(new AVKeyEvent(event, key));
 	}
 
 	/**
@@ -841,8 +841,13 @@ public class Environment extends Activity
 		bundle.putString(EXTRA_KEY, keyEvent.Code.name());
 		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
 		boolean consumed = _stateManager.onKeyDown(keyEvent);
-		bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
-		_eventMessenger.trigger(ON_KEY_PRESSED, bundle);
+
+		if (_isInitialized)
+		{
+			bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
+			_eventMessenger.trigger(ON_KEY_PRESSED, bundle);
+		}
+
 		return consumed;
 	}
 
@@ -856,8 +861,11 @@ public class Environment extends Activity
 		bundle.putString(EXTRA_KEY, keyEvent.Code.name());
 		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
 		boolean consumed = _stateManager.onKeyUp(keyEvent);
-		bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
-		_eventMessenger.trigger(ON_KEY_RELEASED, bundle);
+		if (_isInitialized)
+		{
+			bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
+			_eventMessenger.trigger(ON_KEY_RELEASED, bundle);
+		}
 		return consumed;
 	}
 
@@ -1150,21 +1158,20 @@ public class Environment extends Activity
 					int prevValue = prefs.getInt(_paramName);
 					if (prevValue != value)
 					{
-						Log.i(TAG, "Overwriting param " + featureName + "." + _paramName + ": " + prevValue
-						        + " -> " + value);
+						Log.i(TAG, "Overwriting param " + featureName + "." + _paramName + ": " + prevValue + " -> "
+						        + value);
 						prefs.remove(_paramName);
-						prefs.put(_paramName, (int)value);
+						prefs.put(_paramName, (int) value);
 					}
 					else
 					{
-						Log.w(TAG, "No change to param " + featureName + "." + _paramName + " with value "
-						        + value);
+						Log.w(TAG, "No change to param " + featureName + "." + _paramName + " with value " + value);
 					}
 				}
 				else
 				{
 					Log.i(TAG, "Add new param " + featureName + "." + _paramName + " = " + value);
-					prefs.put(_paramName, (int)value);
+					prefs.put(_paramName, (int) value);
 				}
 			}
 			else if (TAG_BOOLEAN.equalsIgnoreCase(localName))
@@ -1194,15 +1201,14 @@ public class Environment extends Activity
 					boolean prevValue = prefs.getBool(_paramName);
 					if (prevValue != value)
 					{
-						Log.i(TAG, "Overwriting param " + featureName + "." + _paramName + ": " + prevValue
-						        + " -> " + value);
+						Log.i(TAG, "Overwriting param " + featureName + "." + _paramName + ": " + prevValue + " -> "
+						        + value);
 						prefs.remove(_paramName);
 						prefs.put(_paramName, value);
 					}
 					else
 					{
-						Log.w(TAG, "No change to param " + featureName + "." + _paramName + " with value "
-						        + value);
+						Log.w(TAG, "No change to param " + featureName + "." + _paramName + " with value " + value);
 					}
 				}
 				else
@@ -1336,15 +1342,14 @@ public class Environment extends Activity
 					String prevValue = prefs.getString(_paramName);
 					if (prevValue == null || !prevValue.equals(value))
 					{
-						Log.i(TAG, "Overwriting param " + featureName + "." + _paramName + ": " + prevValue
-						        + " -> " + value);
+						Log.i(TAG, "Overwriting param " + featureName + "." + _paramName + ": " + prevValue + " -> "
+						        + value);
 						prefs.remove(_paramName);
 						prefs.put(_paramName, value);
 					}
 					else
 					{
-						Log.w(TAG, "No change to param " + featureName + "." + _paramName + " with value "
-						        + value);
+						Log.w(TAG, "No change to param " + featureName + "." + _paramName + " with value " + value);
 					}
 				}
 				else
