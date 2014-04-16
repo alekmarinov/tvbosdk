@@ -55,6 +55,7 @@ import com.aviq.tv.android.sdk.core.feature.IFeature;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.state.StateManager;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
+import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
 
 /**
  * Defines application environment
@@ -67,6 +68,8 @@ public class Environment extends Activity
 	public static final int ON_LOADED = EventMessenger.ID("ON_LOADED");
 	public static final int ON_KEY_PRESSED = EventMessenger.ID("ON_KEY_PRESSED");
 	public static final int ON_KEY_RELEASED = EventMessenger.ID("ON_KEY_RELEASED");
+	public static final int ON_FEATURE_INIT_ERROR = EventMessenger.ID("ON_FEATURE_INIT_ERROR");
+	public static final String EXTRA_ERROR_CODE = "EXTRA_ERROR_CODE";
 	public static final String EXTRA_KEY = "KEY";
 	public static final String EXTRA_KEYCODE = "KEYCODE";
 	public static final String EXTRA_KEYCONSUMED = "KEYCONSUMED";
@@ -122,6 +125,7 @@ public class Environment extends Activity
 	private boolean _isInitialized = false;
 	private static boolean _isCreated = false;
 	private FeatureRCU _featureRCU;
+	private FeatureSystem _featureSystem;
 
 	/**
 	 * Environment constructor method
@@ -193,6 +197,7 @@ public class Environment extends Activity
 			_stateManager.setMessageState(use(FeatureName.State.MESSAGE_BOX));
 			_stateManager.setOverlayBackgroundColor(getPrefs().getInt(Param.OVERLAY_BACKGROUND_COLOR));
 			_featureRCU = (FeatureRCU) use(FeatureName.Component.RCU);
+			_featureSystem = (FeatureSystem) use(FeatureName.Component.SYSTEM);
 
 			_serviceController = new ServiceController(this);
 			_requestQueue = Volley.newRequestQueue(this);
@@ -243,6 +248,15 @@ public class Environment extends Activity
 	{
 		super.onPause();
 		Log.i(TAG, ".onPause");
+	}
+
+	@Override
+	public void onDestroy()
+	{
+		super.onDestroy();
+		Log.i(TAG, ".onDestroy");
+
+		_featureSystem.command("killall " + getPackageName());
 	}
 
 	public void initialize()
@@ -393,6 +407,16 @@ public class Environment extends Activity
 			_nInitialized = _nFeature;
 			Log.i(TAG, "<" + _nFeature + ". " + featureName + " initialized in "
 			        + (System.currentTimeMillis() - _initStartedTime) + " ms with result " + resultCode);
+
+			// Stop all features initialization when any one fails to initialize
+			if (resultCode != ResultCode.OK)
+			{
+				Bundle bundle = new Bundle();
+				bundle.putInt(EXTRA_ERROR_CODE, resultCode);
+				_eventMessenger.trigger(ON_FEATURE_INIT_ERROR, bundle);
+				return;
+			}
+
 			initializeNext();
 		}
 
