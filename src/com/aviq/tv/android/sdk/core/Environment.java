@@ -1024,13 +1024,13 @@ public class Environment extends Activity
 	private Prefs createUserPrefs()
 	{
 		Log.i(TAG, ".createUserPrefs");
-		return new Prefs(getSharedPreferences("user", Activity.MODE_PRIVATE), true);
+		return new Prefs("user", getSharedPreferences("user", Activity.MODE_PRIVATE), true);
 	}
 
 	private Prefs createPrefs(String name)
 	{
 		Log.i(TAG, ".createPrefs: name = " + name);
-		return new Prefs(getSharedPreferences(name, Activity.MODE_PRIVATE), false);
+		return new Prefs(name, getSharedPreferences(name, Activity.MODE_PRIVATE), false);
 	}
 
 	private class BitmapLruCache extends LruCache<String, Bitmap> implements ImageCache

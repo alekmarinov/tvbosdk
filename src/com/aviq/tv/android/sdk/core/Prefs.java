@@ -22,6 +22,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 public class Prefs
 {
 	private static final String TAG = Prefs.class.getSimpleName();
+	private String _name;
 	private final SharedPreferences _prefs;
 	private boolean _isOverwrite;
 
@@ -34,8 +35,9 @@ public class Prefs
 	 *            set to true if the 2nd put method should overwrite the
 	 *            previous put
 	 */
-	public Prefs(SharedPreferences prefs, boolean isOverwrite)
+	public Prefs(String name, SharedPreferences prefs, boolean isOverwrite)
 	{
+		_name = name;
 		_prefs = prefs;
 		_isOverwrite = isOverwrite;
 	}
@@ -120,7 +122,7 @@ public class Prefs
 	{
 		if (_isOverwrite || !_prefs.contains(key.toString()))
 		{
-			Log.d(TAG, "Set " + key + " = " + value);
+			Log.d(TAG + ":" + _name, "Set " + key + " = " + value);
 			Editor edit = _prefs.edit();
 			edit.putString(key.toString(), value);
 			edit.commit();
@@ -129,7 +131,7 @@ public class Prefs
 		{
 			// FIXME: Consider throwing exception if the new value differs from
 			// the previous
-			Log.v(TAG, "Skip setting " + key + " = " + value + ", previous value = " + getString(key));
+			Log.v(TAG + ":" + _name, "Skip setting " + key + " = " + value + ", previous value = " + getString(key));
 		}
 	}
 
@@ -145,7 +147,7 @@ public class Prefs
 	{
 		if (_isOverwrite || !_prefs.contains(key.toString()))
 		{
-			Log.d(TAG, "Set " + key + " = " + value);
+			Log.d(TAG + ":" + _name, "Set " + key + " = " + value);
 			Editor edit = _prefs.edit();
 			edit.putInt(key.toString(), value);
 			edit.commit();
@@ -154,7 +156,7 @@ public class Prefs
 		{
 			// FIXME: Consider throwing exception if the new value differs from
 			// the previous
-			Log.v(TAG, "Skip setting " + key + " = " + value + ", previous value = " + getInt(key));
+			Log.v(TAG + ":" + _name, "Skip setting " + key + " = " + value + ", previous value = " + getInt(key));
 		}
 	}
 
@@ -170,7 +172,7 @@ public class Prefs
 	{
 		if (_isOverwrite || !_prefs.contains(key.toString()))
 		{
-			Log.d(TAG, "Set " + key + " = " + value);
+			Log.d(TAG + ":" + _name, "Set " + key + " = " + value);
 			Editor edit = _prefs.edit();
 			edit.putBoolean(key.toString(), value);
 			edit.commit();
@@ -179,7 +181,7 @@ public class Prefs
 		{
 			// FIXME: Consider throwing exception if the new value differs from
 			// the previous
-			Log.v(TAG, "Skip setting " + key + " = " + value + ", previous value = " + getBool(key));
+			Log.v(TAG + ":" + _name, "Skip setting " + key + " = " + value + ", previous value = " + getBool(key));
 		}
 	}
 

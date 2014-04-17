@@ -45,10 +45,10 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		REMOTE_SERVER("https://services.aviq.com:30227/upload/logs/"),
 
 		/** Username for remote server */
-		REMOTE_SERVER_USERNAME("zixiStb"),
+		REMOTE_SERVER_USERNAME(""),
 
 		/** Password for remote server */
-		REMOTE_SERVER_PASSWORD("datQrsP1_pH3247ttee"),
+		REMOTE_SERVER_PASSWORD(""),
 
 		/** Socket timeout in milliseconds */
 		SOCKET_TIMEOUT_MILLIS(20000),
