@@ -33,14 +33,19 @@ public class CrashLogJsonReportSender implements ReportSender
 	private static final String TAG = CrashLogJsonReportSender.class.getSimpleName();
 
 	public static final String REPORT_NAME_TEMPLATE = "%s-%s-%s-%s-%s-%s-%d.crashlog";
+	public static final String LOGCAT_NAME_TEMPLATE = "%s-%s-%s-%s-%s-%s-%d.log";
 
 	private final String mReportNameTemplate;
+	private final String mLogcatNameTemplate;
 	private final Context mContext;
+	private String _logcat;
+	private String _logcatFileName;
 
 	public CrashLogJsonReportSender(Context context)
 	{
 		mContext = context;
 		mReportNameTemplate = REPORT_NAME_TEMPLATE;
+		mLogcatNameTemplate = LOGCAT_NAME_TEMPLATE;
 
 		String pkg = context.getPackageName();
 		int pos = pkg.lastIndexOf('.');
@@ -134,11 +139,19 @@ public class CrashLogJsonReportSender implements ReportSender
 		String reportFileName = String.format(mReportNameTemplate, buildType, customer, brandName, appVersionCode,
 		        boxId, userCrashDate, randomNum);
 
+		_logcatFileName = String.format(mLogcatNameTemplate, buildType, customer, brandName, appVersionCode,
+		        boxId, userCrashDate, randomNum);
+
 		try
 		{
-			// Send the report to the server
 			String data = getDataString(report);
-			sendData(reportFileName, data);
+
+			// Send the logcat to the server
+			sendData(_logcatFileName, _logcat, "text/plain");
+
+			// Send the report to the server
+			String contentType = ACRA.getConfig().reportType().getContentType();
+			sendData(reportFileName, data, contentType);
 		}
 		catch (JSONReportException e)
 		{
@@ -152,7 +165,7 @@ public class CrashLogJsonReportSender implements ReportSender
 		System.gc();
 	}
 
-	public static void sendData(String reportFileName, String reportAsString)
+	public static void sendData(String reportFileName, String reportAsString, String contentType)
 	{
 		try
 		{
@@ -165,7 +178,6 @@ public class CrashLogJsonReportSender implements ReportSender
 			        .getConfig().formUriBasicAuthPassword();
 
 			String method = ACRA.getConfig().httpMethod().name();
-			String contentType = ACRA.getConfig().reportType().getContentType();
 
 			final HttpRequest request = new HttpRequest();
 			request.setConnectionTimeOut(ACRA.getConfig().connectionTimeout());
@@ -185,6 +197,16 @@ public class CrashLogJsonReportSender implements ReportSender
 
 			request.send(reportUrl, method, reportAsString, contentType);
 
+//try
+//{
+//	FileOutputStream fos = new FileOutputStream(Environment.getInstance().getFilesDir() + "/" + reportFileName);
+//	fos.write(reportAsString.getBytes());
+//	fos.close();
+//}
+//catch (Exception e)
+//{
+//	Log.e(TAG, e.getMessage(), e);
+//}
 		}
 		catch (IOException e)
 		{
@@ -212,7 +234,15 @@ public class CrashLogJsonReportSender implements ReportSender
 
 		JSONObject event = new JSONObject(dataObject.getJSONObject("CUSTOM_DATA").remove("event").toString());
 		event.put("timestamp", getTimeAsISO(System.currentTimeMillis()));
+
+		JSONObject logcat = new JSONObject();
+		logcat.put("file", _logcatFileName);
+		event.put("logcat", logcat);
+
 		dataObject.put("event", event);
+
+		// Remove logcat. It will be handled separately.
+		_logcat = dataObject.remove("LOGCAT").toString();
 
 		// Remove unwanted elements
 
