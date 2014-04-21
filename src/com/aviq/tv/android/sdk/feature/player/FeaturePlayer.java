@@ -24,6 +24,8 @@ import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.feature.system.FeatureNethogs;
 import com.aviq.tv.android.sdk.player.AndroidPlayer;
 import com.aviq.tv.android.sdk.player.BasePlayer;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -46,6 +48,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	private PlayerStatusPoller _playerStopPoller = new PlayerStatusPoller(new PlayerStopVerifier());
 	private PlayerStatusPoller _playerPausePoller = new PlayerStatusPoller(new PlayerPauseVerifier());
 	private PlayerStatusPoller _playerResumePoller = new PlayerStatusPoller(new PlayerResumeVerifier());
+	private FeatureNethogs _featureNethogs;
 
 	public enum Extras
 	{
@@ -86,6 +89,14 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	{
 		_userPrefs = Environment.getInstance().getUserPrefs();
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
+		try
+        {
+	        _featureNethogs = (FeatureNethogs) Environment.getInstance().getFeatureComponent(FeatureName.Component.NETHOGS);
+        }
+        catch (FeatureNotFoundException e)
+        {
+        	Log.e(TAG, e.getMessage(), e);
+        }
 
 		_player = createPlayer();
 
@@ -115,6 +126,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".play: url = " + url);
 		_userPrefs.put(UserParam.LAST_URL, url);
+		// _featureNethogs.reset();
 		_player.play(url);
 
 		// trigger event on new url
