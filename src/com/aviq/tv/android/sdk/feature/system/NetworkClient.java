@@ -127,7 +127,6 @@ public class NetworkClient
 				{
 					Thread.sleep(100);
 					final String res = _bufferedReader.readLine();
-					Log.v(TAG, "got " + res);
 					Environment.getInstance().runOnUiThread(new Runnable()
 					{
 						@Override

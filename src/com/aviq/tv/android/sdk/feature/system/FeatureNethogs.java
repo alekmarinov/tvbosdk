@@ -10,6 +10,7 @@
 
 package com.aviq.tv.android.sdk.feature.system;
 
+import android.os.Bundle;
 import android.os.Process;
 import android.util.Log;
 
@@ -29,7 +30,8 @@ public class FeatureNethogs extends FeatureComponent
 {
 	public static final String TAG = FeatureNethogs.class.getSimpleName();
 	public static final int ON_DATA_RECEIVED = EventMessenger.ID("ON_DATA_RECEIVED");
-	public static final String EXTRA_BITRATE = "EXTRA_BITRATE";
+	public static final String EXTRA_BITRATE_UP = "EXTRA_BITRATE_UP";
+	public static final String EXTRA_BITRATE_DOWN = "EXTRA_BITRATE_DOWN";
 
 	private NetworkClient _networkClient;
 	private FeatureSystem _featureSystem;
@@ -90,7 +92,40 @@ public class FeatureNethogs extends FeatureComponent
 				@Override
 				public void onDataReceived(String data)
 				{
-					Log.i(TAG, ".onDataReceived: data = " + data);
+					if (data != null)
+					{
+						// data =
+						// lo:219996.0,219996.0,eth0:228326.0,16167.0,sit0:0.0,0.0,ip6tnl0:0.0,0.0
+						int npos = data.indexOf(netInterface + ":");
+						if (npos >= 0)
+						{
+							int spos = data.indexOf(':', npos + 1);
+							int cpos = data.indexOf(',', npos + 1);
+							if (cpos >= 0)
+							{
+								try
+								{
+									String rcvdStr = data.substring(spos + 1, cpos - 1);
+									rcvdStr = rcvdStr.substring(0, rcvdStr.indexOf('.'));
+									long bytesRcvd = Long.parseLong(rcvdStr);
+									spos = cpos;
+									cpos = data.indexOf(',', spos + 1);
+									String sentStr = data.substring(spos + 1, cpos - 1);
+									sentStr = sentStr.substring(0, sentStr.indexOf('.'));
+									long bytesSent = Long.parseLong(sentStr);
+
+									Bundle bundle = new Bundle();
+									bundle.putLong(EXTRA_BITRATE_DOWN, bytesRcvd);
+									bundle.putLong(EXTRA_BITRATE_UP, bytesSent);
+									getEventMessenger().trigger(ON_DATA_RECEIVED, bundle);
+								}
+								catch (NumberFormatException nfe)
+								{
+									Log.w(TAG, nfe.getMessage());
+								}
+							}
+						}
+					}
 				}
 
 				@Override
