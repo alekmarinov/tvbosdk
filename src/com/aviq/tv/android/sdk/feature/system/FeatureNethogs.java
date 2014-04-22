@@ -19,9 +19,11 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 
 /**
- * Client to the nethogs service collecting incomming traffic from networm interface
+ * Client to the nethogs service collecting incomming traffic from networm
+ * interface
  */
 public class FeatureNethogs extends FeatureComponent
 {
@@ -30,6 +32,8 @@ public class FeatureNethogs extends FeatureComponent
 	public static final String EXTRA_BITRATE = "EXTRA_BITRATE";
 
 	private NetworkClient _networkClient;
+	private FeatureSystem _featureSystem;
+	private int _reconnectsCount = 0;
 
 	public enum Param
 	{
@@ -59,6 +63,11 @@ public class FeatureNethogs extends FeatureComponent
 		}
 	}
 
+	public FeatureNethogs()
+	{
+		_dependencies.Components.add(FeatureName.Component.SYSTEM);
+	}
+
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
@@ -67,35 +76,61 @@ public class FeatureNethogs extends FeatureComponent
 		int port = getPrefs().getInt(Param.PORT);
 		final String netInterface = getPrefs().getString(Param.NETWORK_INTERFACE);
 
-		_networkClient = new NetworkClient(host, port, new NetworkClient.OnNetworkEvent()
+		try
 		{
-			@Override
-			public void onDisconnected()
-			{
-			}
+			_featureSystem = (FeatureSystem) Environment.getInstance()
+			        .getFeatureComponent(FeatureName.Component.SYSTEM);
 
-			@Override
-			public void onDataReceived(String data)
+			_networkClient = new NetworkClient(host, port, new NetworkClient.OnNetworkEvent()
 			{
-				Log.i(TAG, ".onDataReceived: data = " + data);
-			}
+				@Override
+				public void onDisconnected()
+				{
+				}
 
-			@Override
-			public void onConnected(boolean success)
+				@Override
+				public void onDataReceived(String data)
+				{
+					Log.i(TAG, ".onDataReceived: data = " + data);
+					if (data == null)
+					{
+						// Nethog server stopped (or crashed), restart and
+						// reconnect
+						// reconnect();
+					}
+				}
+
+				@Override
+				public void onConnected(boolean success)
+				{
+					Log.i(TAG, ".onConnected: success = " + success);
+					if (success)
+					{
+						_networkClient.command(String.format("%d,%s", Process.myPid(), netInterface));
+						FeatureNethogs.super.initialize(onFeatureInitialized);
+					}
+					else
+					{
+						onFeatureInitialized.onInitialized(FeatureNethogs.this, ResultCode.GENERAL_FAILURE);
+					}
+				}
+			});
+			_featureSystem.command("stop nethogs");
+			_featureSystem.command("start nethogs");
+
+			getEventMessenger().postDelayed(new Runnable()
 			{
-				Log.i(TAG, ".onConnected: success = " + success);
-				if (success)
+				@Override
+				public void run()
 				{
-					_networkClient.command(String.format("%d,%s", Process.myPid(), netInterface));
-					FeatureNethogs.super.initialize(onFeatureInitialized);
+					_networkClient.connect();
 				}
-				else
-				{
-					onFeatureInitialized.onInitialized(FeatureNethogs.this, ResultCode.GENERAL_FAILURE);
-				}
-			}
-		});
-		_networkClient.connect();
+			}, 1000);
+		}
+		catch (FeatureNotFoundException e)
+		{
+			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
+		}
 	}
 
 	/**

@@ -11,6 +11,9 @@
 package com.aviq.tv.android.sdk.player;
 
 import android.content.Context;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
+import android.media.MediaPlayer.OnErrorListener;
 import android.net.Uri;
 import android.view.View;
 import android.widget.MediaController;
@@ -23,20 +26,34 @@ import com.aviq.tv.android.sdk.feature.player.AviqMediaController;
 /**
  * Player implementation based on Android VideoView
  */
-public class AndroidPlayer extends BasePlayer
+public class AndroidPlayer extends BasePlayer implements OnCompletionListener, OnErrorListener
 {
 	public static final String TAG = AndroidPlayer.class.getSimpleName();
 	private final VideoView _videoView;
 	private MediaController _mediaController;
+	private OnPlayerStatusListener _onPlayerStatusListener;
+
+	/**
+	 * Callback interface for player completion or error
+	 */
+	public interface OnPlayerStatusListener
+	{
+		void onCompletion(AndroidPlayer player);
+
+		void onError(AndroidPlayer player, int what, int extra);
+	}
 
 	/**
 	 * AndroidPlayer constructor
 	 *
 	 * @param videoView
 	 */
-	public AndroidPlayer(VideoView videoView)
+	public AndroidPlayer(VideoView videoView, OnPlayerStatusListener onPlayerStatusListener)
 	{
 		_videoView = videoView;
+		_videoView.setOnCompletionListener(this);
+		_videoView.setOnErrorListener(this);
+		_onPlayerStatusListener = onPlayerStatusListener;
 		Log.i(TAG, "constructed");
 	}
 
@@ -46,7 +63,7 @@ public class AndroidPlayer extends BasePlayer
 	 * @see com.aviq.tv.android.sdk.player.IPlayer#play(java.lang.String)
 	 */
 	@Override
-    public void play(String url)
+	public void play(String url)
 	{
 		Log.i(TAG, ".play: url = " + url);
 		super.play(url);
@@ -60,7 +77,7 @@ public class AndroidPlayer extends BasePlayer
 	 * @see com.aviq.tv.android.sdk.player.IPlayer#play()
 	 */
 	@Override
-    public void play()
+	public void play()
 	{
 		Log.i(TAG, ".play");
 		super.play();
@@ -73,7 +90,7 @@ public class AndroidPlayer extends BasePlayer
 	 * @see com.aviq.tv.android.sdk.player.IPlayer#stop()
 	 */
 	@Override
-    public void stop()
+	public void stop()
 	{
 		Log.i(TAG, ".stop");
 		super.stop();
@@ -178,9 +195,22 @@ public class AndroidPlayer extends BasePlayer
 	}
 
 	@Override
-    public void removeMediaController()
+	public void removeMediaController()
 	{
 		_mediaController.setVisibility(View.GONE);
 		_videoView.setMediaController(null);
+	}
+
+	@Override
+	public boolean onError(MediaPlayer mp, int what, int extra)
+	{
+		_onPlayerStatusListener.onError(this, what, extra);
+		return true;
+	}
+
+	@Override
+	public void onCompletion(MediaPlayer mp)
+	{
+		_onPlayerStatusListener.onCompletion(this);
 	}
 }

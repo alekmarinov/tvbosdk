@@ -75,11 +75,14 @@ public class NetworkClient
 				try
 				{
 					_socket.connect(sockaddr, 5000);
+					Log.i(TAG, ".connected");
 					_outputStream = _socket.getOutputStream();
 					InputStream is = _socket.getInputStream();
 					_bufferedReader = new BufferedReader(new InputStreamReader(is));
+
 					_readerThread.start();
 					_writerThread.start();
+
 					_onNetworkEvent.onConnected(true);
 				}
 				catch (IOException e)
@@ -98,8 +101,10 @@ public class NetworkClient
 			if (_socket != null)
 			{
 				Log.i(TAG, "disconnecting");
-				_outputStream.close();
-				_bufferedReader.close();
+				if (_outputStream != null)
+					_outputStream.close();
+				if (_bufferedReader != null)
+					_bufferedReader.close();
 				_socket.close();
 				_onNetworkEvent.onDisconnected();
 			}
@@ -137,10 +142,10 @@ public class NetworkClient
 			{
 				Log.e(TAG, e.getMessage(), e);
 			}
-            catch (InterruptedException e)
-            {
+			catch (InterruptedException e)
+			{
 				Log.e(TAG, e.getMessage(), e);
-            }
+			}
 		}
 	});
 

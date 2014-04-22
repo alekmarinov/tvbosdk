@@ -24,8 +24,6 @@ import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
-import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.feature.system.FeatureNethogs;
 import com.aviq.tv.android.sdk.player.AndroidPlayer;
 import com.aviq.tv.android.sdk.player.BasePlayer;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -33,7 +31,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Component feature providing player
  */
-public class FeaturePlayer extends FeatureComponent implements EventReceiver
+public class FeaturePlayer extends FeatureComponent implements EventReceiver, AndroidPlayer.OnPlayerStatusListener
 {
 	public static final String TAG = FeaturePlayer.class.getSimpleName();
 	public static final int ON_PLAY_URL = EventMessenger.ID("ON_PLAY_URL");
@@ -44,11 +42,15 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	public static final int ON_PLAY_RESUMING = EventMessenger.ID("ON_PLAY_RESUMING");
 	public static final int ON_PLAY_STARTED = EventMessenger.ID("ON_PLAY_STARTED");
 	public static final int ON_PLAY_TIMEOUT = EventMessenger.ID("ON_PLAY_TIMEOUT");
+	public static final int ON_PLAY_ERROR = EventMessenger.ID("ON_PLAY_ERROR");
+	public static final String EXTRA_TIME_ELAPSED = "TIME_ELAPSED";
 	private PlayerStatusPoller _playerStartPoller = new PlayerStatusPoller(new PlayerStartVerifier());
 	private PlayerStatusPoller _playerStopPoller = new PlayerStatusPoller(new PlayerStopVerifier());
 	private PlayerStatusPoller _playerPausePoller = new PlayerStatusPoller(new PlayerPauseVerifier());
 	private PlayerStatusPoller _playerResumePoller = new PlayerStatusPoller(new PlayerResumeVerifier());
-	private FeatureNethogs _featureNethogs;
+	private boolean _isError;
+	private int _errWhat;
+	private int _errExtra;
 
 	public enum Extras
 	{
@@ -89,14 +91,6 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	{
 		_userPrefs = Environment.getInstance().getUserPrefs();
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
-		try
-        {
-	        _featureNethogs = (FeatureNethogs) Environment.getInstance().getFeatureComponent(FeatureName.Component.NETHOGS);
-        }
-        catch (FeatureNotFoundException e)
-        {
-        	Log.e(TAG, e.getMessage(), e);
-        }
 
 		_player = createPlayer();
 
@@ -113,7 +107,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	{
 		VideoView videoView = new VideoView(Environment.getInstance());
 		Environment.getInstance().getStateManager().addViewLayer(videoView, true);
-		return new AndroidPlayer(videoView);
+		return new AndroidPlayer(videoView, this);
 	}
 
 	@Override
@@ -125,8 +119,9 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	public void play(String url)
 	{
 		Log.i(TAG, ".play: url = " + url);
+		_isError = false;
+
 		_userPrefs.put(UserParam.LAST_URL, url);
-		// _featureNethogs.reset();
 		_player.play(url);
 
 		// trigger event on new url
@@ -165,6 +160,9 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 		_playerResumePoller.start();
 	}
 
+	/**
+	 * @return true if player is in playing state
+	 */
 	public boolean isPlaying()
 	{
 		boolean playing = _player.isPlaying();
@@ -172,6 +170,9 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 		return playing;
 	}
 
+	/**
+	 * @return true if player is in pause state
+	 */
 	public boolean isPaused()
 	{
 		boolean paused = _player.isPaused();
@@ -179,10 +180,28 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 		return paused;
 	}
 
-	public void setPlayer(BasePlayer player)
+	/**
+	 * @return true if error has occurred from last played media
+	 */
+	public boolean isError()
 	{
-		Log.i(TAG, "Using player " + player.getClass().getName());
-		_player = player;
+		return _isError;
+	}
+
+	/**
+	 * @return the error what parameter from last played media
+	 */
+	public int getErrorWhat()
+	{
+		return _errWhat;
+	}
+
+	/**
+	 * @return the error extra parameter from last played media
+	 */
+	public int getErrorExtra()
+	{
+		return _errExtra;
 	}
 
 	/**
@@ -225,7 +244,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 		/**
 		 * returns true if the player reached the expected status
 		 */
-		boolean isStatus();
+		boolean checkStatus(long timeElapsed);
 
 		/**
 		 * returns the timeout for waiting of player status
@@ -235,13 +254,13 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 		/**
 		 * invoked on timeout waiting for player status
 		 */
-		void onTimeout();
+		void onTimeout(long timeElapsed);
 	}
 
 	private class PlayerStatusPoller implements Runnable
 	{
 		private PlayerStatusVerifier _playerStatusVerifier;
-		private long _startPolling;
+		protected long _startPolling;
 
 		PlayerStatusPoller(PlayerStatusVerifier playerStatusVerifier)
 		{
@@ -262,7 +281,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 		public void run()
 		{
 			// Call only once to prevent multiple triggering of events
-			boolean isPlaying = _playerStatusVerifier.isStatus();
+			long timeElapsed = System.currentTimeMillis() - _startPolling;
+			boolean isPlaying = _playerStatusVerifier.checkStatus(timeElapsed);
 			Log.v(TAG, "waiting player for status: " + _playerStatusVerifier + " -> " + isPlaying);
 
 			if (!isPlaying)
@@ -270,7 +290,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 				if (System.currentTimeMillis() - _startPolling > _playerStatusVerifier.getTimeout())
 				{
 					// on timeout
-					_playerStatusVerifier.onTimeout();
+					_playerStatusVerifier.onTimeout(timeElapsed);
 				}
 				else
 				{
@@ -284,12 +304,14 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	private class PlayerStartVerifier implements PlayerStatusVerifier
 	{
 		@Override
-		public boolean isStatus()
+		public boolean checkStatus(long timeElapsed)
 		{
 			if (_player.getPosition() > 0)
 			{
 				// trigger player started
-				getEventMessenger().trigger(ON_PLAY_STARTED);
+				Bundle bundle = new Bundle();
+				bundle.putLong(EXTRA_TIME_ELAPSED, timeElapsed);
+				getEventMessenger().trigger(ON_PLAY_STARTED, bundle);
 				return true;
 			}
 			return false;
@@ -302,10 +324,12 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 		}
 
 		@Override
-		public void onTimeout()
+		public void onTimeout(long timeElapsed)
 		{
 			// trigger timeout
-			getEventMessenger().trigger(ON_PLAY_TIMEOUT);
+			Bundle bundle = new Bundle();
+			bundle.putLong(EXTRA_TIME_ELAPSED, timeElapsed);
+			getEventMessenger().trigger(ON_PLAY_TIMEOUT, bundle);
 		}
 
 		@Override
@@ -318,12 +342,14 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	private class PlayerStopVerifier implements PlayerStatusVerifier
 	{
 		@Override
-		public boolean isStatus()
+		public boolean checkStatus(long timeElapsed)
 		{
 			if (!_player.isPlaying())
 			{
 				// trigger player stopped
-				getEventMessenger().trigger(ON_PLAY_STOP);
+				Bundle bundle = new Bundle();
+				bundle.putLong(EXTRA_TIME_ELAPSED, timeElapsed);
+				getEventMessenger().trigger(ON_PLAY_STOP, bundle);
 				return true;
 			}
 			return false;
@@ -336,7 +362,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 		}
 
 		@Override
-		public void onTimeout()
+		public void onTimeout(long elapsed)
 		{
 			Log.w(TAG, "PlayerStopVerifier.onTimeout");
 		}
@@ -351,12 +377,14 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	private class PlayerPauseVerifier implements PlayerStatusVerifier
 	{
 		@Override
-		public boolean isStatus()
+		public boolean checkStatus(long timeElapsed)
 		{
 			if (_player.isPaused())
 			{
 				// trigger player paused
-				getEventMessenger().trigger(ON_PLAY_PAUSE);
+				Bundle bundle = new Bundle();
+				bundle.putLong(EXTRA_TIME_ELAPSED, timeElapsed);
+				getEventMessenger().trigger(ON_PLAY_PAUSE, bundle);
 				return true;
 			}
 			return false;
@@ -369,9 +397,9 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 		}
 
 		@Override
-		public void onTimeout()
+		public void onTimeout(long timeElapsed)
 		{
-			Log.w(TAG, "PlayerPauseVerifier.onTimeout");
+			Log.w(TAG, "PlayerPauseVerifier.onTimeout: timeElapsed = " + timeElapsed);
 		}
 
 		@Override
@@ -384,12 +412,14 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 	private class PlayerResumeVerifier implements PlayerStatusVerifier
 	{
 		@Override
-		public boolean isStatus()
+		public boolean checkStatus(long timeElapsed)
 		{
 			if (!_player.isPaused())
 			{
 				// trigger player resume
-				getEventMessenger().trigger(ON_PLAY_PAUSE);
+				Bundle bundle = new Bundle();
+				bundle.putLong(EXTRA_TIME_ELAPSED, timeElapsed);
+				getEventMessenger().trigger(ON_PLAY_PAUSE, bundle);
 				return true;
 			}
 			return false;
@@ -402,9 +432,9 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 		}
 
 		@Override
-		public void onTimeout()
+		public void onTimeout(long timeElapsed)
 		{
-			Log.w(TAG, "PlayerResumeVerifier.onTimeout");
+			Log.w(TAG, "PlayerResumeVerifier.onTimeout: timeElapsed = " + timeElapsed);
 		}
 
 		@Override
@@ -429,5 +459,25 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver
 					pause();
 			}
 		}
+	}
+
+	@Override
+	public void onCompletion(AndroidPlayer player)
+	{
+		Log.i(TAG, ".onCompletion");
+		getEventMessenger().trigger(ON_PLAY_STOP);
+	}
+
+	@Override
+	public void onError(AndroidPlayer player, int what, int extra)
+	{
+		Log.w(TAG, ".onError: what = " + what + ", extra = " + extra);
+		Bundle bundle = new Bundle();
+		bundle.putInt("WHAT", what);
+		bundle.putInt("EXTRA", extra);
+		getEventMessenger().trigger(ON_PLAY_ERROR, bundle);
+		_errWhat = what;
+		_errExtra = extra;
+		_isError = true;
 	};
 }
