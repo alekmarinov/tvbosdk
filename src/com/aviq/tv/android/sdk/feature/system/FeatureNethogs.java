@@ -33,7 +33,6 @@ public class FeatureNethogs extends FeatureComponent
 
 	private NetworkClient _networkClient;
 	private FeatureSystem _featureSystem;
-	private int _reconnectsCount = 0;
 
 	public enum Param
 	{
@@ -92,12 +91,6 @@ public class FeatureNethogs extends FeatureComponent
 				public void onDataReceived(String data)
 				{
 					Log.i(TAG, ".onDataReceived: data = " + data);
-					if (data == null)
-					{
-						// Nethog server stopped (or crashed), restart and
-						// reconnect
-						// reconnect();
-					}
 				}
 
 				@Override
@@ -131,14 +124,6 @@ public class FeatureNethogs extends FeatureComponent
 		{
 			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
 		}
-	}
-
-	/**
-	 * Restarts nethogs service
-	 */
-	public void reset()
-	{
-		_networkClient.command("reset");
 	}
 
 	@Override
