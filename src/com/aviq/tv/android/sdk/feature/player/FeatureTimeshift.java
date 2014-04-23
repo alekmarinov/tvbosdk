@@ -86,7 +86,8 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		/**
 		 * Timeshift time format
 		 */
-		TIME_FORMAT("yyyy-MM-dd'T'HH:mm:ss");
+		// TIME_FORMAT("yyyy-MM-dd'T'HH:mm:ss")
+		TIME_FORMAT("HH:mm:ss.000");
 
 		Param(int value)
 		{
