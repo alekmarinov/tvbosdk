@@ -65,8 +65,9 @@ public class FeatureEPGBulsat extends FeatureEPG
     }
 
 	@Override
-    public String getChannelStreamUrl(int channelIndex)
+    public String getChannelStreamId(int channelIndex)
     {
+		// FIXME: Refactore to return stream id here, but provide the real url from new Bulsat streamer
 		if (true)
 			return "http://185.4.83.195:1935/tv/test/playlist.m3u8";
 		switch (channelIndex)

@@ -226,7 +226,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 	 * @param channelIndex
 	 * @return URL to video stream corresponding to the requested channel index
 	 */
-	public abstract String getChannelStreamUrl(int channelIndex);
+	public abstract String getChannelStreamId(int channelIndex);
 
 	/**
 	 * @return create channel instance

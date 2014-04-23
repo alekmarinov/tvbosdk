@@ -64,8 +64,9 @@ public class FeatureEPGWilmaa extends FeatureEPG
 	 * @return stream url
 	 */
 	@Override
-    public String getChannelStreamUrl(int channelIndex)
+    public String getChannelStreamId(int channelIndex)
 	{
+		// FIXME: Refactore to return stream id here, but provide the real url from new Bulsat streamer
 		ChannelWilmaa channel = (ChannelWilmaa)getEpgData().getChannel(channelIndex);
 		return channel.getStreamUrl();
 	}

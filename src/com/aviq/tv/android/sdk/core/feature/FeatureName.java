@@ -36,7 +36,8 @@ public class FeatureName
 		EASTER_EGG,
 		CRASHLOG,
 		TIMEZONE,
-		NETHOGS
+		NETHOGS,
+		STREAMER
 	}
 
 	public static enum Scheduler

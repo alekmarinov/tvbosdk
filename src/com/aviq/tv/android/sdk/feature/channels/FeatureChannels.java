@@ -27,6 +27,8 @@ import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
+import com.aviq.tv.android.sdk.feature.player.FeatureStreamer;
+import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 
 /**
  * Component feature managing favorite channels
@@ -80,6 +82,8 @@ public class FeatureChannels extends FeatureComponent
 	private Prefs _userPrefs;
 	private FeatureEPG _featureEPG;
 	private FeaturePlayer _featurePlayer;
+	private FeatureStreamer _featureStreamer;
+	private FeatureTimeshift _featureTimeshift;
 	private boolean _isModified = false;
 
 	// List of favorite channels
@@ -89,6 +93,7 @@ public class FeatureChannels extends FeatureComponent
 	{
 		_dependencies.Schedulers.add(FeatureName.Scheduler.EPG);
 		_dependencies.Components.add(FeatureName.Component.PLAYER);
+		_dependencies.Components.add(FeatureName.Component.STREAMER);
 	}
 
 	@Override
@@ -97,10 +102,17 @@ public class FeatureChannels extends FeatureComponent
 		Log.i(TAG, ".initialize");
 		try
 		{
-			_userPrefs = Environment.getInstance().getUserPrefs();
-			_featureEPG = (FeatureEPG) Environment.getInstance().getFeatureScheduler(FeatureName.Scheduler.EPG);
-			_featurePlayer = (FeaturePlayer) Environment.getInstance()
-			        .getFeatureComponent(FeatureName.Component.PLAYER);
+			Environment env = Environment.getInstance();
+			_userPrefs = env.getUserPrefs();
+			_featureEPG = (FeatureEPG) env.getFeatureScheduler(FeatureName.Scheduler.EPG);
+			_featurePlayer = (FeaturePlayer) env.getFeatureComponent(FeatureName.Component.PLAYER);
+			_featureStreamer = (FeatureStreamer) env.getFeatureComponent(FeatureName.Component.STREAMER);
+
+			if (env.hasFeature(FeatureName.Component.TIMESHIFT))
+			{
+				_featureTimeshift = (FeatureTimeshift) env.getFeatureComponent(FeatureName.Component.TIMESHIFT);
+			}
+
 			_channels = loadFavoriteChannels();
 
 			if (getPrefs().getBool(Param.AUTOPLAY))
@@ -266,10 +278,22 @@ public class FeatureChannels extends FeatureComponent
 			}
 		}
 		setLastChannelId(channel.getChannelId());
-		Log.d(TAG, ".play: start playing " + channel.getChannelId());
 		int globalIndex = channel.getIndex();
-		String streamUrl = _featureEPG.getChannelStreamUrl(globalIndex);
-		_featurePlayer.play(streamUrl);
+		String streamId = _featureEPG.getChannelStreamId(globalIndex);
+		String streamUrl = _featureStreamer.getUrlByStreamId(streamId);
+
+		if (_featureTimeshift != null)
+		{
+			// play with timeshift
+			Log.d(TAG, ".play: timeshift " + streamId);
+			_featureTimeshift.play(streamUrl);
+		}
+		else
+		{
+			// play directly
+			Log.d(TAG, ".play: directly " + streamId);
+			_featurePlayer.play(streamUrl);
+		}
 	}
 
 	/**

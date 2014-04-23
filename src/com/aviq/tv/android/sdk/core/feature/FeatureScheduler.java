@@ -99,7 +99,7 @@ public abstract class FeatureScheduler implements IFeature, EventReceiver
 	@Override
 	public void onEvent(int msgId, Bundle bundle)
 	{
-		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
+		Log.i(getName(), ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
 		if (ON_SCHEDULE == msgId)
 		{
 			onSchedule(new OnFeatureInitialized()

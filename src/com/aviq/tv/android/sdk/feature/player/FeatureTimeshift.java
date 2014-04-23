@@ -10,6 +10,11 @@
 
 package com.aviq.tv.android.sdk.feature.player;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 import android.os.Bundle;
 
 import com.aviq.tv.android.sdk.core.Environment;
@@ -40,15 +45,55 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	private FeaturePlayer _featurePlayer;
 	private int _timeshiftMaxBufSize;
 	private AutoResumer _autoResumer = new AutoResumer();
+	private String _timeshiftUrl;
+	private String _timeshiftStartUrl;
+	private DateFormat _timeshiftTimeFormat;
+	private Runnable _seeker = new Runnable()
+	{
+		@Override
+        public void run()
+        {
+			String timeshiftTime = _timeshiftTimeFormat.format(new Date(1000 * getPlayingTime()));
+			Bundle bundle = new Bundle();
+			bundle.putString("TIME", timeshiftTime);
+			String seekUrl = _timeshiftUrl + getPrefs().getString(Param.TIMESHIFT_SEEK_URL_PARAM, bundle);
+			_featurePlayer.play(seekUrl);
+        }
+	};
 
 	public enum Param
 	{
 		/**
 		 * Timeshift max buffer size in seconds
 		 */
-		TIMESHIFT_DURATION(60 * 60);
+		TIMESHIFT_DURATION(60 * 60),
+
+		/**
+		 * timeshift base url
+		 */
+		TIMESHIFT_URL("http://localhost:8090/live.ts"),
+
+		/**
+		 * Start timeshift param
+		 */
+		TIMESHIFT_START_URL_PARAM(""), // ?buffer=1
+
+		/**
+		 * Seek in timeshift param
+		 */
+		TIMESHIFT_SEEK_URL_PARAM("?date=${TIME}"),
+
+		/**
+		 * Timeshift time format
+		 */
+		TIME_FORMAT("yyyy-MM-dd'T'HH:mm:ss");
 
 		Param(int value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.TIMESHIFT).put(name(), value);
+		}
+
+		Param(String value)
 		{
 			Environment.getInstance().getFeaturePrefs(FeatureName.Component.TIMESHIFT).put(name(), value);
 		}
@@ -67,10 +112,17 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		{
 			_featurePlayer = (FeaturePlayer) Environment.getInstance()
 			        .getFeatureComponent(FeatureName.Component.PLAYER);
-			_featurePlayer.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_URL);
-			_featurePlayer.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_STOP);
 			_featurePlayer.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_PAUSE);
 			_timeshiftMaxBufSize = getPrefs().getInt(Param.TIMESHIFT_DURATION);
+
+			_timeshiftUrl = getPrefs().getString(Param.TIMESHIFT_URL);
+			_timeshiftStartUrl = _timeshiftUrl + getPrefs().getString(Param.TIMESHIFT_START_URL_PARAM);
+			_timeshiftTimeFormat = new SimpleDateFormat(getPrefs().getString(Param.TIME_FORMAT), Locale.getDefault());
+
+			// load timeshift jni
+			Log.i(TAG, "loadLibrary timeshiftjni");
+			System.loadLibrary("timeshiftjni");
+
 			reset();
 			super.initialize(onFeatureInitialized);
 		}
@@ -79,6 +131,67 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 			Log.e(TAG, e.getMessage(), e);
 			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
 		}
+		catch (UnsatisfiedLinkError e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
+		}
+	}
+
+	/**
+	 * Play url with timeshift buffer
+	 *
+	 * @param streamUrl
+	 */
+	public void play(final String streamUrl)
+	{
+		Log.i(TAG, ".play: " + streamUrl);
+		reset();
+
+		new Thread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				if (ffserver_running() == 1)
+				{
+					ffserver_stop();
+				}
+
+				int exitCode = ffserver_start();
+				Log.i(TAG, "ffserver_start exited with code " + exitCode);
+			}
+		}).start();
+
+		getEventMessenger().postDelayed(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				new Thread(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						if (ffmpeg_running() == 1)
+						{
+							ffmpeg_stop();
+						}
+						int exitCode = ffmpeg_start(streamUrl);
+						Log.i(TAG, "ffmpeg_start exited with code " + exitCode);
+					}
+				}).start();
+			}
+		}, 750);
+
+		getEventMessenger().postDelayed(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				_featurePlayer.play(_timeshiftStartUrl);
+			}
+		}, 6000);
 	}
 
 	/**
@@ -109,7 +222,10 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	public void seekAt(long timestamp)
 	{
 		Log.i(TAG, ".seekAt: " + (timestamp - currentTime()) + " secs relative to current time");
-		_playTimeDelta = currentTime() - adjustInTimeshift(timestamp);
+		long adjustedTime = adjustInTimeshift(timestamp);
+		getEventMessenger().removeCallbacks(_seeker);
+		getEventMessenger().postDelayed(_seeker, 1000);
+		_playTimeDelta = currentTime() - adjustedTime;
 	}
 
 	/**
@@ -169,11 +285,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	public void onEvent(int msgId, Bundle bundle)
 	{
 		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
-		if (FeaturePlayer.ON_PLAY_URL == msgId || FeaturePlayer.ON_PLAY_STOPPING == msgId)
-		{
-			reset();
-		}
-		else if (FeaturePlayer.ON_PLAY_PAUSE == msgId)
+		if (FeaturePlayer.ON_PLAY_PAUSE == msgId)
 		{
 			if (_featurePlayer.isPaused())
 				onPause();
@@ -244,4 +356,17 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		}
 	}
 
+	public static native int ffserver_stop();
+
+	public static native int ffserver_start();
+
+	public static native int ffserver_start_ex(String configPath);
+
+	public static native int ffserver_running();
+
+	public static native int ffmpeg_stop();
+
+	public static native int ffmpeg_start(String url);
+
+	public static native int ffmpeg_running();
 }
