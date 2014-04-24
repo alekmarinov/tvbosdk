@@ -72,7 +72,7 @@ public class FeatureInternet extends FeatureScheduler
 
 	public enum ResultExtras
 	{
-		URL, CONTENT, ERROR_MESSAGE, ERROR_CODE
+		URL, CONTENT, ERROR_MESSAGE, ERROR_CODE, HOST
 	}
 
 	private String _checkUrl;
