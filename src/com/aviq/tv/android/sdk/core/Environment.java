@@ -831,6 +831,11 @@ public class Environment extends Activity
 		}
 	}
 
+	public boolean isDevel()
+	{
+		return "devel".equalsIgnoreCase(getPrefs().getString(Param.RELEASE));
+	}
+
 	/**
 	 * Inject key press in the environment
 	 */
