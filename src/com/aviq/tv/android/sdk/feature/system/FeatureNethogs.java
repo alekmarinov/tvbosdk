@@ -11,7 +11,6 @@
 package com.aviq.tv.android.sdk.feature.system;
 
 import android.os.Bundle;
-import android.os.Process;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
@@ -73,8 +72,8 @@ public class FeatureNethogs extends FeatureComponent
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		String host = getPrefs().getString(Param.HOST);
-		int port = getPrefs().getInt(Param.PORT);
+		final String host = getPrefs().getString(Param.HOST);
+		final int port = getPrefs().getInt(Param.PORT);
 		final String netInterface = getPrefs().getString(Param.NETWORK_INTERFACE);
 
 		try
@@ -131,15 +130,13 @@ public class FeatureNethogs extends FeatureComponent
 				@Override
 				public void onConnected(boolean success)
 				{
-					Log.i(TAG, ".onConnected: success = " + success);
 					if (success)
 					{
-						_networkClient.command(String.format("%d,%s", Process.myPid(), netInterface));
-						FeatureNethogs.super.initialize(onFeatureInitialized);
+						Log.i(TAG, ".onConnected: " + host + ":" + port);
 					}
 					else
 					{
-						onFeatureInitialized.onInitialized(FeatureNethogs.this, ResultCode.GENERAL_FAILURE);
+						Log.e(TAG, ".onConnected: Unable to connect to nethogs service on " + host + ":" + port);
 					}
 				}
 			});
