@@ -138,6 +138,7 @@ public class FeatureNethogs extends FeatureComponent
 					{
 						Log.e(TAG, ".onConnected: Unable to connect to nethogs service on " + host + ":" + port);
 					}
+					FeatureNethogs.super.initialize(onFeatureInitialized);
 				}
 			});
 			_featureSystem.command("stop nethogs");
