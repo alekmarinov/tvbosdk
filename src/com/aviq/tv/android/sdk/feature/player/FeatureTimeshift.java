@@ -144,7 +144,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	 *
 	 * @param streamUrl
 	 */
-	public void play(final String streamUrl)
+	public void play_slow(final String streamUrl)
 	{
 		Log.i(TAG, ".play: " + streamUrl);
 		reset();
@@ -154,7 +154,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 			@Override
 			public void run()
 			{
-				if (ffserver_running() == 1)
+				if (ffserver_running() != 0)
 				{
 					ffserver_stop();
 				}
@@ -174,7 +174,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 					@Override
 					public void run()
 					{
-						if (ffmpeg_running() == 1)
+						if (ffmpeg_running() != 0)
 						{
 							ffmpeg_stop();
 						}
@@ -193,6 +193,36 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 				_featurePlayer.play(_timeshiftStartUrl);
 			}
 		}, 6000);
+	}
+
+	/**
+	 * Play url with timeshift buffer
+	 *
+	 * @param streamUrl
+	 */
+	public void play(final String streamUrl)
+	{
+		Log.i(TAG, ".play: " + streamUrl);
+		reset();
+
+		new Thread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				int exitCode = ffserver_start(streamUrl);
+				Log.i(TAG, "ffserver_start exited with code " + exitCode);
+			}
+		}).start();
+
+		getEventMessenger().postDelayed(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				_featurePlayer.play(_timeshiftStartUrl);
+			}
+		}, 1500);
 	}
 
 	/**
@@ -361,7 +391,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 
 	public static native int ffserver_start();
 
-	public static native int ffserver_start_ex(String configPath);
+	public static native int ffserver_start(String url);
 
 	public static native int ffserver_running();
 
