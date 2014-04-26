@@ -14,9 +14,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import android.os.Bundle;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
@@ -33,7 +35,7 @@ import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 /**
  * Component feature managing favorite channels
  */
-public class FeatureChannels extends FeatureComponent
+public class FeatureChannels extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureChannels.class.getSimpleName();
 
@@ -112,6 +114,8 @@ public class FeatureChannels extends FeatureComponent
 			{
 				_featureTimeshift = (FeatureTimeshift) env.getFeatureComponent(FeatureName.Component.TIMESHIFT);
 			}
+
+			_featureEPG.getEventMessenger().register(this, FeatureEPG.ON_EPG_UPDATED);
 
 			_channels = loadFavoriteChannels();
 
@@ -422,6 +426,15 @@ public class FeatureChannels extends FeatureComponent
 		}
 		_userPrefs.put(UserParam.SYNCED_CHANNELS, buffer.toString());
 		Log.i(TAG, "Updated synched channels list: " + buffer);
+	}
+
+	@Override
+	public void onEvent(int msgId, Bundle bundle)
+	{
+		if (FeatureEPG.ON_EPG_UPDATED == msgId)
+		{
+			_channels = loadFavoriteChannels();
+		}
 	}
 
 	private List<Channel> loadFavoriteChannels()
