@@ -10,6 +10,8 @@
 
 package com.aviq.tv.android.sdk.feature.system;
 
+import java.util.TimeZone;
+
 import android.app.AlarmManager;
 import android.content.Context;
 import android.util.Log;
@@ -39,16 +41,18 @@ public class FeatureTimeZone extends FeatureComponent
 		}
 	}
 
+	private String _timeZone;
+
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		String timeZone = getPrefs().getString(Param.TIMEZONE);
+		_timeZone = getPrefs().getString(Param.TIMEZONE);
 
 		// Setting time zone from configuration
 		AlarmManager alarm = (AlarmManager) Environment.getInstance().getSystemService(Context.ALARM_SERVICE);
-		alarm.setTimeZone(timeZone);
-		Log.i(TAG, "Time zone set to " + timeZone);
+		alarm.setTimeZone(_timeZone);
+		Log.i(TAG, "Time zone set to " + _timeZone);
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -56,5 +60,13 @@ public class FeatureTimeZone extends FeatureComponent
 	public Component getComponentName()
 	{
 		return FeatureName.Component.TIMEZONE;
+	}
+
+	/**
+	 * @return the timezone configured for this app
+	 */
+	public TimeZone getTimeZone()
+	{
+		return TimeZone.getTimeZone(_timeZone);
 	}
 }
