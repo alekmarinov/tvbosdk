@@ -99,7 +99,6 @@ public class FeatureEthernet extends FeatureComponent
 		}
 		else
 		{
-			setEnabled(true);
 			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 		}
 	}
