@@ -108,7 +108,12 @@ public abstract class FeatureEPG extends FeatureScheduler
 		/**
 		 * Schedule interval
 		 */
-		UPDATE_INTERVAL(60 * 60 * 1000);
+		UPDATE_INTERVAL(60 * 60 * 1000),
+
+		/**
+		 * The number of maximum EPG channels
+		 */
+		MAX_CHANNELS(5);
 
 		Param(int value)
 		{
@@ -150,6 +155,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 	private EpgData _epgDataBeingLoaded;
 	private JsonObjectRequest _programDetailsRequest;
 	private FeatureTimeZone _featureTimeZone;
+	private int _maxChannels = 0;
 
 	public FeatureEPG()
 	{
@@ -162,8 +168,9 @@ public abstract class FeatureEPG extends FeatureScheduler
 		Log.i(TAG, ".initialize");
 
 		try
-        {
-	        _featureTimeZone = (FeatureTimeZone) Environment.getInstance().getFeatureComponent(FeatureName.Component.TIMEZONE);
+		{
+			_featureTimeZone = (FeatureTimeZone) Environment.getInstance().getFeatureComponent(
+			        FeatureName.Component.TIMEZONE);
 			_epgProvider = getEPGProvider().name();
 			_epgVersion = getPrefs().getInt(Param.EPG_VERSION);
 			_epgServer = getPrefs().getString(Param.EPG_SERVER);
@@ -172,17 +179,19 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 			_httpQueue = Environment.getInstance().getRequestQueue();
 
+			_maxChannels = getPrefs().getInt(Param.MAX_CHANNELS);
+
 			onSchedule(onFeatureInitialized);
-        }
-        catch (FeatureNotFoundException e)
-        {
-        	Log.e(TAG, e.getMessage(), e);
-        	onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-        }
+		}
+		catch (FeatureNotFoundException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
+		}
 	}
 
 	@Override
-    protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
+	protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
 	{
 		_onFeatureInitialized = onFeatureInitialized;
 
@@ -319,7 +328,8 @@ public abstract class FeatureEPG extends FeatureScheduler
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			// FIXME: This error occurs when the EPG server is down. Show appropriate message
+			// FIXME: This error occurs when the EPG server is down. Show
+			// appropriate message
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
 			Log.e(TAG, "Error retrieving channels with code " + statusCode + ": " + error);
@@ -446,7 +456,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		{
 			float processedCount = _retrievedChannelPrograms + _retrievedChannelLogos;
 			float totalCount = 2 * numChannels; // The number of all programs
-												// and logos queries
+			                                    // and logos queries
 			_onFeatureInitialized.onInitializeProgress(FeatureEPG.this, processedCount / totalCount);
 		}
 	}
@@ -479,7 +489,10 @@ public abstract class FeatureEPG extends FeatureScheduler
 	private void parseChannelData(Channel.MetaData metaData, String[][] data)
 	{
 		List<Channel> newChannelList = new ArrayList<Channel>();
-		for (int i = 0; i < data.length; i++)
+		if (_maxChannels == 0)
+			_maxChannels = data.length;
+
+		for (int i = 0; i < _maxChannels; i++)
 		{
 			Channel channel = createChannel(i);
 			channel.setChannelId(data[i][metaData.metaChannelId]);
@@ -509,15 +522,15 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 	private String adjustDateTime(SimpleDateFormat sdf, SimpleDateFormat ddf, String dateTime)
 	{
-        try
-        {
+		try
+		{
 			return ddf.format(sdf.parse(dateTime));
-        }
-        catch (ParseException e)
-        {
-        	Log.e(TAG, e.getMessage(), e);
-            return null;
-        }
+		}
+		catch (ParseException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+			return null;
+		}
 	}
 
 	private void parseProgramsData(Program.MetaData metaData, final String channelId, final String[][] data)
@@ -539,14 +552,14 @@ public abstract class FeatureEPG extends FeatureScheduler
 			program.setTitle(data[i][metaData.metaTitle]);
 
 			try
-            {
+			{
 				program.setStartTime(ddf.format(sdf.parse(data[i][metaData.metaStart])));
-	            program.setStopTime(ddf.format(sdf.parse(data[i][metaData.metaStop])));
-            }
-            catch (ParseException e)
-            {
-            	Log.w(TAG, e.getMessage(), e);
-            }
+				program.setStopTime(ddf.format(sdf.parse(data[i][metaData.metaStop])));
+			}
+			catch (ParseException e)
+			{
+				Log.w(TAG, e.getMessage(), e);
+			}
 
 			// set custom provider attributes
 			program.setDetailAttributes(metaData, data[i]);
