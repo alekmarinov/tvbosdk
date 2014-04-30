@@ -82,6 +82,7 @@ public class FeatureName
 		LANGUAGE_WIZARD,
 		NETWORK_WIZARD,
 		BOOT_WIZARD,
-		STANDBY
+		STANDBY,
+		MEDIA
 	}
 }
