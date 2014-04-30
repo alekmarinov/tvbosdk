@@ -231,7 +231,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		{
 			Channel channel = _channels.get(position);
 			_channels.remove(position);
-			_channels.add(position, channel);
+			_channels.add(0, channel);
 			_isModified = true;
 		}
 	}
