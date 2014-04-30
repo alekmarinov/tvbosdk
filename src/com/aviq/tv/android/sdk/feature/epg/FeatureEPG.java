@@ -159,6 +159,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 	public FeatureEPG()
 	{
+		_dependencies.Schedulers.add(FeatureName.Scheduler.INTERNET);
 		_dependencies.Components.add(FeatureName.Component.TIMEZONE);
 	}
 
