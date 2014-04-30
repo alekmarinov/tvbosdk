@@ -76,6 +76,10 @@ public class FeatureRCUWilmaa extends FeatureRCU
 				return Key.TV;
 			case KeyEvent.KEYCODE_M:
 				return Key.MEDIA;
+			case KeyEvent.KEYCODE_F3:
+				return Key.PLAY_BACKWARD;
+			case KeyEvent.KEYCODE_F4:
+				return Key.PLAY_FORWARD;
 
 			case KeyEvent.KEYCODE_0:
 				return Key.NUM_0;

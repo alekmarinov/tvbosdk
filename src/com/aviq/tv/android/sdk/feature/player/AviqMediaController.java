@@ -7,6 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.MediaController;
 
+import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.Key;
 import com.aviq.tv.android.sdk.core.Log;
 
 public class AviqMediaController extends MediaController
@@ -32,6 +34,8 @@ public class AviqMediaController extends MediaController
 	public boolean dispatchKeyEvent(KeyEvent event)
 	{
 		int keyCode = event.getKeyCode();
+		Key key = Environment.getInstance().translateKeyCode(keyCode);
+
 		Log.e(TAG, ".dispatchKeyEvent: keyCode = " + keyCode);
 
 		ViewGroup rootLayout = (ViewGroup) getChildAt(0);
@@ -42,22 +46,23 @@ public class AviqMediaController extends MediaController
 		if (buttonContainer.hasFocus())
 			seekBar.requestFocus();
 
-		/*switch (keyCode)
+		switch (key)
 		{
-			case KeyEvent.KEYCODE_DPAD_LEFT:
+			case PLAY_BACKWARD:
+				event = new KeyEvent(event.getDownTime(), event.getEventTime(), event.getAction(),
+				        KeyEvent.KEYCODE_DPAD_LEFT, event.getRepeatCount(), event.getMetaState(), event.getDeviceId(),
+				        event.getScanCode(), event.getFlags(), event.getSource());
 				break;
 
-			case KeyEvent.KEYCODE_DPAD_RIGHT:
-				break;
-
-			case KeyEvent.KEYCODE_DPAD_UP:
-				break;
-
-			case KeyEvent.KEYCODE_DPAD_DOWN:
+			case PLAY_FORWARD:
+				event = new KeyEvent(event.getDownTime(), event.getEventTime(), event.getAction(),
+				        KeyEvent.KEYCODE_DPAD_RIGHT, event.getRepeatCount(), event.getMetaState(), event.getDeviceId(),
+				        event.getScanCode(), event.getFlags(), event.getSource());
 				break;
 
 			default:
-		}*/
+				break;
+		}
 
 		return super.dispatchKeyEvent(event);
 	}

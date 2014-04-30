@@ -1038,6 +1038,11 @@ public class Environment extends Activity
 		return new Prefs(name, getSharedPreferences(name, Activity.MODE_PRIVATE), false);
 	}
 
+	public Key translateKeyCode(int keyCode)
+	{
+		return _featureRCU.getKey(keyCode);
+	}
+
 	private class BitmapLruCache extends LruCache<String, Bitmap> implements ImageCache
 	{
 		public BitmapLruCache(int maxSize)
