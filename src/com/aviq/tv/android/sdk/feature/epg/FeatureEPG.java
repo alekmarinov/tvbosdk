@@ -113,7 +113,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		/**
 		 * The number of maximum EPG channels
 		 */
-		MAX_CHANNELS(5);
+		MAX_CHANNELS(0);
 
 		Param(int value)
 		{
