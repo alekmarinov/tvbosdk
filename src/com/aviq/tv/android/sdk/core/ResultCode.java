@@ -19,6 +19,11 @@ public class ResultCode
 	public static final int NOT_FOUND_404 = 404;
 
 	/**
+	 * Timeout error
+	 */
+	public static final int TIMEOUT = -6;
+
+	/**
 	 * Error which happened while a feature was initializing.
 	 */
 	public static final int INIT_ERROR = -5;

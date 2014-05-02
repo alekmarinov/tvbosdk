@@ -86,7 +86,7 @@ public class BaseState extends Fragment
 	 */
 	public void close()
 	{
-		if (isCreated())
+		if (isAdded())
 		{
 			Log.i(getClass().getSimpleName(), ".close");
 			Environment env = (Environment) getActivity();
@@ -148,14 +148,6 @@ public class BaseState extends Fragment
 	protected void onHide(boolean isViewCovered)
 	{
 		Log.i(TAG, ".onHide: isViewCovered = " + isViewCovered);
-	}
-
-	/**
-	 * Returns true if the current state is created
-	 */
-	public boolean isCreated()
-	{
-		return isAdded();
 	}
 
 	/**

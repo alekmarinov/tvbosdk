@@ -21,10 +21,17 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 public abstract class FeatureComponent implements IFeature
 {
 	protected FeatureSet _dependencies = new FeatureSet();
+	protected Feature _feature;
 	private EventMessenger _eventMessenger = new EventMessenger();
 
 	public FeatureComponent()
 	{
+	}
+
+	@Override
+	public void initializeDependencies()
+	{
+		_feature = new Feature();
 	}
 
 	@Override

@@ -32,7 +32,6 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
-import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.utils.Files;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -155,17 +154,8 @@ public class FeatureEthernet extends FeatureComponent
 
 	public void setEnabled(boolean isEnabled)
 	{
-		try
-		{
-			FeatureWireless featureWireless = (FeatureWireless) Environment.getInstance().getFeatureComponent(
-			        FeatureName.Component.WIRELESS);
-			if (featureWireless.isEnabled() == isEnabled)
-				featureWireless.setEnabledDirect(!isEnabled);
-		}
-		catch (FeatureNotFoundException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-		}
+		if (_feature.Component.WIRELESS.isEnabled() == isEnabled)
+			_feature.Component.WIRELESS.setEnabledDirect(!isEnabled);
 		setEnabledDirect(isEnabled);
 	}
 

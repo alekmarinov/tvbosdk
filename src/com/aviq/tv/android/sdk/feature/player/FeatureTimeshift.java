@@ -21,12 +21,9 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
-import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
-import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
 import com.aviq.tv.android.sdk.feature.system.NetworkClient;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -45,8 +42,6 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	private long _timeshiftTimeStart;
 	private long _pauseTimeStart;
 	private long _playTimeDelta;
-	private FeaturePlayer _featurePlayer;
-	private FeatureSystem _featureSystem;
 	private int _timeshiftMaxBufSize;
 	private AutoResumer _autoResumer = new AutoResumer();
 	private String _timeshiftUrl;
@@ -64,7 +59,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 			Bundle bundle = new Bundle();
 			bundle.putString("TIME", timeshiftTime);
 			String seekUrl = _timeshiftUrl + getPrefs().getString(Param.TIMESHIFT_SEEK_URL_PARAM, bundle);
-			_featurePlayer.play(seekUrl);
+			_feature.Component.PLAYER.play(seekUrl);
 		}
 	};
 
@@ -148,75 +143,57 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		try
+
+		_feature.Component.PLAYER.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_PAUSE);
+		_timeshiftMaxBufSize = getPrefs().getInt(Param.TIMESHIFT_DURATION);
+
+		_timeshiftUrl = getPrefs().getString(Param.TIMESHIFT_URL);
+		_timeshiftStartUrl = _timeshiftUrl + getPrefs().getString(Param.TIMESHIFT_START_URL_PARAM);
+		_timeshiftTimeFormat = new SimpleDateFormat(getPrefs().getString(Param.TIME_FORMAT), Locale.getDefault());
+
+		reset();
+
+		final String host = getPrefs().getString(Param.HOST);
+		final int port = getPrefs().getInt(Param.PORT);
+		_networkClient = new NetworkClient(host, port, new NetworkClient.OnNetworkEvent()
 		{
-			_featurePlayer = (FeaturePlayer) Environment.getInstance()
-			        .getFeatureComponent(FeatureName.Component.PLAYER);
-
-			_featureSystem = (FeatureSystem) Environment.getInstance()
-			        .getFeatureComponent(FeatureName.Component.SYSTEM);
-
-			_featurePlayer.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_PAUSE);
-			_timeshiftMaxBufSize = getPrefs().getInt(Param.TIMESHIFT_DURATION);
-
-			_timeshiftUrl = getPrefs().getString(Param.TIMESHIFT_URL);
-			_timeshiftStartUrl = _timeshiftUrl + getPrefs().getString(Param.TIMESHIFT_START_URL_PARAM);
-			_timeshiftTimeFormat = new SimpleDateFormat(getPrefs().getString(Param.TIME_FORMAT), Locale.getDefault());
-
-			reset();
-
-			final String host = getPrefs().getString(Param.HOST);
-			final int port = getPrefs().getInt(Param.PORT);
-			_networkClient = new NetworkClient(host, port, new NetworkClient.OnNetworkEvent()
+			@Override
+			public void onDisconnected()
 			{
-				@Override
-				public void onDisconnected()
-				{
-				}
+			}
 
-				@Override
-				public void onDataReceived(String data)
-				{
-				}
-
-				@Override
-				public void onConnected(boolean success)
-				{
-					if (success)
-					{
-						Log.i(TAG, ".onConnected: " + host + ":" + port);
-					}
-					else
-					{
-						Log.e(TAG, ".onConnected: Unable to connect to nethogs service on " + host + ":" + port);
-					}
-					_timeshiftAvailable = success;
-					FeatureTimeshift.super.initialize(onFeatureInitialized);
-				}
-			});
-
-			_featureSystem.command("stop timeshifter");
-			_featureSystem.command("start timeshifter");
-
-			getEventMessenger().postDelayed(new Runnable()
+			@Override
+			public void onDataReceived(String data)
 			{
-				@Override
-				public void run()
+			}
+
+			@Override
+			public void onConnected(boolean success)
+			{
+				if (success)
 				{
-					_networkClient.connect();
+					Log.i(TAG, ".onConnected: " + host + ":" + port);
 				}
-			}, 1000);
-		}
-		catch (FeatureNotFoundException e)
+				else
+				{
+					Log.e(TAG, ".onConnected: Unable to connect to nethogs service on " + host + ":" + port);
+				}
+				_timeshiftAvailable = success;
+				FeatureTimeshift.super.initialize(onFeatureInitialized);
+			}
+		});
+
+		_feature.Component.SYSTEM.command("stop timeshifter");
+		_feature.Component.SYSTEM.command("start timeshifter");
+
+		getEventMessenger().postDelayed(new Runnable()
 		{
-			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-		}
-		catch (UnsatisfiedLinkError e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-		}
+			@Override
+			public void run()
+			{
+				_networkClient.connect();
+			}
+		}, 1000);
 	}
 
 	/**
@@ -277,7 +254,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 			@Override
 			public void run()
 			{
-				_featurePlayer.play(_timeshiftStartUrl);
+				_feature.Component.PLAYER.play(_timeshiftStartUrl);
 			}
 		}, 1500);
 	}
@@ -339,7 +316,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	 */
 	public long getPlayingTime()
 	{
-		if (_featurePlayer.isPaused())
+		if (_feature.Component.PLAYER.isPaused())
 		{
 			// returns constant position from the moment of pause subtracted
 			// with the current delay from live
@@ -381,7 +358,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
 		if (FeaturePlayer.ON_PLAY_PAUSE == msgId)
 		{
-			if (_featurePlayer.isPaused())
+			if (_feature.Component.PLAYER.isPaused())
 				onPause();
 			else
 				onResume();
@@ -428,7 +405,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 			if (delta > getTimeshiftDuration())
 			{
 				Log.i(TAG, "Auto resuming");
-				_featurePlayer.resume();
+				_feature.Component.PLAYER.resume();
 				// seekAt(currentTime() - getTimeshiftDuration());
 				getEventMessenger().trigger(ON_AUTO_RESUME);
 			}
@@ -449,16 +426,4 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 			getEventMessenger().removeCallbacks(this);
 		}
 	}
-
-//	public static native int ffserver_stop();
-//
-//	public static native int ffserver_start();
-//
-//	public static native int ffserver_running();
-//
-//	public static native int ffmpeg_stop();
-//
-//	public static native int ffmpeg_start(String url);
-//
-//	public static native int ffmpeg_running();
 }

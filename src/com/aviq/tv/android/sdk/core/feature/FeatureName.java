@@ -30,7 +30,6 @@ public class FeatureName
 		WIRELESS,
 		LANGUAGE,
 		WEBTV,
-		MENU,
 		RPC,
 		SYSTEM,
 		EASTER_EGG,

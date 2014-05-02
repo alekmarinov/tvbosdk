@@ -40,7 +40,6 @@ import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
-import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
@@ -151,8 +150,6 @@ public class FeatureUpgrade extends FeatureScheduler
 		public boolean IsForced;
 	}
 
-	private FeatureRegister _featureRegister;
-	private FeatureInternet _featureInternet;
 	private boolean _hasUpdate;
 	private UpdateInfo _updateInfo;
 	private Status _status = Status.IDLE;
@@ -171,28 +168,15 @@ public class FeatureUpgrade extends FeatureScheduler
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		try
+		_userPrefs = Environment.getInstance().getUserPrefs();
+
+		if (_userPrefs.has(UserParam.IS_AFTER_UPGRADE) && _userPrefs.getBool(UserParam.IS_AFTER_UPGRADE))
 		{
-			_userPrefs = Environment.getInstance().getUserPrefs();
-
-			_featureRegister = (FeatureRegister) Environment.getInstance().getFeatureComponent(
-			        FeatureName.Component.REGISTER);
-			_featureInternet = (FeatureInternet) Environment.getInstance().getFeatureScheduler(
-			        FeatureName.Scheduler.INTERNET);
-
-			if (_userPrefs.has(UserParam.IS_AFTER_UPGRADE) && _userPrefs.getBool(UserParam.IS_AFTER_UPGRADE))
-			{
-				getEventMessenger().trigger(ON_START_FROM_UPDATE);
-				_userPrefs.put(UserParam.IS_AFTER_UPGRADE, false);
-			}
-
-			super.initialize(onFeatureInitialized);
+			getEventMessenger().trigger(ON_START_FROM_UPDATE);
+			_userPrefs.put(UserParam.IS_AFTER_UPGRADE, false);
 		}
-		catch (FeatureNotFoundException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-		}
+
+		super.initialize(onFeatureInitialized);
 	}
 
 	@Override
@@ -370,15 +354,15 @@ public class FeatureUpgrade extends FeatureScheduler
 
 		Bundle updateCheckUrlParams = new Bundle();
 		updateCheckUrlParams.putString("SERVER",
-		        _featureRegister.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
-		updateCheckUrlParams.putString("BOX_ID", _featureRegister.getBoxId());
+				_feature.Component.REGISTER.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
+		updateCheckUrlParams.putString("BOX_ID", _feature.Component.REGISTER.getBoxId());
 		updateCheckUrlParams.putString("VERSION", Environment.getInstance().getBuildVersion());
 
 		String abmpUpdateCheckUrl = getPrefs().getString(Param.ABMP_UPDATE_CHECK_URL, updateCheckUrlParams);
 		Log.i(TAG, ".checkForUpdate: " + abmpUpdateCheckUrl);
 
 		_hasUpdate = false;
-		_featureInternet.getUrlContent(abmpUpdateCheckUrl, new OnResultReceived()
+		_feature.Scheduler.INTERNET.getUrlContent(abmpUpdateCheckUrl, new OnResultReceived()
 		{
 			@Override
 			public void onReceiveResult(int resultCode, Bundle resultData)
@@ -516,14 +500,14 @@ public class FeatureUpgrade extends FeatureScheduler
 
 		// format download url
 		Bundle updateUrlParams = new Bundle();
-		updateUrlParams.putString("SERVER", _featureRegister.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
-		updateUrlParams.putString("BOX_ID", _featureRegister.getBoxId());
+		updateUrlParams.putString("SERVER", _feature.Component.REGISTER.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
+		updateUrlParams.putString("BOX_ID", _feature.Component.REGISTER.getBoxId());
 		updateUrlParams.putString("FILE_NAME", _updateInfo.FileName);
 		final String updateUrl = getPrefs().getString(Param.ABMP_UPDATE_DOWNLOAD_URL, updateUrlParams);
 
 		// download md5 file
 		final String updateUrlMd5 = updateUrl + ".md5";
-		_featureInternet.getUrlContent(updateUrlMd5, new ServiceController.OnResultReceived()
+		_feature.Scheduler.INTERNET.getUrlContent(updateUrlMd5, new ServiceController.OnResultReceived()
 		{
 			@Override
 			public void onReceiveResult(int resultCode, Bundle resultData)
@@ -570,7 +554,7 @@ public class FeatureUpgrade extends FeatureScheduler
 					}
 
 					// start download
-					_featureInternet.downloadFile(downloadParams, new OnResultReceived()
+					_feature.Scheduler.INTERNET.downloadFile(downloadParams, new OnResultReceived()
 					{
 						@Override
 						public void onReceiveResult(int resultCode, Bundle resultData)
@@ -627,7 +611,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		String currentVersion = Environment.getInstance().getBuildVersion();
 
 		// check if BoxID is reassigned to new brand to allow FW update
-		boolean isNewBrand = !(TextUtils.isEmpty(brand) || _featureRegister.getPrefs()
+		boolean isNewBrand = !(TextUtils.isEmpty(brand) || _feature.Component.REGISTER.getPrefs()
 		        .getString(FeatureRegister.Param.BRAND).equalsIgnoreCase(brand));
 		if (isNewBrand)
 			return true;

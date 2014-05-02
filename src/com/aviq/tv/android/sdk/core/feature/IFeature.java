@@ -26,8 +26,15 @@ public interface IFeature
 	public interface OnFeatureInitialized
 	{
 		public void onInitialized(IFeature feature, int resultCode);
+
 		public void onInitializeProgress(IFeature feature, float progress);
 	}
+
+	/**
+	 * Method called before initialize to ensure all feature's dependencies
+	 * are in place
+	 */
+	void initializeDependencies();
 
 	/**
 	 * Method to be invoked to initialize this feature

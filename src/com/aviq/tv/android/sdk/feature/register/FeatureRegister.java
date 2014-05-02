@@ -27,8 +27,6 @@ import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
-import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
@@ -107,16 +105,9 @@ public class FeatureRegister extends FeatureComponent
 
 			_registrationUrl = getPrefs().getString(Param.ABMP_REGISTER_URL, bundle);
 
-			FeatureInternet featureInternet = (FeatureInternet) Environment.getInstance().getFeatureScheduler(
-			        FeatureName.Scheduler.INTERNET);
-			featureInternet.startCheckUrl(_registrationUrl);
+			_feature.Scheduler.INTERNET.startCheckUrl(_registrationUrl);
 
 			super.initialize(onFeatureInitialized);
-		}
-		catch (FeatureNotFoundException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
 		}
 		catch (FileNotFoundException e)
 		{

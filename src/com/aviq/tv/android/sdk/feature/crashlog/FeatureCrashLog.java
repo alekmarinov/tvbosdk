@@ -27,10 +27,7 @@ import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
-import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
-import com.aviq.tv.android.sdk.feature.network.FeatureEthernet;
-import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 
 /**
  * Handle unhandled exceptions.
@@ -72,10 +69,6 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		}
 	}
 
-	private FeatureInternet _featureInternet;
-	private FeatureRegister _featureRegister;
-	private FeatureEthernet _featureEthernet;
-
 	public FeatureCrashLog()
 	{
 		_dependencies.Schedulers.add(FeatureName.Scheduler.INTERNET);
@@ -87,21 +80,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-
-		Environment env = Environment.getInstance();
-		try
-		{
-			_featureInternet = (FeatureInternet) env.getFeatureScheduler(FeatureName.Scheduler.INTERNET);
-			_featureRegister = (FeatureRegister) env.getFeatureComponent(FeatureName.Component.REGISTER);
-			_featureEthernet = (FeatureEthernet) env.getFeatureComponent(FeatureName.Component.ETHERNET);
-		}
-		catch (FeatureNotFoundException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-		}
-
 		initAcra();
-
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -116,11 +95,11 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 	{
 		if (msgId == FeatureInternet.ON_CONNECTED)
 		{
-			String publicIP = _featureInternet.getPublicIP();
+			String publicIP = _feature.Scheduler.INTERNET.getPublicIP();
 			if (publicIP != null)
 			{
 				// Got the public IP, no need to check for it anymore
-				_featureInternet.getEventMessenger().unregister(this, FeatureInternet.ON_CONNECTED);
+				_feature.Scheduler.INTERNET.getEventMessenger().unregister(this, FeatureInternet.ON_CONNECTED);
 				ACRA.getErrorReporter().putCustomData("PUBLIC IP", publicIP);
 				ACRA.getErrorReporter().putCustomData(Key.DEVICE, prepareDeviceObject());
 			}
@@ -178,16 +157,16 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		errorReporter.putCustomData(Key.DEVICE, prepareDeviceObject());
 		errorReporter.putCustomData(Key.EVENT, prepareEventObject());
 
-		errorReporter.putCustomData("BOX_ID", _featureRegister.getBoxId());
+		errorReporter.putCustomData("BOX_ID", _feature.Component.REGISTER.getBoxId());
 		errorReporter.putCustomData("BRAND", getBrand());
 		errorReporter.putCustomData("CUSTOMER", getCustomer());
 
-		String publicIP = _featureInternet.getPublicIP();
+		String publicIP = _feature.Scheduler.INTERNET.getPublicIP();
 		errorReporter.putCustomData("PUBLIC IP", publicIP);
 
 		// If the public IP is null, wait for Internet to show up and recheck
 		if (publicIP == null)
-			_featureInternet.getEventMessenger().register(this, FeatureInternet.ON_CONNECTED);
+			_feature.Scheduler.INTERNET.getEventMessenger().register(this, FeatureInternet.ON_CONNECTED);
 	}
 
 	private String prepareDeviceObject()
@@ -195,9 +174,9 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		JSONObject device = new JSONObject();
 		try
 		{
-			device.accumulate(Key.MAC, _featureRegister.getBoxId());
-			device.accumulate(Key.IP, _featureEthernet.getNetworkConfig().Addr);
-			device.accumulate(Key.PUBLIC_IP, _featureInternet.getPublicIP());
+			device.accumulate(Key.MAC, _feature.Component.REGISTER.getBoxId());
+			device.accumulate(Key.IP, _feature.Component.ETHERNET.getNetworkConfig().Addr);
+			device.accumulate(Key.PUBLIC_IP, _feature.Scheduler.INTERNET.getPublicIP());
 
 			JSONObject sw = new JSONObject();
 			sw.accumulate(Key.VERSION, Environment.getInstance().getBuildVersion());

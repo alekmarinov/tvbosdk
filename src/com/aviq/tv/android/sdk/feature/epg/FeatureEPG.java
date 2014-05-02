@@ -43,7 +43,6 @@ import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
-import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.feature.system.FeatureTimeZone;
 import com.google.gson.Gson;
@@ -168,27 +167,19 @@ public abstract class FeatureEPG extends FeatureScheduler
 	{
 		Log.i(TAG, ".initialize");
 
-		try
-		{
-			_featureTimeZone = (FeatureTimeZone) Environment.getInstance().getFeatureComponent(
-			        FeatureName.Component.TIMEZONE);
-			_epgProvider = getEPGProvider().name();
-			_epgVersion = getPrefs().getInt(Param.EPG_VERSION);
-			_epgServer = getPrefs().getString(Param.EPG_SERVER);
-			_channelLogoWidth = getPrefs().getInt(Param.CHANNEL_LOGO_WIDTH);
-			_channelLogoHeight = getPrefs().getInt(Param.CHANNEL_LOGO_HEIGHT);
+		_featureTimeZone = (FeatureTimeZone) Environment.getInstance().getFeatureComponent(
+		        FeatureName.Component.TIMEZONE);
+		_epgProvider = getEPGProvider().name();
+		_epgVersion = getPrefs().getInt(Param.EPG_VERSION);
+		_epgServer = getPrefs().getString(Param.EPG_SERVER);
+		_channelLogoWidth = getPrefs().getInt(Param.CHANNEL_LOGO_WIDTH);
+		_channelLogoHeight = getPrefs().getInt(Param.CHANNEL_LOGO_HEIGHT);
 
-			_httpQueue = Environment.getInstance().getRequestQueue();
+		_httpQueue = Environment.getInstance().getRequestQueue();
 
-			_maxChannels = getPrefs().getInt(Param.MAX_CHANNELS);
+		_maxChannels = getPrefs().getInt(Param.MAX_CHANNELS);
 
-			onSchedule(onFeatureInitialized);
-		}
-		catch (FeatureNotFoundException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-		}
+		onSchedule(onFeatureInitialized);
 	}
 
 	@Override

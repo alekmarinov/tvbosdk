@@ -36,8 +36,15 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	public static final int ON_HIDE = EventMessenger.ID("ON_HIDE");
 	public static final String EXTRA_ON_HIDE_COVER = "ON_HIDE_COVER";
 	protected FeatureSet _dependencies = new FeatureSet();
+	protected Feature _feature;
 	private List<Subscription> _subscriptions = new ArrayList<Subscription>();
 	private EventMessenger _eventMessenger = new EventMessenger();
+
+	@Override
+	public void initializeDependencies()
+	{
+		_feature = new Feature();
+	}
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
@@ -108,7 +115,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 
 		// add subscription for registration when this state is shown
 		_subscriptions.add(new Subscription(eventMessenger, msgId));
-		if (isCreated())
+		if (isAdded())
 		{
 			// register immediately if the state is already shown
 			eventMessenger.register(this, msgId);
@@ -145,7 +152,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 			if (subscription.EventMessenger == eventMessenger && subscription.MsgId == msgId)
 			{
 				_subscriptions.remove(i);
-				if (isCreated())
+				if (isAdded())
 				{
 					// if already shown unregister immediately
 					eventMessenger.unregister(this, msgId);

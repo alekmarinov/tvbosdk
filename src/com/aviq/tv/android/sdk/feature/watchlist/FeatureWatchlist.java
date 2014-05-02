@@ -26,9 +26,7 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
-import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
-import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -77,21 +75,11 @@ public class FeatureWatchlist extends FeatureComponent
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		try
-		{
-			_userPrefs = Environment.getInstance().getUserPrefs();
-			FeatureEPG featureEPG = (FeatureEPG) Environment.getInstance().getFeatureScheduler(
-			        FeatureName.Scheduler.EPG);
-			_watchedPrograms = loadWatchlist(featureEPG.getEpgData());
-			_notifyEarlier = getPrefs().getInt(Param.NOTIFY_EARLIER);
-			updateProgramStartNotification();
-			onFeatureInitialized.onInitialized(this, ResultCode.OK);
-		}
-		catch (FeatureNotFoundException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-		}
+		_userPrefs = Environment.getInstance().getUserPrefs();
+		_watchedPrograms = loadWatchlist(_feature.Scheduler.EPG.getEpgData());
+		_notifyEarlier = getPrefs().getInt(Param.NOTIFY_EARLIER);
+		updateProgramStartNotification();
+		onFeatureInitialized.onInitialized(this, ResultCode.OK);
 	}
 
 	/**

@@ -24,13 +24,9 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
-import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
-import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
-import com.aviq.tv.android.sdk.feature.player.FeatureStreamer;
-import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 
 /**
  * Component feature managing favorite channels
@@ -82,10 +78,6 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	}
 
 	private Prefs _userPrefs;
-	private FeatureEPG _featureEPG;
-	private FeaturePlayer _featurePlayer;
-	private FeatureStreamer _featureStreamer;
-	private FeatureTimeshift _featureTimeshift;
 	private boolean _isModified = false;
 
 	// List of favorite channels
@@ -102,34 +94,18 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		try
+		Environment env = Environment.getInstance();
+		_userPrefs = env.getUserPrefs();
+
+		_feature.Scheduler.EPG.getEventMessenger().register(this, FeatureEPG.ON_EPG_UPDATED);
+
+		_channels = loadFavoriteChannels();
+
+		if (getPrefs().getBool(Param.AUTOPLAY))
 		{
-			Environment env = Environment.getInstance();
-			_userPrefs = env.getUserPrefs();
-			_featureEPG = (FeatureEPG) env.getFeatureScheduler(FeatureName.Scheduler.EPG);
-			_featurePlayer = (FeaturePlayer) env.getFeatureComponent(FeatureName.Component.PLAYER);
-			_featureStreamer = (FeatureStreamer) env.getFeatureComponent(FeatureName.Component.STREAMER);
-
-			if (env.hasFeature(FeatureName.Component.TIMESHIFT))
-			{
-				_featureTimeshift = (FeatureTimeshift) env.getFeatureComponent(FeatureName.Component.TIMESHIFT);
-			}
-
-			_featureEPG.getEventMessenger().register(this, FeatureEPG.ON_EPG_UPDATED);
-
-			_channels = loadFavoriteChannels();
-
-			if (getPrefs().getBool(Param.AUTOPLAY))
-			{
-				playLast();
-			}
-			onFeatureInitialized.onInitialized(this, ResultCode.OK);
+			playLast();
 		}
-		catch (FeatureNotFoundException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-		}
+		onFeatureInitialized.onInitialized(this, ResultCode.OK);
 	}
 
 	@Override
@@ -201,13 +177,13 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		if (isUseFavorites())
 			return _channels;
 
-		if (_featureEPG.getEpgData() == null)
+		if (_feature.Scheduler.EPG.getEpgData() == null)
 		{
 			Log.e(TAG, "No EPG data exists.");
 			return new ArrayList<Channel>();
 		}
 
-		return _featureEPG.getEpgData().getChannels();
+		return _feature.Scheduler.EPG.getEpgData().getChannels();
 	}
 
 	/**
@@ -271,7 +247,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		{
 			String lastChannelId = _userPrefs.getString(UserParam.LAST_CHANNEL_ID);
 			Log.i(TAG, ".play: last channel = " + lastChannelId + ", new channel = " + channel.getChannelId());
-			if (_featurePlayer.isPlaying() && channel.getChannelId().equals(lastChannelId))
+			if (_feature.Component.PLAYER.isPlaying() && channel.getChannelId().equals(lastChannelId))
 			{
 				Log.d(TAG, ".play: already playing");
 				return;
@@ -283,20 +259,20 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		}
 		setLastChannelId(channel.getChannelId());
 		int globalIndex = channel.getIndex();
-		String streamId = _featureEPG.getChannelStreamId(globalIndex);
-		String streamUrl = _featureStreamer.getUrlByStreamId(streamId);
+		String streamId = _feature.Scheduler.EPG.getChannelStreamId(globalIndex);
+		String streamUrl = _feature.Component.STREAMER.getUrlByStreamId(streamId);
 
-		if (_featureTimeshift != null)
+		if (_feature.Component.TIMESHIFT != null)
 		{
 			// play with timeshift
 			Log.d(TAG, ".play: timeshift " + streamId);
-			_featureTimeshift.play(streamUrl);
+			_feature.Component.TIMESHIFT.play(streamUrl);
 		}
 		else
 		{
 			// play directly
 			Log.d(TAG, ".play: directly " + streamId);
-			_featurePlayer.play(streamUrl);
+			_feature.Component.PLAYER.play(streamUrl);
 		}
 	}
 
@@ -411,14 +387,14 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 
 	public void saveSyncedChannel()
 	{
-		if (_featureEPG.getEpgData() == null)
+		if (_feature.Scheduler.EPG.getEpgData() == null)
 		{
 			Log.e(TAG, "No EPG data exists.");
 			return;
 		}
 
 		StringBuffer buffer = new StringBuffer();
-		for (Channel channel : _featureEPG.getEpgData().getChannels())
+		for (Channel channel : _feature.Scheduler.EPG.getEpgData().getChannels())
 		{
 			if (buffer.length() > 0)
 				buffer.append(',');
@@ -441,7 +417,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	{
 		List<Channel> channels = new ArrayList<Channel>();
 
-		EpgData epgData = _featureEPG.getEpgData();
+		EpgData epgData = _feature.Scheduler.EPG.getEpgData();
 		if (epgData == null)
 		{
 			Log.e(TAG, "No EPG data exists.");

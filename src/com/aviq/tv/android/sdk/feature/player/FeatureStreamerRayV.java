@@ -14,11 +14,8 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
-import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
-import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 import com.rayv.StreamingAgent.Loader;
 
 /**
@@ -79,34 +76,22 @@ public class FeatureStreamerRayV extends FeatureStreamer
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		FeatureRegister featureRegister;
-		try
+		if (!getPrefs().has(Param.RAYV_USER))
+			getPrefs().put(Param.RAYV_USER, _feature.Component.REGISTER.getBoxId());
+		if (!getPrefs().has(Param.RAYV_PASS))
+			getPrefs().put(Param.RAYV_PASS, _feature.Component.REGISTER.getBoxId());
+
+		// Start streaming agent
+		Log.i(TAG, "Start RayV streaming agent");
+		new Thread(new Runnable()
 		{
-			featureRegister = (FeatureRegister) Environment.getInstance().getFeatureComponent(
-			        FeatureName.Component.REGISTER);
-
-			if (!getPrefs().has(Param.RAYV_USER))
-				getPrefs().put(Param.RAYV_USER, featureRegister.getBoxId());
-			if (!getPrefs().has(Param.RAYV_PASS))
-				getPrefs().put(Param.RAYV_PASS, featureRegister.getBoxId());
-
-			// Start streaming agent
-			Log.i(TAG, "Start RayV streaming agent");
-			new Thread(new Runnable()
+			@Override
+			public void run()
 			{
-				@Override
-				public void run()
-				{
-					Loader.startStreamer(getPrefs().getString(Param.STREAMER_INI));
-				}
-			}).start();
-			super.initialize(onFeatureInitialized);
-		}
-		catch (FeatureNotFoundException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-		}
+				Loader.startStreamer(getPrefs().getString(Param.STREAMER_INI));
+			}
+		}).start();
+		super.initialize(onFeatureInitialized);
 	}
 
 	@Override

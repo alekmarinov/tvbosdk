@@ -33,12 +33,19 @@ public abstract class FeatureScheduler implements IFeature, EventReceiver
 	public static final int ON_SCHEDULE_FINISHED = EventMessenger.ID("ON_SCHEDULE_FINISHED");
 
 	protected FeatureSet _dependencies = new FeatureSet();
+	protected Feature _feature;
 	private Calendar _scheduledTime;
 	private EventMessenger _eventMessenger = new EventMessenger();
 
 	public FeatureScheduler()
 	{
 		getEventMessenger().register(this, ON_SCHEDULE);
+	}
+
+	@Override
+	public void initializeDependencies()
+	{
+		_feature = new Feature();
 	}
 
 	@Override

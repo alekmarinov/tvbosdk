@@ -18,7 +18,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.URL;
 import java.net.UnknownHostException;
 
 import org.keplerproject.luajava.JavaFunction;
@@ -31,21 +30,17 @@ import android.content.res.AssetManager;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
-import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
-import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 
 /**
  * Lua based RPC scripting service
  */
-public class FeatureLuaRPC extends FeatureComponent
+public class FeatureLuaRPC extends FeatureRPC
 {
 	public static final String TAG = FeatureLuaRPC.class.getSimpleName();
 	public static final int RPC_SERVER_PORT = 6768;
 	private static final int BUF_SIZE = 1024 * 100;
 	private static final String EOL = "-- End of Lua";
-	private String _luaStub;
-	private int _port;
 
 	public enum Param
 	{
@@ -61,11 +56,8 @@ public class FeatureLuaRPC extends FeatureComponent
 		}
 	}
 
+	private int _port;
 	private ServerThread _serverThread;
-
-	public FeatureLuaRPC()
-	{
-	}
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
@@ -90,66 +82,14 @@ public class FeatureLuaRPC extends FeatureComponent
 		}
 	}
 
-	@Override
-	public Component getComponentName()
-	{
-		return FeatureName.Component.RPC;
-	}
-
-	public void setLuaStub(String luaStub)
-	{
-		_luaStub = luaStub;
-	}
-
-	public String getLuaStub()
-	{
-		return _luaStub;
-	}
-
 	/**
-	 * Executes script as input stream asynchronously
+	 * Executes script as input stream synchronously. This method needs to be
+	 * overwritten by specific RPC implementation
 	 *
 	 * @param inputStream
 	 */
-	public void executeAsync(final InputStream inputStream)
-	{
-		new Thread(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				execute(inputStream);
-			}
-		}).start();
-	}
-
-	/**
-	 * Executes remote script from url
-	 *
-	 * @param url
-	 */
-	public void executeUrl(final String url)
-	{
-		Log.i(TAG, ".executeUrl: " + url);
-		new Thread(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				try
-				{
-					execute(new URL(url).openStream());
-				}
-				catch (IOException e)
-				{
-					Log.e(TAG, e.getMessage(), e);
-				}
-			}
-		}).start();
-	}
-
-	// Executes script as input stream
-	private void execute(InputStream inputStream)
+	@Override
+    public void execute(InputStream inputStream)
 	{
 		try
 		{
@@ -305,36 +245,6 @@ public class FeatureLuaRPC extends FeatureComponent
 				OutputStream clientOutput = _clientSocket.getOutputStream();
 				_clientWriter = new OutputStreamWriter(clientOutput);
 				writeToClient("Lua output follows...\r\n");
-
-				if (_featureLuaRPC.getLuaStub() != null)
-				{
-					int stubok = L.LloadBuffer(_featureLuaRPC.getLuaStub().getBytes(), "stub");
-					if (stubok != 0)
-						throw new LuaException(errorReason(stubok) + ": " + L.toString(-1));
-
-					Environment.getInstance().runOnUiThread(new Runnable()
-					{
-						@Override
-						public void run()
-						{
-							try
-							{
-								Log.i(TAG, "starting stub...");
-								L.getGlobal("debug");
-								L.getField(-1, "traceback");
-								L.remove(-2);
-								L.insert(-2);
-								int stubok = L.pcall(0, 0, -2);
-								if (stubok != 0)
-									throw new LuaException(errorReason(stubok) + ": " + L.toString(-1));
-							}
-							catch (LuaException e)
-							{
-								Log.e(TAG, e.getMessage(), e);
-							}
-						}
-					});
-				}
 
 				byte[] luaBuffer = readAll(clientInput);
 				L.setTop(0);

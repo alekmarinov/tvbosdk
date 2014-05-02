@@ -15,11 +15,9 @@ import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
-import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
-import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 
 /**
  * Client to the nethogs service collecting incomming traffic from networm
@@ -33,7 +31,6 @@ public class FeatureNethogs extends FeatureComponent
 	public static final String EXTRA_BITRATE_DOWN = "EXTRA_BITRATE_DOWN";
 
 	private NetworkClient _networkClient;
-	private FeatureSystem _featureSystem;
 
 	public enum Param
 	{
@@ -76,87 +73,77 @@ public class FeatureNethogs extends FeatureComponent
 		final int port = getPrefs().getInt(Param.PORT);
 		final String netInterface = getPrefs().getString(Param.NETWORK_INTERFACE);
 
-		try
+		_networkClient = new NetworkClient(host, port, new NetworkClient.OnNetworkEvent()
 		{
-			_featureSystem = (FeatureSystem) Environment.getInstance()
-			        .getFeatureComponent(FeatureName.Component.SYSTEM);
-
-			_networkClient = new NetworkClient(host, port, new NetworkClient.OnNetworkEvent()
+			@Override
+			public void onDisconnected()
 			{
-				@Override
-				public void onDisconnected()
-				{
-				}
+			}
 
-				@Override
-				public void onDataReceived(String data)
+			@Override
+			public void onDataReceived(String data)
+			{
+				if (data != null)
 				{
-					if (data != null)
+					// data =
+					// lo:219996.0,219996.0,eth0:228326.0,16167.0,sit0:0.0,0.0,ip6tnl0:0.0,0.0
+					int npos = data.indexOf(netInterface + ":");
+					if (npos >= 0)
 					{
-						// data =
-						// lo:219996.0,219996.0,eth0:228326.0,16167.0,sit0:0.0,0.0,ip6tnl0:0.0,0.0
-						int npos = data.indexOf(netInterface + ":");
-						if (npos >= 0)
+						int spos = data.indexOf(':', npos + 1);
+						int cpos = data.indexOf(',', npos + 1);
+						if (cpos >= 0)
 						{
-							int spos = data.indexOf(':', npos + 1);
-							int cpos = data.indexOf(',', npos + 1);
-							if (cpos >= 0)
+							try
 							{
-								try
-								{
-									String rcvdStr = data.substring(spos + 1, cpos - 1);
-									rcvdStr = rcvdStr.substring(0, rcvdStr.indexOf('.'));
-									long bytesRcvd = Long.parseLong(rcvdStr);
-									spos = cpos;
-									cpos = data.indexOf(',', spos + 1);
-									String sentStr = data.substring(spos + 1, cpos - 1);
-									sentStr = sentStr.substring(0, sentStr.indexOf('.'));
-									long bytesSent = Long.parseLong(sentStr);
+								String rcvdStr = data.substring(spos + 1, cpos - 1);
+								rcvdStr = rcvdStr.substring(0, rcvdStr.indexOf('.'));
+								long bytesRcvd = Long.parseLong(rcvdStr);
+								spos = cpos;
+								cpos = data.indexOf(',', spos + 1);
+								String sentStr = data.substring(spos + 1, cpos - 1);
+								sentStr = sentStr.substring(0, sentStr.indexOf('.'));
+								long bytesSent = Long.parseLong(sentStr);
 
-									Bundle bundle = new Bundle();
-									bundle.putLong(EXTRA_BITRATE_DOWN, bytesRcvd);
-									bundle.putLong(EXTRA_BITRATE_UP, bytesSent);
-									getEventMessenger().trigger(ON_DATA_RECEIVED, bundle);
-								}
-								catch (NumberFormatException nfe)
-								{
-									Log.w(TAG, nfe.getMessage());
-								}
+								Bundle bundle = new Bundle();
+								bundle.putLong(EXTRA_BITRATE_DOWN, bytesRcvd);
+								bundle.putLong(EXTRA_BITRATE_UP, bytesSent);
+								getEventMessenger().trigger(ON_DATA_RECEIVED, bundle);
+							}
+							catch (NumberFormatException nfe)
+							{
+								Log.w(TAG, nfe.getMessage());
 							}
 						}
 					}
 				}
+			}
 
-				@Override
-				public void onConnected(boolean success)
-				{
-					if (success)
-					{
-						Log.i(TAG, ".onConnected: " + host + ":" + port);
-					}
-					else
-					{
-						Log.e(TAG, ".onConnected: Unable to connect to nethogs service on " + host + ":" + port);
-					}
-					FeatureNethogs.super.initialize(onFeatureInitialized);
-				}
-			});
-			_featureSystem.command("stop nethogs");
-			_featureSystem.command("start nethogs");
-
-			getEventMessenger().postDelayed(new Runnable()
+			@Override
+			public void onConnected(boolean success)
 			{
-				@Override
-				public void run()
+				if (success)
 				{
-					_networkClient.connect();
+					Log.i(TAG, ".onConnected: " + host + ":" + port);
 				}
-			}, 1000);
-		}
-		catch (FeatureNotFoundException e)
+				else
+				{
+					Log.e(TAG, ".onConnected: Unable to connect to nethogs service on " + host + ":" + port);
+				}
+				FeatureNethogs.super.initialize(onFeatureInitialized);
+			}
+		});
+		_feature.Component.SYSTEM.command("stop nethogs");
+		_feature.Component.SYSTEM.command("start nethogs");
+
+		getEventMessenger().postDelayed(new Runnable()
 		{
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-		}
+			@Override
+			public void run()
+			{
+				_networkClient.connect();
+			}
+		}, 1000);
 	}
 
 	@Override
