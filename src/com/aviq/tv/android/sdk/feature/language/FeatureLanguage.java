@@ -36,9 +36,22 @@ public class FeatureLanguage extends FeatureComponent
 		LANGUAGE
 	}
 
+	public enum Param
+	{
+		/**
+		 * The default language
+		 */
+		DEFAULT_LANGUAGE("EN");
+
+		Param(String value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.LANGUAGE).put(name(), value);
+		}
+	}
+
 	public enum Code
 	{
-		EN, FR, DE
+		BG, EN, FR, DE
 	}
 
 	@Override
@@ -64,10 +77,31 @@ public class FeatureLanguage extends FeatureComponent
 	 */
 	public void setLanguage(Code code)
 	{
+		Environment.getInstance().getUserPrefs().put(UserParam.LANGUAGE, code.name());
+		setSystemLanguage(getLocale());
+	}
+
+	/**
+	 * Get system language
+	 *
+	 * @return the current system language e.g. EN, DE, FR, IT, etc.
+	 */
+	public Code getLanguage()
+	{
+		Prefs userPrefs = Environment.getInstance().getUserPrefs();
+		return userPrefs.has(UserParam.LANGUAGE) ? Code.valueOf(userPrefs.getString(UserParam.LANGUAGE).toUpperCase())
+		        : Code.valueOf(getPrefs().getString(Param.DEFAULT_LANGUAGE));
+	}
+
+	public Locale getLocale()
+	{
 		Locale locale = null;
 
-		switch (code)
+		switch (getLanguage())
 		{
+			case BG:
+				locale = new Locale("bg_BG");
+			break;
 			case EN:
 				locale = Locale.UK;
 			break;
@@ -81,21 +115,7 @@ public class FeatureLanguage extends FeatureComponent
 				locale = Locale.UK;
 			break;
 		}
-
-		Environment.getInstance().getUserPrefs().put(UserParam.LANGUAGE, locale.getLanguage());
-		setSystemLanguage(locale);
-	}
-
-	/**
-	 * Get system language
-	 *
-	 * @return the current system language e.g. EN, DE, FR, IT, etc.
-	 */
-	public Code getLanguage()
-	{
-		Prefs userPrefs = Environment.getInstance().getUserPrefs();
-		return userPrefs.has(UserParam.LANGUAGE) ? Code.valueOf(userPrefs.getString(UserParam.LANGUAGE).toUpperCase())
-		        : Code.EN;
+		return locale;
 	}
 
 	public boolean hasLanguage()
