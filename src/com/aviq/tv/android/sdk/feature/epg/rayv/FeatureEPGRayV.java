@@ -10,6 +10,7 @@
 
 package com.aviq.tv.android.sdk.feature.epg.rayv;
 
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
@@ -20,6 +21,10 @@ import com.aviq.tv.android.sdk.feature.epg.Program;
 public class FeatureEPGRayV extends FeatureEPG
 {
 	public static final String TAG = FeatureEPGRayV.class.getSimpleName();
+
+	public FeatureEPGRayV() throws FeatureNotFoundException
+    {
+    }
 
 	/**
 	 * @return rayv EPG provider name
@@ -43,9 +48,9 @@ public class FeatureEPGRayV extends FeatureEPG
 	}
 
 	@Override
-	protected Program createProgram(Channel channel)
+	protected Program createProgram(String id, Channel channel)
 	{
-		return new ProgramRayV(channel);
+		return new ProgramRayV(id, channel);
 	}
 
 	@Override

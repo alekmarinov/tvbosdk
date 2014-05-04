@@ -10,8 +10,11 @@
 
 package com.aviq.tv.android.sdk.core.feature;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,14 +28,16 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
+import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Prefs;
-import com.aviq.tv.android.sdk.core.PriorityFeature;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.IFeature.OnFeatureInitialized;
+import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
+import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Features management utility class
@@ -352,23 +357,141 @@ public class FeatureManager
 	 * @throws SAXException
 	 * @throws IOException
 	 */
-	public void addFeaturesFromXml(InputStream inputStream) throws SAXException, IOException
+	public void addFeaturesFromXml(InputStream inputStream, final OnResultReceived resultReceived) throws SAXException,
+	        IOException
 	{
+		Log.i(TAG, ".addFeaturesFromXml");
+		InputSource inputSource = new InputSource();
+		SAXParserFactory parserFactory = SAXParserFactory.newInstance();
+		SAXParser parser;
 		try
 		{
-			InputSource inputSource = new InputSource();
-			SAXParserFactory parserFactory = SAXParserFactory.newInstance();
-			SAXParser parser = parserFactory.newSAXParser();
-			XMLReader reader = parser.getXMLReader();
-			AVIQTVXmlHandler aviqtvXMLHandler = new AVIQTVXmlHandler();
-			reader.setContentHandler(aviqtvXMLHandler);
-			inputSource.setByteStream(inputStream);
-			reader.parse(inputSource);
+			parser = parserFactory.newSAXParser();
 		}
 		catch (ParserConfigurationException e)
 		{
-			Log.e(TAG, e.getMessage(), e);
+			throw new RuntimeException(e);
 		}
+		XMLReader reader = parser.getXMLReader();
+		final AVIQTVXmlHandler aviqtvXMLHandler = new AVIQTVXmlHandler();
+		reader.setContentHandler(aviqtvXMLHandler);
+		inputSource.setByteStream(inputStream);
+		reader.parse(inputSource);
+
+		new OnResultReceived()
+		{
+			@Override
+			public void onReceiveResult(int resultCode, Bundle resultData)
+			{
+				if (aviqtvXMLHandler.getIncludeUrls().size() > 0)
+				{
+					final URL url = aviqtvXMLHandler.getIncludeUrls().remove(0);
+					final OnResultReceived _this = this;
+					Log.i(TAG, "Parsing " + url);
+					new Thread(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							try
+							{
+								final InputStream inputStream = url.openConnection().getInputStream();
+								final String xml = TextUtils.inputStreamToString(inputStream);
+								inputStream.close();
+								Environment.getInstance().runOnUiThread(new Runnable()
+								{
+									@Override
+									public void run()
+									{
+										try
+										{
+											InputStream stream = new ByteArrayInputStream(xml.getBytes());
+											addFeaturesFromXml(stream, _this);
+										}
+										catch (SAXException e)
+										{
+											Log.e(TAG, e.getMessage(), e);
+											resultReceived.onReceiveResult(ResultCode.PROTOCOL_ERROR, null);
+										}
+										catch (IOException e)
+										{
+											Log.e(TAG, e.getMessage(), e);
+											resultReceived.onReceiveResult(ResultCode.GENERAL_FAILURE, null);
+										}
+									}
+								});
+							}
+							catch (IOException e)
+							{
+								Log.e(TAG, e.getMessage(), e);
+								onResult(ResultCode.GENERAL_FAILURE);
+							}
+						}
+
+						private void onResult(final int resultCode)
+						{
+							Environment.getInstance().runOnUiThread(new Runnable()
+							{
+								@Override
+								public void run()
+								{
+									resultReceived.onReceiveResult(resultCode, null);
+								}
+							});
+						}
+
+					}).start();
+				}
+				else
+				{
+					resultReceived.onReceiveResult(ResultCode.OK, null);
+				}
+			}
+		}.onReceiveResult(ResultCode.OK, null);
+	}
+
+	/**
+	 * @throws IOException
+	 *             Initializes the environment by AVIQTV xml
+	 * @param inputSource
+	 * @throws SAXException
+	 * @throws IOException
+	 */
+	public void addFeaturesFromUrl(final URL url, final OnResultReceived resultReceived) throws SAXException,
+	        IOException
+	{
+		new Thread(new Runnable()
+		{
+			private void onResult(final int resultCode)
+			{
+				Environment.getInstance().runOnUiThread(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						resultReceived.onReceiveResult(resultCode, null);
+					}
+				});
+			}
+
+			@Override
+			public void run()
+			{
+				try
+				{
+					addFeaturesFromXml(url.openConnection().getInputStream(), resultReceived);
+					onResult(ResultCode.OK);
+				}
+				catch (SAXException e)
+				{
+					onResult(ResultCode.PROTOCOL_ERROR);
+				}
+				catch (IOException e)
+				{
+					onResult(ResultCode.GENERAL_FAILURE);
+				}
+			}
+		}).start();
 	}
 
 	/*
@@ -528,12 +651,21 @@ public class FeatureManager
 
 	private class FeatureInitializer implements Runnable, OnFeatureInitialized
 	{
-		private int _nFeature;
-		private int _nInitialized;
+		// The current feature number being initialized
+		private int _featureNumber;
+
+		// Last feature number being initialized used to detect if a feature has
+		// been initialized twice
+		private int _lastFeatureNumber;
+
+		// used to compute feature initialization time
 		private long _initStartedTime;
+
+		// the allowed time for feature initialization
 		private int _timeout = 0;
-		private Handler _handler = new Handler();
+
 		private OnFeatureInitialized _onFeatureInitialized;
+		private Handler _handler = new Handler();
 
 		public void setTimeout(int timeout)
 		{
@@ -560,7 +692,7 @@ public class FeatureManager
 
 		public void initialize()
 		{
-			_nFeature = _nInitialized = -1;
+			_featureNumber = _lastFeatureNumber = -1;
 			initializeNext();
 		}
 
@@ -568,13 +700,13 @@ public class FeatureManager
 		// otherwise
 		private void initializeNext()
 		{
-			if ((_nFeature + 1) < _features.size())
+			if ((_featureNumber + 1) < _features.size())
 			{
-				_nFeature++;
+				_featureNumber++;
 				_initStartedTime = System.currentTimeMillis();
-				final IFeature feature = _features.get(_nFeature);
-				Log.i(TAG, ">" + _nFeature + ". Initializing " + feature.getName() + " " + feature.getType() + " ("
-				        + feature.getClass().getName() + ") with timeout " + _timeout + " secs");
+				final IFeature feature = _features.get(_featureNumber);
+				Log.i(TAG, ">" + _featureNumber + ". Initializing " + feature + " (" + feature.getClass().getName()
+				        + ") with timeout " + _timeout + " secs");
 
 				startTimeout();
 
@@ -584,8 +716,15 @@ public class FeatureManager
 					@Override
 					public void run()
 					{
-						feature.initializeDependencies();
-						feature.initialize(FeatureInitializer.this);
+						try
+						{
+							feature.setDependencyFeatures(new Features(feature.dependencies()));
+							feature.initialize(FeatureInitializer.this);
+						}
+						catch (FeatureNotFoundException e)
+						{
+							_onFeatureInitialized.onInitialized(feature, ResultCode.FEATURE_NOT_FOUND);
+						}
 					}
 				});
 			}
@@ -599,9 +738,9 @@ public class FeatureManager
 		public void run()
 		{
 			// Initialization timed out
-			IFeature feature = _features.get(_nFeature);
-			Log.e(TAG, _nFeature + ". initialize " + (System.currentTimeMillis() - _initStartedTime) + " ms: "
-			        + feature.getName() + " " + feature.getType() + " timeout!");
+			IFeature feature = _features.get(_featureNumber);
+			Log.e(TAG, _featureNumber + ". initialize " + (System.currentTimeMillis() - _initStartedTime) + " ms: "
+			        + feature + " timeout!");
 			_onFeatureInitialized.onInitialized(feature, ResultCode.TIMEOUT);
 		}
 
@@ -610,14 +749,13 @@ public class FeatureManager
 		{
 			stopTimeout();
 			onInitializeProgress(feature, 1.0f);
-			String featureName = feature.getName() + " " + feature.getType();
-			if (_nInitialized == _nFeature)
+			if (_lastFeatureNumber == _featureNumber)
 			{
-				throw new RuntimeException("Internal Error: Attempt to initialize feature " + featureName
+				throw new RuntimeException("Internal Error: Attempt to initialize feature " + feature
 				        + " more than once");
 			}
-			_nInitialized = _nFeature;
-			Log.i(TAG, "<" + _nFeature + ". " + featureName + " initialized in "
+			_lastFeatureNumber = _featureNumber;
+			Log.i(TAG, "<" + _featureNumber + ". " + feature + " initialized in "
 			        + (System.currentTimeMillis() - _initStartedTime) + " ms with result " + resultCode);
 
 			// Stop all features initialization when one fails to initialize
@@ -634,14 +772,16 @@ public class FeatureManager
 		@Override
 		public void onInitializeProgress(IFeature feature, float progress)
 		{
-			float totalProgress = (_nFeature + progress) / _features.size();
+			float totalProgress = (_featureNumber + progress) / _features.size();
+			Log.i(TAG, "load progress -> " + totalProgress);
 			_onFeatureInitialized.onInitializeProgress(feature, totalProgress);
 		}
 	}
 
 	private class AVIQTVXmlHandler extends DefaultHandler
 	{
-		private static final String TAG_AVIQTV = "aviqtv";
+		private static final String TAG_INCLUDE = "include";
+		private static final String ATTR_SRC = "src";
 		private static final String TAG_FEATURES = "features";
 		private static final String TAG_FEATURE = "feature";
 		private static final String TAG_COMPNENT = "component";
@@ -660,11 +800,29 @@ public class FeatureManager
 		private boolean _inString;
 		private StringBuffer _stringValue = new StringBuffer();
 		private String _paramName;
+		private List<URL> _includeUrls = new ArrayList<URL>();
+
+		public List<URL> getIncludeUrls()
+		{
+			return _includeUrls;
+		}
 
 		@Override
 		public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
 		{
-			if (TAG_FEATURES.equalsIgnoreCase(localName))
+			if (TAG_INCLUDE.equalsIgnoreCase(localName))
+			{
+				try
+				{
+					URL url = new URL(attributes.getValue(ATTR_SRC));
+					_includeUrls.add(url);
+				}
+				catch (MalformedURLException e)
+				{
+					throw new SAXException(e);
+				}
+			}
+			else if (TAG_FEATURES.equalsIgnoreCase(localName))
 			{
 				if (_inFactory)
 					throw new SAXException("Nested tags " + TAG_FEATURE + " is not allowed");

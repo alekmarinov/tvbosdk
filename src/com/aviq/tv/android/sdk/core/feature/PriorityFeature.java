@@ -8,7 +8,7 @@
  * Description:
  */
 
-package com.aviq.tv.android.sdk.core;
+package com.aviq.tv.android.sdk.core.feature;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

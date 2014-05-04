@@ -29,9 +29,9 @@ public class ProgramWilmaa extends Program
 	private static final String TAG = ProgramWilmaa.class.getSimpleName();
 	private JSONObject _detailsResponse;
 
-	public ProgramWilmaa(Channel channel)
+	public ProgramWilmaa(String id, Channel channel)
 	{
-		super(channel);
+		super(id, channel);
 	}
 
 	@Override

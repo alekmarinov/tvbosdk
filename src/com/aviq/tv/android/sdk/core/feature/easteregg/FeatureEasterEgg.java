@@ -30,9 +30,6 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 	public static final String TAG = FeatureEasterEgg.class.getSimpleName();
 	private long lastKeyPress = 0;
 	private StringBuffer _sequence = new StringBuffer();
-	private long _keyDelay;
-	private String _keySequence;
-	private String _startPackage;
 
 	public enum Param
 	{
@@ -62,15 +59,9 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 		}
 	}
 
-	@Override
-	public void initialize(final OnFeatureInitialized onFeatureInitialized)
+	public FeatureEasterEgg()
 	{
-		Log.i(TAG, ".initialize");
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
-		_keyDelay = getPrefs().getInt(Param.MIN_KEY_DELAY);
-		_keySequence = getPrefs().getString(Param.KEY_SEQUENCE);
-		_startPackage = getPrefs().getString(Param.START_PACKAGE);
-		super.initialize(onFeatureInitialized);
 	}
 
 	@Override
@@ -86,7 +77,7 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 		if (Environment.ON_KEY_PRESSED == msgId)
 		{
 			long delay = System.currentTimeMillis() - lastKeyPress;
-			if (delay > _keyDelay)
+			if (delay > getPrefs().getInt(Param.MIN_KEY_DELAY))
 			{
 				_sequence.setLength(0);
 			}
@@ -95,9 +86,9 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 			if (chr != '\0')
 			{
 				_sequence.append(chr);
-				if (_sequence.toString().equals(_keySequence))
+				if (_sequence.toString().equals(getPrefs().getString(Param.KEY_SEQUENCE)))
 				{
-					Environment.getInstance().startAppPackage(_startPackage);
+					Environment.getInstance().startAppPackage(getPrefs().getString(Param.START_PACKAGE));
 				}
 				lastKeyPress = System.currentTimeMillis();
 			}

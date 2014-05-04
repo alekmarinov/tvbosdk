@@ -21,7 +21,7 @@ public class EpgData implements IEpgDataProvider
 	private Calendar _minEpgStartTime;
 
 	/** key = start time; value = index in program list for a specific channel */
-	private Map<String, NavigableMap<String, Integer>> _channelToProgramNavigableMap = new HashMap<String, NavigableMap<String, Integer>>();
+	private Map<String, NavigableMap<Calendar, Integer>> _channelToProgramNavigableMap = new HashMap<String, NavigableMap<Calendar, Integer>>();
 
 	/** key = channel id; value = program list for the specific channel */
 	private Map<String, List<Program>> _channelToProgramListMap = new LinkedHashMap<String, List<Program>>();
@@ -31,7 +31,7 @@ public class EpgData implements IEpgDataProvider
 		// Keep first value far in the past
 		_maxEpgStopTime = Calendar.getInstance();
 		_maxEpgStopTime.set(Calendar.YEAR, _maxEpgStopTime.getMinimum(Calendar.YEAR));
-		
+
 		// Keep first value far in the future
 		_minEpgStartTime = Calendar.getInstance();
 		_minEpgStartTime.set(Calendar.YEAR, _minEpgStartTime.getMaximum(Calendar.YEAR));
@@ -50,7 +50,8 @@ public class EpgData implements IEpgDataProvider
 		return true;
 	}
 
-	synchronized boolean addProgramData(String channelId, NavigableMap<String, Integer> newProgramNavigableMap, List<Program> newProgramList)
+	synchronized boolean addProgramData(String channelId, NavigableMap<Calendar, Integer> newProgramNavigableMap,
+	        List<Program> newProgramList)
 	{
 		if (newProgramNavigableMap == null || newProgramNavigableMap.size() == 0)
 			return false;
@@ -60,43 +61,43 @@ public class EpgData implements IEpgDataProvider
 
 		_channelToProgramListMap.put(channelId, newProgramList);
 		_channelToProgramNavigableMap.put(channelId, newProgramNavigableMap);
-		
+
 		// Keep EPG program min start time
+		Map.Entry<Calendar, Integer> firstEntry = newProgramNavigableMap.firstEntry();
+		Program firstProgram = newProgramList.get(firstEntry.getValue());
 
-		String firstStartTime = newProgramNavigableMap.firstKey();
-		Calendar firstStartTimeCal = Program.getEpgTime(firstStartTime);
-
-		if (_minEpgStartTime.after(firstStartTimeCal))
-			_minEpgStartTime = firstStartTimeCal;
+		if (_minEpgStartTime.after(firstProgram.getStartTime()))
+			_minEpgStartTime = firstProgram.getStartTime();
 
 		// Keep EPG program max start time
-
-		Map.Entry<String, Integer> lastEntry = newProgramNavigableMap.lastEntry();
+		Map.Entry<Calendar, Integer> lastEntry = newProgramNavigableMap.lastEntry();
 		Program lastProgram = newProgramList.get(lastEntry.getValue());
 
-		if (_maxEpgStopTime.before(lastProgram.getStopTimeCalendar()))
-			_maxEpgStopTime = lastProgram.getStopTimeCalendar();
-		
+		if (_maxEpgStopTime.before(lastProgram.getStopTime()))
+			_maxEpgStopTime = lastProgram.getStopTime();
+
 		return true;
 	}
 
 	/**
-	 * @param index Channel position in the list
+	 * @param index
+	 *            Channel position in the list
 	 * @return the Channel at location 'index' in the channel list
 	 */
 	@Override
-    public Channel getChannel(int index)
+	public Channel getChannel(int index)
 	{
 		return _channelList.get(index);
 	}
 
 	/**
-	 * @param channel id
+	 * @param channel
+	 *            id
 	 * @return the Channel with specified id
 	 */
 	public Channel getChannel(String channelId)
 	{
-		for (Channel channel: _channelList)
+		for (Channel channel : _channelList)
 		{
 			if (channelId.equals(channel.getChannelId()))
 				return channel;
@@ -108,13 +109,13 @@ public class EpgData implements IEpgDataProvider
 	 * @return the number of all channels
 	 */
 	@Override
-    public int getChannelCount()
+	public int getChannelCount()
 	{
 		return _channelList.size();
 	}
 
 	@Override
-    public Bitmap getChannelLogoBitmap(int index)
+	public Bitmap getChannelLogoBitmap(int index)
 	{
 		return _channelLogos[index];
 	}
@@ -129,16 +130,18 @@ public class EpgData implements IEpgDataProvider
 	}
 
 	@Override
-    public List<Program> getProgramList(String channelId, String startTime, String endTime)
+	public List<Program> getProgramList(String channelId, Calendar startTime, Calendar endTime)
 	{
 		if (startTime.compareTo(endTime) > 0)
 		{
-			Log.w(TAG, ".getProgramList: startTime > endTime: " + startTime + " > " + endTime + ", ignoring method call");
+			Log.w(TAG, ".getProgramList: startTime > endTime: " + startTime + " > " + endTime
+			        + ", ignoring method call");
 			return new ArrayList<Program>();
 		}
 
-		NavigableMap<String, Integer> programMap = _channelToProgramNavigableMap.get(channelId);
-		NavigableMap<String, Integer> subMap = programMap != null ? programMap.subMap(startTime, true, endTime, false) : null;
+		NavigableMap<Calendar, Integer> programMap = _channelToProgramNavigableMap.get(channelId);
+		NavigableMap<Calendar, Integer> subMap = programMap != null ? programMap.subMap(startTime, true, endTime, false)
+		        : null;
 		if (subMap == null)
 		{
 			Log.w(TAG, ".getProgramList: no EPG data for period: startTime = " + startTime + ", endTime " + endTime);
@@ -146,7 +149,7 @@ public class EpgData implements IEpgDataProvider
 		}
 
 		List<Program> list = new ArrayList<Program>(subMap.size());
-		for (Map.Entry<String, Integer> entry : subMap.entrySet())
+		for (Map.Entry<Calendar, Integer> entry : subMap.entrySet())
 		{
 			int index = entry.getValue();
 			list.add(_channelToProgramListMap.get(channelId).get(index));
@@ -156,12 +159,11 @@ public class EpgData implements IEpgDataProvider
 
 	public int getProgramIndex(String channelId, Calendar when)
 	{
-		String dateTime = Program.getEpgTime(when);
-		NavigableMap<String, Integer> programMap = _channelToProgramNavigableMap.get(channelId);
+		NavigableMap<Calendar, Integer> programMap = _channelToProgramNavigableMap.get(channelId);
 		if (programMap == null)
 			return -1;
 
-		Map.Entry<String, Integer> programEntry = programMap.floorEntry(dateTime);
+		Map.Entry<Calendar, Integer> programEntry = programMap.floorEntry(when);
 		if (programEntry != null)
 		{
 			int programIndex = programEntry.getValue();
@@ -189,14 +191,22 @@ public class EpgData implements IEpgDataProvider
 	}
 
 	@Override
-    public Program getProgram(String channelId, String dateTime)
-    {
-		Calendar when = Program.getEpgTime(dateTime);
-		return getProgramByIndex(channelId, getProgramIndex(channelId, when));
-    }
+	public Program getProgramById(String channelId, String programId)
+	{
+		List<Program> programsList = _channelToProgramListMap.get(channelId);
+		if (programsList == null)
+			return null;
+		// FIXME: optimize this method
+		for (Program program: programsList)
+		{
+			if (program.getId().equals(programId))
+				return program;
+		}
+		return null;
+	}
 
 	@Override
-    public Calendar getMaxEpgStopTime()
+	public Calendar getMaxEpgStopTime()
 	{
 		return _maxEpgStopTime;
 	}

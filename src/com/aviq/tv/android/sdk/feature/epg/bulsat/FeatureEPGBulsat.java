@@ -14,6 +14,7 @@ import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Prefs;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.channels.FeatureChannels.UserParam;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
@@ -35,6 +36,10 @@ public class FeatureEPGBulsat extends FeatureEPG
 		userPrefs.put(UserParam.LAST_CHANNEL_ID, "24-kitchen");
 		super.initialize(onFeatureInitialized);
 	}
+
+	public FeatureEPGBulsat() throws FeatureNotFoundException
+    {
+    }
 
 	/**
 	 * @return Bulsat EPG provider name
@@ -59,9 +64,9 @@ public class FeatureEPGBulsat extends FeatureEPG
     }
 
 	@Override
-	protected Program createProgram(Channel channel)
+	protected Program createProgram(String id, Channel channel)
     {
-	    return new ProgramBulsat(channel);
+	    return new ProgramBulsat(id, channel);
     }
 
 	@Override

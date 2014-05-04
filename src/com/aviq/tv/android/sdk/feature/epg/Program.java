@@ -9,12 +9,7 @@
  */
 package com.aviq.tv.android.sdk.feature.epg;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
 
 import org.json.JSONObject;
 
@@ -23,17 +18,14 @@ import org.json.JSONObject;
  */
 public abstract class Program implements Comparable<Program>
 {
-	private static final DateFormat EPG_DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
-
 	// Bean properties
+	private String _id;
 	private Channel _channel;
-	private String _startTime;
-	private String _stopTime;
 	private String _title;
 
 	// Other internal properties
-	private Calendar _startTimeCalendar;
-	private Calendar _stopTimeCalendar;
+	private Calendar _startTime;
+	private Calendar _stopTime;
 
 	public static class MetaData
 	{
@@ -42,37 +34,21 @@ public abstract class Program implements Comparable<Program>
 		public int metaTitle;
 	}
 
-	public static Calendar getEpgTime(String epgTime)
+	public Program(String id, Channel channel)
 	{
-		Calendar cal;
-		try
-		{
-			Date dte = EPG_DATE_FORMAT.parse(epgTime);
-			cal = Calendar.getInstance();
-			cal.setTime(dte);
-		}
-		catch (ParseException e)
-		{
-			return null;
-		}
-		return cal;
-	}
-
-	public static String getEpgTime(Calendar cal)
-	{
-		String dateTime = EPG_DATE_FORMAT.format(cal.getTime());
-		return dateTime;
-	}
-
-	public Program(Channel channel)
-	{
+		_id = id;
 		_channel = channel;
 	}
 
 	@Override
 	public int compareTo(Program another)
 	{
-		return _startTime.compareTo(another._startTime);
+		return _id.compareTo(_id);
+	}
+
+	public String getId()
+	{
+		return _id;
 	}
 
 	public Channel getChannel()
@@ -80,51 +56,22 @@ public abstract class Program implements Comparable<Program>
 		return _channel;
 	}
 
-	public Calendar getStartTimeCalendar()
-	{
-		if (_startTimeCalendar == null)
-		{
-			_startTimeCalendar = getEpgTime(_startTime);
-		}
-		return _startTimeCalendar;
-	}
-
-	public Calendar getStopTimeCalendar()
-	{
-		if (_stopTimeCalendar == null)
-		{
-			_stopTimeCalendar = getEpgTime(_stopTime);
-		}
-		return _stopTimeCalendar;
-	}
-
-	public static String getEpgTime(long millis)
-	{
-		String dateTime = EPG_DATE_FORMAT.format(new Date(millis));
-		return dateTime;
-	}
-
-	public String getId()
+	public Calendar getStartTime()
 	{
 		return _startTime;
 	}
 
-	public String getStartTime()
-	{
-		return _startTime;
-	}
-
-	public void setStartTime(String startTime)
+	public void setStartTime(Calendar startTime)
 	{
 		_startTime = startTime;
 	}
 
-	public String getStopTime()
+	public Calendar getStopTime()
 	{
 		return _stopTime;
 	}
 
-	public void setStopTime(String stopTime)
+	public void setStopTime(Calendar stopTime)
 	{
 		_stopTime = stopTime;
 	}
@@ -142,7 +89,7 @@ public abstract class Program implements Comparable<Program>
 	/** Return the program length in milliseconds */
 	public long getLengthMillis()
 	{
-		return getStopTimeCalendar().getTimeInMillis() - getStartTimeCalendar().getTimeInMillis();
+		return _stopTime.getTimeInMillis() - _startTime.getTimeInMillis();
 	}
 
 	/** Return the program length in minutes */

@@ -32,20 +32,53 @@ public abstract class FeatureScheduler implements IFeature, EventReceiver
 	public static final int ON_SCHEDULE = EventMessenger.ID("ON_SCHEDULE");
 	public static final int ON_SCHEDULE_FINISHED = EventMessenger.ID("ON_SCHEDULE_FINISHED");
 
-	protected FeatureSet _dependencies = new FeatureSet();
-	protected Feature _feature;
+	protected Features _feature;
+	private FeatureSet _dependencies = new FeatureSet();
 	private Calendar _scheduledTime;
-	private EventMessenger _eventMessenger = new EventMessenger();
+	private EventMessenger _eventMessenger = new EventMessenger(getClass().getSimpleName());
 
 	public FeatureScheduler()
 	{
 		getEventMessenger().register(this, ON_SCHEDULE);
 	}
 
-	@Override
-	public void initializeDependencies()
+	/**
+	 * Declare this feature depends on the specified component name
+	 * @param featureName
+	 * @throws FeatureNotFoundException
+	 */
+    protected final void require(FeatureName.Component featureName) throws FeatureNotFoundException
 	{
-		_feature = new Feature();
+		_dependencies.Components.add(featureName);
+	}
+
+	/**
+	 * Declare this feature depends on the specified scheduler name
+	 * @param featureName
+	 * @throws FeatureNotFoundException
+	 */
+	protected final void require(FeatureName.Scheduler featureName) throws FeatureNotFoundException
+	{
+		_dependencies.Schedulers.add(featureName);
+	}
+
+	/**
+	 * Declare this feature depends on the specified state name
+	 * @param featureName
+	 * @throws FeatureNotFoundException
+	 */
+    protected final void require(FeatureName.State featureName) throws FeatureNotFoundException
+	{
+		_dependencies.States.add(featureName);
+	}
+
+	/**
+	 * Declare this feature depends on the specified special feature
+	 * @param featureName
+	 */
+    protected final void require(Class<?> featureClass)
+	{
+		_dependencies.Specials.add(featureClass);
 	}
 
 	@Override
@@ -61,19 +94,25 @@ public abstract class FeatureScheduler implements IFeature, EventReceiver
 	}
 
 	@Override
-	public FeatureSet dependencies()
+	public final FeatureSet dependencies()
 	{
 		return _dependencies;
 	}
 
 	@Override
-	public Type getType()
+	public final void setDependencyFeatures(Features features)
+	{
+		_feature = features;
+	}
+
+	@Override
+	public final Type getType()
 	{
 		return IFeature.Type.SCHEDULER;
 	}
 
 	@Override
-	public String getName()
+	public final String getName()
 	{
 		FeatureName.Scheduler name = getSchedulerName();
 		if (FeatureName.Scheduler.SPECIAL.equals(name))
@@ -89,7 +128,7 @@ public abstract class FeatureScheduler implements IFeature, EventReceiver
 	}
 
 	@Override
-	public Prefs getPrefs()
+	public final Prefs getPrefs()
 	{
 		return Environment.getInstance().getFeaturePrefs(getSchedulerName());
 	}
@@ -98,7 +137,7 @@ public abstract class FeatureScheduler implements IFeature, EventReceiver
 	 * @return an event messenger associated with this feature
 	 */
 	@Override
-	public EventMessenger getEventMessenger()
+	public final EventMessenger getEventMessenger()
 	{
 		return _eventMessenger;
 	}
@@ -127,7 +166,7 @@ public abstract class FeatureScheduler implements IFeature, EventReceiver
 		}
 	}
 
-	public void scheduleDelayed(int delayMs)
+	public final void scheduleDelayed(int delayMs)
 	{
 		Log.i(getClass().getName(), ".scheduleDelayed: delayMs = " + delayMs);
 		_scheduledTime = Calendar.getInstance();
@@ -135,7 +174,7 @@ public abstract class FeatureScheduler implements IFeature, EventReceiver
 		getEventMessenger().trigger(ON_SCHEDULE, delayMs);
 	}
 
-	public Calendar getScheduledTime()
+	public final Calendar getScheduledTime()
 	{
 		return _scheduledTime;
 	}

@@ -40,6 +40,7 @@ import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
@@ -87,7 +88,8 @@ public class FeatureUpgrade extends FeatureScheduler
 		UPDATES_DIR("/cache/update"),
 
 		/**
-		 * Milliseconds to wait before rebooting the box from calling rebootToInstall
+		 * Milliseconds to wait before rebooting the box from calling
+		 * rebootToInstall
 		 */
 		UPGRADE_REBOOT_DELAY(5000);
 
@@ -158,10 +160,10 @@ public class FeatureUpgrade extends FeatureScheduler
 	private UpgradeException _exception;
 	private Prefs _userPrefs;
 
-	public FeatureUpgrade()
+	public FeatureUpgrade() throws FeatureNotFoundException
 	{
-		_dependencies.Components.add(FeatureName.Component.REGISTER);
-		_dependencies.Schedulers.add(FeatureName.Scheduler.INTERNET);
+		require(FeatureName.Component.REGISTER);
+		require(FeatureName.Scheduler.INTERNET);
 	}
 
 	@Override
@@ -176,6 +178,7 @@ public class FeatureUpgrade extends FeatureScheduler
 			_userPrefs.put(UserParam.IS_AFTER_UPGRADE, false);
 		}
 
+		Environment.getInstance().getEventMessenger().register(this, Environment.ON_LOADED);
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -270,13 +273,13 @@ public class FeatureUpgrade extends FeatureScheduler
 			public void run()
 			{
 				try
-                {
-                    RecoverySystem.installPackage(Environment.getInstance(), getUpgradeFile());
-                }
-                catch (IOException e)
-                {
+				{
+					RecoverySystem.installPackage(Environment.getInstance(), getUpgradeFile());
+				}
+				catch (IOException e)
+				{
 					setStatus(new UpgradeException(ResultCode.GENERAL_FAILURE, "rebootToInstall: failed", e));
-                }
+				}
 			}
 		}, delay);
 	}
@@ -338,6 +341,17 @@ public class FeatureUpgrade extends FeatureScheduler
 		return checkForUpdate(true);
 	}
 
+	@Override
+	public void onEvent(int msgId, Bundle bundle)
+	{
+		super.onEvent(msgId, bundle);
+		if (msgId == Environment.ON_LOADED)
+		{
+			// Start upgrade scheduling after the app is fully loaded
+			getEventMessenger().trigger(FeatureScheduler.ON_SCHEDULE);
+		}
+	}
+
 	private boolean checkForUpdate(final boolean isDownload)
 	{
 		Log.i(TAG, ".checkForUpdate: isDownload = " + isDownload);
@@ -354,7 +368,7 @@ public class FeatureUpgrade extends FeatureScheduler
 
 		Bundle updateCheckUrlParams = new Bundle();
 		updateCheckUrlParams.putString("SERVER",
-				_feature.Component.REGISTER.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
+		        _feature.Component.REGISTER.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
 		updateCheckUrlParams.putString("BOX_ID", _feature.Component.REGISTER.getBoxId());
 		updateCheckUrlParams.putString("VERSION", Environment.getInstance().getBuildVersion());
 
@@ -500,7 +514,8 @@ public class FeatureUpgrade extends FeatureScheduler
 
 		// format download url
 		Bundle updateUrlParams = new Bundle();
-		updateUrlParams.putString("SERVER", _feature.Component.REGISTER.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
+		updateUrlParams.putString("SERVER",
+		        _feature.Component.REGISTER.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
 		updateUrlParams.putString("BOX_ID", _feature.Component.REGISTER.getBoxId());
 		updateUrlParams.putString("FILE_NAME", _updateInfo.FileName);
 		final String updateUrl = getPrefs().getString(Param.ABMP_UPDATE_DOWNLOAD_URL, updateUrlParams);
@@ -529,7 +544,8 @@ public class FeatureUpgrade extends FeatureScheduler
 					// FIXME: Add other params like proxy, connection timeouts
 					// etc.
 
-					// clean up the update directory before starting new download
+					// clean up the update directory before starting new
+					// download
 					File updatesDir = new File(Files.normalizeName(Environment.getInstance(),
 					        getPrefs().getString(Param.UPDATES_DIR)));
 					if (!updatesDir.exists())
@@ -541,7 +557,8 @@ public class FeatureUpgrade extends FeatureScheduler
 					{
 						for (String delFileName : files)
 						{
-							if (delFileName.toLowerCase().endsWith(".part") || delFileName.toLowerCase().endsWith(".zip"))
+							if (delFileName.toLowerCase().endsWith(".part")
+							        || delFileName.toLowerCase().endsWith(".zip"))
 							{
 								delFileName = updatesDir + "/" + delFileName;
 								boolean success = new File(delFileName).delete();

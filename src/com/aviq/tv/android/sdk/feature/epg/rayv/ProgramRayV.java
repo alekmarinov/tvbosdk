@@ -29,9 +29,9 @@ public class ProgramRayV extends Program
 	private static final String TAG = ProgramRayV.class.getSimpleName();
 	private JSONObject _detailsResponse;
 
-	public ProgramRayV(Channel channel)
+	public ProgramRayV(String id, Channel channel)
 	{
-		super(channel);
+		super(id, channel);
 	}
 
 	@Override

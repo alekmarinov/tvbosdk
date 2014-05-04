@@ -14,6 +14,7 @@ import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.NavigableMap;
@@ -43,6 +44,7 @@ import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.feature.system.FeatureTimeZone;
 import com.google.gson.Gson;
@@ -156,10 +158,10 @@ public abstract class FeatureEPG extends FeatureScheduler
 	private FeatureTimeZone _featureTimeZone;
 	private int _maxChannels = 0;
 
-	public FeatureEPG()
+	public FeatureEPG() throws FeatureNotFoundException
 	{
-		_dependencies.Schedulers.add(FeatureName.Scheduler.INTERNET);
-		_dependencies.Components.add(FeatureName.Component.TIMEZONE);
+		require(FeatureName.Scheduler.INTERNET);
+		require(FeatureName.Component.TIMEZONE);
 	}
 
 	@Override
@@ -261,9 +263,13 @@ public abstract class FeatureEPG extends FeatureScheduler
 	protected abstract Channel createChannel(int index);
 
 	/**
-	 * @return create program instance
+	 * Creates program instance associated with Channel and program Id
+	 * @param channel
+	 * @param id
+	 *
+	 * @return new program instance
 	 */
-	protected abstract Program createProgram(Channel channel);
+	protected abstract Program createProgram(String id, Channel channel);
 
 	private void retrieveChannelLogo(Channel channel, int channelIndex)
 	{
@@ -446,10 +452,17 @@ public abstract class FeatureEPG extends FeatureScheduler
 		}
 		else
 		{
-			float processedCount = _retrievedChannelPrograms + _retrievedChannelLogos;
-			float totalCount = 2 * numChannels; // The number of all programs
+			final float processedCount = _retrievedChannelPrograms + _retrievedChannelLogos;
+			final float totalCount = 2 * numChannels; // The number of all programs
 			                                    // and logos queries
-			_onFeatureInitialized.onInitializeProgress(FeatureEPG.this, processedCount / totalCount);
+			getEventMessenger().post(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					_onFeatureInitialized.onInitializeProgress(FeatureEPG.this, processedCount / totalCount);
+				}
+			});
 		}
 	}
 
@@ -529,7 +542,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 	{
 		long processStart = System.nanoTime();
 
-		NavigableMap<String, Integer> programMap = new TreeMap<String, Integer>();
+		NavigableMap<Calendar, Integer> programMap = new TreeMap<Calendar, Integer>();
 		List<Program> programList = new ArrayList<Program>();
 		Channel channel = _epgDataBeingLoaded.getChannel(channelId);
 
@@ -540,23 +553,28 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 		for (int i = 0; i < data.length; i++)
 		{
-			Program program = createProgram(channel);
-			program.setTitle(data[i][metaData.metaTitle]);
-
 			try
 			{
-				program.setStartTime(ddf.format(sdf.parse(data[i][metaData.metaStart])));
-				program.setStopTime(ddf.format(sdf.parse(data[i][metaData.metaStop])));
+				Calendar startTime = Calendar.getInstance();
+				startTime.setTime(sdf.parse(data[i][metaData.metaStart]));
+				Calendar stopTime = Calendar.getInstance();
+				stopTime.setTime(sdf.parse(data[i][metaData.metaStop]));
+
+				String id = data[i][metaData.metaStart];
+				Program program = createProgram(id, channel);
+				program.setTitle(data[i][metaData.metaTitle]);
+				program.setStartTime(startTime);
+				program.setStopTime(stopTime);
+
+				// set custom provider attributes
+				program.setDetailAttributes(metaData, data[i]);
+				programList.add(program);
+				programMap.put(program.getStartTime(), i);
 			}
 			catch (ParseException e)
 			{
 				Log.w(TAG, e.getMessage(), e);
 			}
-
-			// set custom provider attributes
-			program.setDetailAttributes(metaData, data[i]);
-			programList.add(program);
-			programMap.put(program.getStartTime(), i);
 		}
 
 		_epgDataBeingLoaded.addProgramData(channelId, programMap, programList);

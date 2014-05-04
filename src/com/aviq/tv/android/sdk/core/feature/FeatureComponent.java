@@ -20,18 +20,51 @@ import com.aviq.tv.android.sdk.core.ResultCode;
  */
 public abstract class FeatureComponent implements IFeature
 {
-	protected FeatureSet _dependencies = new FeatureSet();
-	protected Feature _feature;
-	private EventMessenger _eventMessenger = new EventMessenger();
+	protected Features _feature;
+	private FeatureSet _dependencies = new FeatureSet();
+	private EventMessenger _eventMessenger = new EventMessenger(getClass().getSimpleName());
 
 	public FeatureComponent()
 	{
 	}
 
-	@Override
-	public void initializeDependencies()
+	/**
+	 * Declare this feature depends on the specified component name
+	 * @param featureName
+	 * @throws FeatureNotFoundException
+	 */
+    protected final void require(FeatureName.Component featureName) throws FeatureNotFoundException
 	{
-		_feature = new Feature();
+		_dependencies.Components.add(featureName);
+	}
+
+	/**
+	 * Declare this feature depends on the specified scheduler name
+	 * @param featureName
+	 * @throws FeatureNotFoundException
+	 */
+	protected final void require(FeatureName.Scheduler featureName) throws FeatureNotFoundException
+	{
+		_dependencies.Schedulers.add(featureName);
+	}
+
+	/**
+	 * Declare this feature depends on the specified state name
+	 * @param featureName
+	 * @throws FeatureNotFoundException
+	 */
+    protected final void require(FeatureName.State featureName) throws FeatureNotFoundException
+	{
+		_dependencies.States.add(featureName);
+	}
+
+	/**
+	 * Declare this feature depends on the specified special feature
+	 * @param featureName
+	 */
+    protected final void require(Class<?> featureClass)
+	{
+		_dependencies.Specials.add(featureClass);
 	}
 
 	@Override
@@ -42,19 +75,25 @@ public abstract class FeatureComponent implements IFeature
 	}
 
 	@Override
-	public FeatureSet dependencies()
+	public final FeatureSet dependencies()
 	{
 		return _dependencies;
 	}
 
 	@Override
-	public Type getType()
+	public final void setDependencyFeatures(Features features)
+	{
+		_feature = features;
+	}
+
+	@Override
+	public final Type getType()
 	{
 		return IFeature.Type.COMPONENT;
 	}
 
 	@Override
-	public String getName()
+	public final String getName()
 	{
 		FeatureName.Component name = getComponentName();
 		if (FeatureName.Component.SPECIAL.equals(name))
@@ -70,7 +109,7 @@ public abstract class FeatureComponent implements IFeature
 	}
 
 	@Override
-	public Prefs getPrefs()
+	public final Prefs getPrefs()
 	{
 		return Environment.getInstance().getFeaturePrefs(getComponentName());
 	}
@@ -79,7 +118,7 @@ public abstract class FeatureComponent implements IFeature
 	 * @return an event messenger associated with this feature
 	 */
 	@Override
-	public EventMessenger getEventMessenger()
+	public final EventMessenger getEventMessenger()
 	{
 		return _eventMessenger;
 	}

@@ -24,9 +24,11 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
+import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 
 /**
  * Component feature managing favorite channels
@@ -40,9 +42,19 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		/**
 		 * Automatically start playing last played channel
 		 */
-		AUTOPLAY(true);
+		AUTOPLAY(true),
+
+		/**
+		 * Default channel depending on currently selected language
+		 */
+		DEFAULT_CHANNEL_DE("vtx_sf1"), DEFAULT_CHANNEL_FR("vtx_tsr1"), DEFAULT_CHANNEL_EN("vtx_bbc_world");
 
 		Param(boolean value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.CHANNELS).put(name(), value);
+		}
+
+		Param(String value)
 		{
 			Environment.getInstance().getFeaturePrefs(FeatureName.Component.CHANNELS).put(name(), value);
 		}
@@ -79,27 +91,49 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 
 	private Prefs _userPrefs;
 	private boolean _isModified = false;
+	// reference to optional timeshift feature
+	private FeatureTimeshift _featureTimeshift;
 
 	// List of favorite channels
 	private List<Channel> _channels;
 
-	public FeatureChannels()
+	public FeatureChannels() throws FeatureNotFoundException
 	{
-		_dependencies.Schedulers.add(FeatureName.Scheduler.EPG);
-		_dependencies.Components.add(FeatureName.Component.PLAYER);
-		_dependencies.Components.add(FeatureName.Component.STREAMER);
+		require(FeatureName.Scheduler.EPG);
+		require(FeatureName.Component.LANGUAGE);
+		require(FeatureName.Component.PLAYER);
+		require(FeatureName.Component.STREAMER);
 	}
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		Environment env = Environment.getInstance();
-		_userPrefs = env.getUserPrefs();
+		_userPrefs = Environment.getInstance().getUserPrefs();
+		if (!_userPrefs.has(UserParam.LAST_CHANNEL_ID))
+		{
+			String lastChannelId = getPrefs().getString(Param.DEFAULT_CHANNEL_EN);
 
+			switch (_feature.Component.LANGUAGE.getLanguage())
+			{
+				case DE:
+					lastChannelId = getPrefs().getString(Param.DEFAULT_CHANNEL_DE);
+				break;
+				case FR:
+					lastChannelId = getPrefs().getString(Param.DEFAULT_CHANNEL_FR);
+				break;
+				default:
+				break;
+			}
+			_userPrefs.put(UserParam.LAST_CHANNEL_ID, lastChannelId);
+		}
 		_feature.Scheduler.EPG.getEventMessenger().register(this, FeatureEPG.ON_EPG_UPDATED);
-
 		_channels = loadFavoriteChannels();
+
+		_featureTimeshift = (FeatureTimeshift) Environment.getInstance().getFeatureComponent(
+		        FeatureName.Component.TIMESHIFT);
+
+		Environment.getInstance().getEventMessenger().register(this, Environment.ON_RESUME);
 
 		if (getPrefs().getBool(Param.AUTOPLAY))
 		{
@@ -262,11 +296,11 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		String streamId = _feature.Scheduler.EPG.getChannelStreamId(globalIndex);
 		String streamUrl = _feature.Component.STREAMER.getUrlByStreamId(streamId);
 
-		if (_feature.Component.TIMESHIFT != null)
+		if (_featureTimeshift != null)
 		{
 			// play with timeshift
 			Log.d(TAG, ".play: timeshift " + streamId);
-			_feature.Component.TIMESHIFT.play(streamUrl);
+			_featureTimeshift.play(streamUrl);
 		}
 		else
 		{
@@ -410,6 +444,14 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		if (FeatureEPG.ON_EPG_UPDATED == msgId)
 		{
 			_channels = loadFavoriteChannels();
+		}
+		else if (Environment.ON_RESUME == msgId)
+		{
+			if (Environment.getInstance().isInitialized())
+			{
+				// restart playing on app resume
+				playLast();
+			}
 		}
 	}
 

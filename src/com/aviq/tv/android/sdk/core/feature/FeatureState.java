@@ -35,15 +35,52 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	public static final String EXTRA_ON_SHOW_UNCOVER = "ON_SHOW_UNCOVER";
 	public static final int ON_HIDE = EventMessenger.ID("ON_HIDE");
 	public static final String EXTRA_ON_HIDE_COVER = "ON_HIDE_COVER";
-	protected FeatureSet _dependencies = new FeatureSet();
-	protected Feature _feature;
+	protected Features _feature;
+	private FeatureSet _dependencies = new FeatureSet();
 	private List<Subscription> _subscriptions = new ArrayList<Subscription>();
-	private EventMessenger _eventMessenger = new EventMessenger();
+	private EventMessenger _eventMessenger = new EventMessenger(getClass().getSimpleName());
 
-	@Override
-	public void initializeDependencies()
+	public FeatureState()
 	{
-		_feature = new Feature();
+	}
+
+	/**
+	 * Declare this feature depends on the specified component name
+	 * @param featureName
+	 * @throws FeatureNotFoundException
+	 */
+    protected final void require(FeatureName.Component featureName) throws FeatureNotFoundException
+	{
+		_dependencies.Components.add(featureName);
+	}
+
+	/**
+	 * Declare this feature depends on the specified scheduler name
+	 * @param featureName
+	 * @throws FeatureNotFoundException
+	 */
+	protected final void require(FeatureName.Scheduler featureName) throws FeatureNotFoundException
+	{
+		_dependencies.Schedulers.add(featureName);
+	}
+
+	/**
+	 * Declare this feature depends on the specified state name
+	 * @param featureName
+	 * @throws FeatureNotFoundException
+	 */
+    protected final void require(FeatureName.State featureName) throws FeatureNotFoundException
+	{
+		_dependencies.States.add(featureName);
+	}
+
+	/**
+	 * Declare this feature depends on the specified special feature
+	 * @param featureName
+	 */
+    protected final void require(Class<?> featureClass)
+	{
+		_dependencies.Specials.add(featureClass);
 	}
 
 	@Override
@@ -54,19 +91,25 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	}
 
 	@Override
-	public FeatureSet dependencies()
+	public final FeatureSet dependencies()
 	{
 		return _dependencies;
 	}
 
 	@Override
-	public Type getType()
+	public final void setDependencyFeatures(Features features)
+	{
+		_feature = features;
+	}
+
+	@Override
+	public final Type getType()
 	{
 		return IFeature.Type.STATE;
 	}
 
 	@Override
-	public String getName()
+	public final String getName()
 	{
 		FeatureName.State name = getStateName();
 		if (FeatureName.State.SPECIAL.equals(name))
@@ -82,7 +125,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	}
 
 	@Override
-	public Prefs getPrefs()
+	public final Prefs getPrefs()
 	{
 		return Environment.getInstance().getFeaturePrefs(getStateName());
 	}
@@ -91,7 +134,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	 * @return an event messenger associated with this feature
 	 */
 	@Override
-	public EventMessenger getEventMessenger()
+	public final EventMessenger getEventMessenger()
 	{
 		return _eventMessenger;
 	}
@@ -104,7 +147,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	 * @param msgId
 	 *            the id of the message to subscribe
 	 */
-	protected void subscribe(EventMessenger eventMessenger, int msgId)
+	protected final void subscribe(EventMessenger eventMessenger, int msgId)
 	{
 		Log.i(TAG, getName() + ".subscribe: on " + EventMessenger.idName(msgId) + "(" + msgId + ")");
 		if (isSubscribed(eventMessenger, msgId))
@@ -130,7 +173,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	 * @param msgId
 	 *            the id of the message to subscribe
 	 */
-	protected void subscribe(IFeature feature, int msgId)
+	protected final void subscribe(IFeature feature, int msgId)
 	{
 		subscribe(feature.getEventMessenger(), msgId);
 	}
@@ -143,7 +186,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	 * @param msgId
 	 *            the id of the message to unsubscribe
 	 */
-	protected void unsubscribe(EventMessenger eventMessenger, int msgId)
+	protected final void unsubscribe(EventMessenger eventMessenger, int msgId)
 	{
 		Log.i(TAG, getName() + ".unsubscribe: from " + EventMessenger.idName(msgId) + "(" + msgId + ")");
 		for (int i = 0; i < _subscriptions.size(); i++)
@@ -173,7 +216,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	 * @param msgId
 	 *            the id of the message to unsubscribe
 	 */
-	protected void unsubscribe(IFeature feature, int msgId)
+	protected final void unsubscribe(IFeature feature, int msgId)
 	{
 		unsubscribe(feature.getEventMessenger(), msgId);
 	}
@@ -186,7 +229,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	 * @return true if this feature is subscribed to EventMessenger with event
 	 *         msgId
 	 */
-	protected boolean isSubscribed(EventMessenger eventMessenger, int msgId)
+	protected final boolean isSubscribed(EventMessenger eventMessenger, int msgId)
 	{
 		for (int i = 0; i < _subscriptions.size(); i++)
 		{
@@ -207,7 +250,7 @@ public abstract class FeatureState extends BaseState implements IFeature, EventR
 	 * @return true if this feature is subscribed to IFeature with event
 	 *         msgId
 	 */
-	protected boolean isSubscribed(IFeature feature, int msgId)
+	protected final boolean isSubscribed(IFeature feature, int msgId)
 	{
 		return isSubscribed(feature.getEventMessenger(), msgId);
 	}

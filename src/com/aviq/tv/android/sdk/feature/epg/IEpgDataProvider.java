@@ -18,9 +18,9 @@ public interface IEpgDataProvider
 	public int getChannelCount();
 	public Channel getChannel(int index);
 	public Bitmap getChannelLogoBitmap(int index);
-	public Program getProgram(String channelId, String dateTime);
 	public Program getProgram(String channelId, Calendar when);
 	public List<Channel> getChannels();
-	public List<Program> getProgramList(String channelId, String timeStart, String timeEnd);
+	public List<Program> getProgramList(String channelId, Calendar timeStart, Calendar timeEnd);
+	public Program getProgramById(String channelId, String programId);
 	public Calendar getMaxEpgStopTime();
 }

@@ -10,6 +10,7 @@
 
 package com.aviq.tv.android.sdk.feature.epg.wilmaa;
 
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
@@ -20,6 +21,10 @@ import com.aviq.tv.android.sdk.feature.epg.Program;
 public class FeatureEPGWilmaa extends FeatureEPG
 {
 	public static final String TAG = FeatureEPGWilmaa.class.getSimpleName();
+
+	public FeatureEPGWilmaa() throws FeatureNotFoundException
+    {
+    }
 
 	/**
 	 * @return wilmaa EPG provider name
@@ -78,8 +83,8 @@ public class FeatureEPGWilmaa extends FeatureEPG
     }
 
 	@Override
-	protected Program createProgram(Channel channel)
+	protected Program createProgram(String id, Channel channel)
     {
-	    return new ProgramWilmaa(channel);
+	    return new ProgramWilmaa(id, channel);
     }
 }

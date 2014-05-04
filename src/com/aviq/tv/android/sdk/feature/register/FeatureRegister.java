@@ -27,6 +27,7 @@ import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
@@ -80,10 +81,11 @@ public class FeatureRegister extends FeatureComponent
 
 	/**
 	 * @param environment
+	 * @throws FeatureNotFoundException
 	 */
-	public FeatureRegister()
+	public FeatureRegister() throws FeatureNotFoundException
 	{
-		_dependencies.Schedulers.add(FeatureName.Scheduler.INTERNET);
+		require(FeatureName.Scheduler.INTERNET);
 	}
 
 	@Override

@@ -26,6 +26,7 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -66,9 +67,9 @@ public class FeatureWatchlist extends FeatureComponent
 	private Prefs _userPrefs;
 	private int _notifyEarlier;
 
-	public FeatureWatchlist()
+	public FeatureWatchlist() throws FeatureNotFoundException
 	{
-		_dependencies.Schedulers.add(FeatureName.Scheduler.EPG);
+		require(FeatureName.Scheduler.EPG);
 	}
 
 	@Override
@@ -98,7 +99,7 @@ public class FeatureWatchlist extends FeatureComponent
 				@Override
 				public int compare(Program lhs, Program rhs)
 				{
-					return lhs.getStartTimeCalendar().compareTo(rhs.getStartTimeCalendar());
+					return lhs.getStartTime().compareTo(rhs.getStartTime());
 				}
 			});
 			updateProgramStartNotification();
@@ -152,7 +153,7 @@ public class FeatureWatchlist extends FeatureComponent
 	 */
 	public boolean isExpired(Program program)
 	{
-		return Calendar.getInstance().compareTo(program.getStartTimeCalendar()) > 0;
+		return Calendar.getInstance().compareTo(program.getStartTime()) > 0;
 	}
 
 	public void enableNotifications()
@@ -208,7 +209,7 @@ public class FeatureWatchlist extends FeatureComponent
 			{
 				String chId = idElements[0];
 				String prId = idElements[1];
-				Program program = epgData.getProgram(chId, prId);
+				Program program = epgData.getProgramById(chId, prId);
 				if (program == null)
 				{
 					Log.w(TAG, "Program " + prId + " not found in channel " + chId);
@@ -246,7 +247,7 @@ public class FeatureWatchlist extends FeatureComponent
 		getEventMessenger().removeCallbacks(_onProgramNotification);
 		_onProgramNotification.NotifyProgram = program;
 		long now = Calendar.getInstance().getTimeInMillis();
-		long delayToNotify = program.getStartTimeCalendar().getTimeInMillis() - now - 1000 * _notifyEarlier;
+		long delayToNotify = program.getStartTime().getTimeInMillis() - now - 1000 * _notifyEarlier;
 		if (delayToNotify < 0)
 			delayToNotify = 5 * 1000;
 

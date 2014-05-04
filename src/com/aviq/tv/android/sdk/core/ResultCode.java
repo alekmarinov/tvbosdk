@@ -19,6 +19,11 @@ public class ResultCode
 	public static final int NOT_FOUND_404 = 404;
 
 	/**
+	 * Required feature is missing
+	 */
+	public static final int FEATURE_NOT_FOUND = -7;
+
+	/**
 	 * Timeout error
 	 */
 	public static final int TIMEOUT = -6;

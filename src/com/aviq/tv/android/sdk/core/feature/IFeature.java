@@ -31,10 +31,10 @@ public interface IFeature
 	}
 
 	/**
-	 * Method called before initialize to ensure all feature's dependencies
-	 * are in place
+	 * Sets Features instance referencing all initialized dependency features
+	 * @param features
 	 */
-	void initializeDependencies();
+	void setDependencyFeatures(Features features);
 
 	/**
 	 * Method to be invoked to initialize this feature

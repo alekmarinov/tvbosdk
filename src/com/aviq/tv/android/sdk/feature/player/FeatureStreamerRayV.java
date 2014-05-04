@@ -16,6 +16,7 @@ import android.util.Log;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.rayv.StreamingAgent.Loader;
 
 /**
@@ -68,9 +69,9 @@ public class FeatureStreamerRayV extends FeatureStreamer
 		}
 	}
 
-	public FeatureStreamerRayV()
+	public FeatureStreamerRayV() throws FeatureNotFoundException
 	{
-		_dependencies.Components.add(FeatureName.Component.REGISTER);
+		require(FeatureName.Component.REGISTER);
 	}
 
 	@Override

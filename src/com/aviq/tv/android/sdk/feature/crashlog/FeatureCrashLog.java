@@ -27,11 +27,14 @@ import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 
 /**
  * Handle unhandled exceptions.
  */
+@PriorityFeature
 public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureCrashLog.class.getSimpleName();
@@ -69,11 +72,11 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		}
 	}
 
-	public FeatureCrashLog()
+	public FeatureCrashLog() throws FeatureNotFoundException
 	{
-		_dependencies.Schedulers.add(FeatureName.Scheduler.INTERNET);
-		_dependencies.Components.add(FeatureName.Component.REGISTER);
-		_dependencies.Components.add(FeatureName.Component.ETHERNET);
+		require(FeatureName.Scheduler.INTERNET);
+		require(FeatureName.Component.REGISTER);
+		require(FeatureName.Component.ETHERNET);
 	}
 
 	@Override

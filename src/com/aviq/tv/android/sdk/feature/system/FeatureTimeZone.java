@@ -41,18 +41,18 @@ public class FeatureTimeZone extends FeatureComponent
 		}
 	}
 
-	private String _timeZone;
+	private TimeZone _timeZone;
 
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		_timeZone = getPrefs().getString(Param.TIMEZONE);
+		_timeZone = TimeZone.getTimeZone(getPrefs().getString(Param.TIMEZONE));
 
 		// Setting time zone from configuration
 		AlarmManager alarm = (AlarmManager) Environment.getInstance().getSystemService(Context.ALARM_SERVICE);
-		alarm.setTimeZone(_timeZone);
-		Log.i(TAG, "Time zone set to " + _timeZone);
+		alarm.setTimeZone(_timeZone.getID());
+		Log.i(TAG, "Time zone set to " + _timeZone.getID());
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -67,6 +67,6 @@ public class FeatureTimeZone extends FeatureComponent
 	 */
 	public TimeZone getTimeZone()
 	{
-		return TimeZone.getTimeZone(_timeZone);
+		return _timeZone;
 	}
 }

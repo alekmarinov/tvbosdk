@@ -12,11 +12,8 @@ package com.aviq.tv.android.sdk.core;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import org.xml.sax.SAXException;
 
@@ -36,6 +33,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.ImageLoader.ImageCache;
 import com.android.volley.toolbox.Volley;
+import com.aviq.tv.android.sdk.Version;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureManager;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
@@ -45,6 +43,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureState;
 import com.aviq.tv.android.sdk.core.feature.IFeature;
 import com.aviq.tv.android.sdk.core.feature.IFeature.OnFeatureInitialized;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
+import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.core.state.StateManager;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
@@ -61,6 +60,8 @@ public class Environment extends Activity
 	public static final int ON_KEY_PRESSED = EventMessenger.ID("ON_KEY_PRESSED");
 	public static final int ON_KEY_RELEASED = EventMessenger.ID("ON_KEY_RELEASED");
 	public static final int ON_FEATURE_INIT_ERROR = EventMessenger.ID("ON_FEATURE_INIT_ERROR");
+	public static final int ON_RESUME = EventMessenger.ID("ON_RESUME");
+	public static final int ON_PAUSE = EventMessenger.ID("ON_PAUSE");
 	public static final String EXTRA_ERROR_CODE = "EXTRA_ERROR_CODE";
 	public static final String EXTRA_KEY = "KEY";
 	public static final String EXTRA_KEYCODE = "KEYCODE";
@@ -104,19 +105,88 @@ public class Environment extends Activity
 	private FeatureManager _featureManager = new FeatureManager();
 	private Prefs _prefs;
 	private Prefs _userPrefs;
-	private final List<Properties> _brandPropertyLists = new ArrayList<Properties>();
 	private RequestQueue _requestQueue;
 	private ImageLoader _imageLoader;
-	private final EventMessenger _eventMessenger = new EventMessenger();
+	private final EventMessenger _eventMessenger = new EventMessenger(TAG);
 	private final Map<FeatureName.Component, Prefs> _componentPrefs = new HashMap<FeatureName.Component, Prefs>();
 	private final Map<FeatureName.Scheduler, Prefs> _schedulerPrefs = new HashMap<FeatureName.Scheduler, Prefs>();
 	private final Map<FeatureName.State, Prefs> _statePrefs = new HashMap<FeatureName.State, Prefs>();
-	// Chain based features initializer
-	private boolean _isInitialized = false; // FIXME: _isInitialized never gets
-											// true
+	private boolean _isInitialized = false;
 	private static boolean _isCreated = false;
 	private FeatureRCU _featureRCU;
 	private FeatureSystem _featureSystem;
+
+	private OnResultReceived _onFeaturesReceived = new OnResultReceived()
+	{
+		@Override
+		public void onReceiveResult(int resultCode, Bundle resultData)
+		{
+			try
+			{
+				// Log target device parameters
+				DisplayMetrics metrics = new DisplayMetrics();
+				getWindowManager().getDefaultDisplay().getMetrics(metrics);
+				Log.i(TAG, "Initializing environment: version (app = " + getBuildVersion() + ", sdk = " + Version.NAME
+				        + "), " + metrics.widthPixels + "x" + metrics.heightPixels + ", density = " + metrics.density
+				        + ", densityDpi = " + metrics.densityDpi + ", scaledDensity = " + metrics.scaledDensity
+				        + ", xdpi = " + metrics.xdpi + ", ydpi = " + metrics.ydpi);
+
+				// initializes environment context
+				_stateManager = new StateManager(Environment.this);
+				_stateManager.setMessageState(_featureManager.use(FeatureName.State.MESSAGE_BOX));
+				_stateManager.setOverlayBackgroundColor(getPrefs().getInt(Param.OVERLAY_BACKGROUND_COLOR));
+				_featureRCU = (FeatureRCU) _featureManager.use(FeatureName.Component.RCU);
+				_featureSystem = (FeatureSystem) _featureManager.use(FeatureName.Component.SYSTEM);
+
+				_serviceController = new ServiceController(Environment.this);
+				_requestQueue = Volley.newRequestQueue(Environment.this);
+				_requestQueue.getCache().clear();
+
+				// Use 1/8th of the available memory for this memory cache.
+				int memClass = ((ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE))
+				        .getMemoryClass();
+				int cacheSize = 1024 * 1024 * memClass / 8;
+				_imageLoader = new ImageLoader(_requestQueue, new BitmapLruCache(cacheSize));
+
+				// initializes features
+				getEventMessenger().trigger(ON_INITIALIZE);
+				_featureManager.setInitTimeout(getPrefs().getInt(Param.FEATURE_INITIALIZE_TIMEOUT));
+				_featureManager.initialize(new OnFeatureInitialized()
+				{
+					@Override
+					public void onInitialized(IFeature feature, int resultCode)
+					{
+						if (resultCode != ResultCode.OK)
+						{
+							Bundle bundle = new Bundle();
+							bundle.putInt(EXTRA_ERROR_CODE, resultCode);
+							_eventMessenger.trigger(ON_FEATURE_INIT_ERROR, bundle);
+						}
+						else
+						{
+							_eventMessenger.trigger(ON_LOADED);
+							_isInitialized = true;
+						}
+					}
+
+					@Override
+					public void onInitializeProgress(IFeature feature, float progress)
+					{
+						Bundle bundle = new Bundle();
+						bundle.putFloat("progress", progress);
+						bundle.putString("featureName", feature.getType().name() + " " + feature.getName());
+
+						Log.i(TAG, "ON_LOADING: progress = " + progress);
+						_eventMessenger.triggerDirect(ON_LOADING, bundle);
+					}
+				});
+			}
+			catch (FeatureNotFoundException e)
+			{
+				Log.e(TAG, e.getMessage(), e);
+			}
+		}
+	};
 
 	/**
 	 * Environment constructor method
@@ -159,7 +229,7 @@ public class Environment extends Activity
 				// initialize environment by debug app's raw/eclipse.xml
 				Log.i(TAG, "Parsing " + ECLIPSE_XML_RESOURCE + " xml definition");
 				InputStream inputStream = getResources().openRawResource(appDebugXmlId);
-				_featureManager.addFeaturesFromXml(inputStream);
+				_featureManager.addFeaturesFromXml(inputStream, _onFeaturesReceived);
 			}
 			else
 			{
@@ -167,73 +237,30 @@ public class Environment extends Activity
 				Log.i(TAG, "Parsing " + AVIQTV_XML_RESOURCE + " xml definition");
 				int appXmlId = getResources().getIdentifier(AVIQTV_XML_RESOURCE, "raw", getPackageName());
 				InputStream inputStream = getResources().openRawResource(appXmlId);
-				_featureManager.addFeaturesFromXml(inputStream);
-
-				// initialize environment by app's raw/release.xml
-				Log.i(TAG, "Parsing " + RELEASE_XML_RESOURCE + " xml definition");
-				appXmlId = getResources().getIdentifier(RELEASE_XML_RESOURCE, "raw", getPackageName());
-				inputStream = getResources().openRawResource(appXmlId);
-				_featureManager.addFeaturesFromXml(inputStream);
+				_featureManager.addFeaturesFromXml(inputStream, new OnResultReceived()
+				{
+					@Override
+					public void onReceiveResult(int resultCode, Bundle resultData)
+					{
+						// initialize environment by app's raw/release.xml
+						Log.i(TAG, "Parsing " + RELEASE_XML_RESOURCE + " xml definition");
+						int appXmlId = getResources().getIdentifier(RELEASE_XML_RESOURCE, "raw", getPackageName());
+						InputStream inputStream = getResources().openRawResource(appXmlId);
+						try
+						{
+							_featureManager.addFeaturesFromXml(inputStream, _onFeaturesReceived);
+						}
+						catch (SAXException e)
+						{
+							Log.e(TAG, e.getMessage(), e);
+						}
+						catch (IOException e)
+						{
+							Log.e(TAG, e.getMessage(), e);
+						}
+					}
+				});
 			}
-
-			// Log target device parameters
-			DisplayMetrics metrics = new DisplayMetrics();
-			getWindowManager().getDefaultDisplay().getMetrics(metrics);
-			Log.i(TAG, "Initializing environment: " + metrics.widthPixels + "x" + metrics.heightPixels + ", density = "
-			        + metrics.density + ", densityDpi = " + metrics.densityDpi + ", scaledDensity = "
-			        + metrics.scaledDensity + ", xdpi = " + metrics.xdpi + ", ydpi = " + metrics.ydpi);
-
-			// initializes environment context
-			_stateManager = new StateManager(this);
-			_stateManager.setMessageState(_featureManager.use(FeatureName.State.MESSAGE_BOX));
-			_stateManager.setOverlayBackgroundColor(getPrefs().getInt(Param.OVERLAY_BACKGROUND_COLOR));
-			_featureRCU = (FeatureRCU) _featureManager.use(FeatureName.Component.RCU);
-			_featureSystem = (FeatureSystem) _featureManager.use(FeatureName.Component.SYSTEM);
-
-			_serviceController = new ServiceController(this);
-			_requestQueue = Volley.newRequestQueue(this);
-			_requestQueue.getCache().clear();
-
-			// Use 1/8th of the available memory for this memory cache.
-			int memClass = ((ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE))
-			        .getMemoryClass();
-			int cacheSize = 1024 * 1024 * memClass / 8;
-			_imageLoader = new ImageLoader(_requestQueue, new BitmapLruCache(cacheSize));
-
-			// initializes features
-			getEventMessenger().trigger(ON_INITIALIZE);
-			_featureManager.setInitTimeout(getPrefs().getInt(Param.FEATURE_INITIALIZE_TIMEOUT));
-			_featureManager.initialize(new OnFeatureInitialized()
-			{
-				@Override
-				public void onInitialized(IFeature feature, int resultCode)
-				{
-					if (resultCode != ResultCode.OK)
-					{
-						Bundle bundle = new Bundle();
-						bundle.putInt(EXTRA_ERROR_CODE, resultCode);
-						_eventMessenger.trigger(ON_FEATURE_INIT_ERROR, bundle);
-					}
-					else
-					{
-						_eventMessenger.trigger(ON_LOADED);
-						_isInitialized = true;
-					}
-				}
-
-				@Override
-				public void onInitializeProgress(IFeature feature, float progress)
-				{
-					Bundle bundle = new Bundle();
-					bundle.putFloat("progress", progress);
-					bundle.putString("featureName", feature.getType().name() + " " + feature.getName());
-					_eventMessenger.trigger(ON_LOADING, bundle);
-				}
-			});
-		}
-		catch (FeatureNotFoundException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -254,6 +281,7 @@ public class Environment extends Activity
 	{
 		super.onResume();
 		Log.i(TAG, ".onResume");
+		getEventMessenger().trigger(ON_RESUME);
 	}
 
 	@Override
@@ -261,6 +289,7 @@ public class Environment extends Activity
 	{
 		super.onPause();
 		Log.i(TAG, ".onPause");
+		getEventMessenger().trigger(ON_PAUSE);
 	}
 
 	@Override
@@ -382,13 +411,13 @@ public class Environment extends Activity
 	public FeatureComponent getFeatureComponent(FeatureName.Component featureName)
 	{
 		try
-        {
-	        return _featureManager.getFeatureComponent(featureName);
-        }
-        catch (FeatureNotFoundException e)
-        {
-        	return null;
-        }
+		{
+			return _featureManager.getFeatureComponent(featureName);
+		}
+		catch (FeatureNotFoundException e)
+		{
+			return null;
+		}
 	}
 
 	/**
@@ -398,13 +427,13 @@ public class Environment extends Activity
 	public FeatureScheduler getFeatureScheduler(FeatureName.Scheduler featureName)
 	{
 		try
-        {
-	        return _featureManager.getFeatureScheduler(featureName);
-        }
-        catch (FeatureNotFoundException e)
-        {
-        	return null;
-        }
+		{
+			return _featureManager.getFeatureScheduler(featureName);
+		}
+		catch (FeatureNotFoundException e)
+		{
+			return null;
+		}
 	}
 
 	/**
@@ -414,13 +443,13 @@ public class Environment extends Activity
 	public FeatureState getFeatureState(FeatureName.State featureName)
 	{
 		try
-        {
-	        return _featureManager.getFeatureState(featureName);
-        }
-        catch (FeatureNotFoundException e)
-        {
-        	return null;
-        }
+		{
+			return _featureManager.getFeatureState(featureName);
+		}
+		catch (FeatureNotFoundException e)
+		{
+			return null;
+		}
 	}
 
 	public Prefs getFeaturePrefs(FeatureName.Component featureName)

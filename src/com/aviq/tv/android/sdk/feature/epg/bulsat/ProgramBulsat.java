@@ -28,9 +28,9 @@ public class ProgramBulsat extends Program
 		public int metaDescription;
 	}
 
-	public ProgramBulsat(Channel channel)
+	public ProgramBulsat(String id, Channel channel)
 	{
-		super(channel);
+		super(id, channel);
 	}
 
 	@Override

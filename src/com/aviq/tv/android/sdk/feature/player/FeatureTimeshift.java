@@ -24,6 +24,7 @@ import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.system.NetworkClient;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -133,10 +134,10 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		}
 	}
 
-	public FeatureTimeshift()
+	public FeatureTimeshift() throws FeatureNotFoundException
 	{
-		dependencies().Components.add(FeatureName.Component.PLAYER);
-		dependencies().Components.add(FeatureName.Component.SYSTEM);
+		require(FeatureName.Component.PLAYER);
+		require(FeatureName.Component.SYSTEM);
 	}
 
 	@Override
@@ -256,7 +257,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 			{
 				_feature.Component.PLAYER.play(_timeshiftStartUrl);
 			}
-		}, 1500);
+		}, 2000);
 	}
 
 	public boolean isTimeshiftAvailable()
