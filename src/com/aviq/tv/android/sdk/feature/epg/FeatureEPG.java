@@ -310,6 +310,8 @@ public abstract class FeatureEPG extends FeatureScheduler
 			indexChannelMetaData(metaData, response.meta);
 			parseChannelData(metaData, response.data);
 
+			if (_epgDataBeingLoaded == null)
+				return ;
 			final int nChannels = _epgDataBeingLoaded.getChannelCount();
 			Log.i(TAG, "Response with " + nChannels + " channels received");
 			_retrievedChannelLogos = 0;
@@ -350,6 +352,8 @@ public abstract class FeatureEPG extends FeatureScheduler
 		public void onResponse(Bitmap response)
 		{
 			Log.d(TAG, "Received bitmap " + response.getWidth() + "x" + response.getHeight());
+			if (_epgDataBeingLoaded == null)
+				return ;
 			_epgDataBeingLoaded.setChannelLogo(_index, response);
 			logoProcessed();
 		}

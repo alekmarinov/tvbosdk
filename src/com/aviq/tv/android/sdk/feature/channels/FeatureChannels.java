@@ -47,7 +47,11 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		/**
 		 * Default channel depending on currently selected language
 		 */
-		DEFAULT_CHANNEL_DE("vtx_sf1"), DEFAULT_CHANNEL_FR("vtx_tsr1"), DEFAULT_CHANNEL_EN("vtx_bbc_world");
+		DEFAULT_CHANNEL_DE, DEFAULT_CHANNEL_FR, DEFAULT_CHANNEL_EN;
+
+		Param()
+		{
+		}
 
 		Param(boolean value)
 		{
@@ -110,7 +114,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 		_userPrefs = Environment.getInstance().getUserPrefs();
-		if (!_userPrefs.has(UserParam.LAST_CHANNEL_ID))
+		if (!_userPrefs.has(UserParam.LAST_CHANNEL_ID) && getPrefs().has(Param.DEFAULT_CHANNEL_EN))
 		{
 			String lastChannelId = getPrefs().getString(Param.DEFAULT_CHANNEL_EN);
 
@@ -295,18 +299,24 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		int globalIndex = channel.getIndex();
 		String streamId = _feature.Scheduler.EPG.getChannelStreamId(globalIndex);
 		String streamUrl = _feature.Component.STREAMER.getUrlByStreamId(streamId);
-
-		if (_featureTimeshift != null)
+		if (streamUrl == null)
 		{
-			// play with timeshift
-			Log.d(TAG, ".play: timeshift " + streamId);
-			_featureTimeshift.play(streamUrl);
+			Log.e(TAG, channel + " has no stream to play!");
 		}
 		else
 		{
-			// play directly
-			Log.d(TAG, ".play: directly " + streamId);
-			_feature.Component.PLAYER.play(streamUrl);
+			if (_featureTimeshift != null)
+			{
+				// play with timeshift
+				Log.d(TAG, ".play: timeshift " + streamId);
+				_featureTimeshift.play(streamUrl);
+			}
+			else
+			{
+				// play directly
+				Log.d(TAG, ".play: directly " + streamId);
+				_feature.Component.PLAYER.play(streamUrl);
+			}
 		}
 	}
 

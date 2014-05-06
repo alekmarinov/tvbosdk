@@ -17,13 +17,32 @@ import com.aviq.tv.android.sdk.feature.epg.Channel;
  */
 public class ChannelBulsat extends Channel
 {
+	private String _streamUrl;
+
 	public ChannelBulsat(int index)
     {
 	    super(index);
     }
 
+	public static class MetaData extends Channel.MetaData
+	{
+		public int metaChannelStreamUrl;
+	}
+
+	public void setStreamUrl(String streamUrl)
+	{
+		_streamUrl = streamUrl;
+	}
+
+	public String getStreamUrl()
+	{
+		return _streamUrl;
+	}
+
 	@Override
     public void setAttributes(Channel.MetaData channelMetaData, String[] attributes)
 	{
+		MetaData channelBulsatMetaData = (MetaData)channelMetaData;
+		setStreamUrl(attributes[channelBulsatMetaData.metaChannelStreamUrl]);
 	}
 }

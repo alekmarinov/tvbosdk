@@ -260,6 +260,7 @@ public class StateManager
 	{
 		RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
 		        RelativeLayout.LayoutParams.MATCH_PARENT);
+		lp.addRule(RelativeLayout.CENTER_IN_PARENT);
 
 		viewLayer.setId(_viewLayerId);
 		if (isBottom)

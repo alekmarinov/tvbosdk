@@ -101,27 +101,26 @@ public class BaseState extends Fragment
 	/**
 	 * Show state view
 	 */
-	@Deprecated
 	public void show()
 	{
 		Log.i(getClass().getSimpleName(), ".show");
-		super.getView().setVisibility(View.VISIBLE);
+		if (super.getView() != null)
+			super.getView().setVisibility(View.VISIBLE);
 	}
 
 	/**
 	 * Hide state view
 	 */
-	@Deprecated
 	public void hide()
 	{
 		Log.i(getClass().getSimpleName(), ".hide");
-		super.getView().setVisibility(View.INVISIBLE);
+		if (super.getView() != null)
+			super.getView().setVisibility(View.INVISIBLE);
 	}
 
 	/**
 	 * @return true if the this state is shown
 	 */
-	@Deprecated
 	public boolean isShown()
 	{
 		return super.getView().getVisibility() == View.VISIBLE;
