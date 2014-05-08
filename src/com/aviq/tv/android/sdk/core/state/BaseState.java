@@ -123,7 +123,7 @@ public class BaseState extends Fragment
 	 */
 	public boolean isShown()
 	{
-		return super.getView().getVisibility() == View.VISIBLE;
+		return super.getView() != null && super.getView().getVisibility() == View.VISIBLE;
 	}
 
 	/**

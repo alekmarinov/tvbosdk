@@ -85,29 +85,34 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 
 	protected BasePlayer _player;
 	private Prefs _userPrefs;
+	private VideoView _videoView;
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
 		_userPrefs = Environment.getInstance().getUserPrefs();
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
-
-		_player = createPlayer();
-
+		_videoView = new VideoView(Environment.getInstance());
+		Environment.getInstance().getStateManager().addViewLayer(_videoView, true);
+		useVideoView(_videoView);
 		super.initialize(onFeatureInitialized);
 	}
 
 	/**
-	 * Creates backend player instance. Override this method to create custom
+	 * Creates backend player instance with attached VideoView. Override this method to create custom
 	 * player implementation.
-	 *
-	 * @return BasePlayer
 	 */
-	protected BasePlayer createPlayer()
+	public void useVideoView(VideoView videoView)
 	{
-		VideoView videoView = new VideoView(Environment.getInstance());
-		Environment.getInstance().getStateManager().addViewLayer(videoView, true);
-		return new AndroidPlayer(videoView, this);
+		_player = new AndroidPlayer(videoView, this);
+	}
+
+	/**
+	 * Restores initial video view
+	 */
+	public void restoreVideoView()
+	{
+		useVideoView(_videoView);
 	}
 
 	@Override
