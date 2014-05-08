@@ -37,6 +37,7 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.system.SystemProperties;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -70,9 +71,10 @@ public class FeatureWireless extends FeatureComponent
 		DISABLED, DISABLING, ENABLED, ENABLING, UNKNOWN
 	}
 
-	public FeatureWireless()
+	public FeatureWireless() throws FeatureNotFoundException
 	{
 		_wifiManager = (WifiManager) Environment.getInstance().getSystemService(Context.WIFI_SERVICE);
+		require(FeatureName.Component.ETHERNET);
 	}
 
 	@Override
