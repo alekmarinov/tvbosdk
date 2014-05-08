@@ -547,7 +547,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		long processStart = System.nanoTime();
 
 		NavigableMap<Calendar, Integer> programMap = new TreeMap<Calendar, Integer>();
-		List<Program> programList = new ArrayList<Program>();
+		List<Program> programList = new ArrayList<Program>(data.length);
 		Channel channel = _epgDataBeingLoaded.getChannel(channelId);
 
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
