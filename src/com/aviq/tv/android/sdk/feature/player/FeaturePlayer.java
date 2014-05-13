@@ -20,7 +20,6 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Key;
-import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
@@ -84,18 +83,28 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	}
 
 	protected BasePlayer _player;
-	private Prefs _userPrefs;
 	private VideoView _videoView;
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		_userPrefs = Environment.getInstance().getUserPrefs();
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
+		_player = createPlayer();
+		super.initialize(onFeatureInitialized);
+	}
+
+	/**
+	 * Creates backend player instance. Override this method to create custom
+	 * player implementation.
+	 *
+	 * @return BasePlayer
+	 */
+    protected BasePlayer createPlayer()
+	{
 		_videoView = new VideoView(Environment.getInstance());
 		Environment.getInstance().getStateManager().addViewLayer(_videoView, true);
 		useVideoView(_videoView);
-		super.initialize(onFeatureInitialized);
+		return _player;
 	}
 
 	/**
@@ -126,7 +135,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		Log.i(TAG, ".play: url = " + url);
 		_isError = false;
 
-		_userPrefs.put(UserParam.LAST_URL, url);
+		Environment.getInstance().getUserPrefs().put(UserParam.LAST_URL, url);
 		_player.play(url);
 
 		// trigger event on new url
