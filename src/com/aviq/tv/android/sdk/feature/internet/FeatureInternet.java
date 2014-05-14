@@ -10,9 +10,15 @@
 
 package com.aviq.tv.android.sdk.feature.internet;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 
 import com.android.volley.Response.ErrorListener;
@@ -178,6 +184,73 @@ public class FeatureInternet extends FeatureScheduler
 		CheckResponse responseError = new CheckResponse(url, onResultReceived);
 		StringRequest stringRequest = new StringRequest(url, responseSuccess, responseError);
 		Environment.getInstance().getRequestQueue().add(stringRequest);
+	}
+
+	/**
+	 * Get headers from Url
+	 *
+	 * @param url
+	 *            the url to get headers from
+	 * @param onResultReceived
+	 *            result callback interface
+	 */
+	public void getUrlHeaders(final String url, final OnResultReceived onResultReceived)
+	{
+		Log.i(TAG, ".getUrlHeaders: " + url);
+		new AsyncTask<Void, Void, Map<String, List<String>>>()
+		{
+			@Override
+			protected Map<String, List<String>> doInBackground(Void... params)
+			{
+				Map<String, List<String>> headers = null;
+
+				HttpURLConnection connection = null;
+				try
+				{
+					URL urlAddress = new URL(url);
+					connection = (HttpURLConnection) urlAddress.openConnection();
+					connection.setUseCaches(false);
+
+					headers = connection.getHeaderFields();
+				}
+				catch (IOException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
+				finally
+				{
+					if (connection != null)
+						connection.disconnect();
+				}
+
+				return headers;
+			}
+
+			@Override
+			protected void onPostExecute(Map<String, List<String>> result)
+			{
+				Bundle resultData = new Bundle();
+				resultData.putString(ResultExtras.URL.name(), url);
+
+				if (result != null)
+				{
+					for (Map.Entry<String, List<String>> entry : result.entrySet())
+					{
+						List<String> values = entry.getValue();
+						if (values.size() > 0)
+							resultData.putString(entry.getKey(), values.get(0));
+					}
+					onResultReceived.onReceiveResult(ResultCode.OK, resultData);
+				}
+				else
+				{
+					resultData.putString(ResultExtras.ERROR_MESSAGE.name(), "Cannot obtain headers from url = " + url);
+					resultData.putInt(ResultExtras.ERROR_CODE.name(), ResultCode.GENERAL_FAILURE);
+
+					onResultReceived.onReceiveResult(ResultCode.GENERAL_FAILURE, resultData);
+				}
+			}
+		}.execute();
 	}
 
 	/**
