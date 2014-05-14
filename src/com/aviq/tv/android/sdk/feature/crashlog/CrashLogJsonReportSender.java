@@ -32,8 +32,8 @@ public class CrashLogJsonReportSender implements ReportSender
 {
 	private static final String TAG = CrashLogJsonReportSender.class.getSimpleName();
 
-	public static final String REPORT_NAME_TEMPLATE = "%s-%s-%s-%s-%s-%s-%d.crashlog";
-	public static final String LOGCAT_NAME_TEMPLATE = "%s-%s-%s-%s-%s-%s-%d.log";
+	public static final String REPORT_NAME_TEMPLATE = "%s-%s-%s-%s-%s-%d.crashlog";
+	public static final String LOGCAT_NAME_TEMPLATE = "%s-%s-%s-%s-%s-%d.log";
 
 	private final String mReportNameTemplate;
 	private final String mLogcatNameTemplate;
@@ -55,7 +55,7 @@ public class CrashLogJsonReportSender implements ReportSender
 	public void send(CrashReportData report) throws ReportSenderException
 	{
 		String boxId = "";
-		String appVersionCode = "";
+//		String appVersionCode = "";
 		String userCrashDate = "";
 		String brandName = "";
 		String customer = "";
@@ -79,11 +79,12 @@ public class CrashLogJsonReportSender implements ReportSender
 
 			// Get some values needed for the file name of the log
 
-			if (ReportField.APP_VERSION_CODE.equals(reportField))
-			{
-				appVersionCode = value;
-			}
-			else if (ReportField.USER_CRASH_DATE.equals(reportField))
+//			if (ReportField.APP_VERSION_CODE.equals(reportField))
+//			{
+//				appVersionCode = value;
+//			}
+//			else
+			if (ReportField.USER_CRASH_DATE.equals(reportField))
 			{
 				// Expected format: 2013-02-04T16:02:32.000+01:00
 				userCrashDate = value.replaceAll("-", ".").replaceAll(":", ".").replace('T', '_');
@@ -136,11 +137,11 @@ public class CrashLogJsonReportSender implements ReportSender
 		Environment env = Environment.getInstance();
 		String buildType = env.getPrefs().getString(Param.RELEASE);
 
-		String reportFileName = String.format(mReportNameTemplate, buildType, customer, brandName, appVersionCode,
-		        boxId, userCrashDate, randomNum);
+		String reportFileName = String.format(mReportNameTemplate, buildType, customer, brandName, boxId,
+		        userCrashDate, randomNum);
 
-		_logcatFileName = String.format(mLogcatNameTemplate, buildType, customer, brandName, appVersionCode,
-		        boxId, userCrashDate, randomNum);
+		_logcatFileName = String.format(mLogcatNameTemplate, buildType, customer, brandName, boxId, userCrashDate,
+		        randomNum);
 
 		try
 		{
