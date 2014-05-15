@@ -177,6 +177,9 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		errorReporter.putCustomData("CUSTOMER", getCustomer());
 		errorReporter.putCustomData("SW VERSION", Environment.getInstance().getBuildVersion());
 
+		// FIXME: Take from FeatureEthernet when implemented.
+		errorReporter.putCustomData("ETHERNET_MAC", _feature.Component.REGISTER.getBoxId());
+
 		String localIP = _feature.Component.ETHERNET.getNetworkConfig().Addr;
 		errorReporter.putCustomData("LOCAL IP", localIP);
 
