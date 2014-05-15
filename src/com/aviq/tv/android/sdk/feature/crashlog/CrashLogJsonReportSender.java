@@ -46,16 +46,12 @@ public class CrashLogJsonReportSender implements ReportSender
 		mContext = context;
 		mReportNameTemplate = REPORT_NAME_TEMPLATE;
 		mLogcatNameTemplate = LOGCAT_NAME_TEMPLATE;
-
-		String pkg = context.getPackageName();
-		int pos = pkg.lastIndexOf('.');
 	}
 
 	@Override
 	public void send(CrashReportData report) throws ReportSenderException
 	{
 		String boxId = "";
-//		String appVersionCode = "";
 		String userCrashDate = "";
 		String brandName = "";
 		String customer = "";
@@ -79,11 +75,6 @@ public class CrashLogJsonReportSender implements ReportSender
 
 			// Get some values needed for the file name of the log
 
-//			if (ReportField.APP_VERSION_CODE.equals(reportField))
-//			{
-//				appVersionCode = value;
-//			}
-//			else
 			if (ReportField.USER_CRASH_DATE.equals(reportField))
 			{
 				// Expected format: 2013-02-04T16:02:32.000+01:00

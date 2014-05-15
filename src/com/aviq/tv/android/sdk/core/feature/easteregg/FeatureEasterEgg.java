@@ -49,7 +49,7 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 		/**
 		 * The minimum delay between key presses
 		 */
-		MIN_KEY_DELAY(1000),
+		MIN_KEY_DELAY(2000),
 
 		/**
 		 * The expected comma-separated key sequences for the easter egg.

@@ -24,26 +24,25 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Environment.Param;
 import com.aviq.tv.android.sdk.core.Log;
 
-@Deprecated
 public class CrashLogTextReportSender implements ReportSender
 {
 	private static final String TAG = CrashLogTextReportSender.class.getSimpleName();
 
-	public static final String REPORT_NAME_PREFIX = "aviq";
-	public static final String REPORT_NAME_TEMPLATE = "%s-%s-%s-%s-%s-%s-%d.crashlog";
+	public static final String REPORT_NAME_TEMPLATE = "%s-%s-%s-%s-%s-%d.crashlog";
+	public static final String LOGCAT_NAME_TEMPLATE = "%s-%s-%s-%s-%s-%d.log";
+	private static final String SECTION_SEPARATOR = "------------------------------";
 
 	private final String mReportNameTemplate;
-	private final String mPackageName;
+	private final String mLogcatNameTemplate;
 	private final Context mContext;
+	private String _logcat;
+	private String _logcatFileName;
 
 	public CrashLogTextReportSender(Context context)
 	{
 		mContext = context;
 		mReportNameTemplate = REPORT_NAME_TEMPLATE;
-
-		String pkg = context.getPackageName();
-		int pos = pkg.lastIndexOf('.');
-		mPackageName =  pos > -1 ? REPORT_NAME_PREFIX + "." + pkg.substring(pos + 1) : pkg;
+		mLogcatNameTemplate = LOGCAT_NAME_TEMPLATE;
 	}
 
 	@Override
@@ -53,9 +52,9 @@ public class CrashLogTextReportSender implements ReportSender
 		StringBuilder reportBuilder = new StringBuilder();
 
 		String boxId = "";
-		String appVersionCode = "";
 		String userCrashDate = "";
 		String brandName = "";
+		String customer = "";
 		Random rnd = new Random();
 		int randomNum = rnd.nextInt(1000);
 
@@ -65,11 +64,16 @@ public class CrashLogTextReportSender implements ReportSender
 			ReportField reportField = entry.getKey();
 			String value = entry.getValue();
 
-			// Add the field to the report
+			// Exclude some fields if necessary
 
-			reportBuilder.append(reportField.toString()).append("\n");
-			reportBuilder.append("------------------------------\n");
-			reportBuilder.append(value);
+			if (ReportField.LOGCAT.equals(reportField))
+			{
+				_logcat = report.remove(ReportField.LOGCAT);
+				continue;
+			}
+
+			// Add the field to the report
+			reportBuilder.append(reportField.name()).append("\n").append(SECTION_SEPARATOR).append("\n").append(value);
 
 			// Appends some extra stuff to the "CUSTOM_DATA" field
 			if (ReportField.CUSTOM_DATA.equals(reportField))
@@ -82,11 +86,7 @@ public class CrashLogTextReportSender implements ReportSender
 
 			// Get some values needed for the file name of the log
 
-			if (ReportField.APP_VERSION_CODE.equals(reportField))
-			{
-				appVersionCode = value;
-			}
-			else if (ReportField.USER_CRASH_DATE.equals(reportField))
+			if (ReportField.USER_CRASH_DATE.equals(reportField))
 			{
 				// Expected format: 2013-02-04T16:02:32.000+01:00
 				userCrashDate = value.replaceAll("-", ".").replaceAll(":", ".").replace('T', '_');
@@ -113,6 +113,16 @@ public class CrashLogTextReportSender implements ReportSender
 				if (boxId == null || boxId.equals("") || boxId.equalsIgnoreCase("null"))
 					boxId = "000000000000";
 
+				// Find (w/o the quotes): "CUSTOMER = some_customer\n"
+				Pattern patternCustomer = Pattern.compile("CUSTOMER\\s.*?=\\s.*?(\\w+)\\s.*?");
+				Matcher matcherCustomer = patternCustomer.matcher(value);
+				if (matcherCustomer.find())
+				{
+					customer = matcherCustomer.group(1).trim();
+				}
+				if (customer == null || customer.equals("") || customer.equalsIgnoreCase("null"))
+					customer = "customer";
+
 				// Find (w/o the quotes): "BRAND = some_brand\n"
 				Pattern patternBrand = Pattern.compile("BRAND\\s.*?=\\s.*?(\\w+)\\s.*?");
 				Matcher matcherBrand = patternBrand.matcher(value);
@@ -126,17 +136,31 @@ public class CrashLogTextReportSender implements ReportSender
 		}
 
 		// Generate the report's file name.
-		Environment env = (Environment)mContext;
+		Environment env = Environment.getInstance();
 		String buildType = env.getPrefs().getString(Param.RELEASE);
-		String reportFileName = String.format(mReportNameTemplate, mPackageName, buildType, brandName, appVersionCode,
-		        boxId, userCrashDate, randomNum);
+
+		String reportFileName = String.format(mReportNameTemplate, buildType, customer, brandName, boxId,
+		        userCrashDate, randomNum);
+
+		_logcatFileName = String.format(mLogcatNameTemplate, buildType, customer, brandName, boxId, userCrashDate,
+		        randomNum);
+
+		// Re-add the logcat field with the logcat file's name
+		reportBuilder.append(ReportField.LOGCAT.name()).append("\n").append(SECTION_SEPARATOR).append("\n")
+		        .append(_logcatFileName);
+
+		// Send the logcat to the server
+		sendData(_logcatFileName, _logcat, "text/plain");
 
 		// Send the report to the server
-		sendData(reportFileName, reportBuilder.toString());
+		String data = reportBuilder.toString();
+		String contentType = ACRA.getConfig().reportType().getContentType();
+		sendData(reportFileName, data, contentType);
+
 		System.gc();
 	}
 
-	public static void sendData(String reportFileName, String reportAsString)
+	public static void sendData(String reportFileName, String reportAsString, String contentType)
 	{
 		try
 		{
@@ -149,7 +173,6 @@ public class CrashLogTextReportSender implements ReportSender
 			        .getConfig().formUriBasicAuthPassword();
 
 			String method = ACRA.getConfig().httpMethod().name();
-			String contentType = ACRA.getConfig().reportType().getContentType();
 
 			final HttpRequest request = new HttpRequest();
 			request.setConnectionTimeOut(ACRA.getConfig().connectionTimeout());
@@ -169,6 +192,16 @@ public class CrashLogTextReportSender implements ReportSender
 
 			request.send(reportUrl, method, reportAsString, contentType);
 
+//try
+//{
+//	FileOutputStream fos = new FileOutputStream(Environment.getInstance().getFilesDir() + "/" + reportFileName);
+//	fos.write(reportAsString.getBytes());
+//	fos.close();
+//}
+//catch (Exception e)
+//{
+//	Log.e(TAG, e.getMessage(), e);
+//}
 		}
 		catch (IOException e)
 		{

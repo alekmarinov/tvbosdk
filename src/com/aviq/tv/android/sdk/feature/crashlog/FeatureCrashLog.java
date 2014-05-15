@@ -104,7 +104,14 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 				// Got the public IP, no need to check for it anymore
 				_feature.Scheduler.INTERNET.getEventMessenger().unregister(this, FeatureInternet.ON_CONNECTED);
 				ACRA.getErrorReporter().putCustomData("PUBLIC IP", publicIP);
-				ACRA.getErrorReporter().putCustomData(Key.DEVICE, prepareDeviceObject());
+
+				// Ensure this is in the data as well
+				String localIP = _feature.Component.ETHERNET.getNetworkConfig().Addr;
+				ACRA.getErrorReporter().putCustomData("LOCAL IP", localIP);
+
+				// Only reset it if already there
+				if (ACRA.getErrorReporter().getCustomData(Key.DEVICE) != null)
+					ACRA.getErrorReporter().putCustomData(Key.DEVICE, prepareDeviceObject());
 			}
 		}
 	}
@@ -126,7 +133,8 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		config.setFormUriBasicAuthPassword(password);
 		config.setDisableSSLCertValidation(true);
 		config.setHttpMethod(org.acra.sender.HttpSender.Method.PUT);
-		config.setReportType(org.acra.sender.HttpSender.Type.JSON);
+		//config.setReportType(org.acra.sender.HttpSender.Type.JSON);
+		config.setReportType(org.acra.sender.HttpSender.Type.FORM);
 		config.setSocketTimeout(20000);
 		config.setLogcatArguments(new String[]
 		{ "-t", "2000", "-v", "time" });
@@ -147,7 +155,8 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		ACRA.init(app);
 
 		// Set a custom sender; always right after ACRA.init().
-		CrashLogJsonReportSender crashLogSender = new CrashLogJsonReportSender(app);
+		//CrashLogJsonReportSender crashLogSender = new CrashLogJsonReportSender(app);
+		CrashLogTextReportSender crashLogSender = new CrashLogTextReportSender(app);
 		ACRA.getErrorReporter().setReportSender(crashLogSender);
 
 		// Add a new sender; keep the previous senders
@@ -157,12 +166,19 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 
 		// Add custom report data
 
-		errorReporter.putCustomData(Key.DEVICE, prepareDeviceObject());
-		errorReporter.putCustomData(Key.EVENT, prepareEventObject());
+		if (CrashLogJsonReportSender.class.equals(crashLogSender.getClass()))
+		{
+			errorReporter.putCustomData(Key.DEVICE, prepareDeviceObject());
+			errorReporter.putCustomData(Key.EVENT, prepareEventObject());
+		}
 
 		errorReporter.putCustomData("BOX_ID", _feature.Component.REGISTER.getBoxId());
 		errorReporter.putCustomData("BRAND", getBrand());
 		errorReporter.putCustomData("CUSTOMER", getCustomer());
+		errorReporter.putCustomData("SW VERSION", Environment.getInstance().getBuildVersion());
+
+		String localIP = _feature.Component.ETHERNET.getNetworkConfig().Addr;
+		errorReporter.putCustomData("LOCAL IP", localIP);
 
 		String publicIP = _feature.Scheduler.INTERNET.getPublicIP();
 		errorReporter.putCustomData("PUBLIC IP", publicIP);
