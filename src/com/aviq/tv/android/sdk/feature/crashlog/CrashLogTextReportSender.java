@@ -1,6 +1,5 @@
 package com.aviq.tv.android.sdk.feature.crashlog;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -194,18 +193,18 @@ public class CrashLogTextReportSender implements ReportSender
 			if ("PUT".equalsIgnoreCase(method))
 				reportUrl = new URL(reportUrl.toString() + '/' + reportFileName);
 
-//			request.send(reportUrl, method, reportAsString, contentType);
+			request.send(reportUrl, method, reportAsString, contentType);
 
-try
-{
-	FileOutputStream fos = new FileOutputStream(Environment.getInstance().getFilesDir() + "/" + reportFileName);
-	fos.write(reportAsString.getBytes());
-	fos.close();
-}
-catch (Exception e)
-{
-	Log.e(TAG, e.getMessage(), e);
-}
+//try
+//{
+//	FileOutputStream fos = new FileOutputStream(Environment.getInstance().getFilesDir() + "/" + reportFileName);
+//	fos.write(reportAsString.getBytes());
+//	fos.close();
+//}
+//catch (Exception e)
+//{
+//	Log.e(TAG, e.getMessage(), e);
+//}
 		}
 		catch (IOException e)
 		{
