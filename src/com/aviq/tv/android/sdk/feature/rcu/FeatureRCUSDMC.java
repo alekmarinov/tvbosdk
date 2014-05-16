@@ -24,8 +24,6 @@ public class FeatureRCUSDMC extends FeatureRCU
 	{
 		switch (keyCode)
 		{
-			case KeyEvent.KEYCODE_POWER:
-				return Key.SLEEP;
 			case KeyEvent.KEYCODE_1:
 				return Key.NUM_1;
 			case KeyEvent.KEYCODE_2:
@@ -96,26 +94,28 @@ public class FeatureRCUSDMC extends FeatureRCU
 				return Key.REC;
 
 			// Added for AVIQ apps
-			case 304: 
+			case 304:
 				return Key.TV;
-			case 305: 
+			case 305:
 				return Key.TXT;
-			case 306: 
+			case 306:
 				return Key.APPS;
-			case 307: 
+			case 307:
 				return Key.VOD;
-			case 308: 
+			case 308:
 				return Key.WEBTV;
-			case 309: 
+			case 309:
 				return Key.MEDIA;
-			case 310: 
+			case 310:
 				return Key.YOUTUBE;
-			case 311: 
+			case 311:
 				return Key.LIB;
-			case 312: 
+			case 312:
 				return Key.EPG;
-			case 313: 
+			case 313:
 				return Key.FAVORITE;
+			case 314:
+				return Key.SLEEP;
 		}
 		return Key.UNKNOWN;
 	}

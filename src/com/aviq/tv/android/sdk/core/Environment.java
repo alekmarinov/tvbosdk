@@ -298,7 +298,7 @@ public class Environment extends Activity
 		super.onDestroy();
 		Log.i(TAG, ".onDestroy");
 
-		_featureSystem.command("killall " + getPackageName());
+		// _featureSystem.command("killall " + getPackageName());
 	}
 
 	@Override

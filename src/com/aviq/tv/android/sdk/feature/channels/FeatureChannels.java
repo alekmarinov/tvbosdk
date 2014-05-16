@@ -138,6 +138,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		        FeatureName.Component.TIMESHIFT);
 
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_RESUME);
+		Environment.getInstance().getEventMessenger().register(this, Environment.ON_PAUSE);
 
 		if (getPrefs().getBool(Param.AUTOPLAY))
 		{
@@ -461,6 +462,14 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 			{
 				// restart playing on app resume
 				playLast();
+			}
+		}
+		else if (Environment.ON_PAUSE == msgId)
+		{
+			if (Environment.getInstance().isInitialized())
+			{
+				// stop playing on app pause
+				_feature.Component.PLAYER.stop();
 			}
 		}
 	}

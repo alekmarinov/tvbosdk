@@ -36,7 +36,8 @@ public class FeatureName
 		CRASHLOG,
 		TIMEZONE,
 		NETHOGS,
-		STREAMER
+		STREAMER,
+		STANDBY
 	}
 
 	public static enum Scheduler
