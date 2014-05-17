@@ -52,10 +52,15 @@ public class FeatureStreamerRayV extends FeatureStreamer
 		RAYV_STREAM_BITRATE(1200),
 
 		/**
+		 * RayV service port
+		 */
+		RAYV_STREAM_PORT(1234),
+
+		/**
 		 * Pattern composing channel stream url for RayV provider
 		 */
 		RAYV_STREAM_URL_PATTERN(
-		        "http://localhost:1234/RayVAgent/v1/RAYV/${USER}:${PASS}@${STREAM_ID}?streams=${STREAM_ID}:${BITRATE}");
+		        "http://localhost:${PORT}/RayVAgent/v1/RAYV/${USER}:${PASS}@${STREAM_ID}?streams=${STREAM_ID}:${BITRATE}");
 
 		Param(String value)
 		{
@@ -103,6 +108,7 @@ public class FeatureStreamerRayV extends FeatureStreamer
 		bundle.putString("PASS", getPrefs().getString(Param.RAYV_PASS));
 		bundle.putString("STREAM_ID", streamId);
 		bundle.putInt("BITRATE", getPrefs().getInt(Param.RAYV_STREAM_BITRATE));
+		bundle.putInt("PORT", getPrefs().getInt(Param.RAYV_STREAM_PORT));
 		return getPrefs().getString(Param.RAYV_STREAM_URL_PATTERN, bundle);
 	}
 
