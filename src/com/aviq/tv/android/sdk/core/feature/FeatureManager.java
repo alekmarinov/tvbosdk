@@ -647,6 +647,8 @@ public class FeatureManager
 			IFeature feature = sorted.get(i);
 			Log.i(TAG, i + ". " + feature);
 		}
+
+		_features = sorted;
 	}
 
 	private class FeatureInitializer implements Runnable, OnFeatureInitialized

@@ -161,6 +161,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 	public FeatureEPG() throws FeatureNotFoundException
 	{
 		require(FeatureName.Scheduler.INTERNET);
+		require(FeatureName.State.NETWORK_WIZARD);
 		require(FeatureName.Component.TIMEZONE);
 	}
 

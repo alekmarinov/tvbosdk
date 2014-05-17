@@ -28,12 +28,14 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Feature registering box to ABMP
  */
 @SuppressLint("DefaultLocale")
+@PriorityFeature
 public class FeatureRegister extends FeatureComponent
 {
 	private static final String TAG = FeatureRegister.class.getSimpleName();

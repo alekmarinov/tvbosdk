@@ -74,9 +74,9 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 
 	public FeatureCrashLog() throws FeatureNotFoundException
 	{
-		require(FeatureName.Scheduler.INTERNET);
 		require(FeatureName.Component.REGISTER);
 		require(FeatureName.Component.ETHERNET);
+		require(FeatureName.Scheduler.INTERNET);
 	}
 
 	@Override
