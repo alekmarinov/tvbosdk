@@ -10,6 +10,9 @@
 
 package com.aviq.tv.android.sdk.feature.system;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+
 import android.os.Bundle;
 import android.util.Log;
 
@@ -42,17 +45,25 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 
 	public enum Param
 	{
+		/** Turn on/off HDMI on standing by */
+		IS_STANDBY_HDMI(false),
+
 		/** Time delay before sending the box to real StandBy on standby request */
 		STANDBY_DELAY(2500),
 
 		/**
 		 * Put the box in standby automatically after the specified time without
-		 * user activity
+		 * user activity. Set 0 to disable auto-standby
 		 */
-		AUTO_STANDBY_TIMEOUT(3 * 60 * 60 * 1000),
+		AUTO_STANDBY_TIMEOUT(0),
 
 		/** Time to keep sending auto-standby warning events */
 		AUTO_STANDBY_WARN_TIMEOUT(60 * 1000);
+
+		Param(boolean value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.State.STANDBY).put(name(), value);
+		}
 
 		Param(int value)
 		{
@@ -66,6 +77,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	}
 
 	private int _autoStandByWarnTimeout;
+	private boolean _isStandByHDMI;
 
 	public FeatureStandBy() throws FeatureNotFoundException
 	{
@@ -84,6 +96,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
+		_isStandByHDMI = getPrefs().getBool(Param.IS_STANDBY_HDMI);
 		postponeAutoStandBy();
 		super.initialize(onFeatureInitialized);
 	}
@@ -115,6 +128,43 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		getEventMessenger().removeCallbacks(_autoStandByWarningRunnable);
 	}
 
+	/**
+	 * @return true if HDMI is enabled or false otherwise
+	 */
+	public boolean isHDMIOff()
+	{
+		try
+		{
+			String dispMode = TextUtils.inputStreamToString(new FileInputStream(
+			        "/sys/class/amhdmitx/amhdmitx0/disp_mode"));
+			return "VIC:0".equals(dispMode);
+		}
+		catch (FileNotFoundException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		return false;
+	}
+
+	/**
+	 * Enable or disable HDMI
+	 *
+	 * @param isOn
+	 *            true to enable or false to disable
+	 */
+	public void setHDMIEnabled(boolean isOn)
+	{
+		Log.i(TAG, ".setHDMIEnabled: isOn = " + isOn);
+		if (isOn)
+		{
+			_feature.Component.SYSTEM.command("echo 720p > /sys/class/amhdmitx/amhdmitx0/disp_mode");
+		}
+		else
+		{
+			_feature.Component.SYSTEM.command("echo > /sys/class/amhdmitx/amhdmitx0/disp_mode");
+		}
+	}
+
 	@Override
 	public void onEvent(int msgId, Bundle bundle)
 	{
@@ -124,8 +174,17 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			Key key = Key.valueOf(bundle.getString(Environment.EXTRA_KEY));
 			if (Key.SLEEP.equals(key))
 			{
-				Log.i(TAG, "Standing by requested by user");
-				startStandBy();
+				if (isHDMIOff())
+				{
+					Log.i(TAG, "Resume from standing by requested by user");
+					getEventMessenger().trigger(ON_STANDBY_LEAVE);
+					setHDMIEnabled(true);
+				}
+				else
+				{
+					Log.i(TAG, "Standing by requested by user");
+					startStandBy();
+				}
 			}
 			else
 			{
@@ -137,14 +196,17 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 
 	private void postponeAutoStandBy()
 	{
-		// postpones auto standby
-		getEventMessenger().removeCallbacks(_autoStandByRunnable);
 		int timeout = getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT);
-		getEventMessenger().postDelayed(_autoStandByRunnable, timeout);
-		Log.i(TAG, ".postponeAutoStand: timeout = " + (timeout / 1000) + " secs");
+		if (timeout > 0)
+		{
+			// postpones auto standby
+			getEventMessenger().removeCallbacks(_autoStandByRunnable);
+			getEventMessenger().postDelayed(_autoStandByRunnable, timeout);
+			Log.i(TAG, ".postponeAutoStand: timeout = " + (timeout / 1000) + " secs");
 
-		// remove warnings triggerer
-		getEventMessenger().removeCallbacks(_autoStandByWarningRunnable);
+			// remove warnings triggerer
+			getEventMessenger().removeCallbacks(_autoStandByWarningRunnable);
+		}
 	}
 
 	private final Runnable _enterStandByRunnable = new Runnable()
@@ -152,45 +214,57 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		@Override
 		public void run()
 		{
-			// Start detection of StandBy leave
-			getEventMessenger().post(new Runnable()
+			if (_isStandByHDMI)
 			{
-				private long _lastCurrentTime = 0;
-
-				@Override
-				public void run()
+				setHDMIEnabled(false);
+			}
+			else
+			{
+				// Start detection of StandBy leave
+				getEventMessenger().post(new Runnable()
 				{
-					if (_lastCurrentTime == 0)
-					{
-						// Set last current time to now
-						_lastCurrentTime = System.currentTimeMillis();
-					}
+					private long _lastCurrentTime = 0;
 
-					// time left since the last current time was set
-					long timeLeft = (System.currentTimeMillis() - _lastCurrentTime);
-					Log.i(TAG, "_detectStandByExit: timeLeft = " + timeLeft);
-					if (timeLeft > 2000)
+					@Override
+					public void run()
 					{
-						Log.i(TAG, "_detectStandByExit: Detected leaving standing by");
-						getEventMessenger().trigger(ON_STANDBY_LEAVE);
-						postponeAutoStandBy();
-					}
-					else
-					{
-						// loop with one second delay and determine if the
-						// elapsed time is as expected unless standby has
-						// interrupted the loop
-						_lastCurrentTime = System.currentTimeMillis();
-						getEventMessenger().postDelayed(this, 1000);
-					}
-				}
-			});
+						if (_lastCurrentTime == 0)
+						{
+							// Set last current time to now
+							_lastCurrentTime = System.currentTimeMillis();
+						}
 
-			// Go to StandBy now
-			Log.i(TAG, "Entering standby mode...");
+						// time left since the last current time was set
+						long timeLeft = (System.currentTimeMillis() - _lastCurrentTime);
+						Log.i(TAG, "_detectStandByExit: timeLeft = " + timeLeft);
+						if (timeLeft > 2000)
+						{
+							Log.i(TAG, "_detectStandByExit: Detected leaving standing by");
 
-			// Send device to standby by emulating a key press for key 26
-			_feature.Component.SYSTEM.command("input keyevent 26");
+							// Fix HDMI on
+							_feature.Component.SYSTEM.command("echo 720p > /sys/class/display/mode");
+							_feature.Component.SYSTEM.command("echo 0 0 1279 719 0 > /sys/class/ppmgr/ppscaler_rect");
+
+							getEventMessenger().trigger(ON_STANDBY_LEAVE);
+							postponeAutoStandBy();
+						}
+						else
+						{
+							// loop with one second delay and determine if the
+							// elapsed time is as expected unless standby has
+							// interrupted the loop _lastCurrentTime =
+							// System.currentTimeMillis();
+							getEventMessenger().postDelayed(this, 1000);
+						}
+					}
+				});
+
+				// Go to StandBy now
+				Log.i(TAG, "Entering standby mode...");
+
+				// Send device to standby by emulating a key press for key 26
+				_feature.Component.SYSTEM.command("input keyevent 26");
+			}
 		}
 	};
 
