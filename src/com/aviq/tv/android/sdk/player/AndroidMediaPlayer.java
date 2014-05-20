@@ -148,6 +148,20 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 			_mediaPlayer.pause();
 	}
 
+	/**
+	 * Resume paused media playback
+	 *
+	 * @see com.aviq.tv.android.sdk.player.IPlayer#resume()
+	 */
+	@Override
+	public void resume()
+	{
+		Log.i(TAG, ".resume");
+		super.resume();
+		if (_mediaPlayer != null)
+			_mediaPlayer.start();
+	}
+
 	@Override
 	public boolean isPlaying()
 	{
