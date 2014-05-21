@@ -35,6 +35,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	// Triggered very soon (determined by param STANDBY_DELAY) before getting
 	// into stand by mode.
 	public static final int ON_STANDBY_ENTER = EventMessenger.ID("ON_STANDBY_ENTER");
+	public static final String EXTRA_IS_AUTO_STANDBY = "IS_AUTO_STANDBY";
 
 	// Triggered to warn about auto standing by in a certain short time
 	public static final int ON_STANDBY_AUTO_WARNING = EventMessenger.ID("ON_STANDBY_AUTO_WARNING");
@@ -104,17 +105,30 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	/**
 	 * Go to StandBy mode. This method doesn't sends the box immediately to
 	 * standby but after some time in which the standby can be interrupted by
-	 * cancelStandBy()
+	 * cancelStandBy(). The method will trigger ON_STANDBY_ENTER event with
+	 * parameter EXTRA_IS_AUTO_STANDBY set to the value of isAuto parameter
+	 *
+	 * @param isAuto
 	 */
-	public void startStandBy()
+	public void startStandBy(boolean isAuto)
 	{
-		Log.d(TAG, ".startStandBy");
-		getEventMessenger().trigger(ON_STANDBY_ENTER);
+		Log.d(TAG, ".startStandBy: isAuto = " + isAuto);
+		Bundle bundle = new Bundle();
+		bundle.putBoolean(EXTRA_IS_AUTO_STANDBY, isAuto);
+		getEventMessenger().trigger(ON_STANDBY_ENTER, bundle);
 
 		getEventMessenger().removeCallbacks(_autoStandByRunnable);
 		getEventMessenger().removeCallbacks(_autoStandByWarningRunnable);
 		getEventMessenger().removeCallbacks(_enterStandByRunnable);
 		getEventMessenger().postDelayed(_enterStandByRunnable, getPrefs().getInt(Param.STANDBY_DELAY));
+	}
+
+	/**
+	 * Calls startStandBy(false)
+	 */
+	public void startStandBy()
+	{
+		startStandBy(false);
 	}
 
 	/**
@@ -183,7 +197,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 				else
 				{
 					Log.i(TAG, "Standing by requested by user");
-					startStandBy();
+					startStandBy(false);
 				}
 			}
 			else
@@ -301,7 +315,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			}
 			else
 			{
-				startStandBy();
+				startStandBy(true);
 			}
 		}
 	};
