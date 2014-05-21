@@ -373,31 +373,34 @@ public class FeatureEthernet extends FeatureComponent
 				if (networkInterface != null)
 					networkConfig.IsUp = networkInterface.isUp();
 
-				String connectMode = (String) _getConnectMode.invoke(_ethernetDevInfo);
-				networkConfig.IsDHCP = "dhcp".equals(connectMode);
-				if (networkConfig.IsDHCP)
+				if (networkConfig.IsUp)
 				{
-					DhcpInfo dhcpInfo = (DhcpInfo) _getDhcpInfo.invoke(_ethernetManager);
-					networkConfig.Addr = NetworkConfig.IntToIP(dhcpInfo.ipAddress);
-					networkConfig.Mask = NetworkConfig.IntToIP(dhcpInfo.netmask);
-					networkConfig.Gateway = NetworkConfig.IntToIP(dhcpInfo.gateway);
-					networkConfig.Dns1 = NetworkConfig.IntToIP(dhcpInfo.dns1);
-					networkConfig.Dns2 = NetworkConfig.IntToIP(dhcpInfo.dns2);
-				}
-				else
-				{
-					networkConfig.Addr = (String) _getIpAddress.invoke(_ethernetDevInfo);
-					networkConfig.Mask = (String) _getNetMask.invoke(_ethernetDevInfo);
-					networkConfig.Gateway = (String) _getRouteAddr.invoke(_ethernetDevInfo);
-					networkConfig.Dns1 = (String) _getDnsAddr.invoke(_ethernetDevInfo);
-					for (String dns : getDNSAddresses())
+					String connectMode = (String) _getConnectMode.invoke(_ethernetDevInfo);
+					networkConfig.IsDHCP = "dhcp".equals(connectMode);
+					if (networkConfig.IsDHCP)
 					{
-						if (networkConfig.Dns1 == null)
-							networkConfig.Dns1 = dns;
-						else if (networkConfig.Dns2 == null)
-							networkConfig.Dns2 = dns;
-						else
-							break;
+						DhcpInfo dhcpInfo = (DhcpInfo) _getDhcpInfo.invoke(_ethernetManager);
+						networkConfig.Addr = NetworkConfig.IntToIP(dhcpInfo.ipAddress);
+						networkConfig.Mask = NetworkConfig.IntToIP(dhcpInfo.netmask);
+						networkConfig.Gateway = NetworkConfig.IntToIP(dhcpInfo.gateway);
+						networkConfig.Dns1 = NetworkConfig.IntToIP(dhcpInfo.dns1);
+						networkConfig.Dns2 = NetworkConfig.IntToIP(dhcpInfo.dns2);
+					}
+					else
+					{
+						networkConfig.Addr = (String) _getIpAddress.invoke(_ethernetDevInfo);
+						networkConfig.Mask = (String) _getNetMask.invoke(_ethernetDevInfo);
+						networkConfig.Gateway = (String) _getRouteAddr.invoke(_ethernetDevInfo);
+						networkConfig.Dns1 = (String) _getDnsAddr.invoke(_ethernetDevInfo);
+						for (String dns : getDNSAddresses())
+						{
+							if (networkConfig.Dns1 == null)
+								networkConfig.Dns1 = dns;
+							else if (networkConfig.Dns2 == null)
+								networkConfig.Dns2 = dns;
+							else
+								break;
+						}
 					}
 				}
 			}
