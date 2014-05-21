@@ -138,6 +138,9 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		Environment.getInstance().getUserPrefs().put(UserParam.LAST_URL, url);
 		_player.play(url);
 
+		if (isPaused())
+			resume();
+
 		// trigger event on new url
 		Bundle bundle = new Bundle();
 		bundle.putString(Extras.URL.name(), url);
