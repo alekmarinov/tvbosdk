@@ -193,6 +193,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 					Log.i(TAG, "Resume from standing by requested by user");
 					getEventMessenger().trigger(ON_STANDBY_LEAVE);
 					setHDMIEnabled(true);
+					postponeAutoStandBy();
 				}
 				else
 				{
@@ -216,7 +217,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			// postpones auto standby
 			getEventMessenger().removeCallbacks(_autoStandByRunnable);
 			getEventMessenger().postDelayed(_autoStandByRunnable, timeout);
-			Log.i(TAG, ".postponeAutoStand: timeout = " + (timeout / 1000) + " secs");
+			Log.i(TAG, ".postponeAutoStandBy: timeout = " + (timeout / 1000) + " secs");
 
 			// remove warnings triggerer
 			getEventMessenger().removeCallbacks(_autoStandByWarningRunnable);
