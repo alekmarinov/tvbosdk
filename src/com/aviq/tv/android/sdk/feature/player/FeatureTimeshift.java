@@ -67,12 +67,16 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	public FeatureTimeshift() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.PLAYER);
+		require(FeatureName.Component.SYSTEM);
 	}
 
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
+
+		_feature.Component.SYSTEM.command("stop tsproxy");
+		_feature.Component.SYSTEM.command("start tsproxy");
 
 		_feature.Component.PLAYER.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_PAUSE);
 		_timeshiftMaxBufSize = getPrefs().getInt(Param.TIMESHIFT_DURATION);
