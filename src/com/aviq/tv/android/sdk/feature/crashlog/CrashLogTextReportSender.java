@@ -140,7 +140,7 @@ public class CrashLogTextReportSender implements ReportSender
 
 		// Generate the report's file name.
 		Environment env = Environment.getInstance();
-		String buildType = env.getPrefs().getString(Param.RELEASE);
+		String buildType = env != null && env.getPrefs() != null ? env.getPrefs().getString(Param.RELEASE) : "null";
 
 		String reportFileName = String.format(mReportNameTemplate, buildType, customer, brandName, boxId,
 		        userCrashDate, randomNum);

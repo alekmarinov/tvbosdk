@@ -22,6 +22,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v4.util.LruCache;
@@ -313,6 +314,14 @@ public class Environment extends Activity
 	{
 		Key key = _featureRCU.getKey(keyCode);
 		return onKeyUp(new AVKeyEvent(event, key));
+	}
+
+	@Override
+    public void onConfigurationChanged(Configuration newConfig)
+	{
+        super.onConfigurationChanged(newConfig);
+
+        Log.e(TAG, "----- CONFIG CHANGED: " + newConfig.locale.getLanguage());
 	}
 
 	/**
