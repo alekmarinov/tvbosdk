@@ -13,7 +13,9 @@ package com.aviq.tv.android.sdk.core;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.xml.sax.SAXException;
 
@@ -332,6 +334,44 @@ public class Environment extends Activity
 	public Prefs getPrefs()
 	{
 		return _prefs;
+	}
+
+	/**
+	 * Reset all feature preferences to their initial constant values
+	 */
+	public void resetPreferences()
+	{
+		Log.i(TAG, ".resetPreferences");
+
+		// clear components prefs
+		Iterator<Entry<FeatureName.Component, Prefs>> itc = _componentPrefs.entrySet().iterator();
+		while (itc.hasNext())
+		{
+			Map.Entry<FeatureName.Component, Prefs> pairs = itc.next();
+			Prefs prefs = pairs.getValue();
+			prefs.clear();
+		}
+
+		// clear scheduler prefs
+		Iterator<Entry<FeatureName.Scheduler, Prefs>> ith = _schedulerPrefs.entrySet().iterator();
+		while (ith.hasNext())
+		{
+			Map.Entry<FeatureName.Scheduler, Prefs> pairs = ith.next();
+			Prefs prefs = pairs.getValue();
+			prefs.clear();
+		}
+
+		// clear state prefs
+		Iterator<Entry<FeatureName.State, Prefs>> its = _statePrefs.entrySet().iterator();
+		while (its.hasNext())
+		{
+			Map.Entry<FeatureName.State, Prefs> pairs = its.next();
+			Prefs prefs = pairs.getValue();
+			prefs.clear();
+		}
+
+		// clear system prefs
+		getPrefs().clear();
 	}
 
 	/**

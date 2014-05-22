@@ -164,6 +164,8 @@ public class FeatureUpgrade extends FeatureScheduler
 	{
 		require(FeatureName.Component.REGISTER);
 		require(FeatureName.Scheduler.INTERNET);
+
+		Environment.getInstance().getEventMessenger().register(this, Environment.ON_INITIALIZE);
 	}
 
 	@Override
@@ -171,13 +173,6 @@ public class FeatureUpgrade extends FeatureScheduler
 	{
 		Log.i(TAG, ".initialize");
 		_userPrefs = Environment.getInstance().getUserPrefs();
-
-		if (_userPrefs.has(UserParam.IS_AFTER_UPGRADE) && _userPrefs.getBool(UserParam.IS_AFTER_UPGRADE))
-		{
-			getEventMessenger().trigger(ON_START_FROM_UPDATE);
-			_userPrefs.put(UserParam.IS_AFTER_UPGRADE, false);
-		}
-
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_LOADED);
 		super.initialize(onFeatureInitialized);
 	}
@@ -345,10 +340,27 @@ public class FeatureUpgrade extends FeatureScheduler
 	public void onEvent(int msgId, Bundle bundle)
 	{
 		super.onEvent(msgId, bundle);
+		Prefs userPrefs = Environment.getInstance().getUserPrefs();
 		if (msgId == Environment.ON_LOADED)
 		{
+			if (userPrefs.has(UserParam.IS_AFTER_UPGRADE) && userPrefs.getBool(UserParam.IS_AFTER_UPGRADE))
+			{
+				getEventMessenger().trigger(ON_START_FROM_UPDATE);
+				userPrefs.put(UserParam.IS_AFTER_UPGRADE, false);
+			}
+
 			// Start upgrade scheduling after the app is fully loaded
 			getEventMessenger().trigger(FeatureScheduler.ON_SCHEDULE);
+		}
+		else if (msgId == Environment.ON_INITIALIZE)
+		{
+			if (userPrefs.has(UserParam.IS_AFTER_UPGRADE) && userPrefs.getBool(UserParam.IS_AFTER_UPGRADE))
+			{
+				Environment.getInstance().resetPreferences();
+			}
+
+			// not exactly need to unregister, but doesn't hearts
+			Environment.getInstance().getEventMessenger().unregister(this, Environment.ON_INITIALIZE);
 		}
 	}
 
