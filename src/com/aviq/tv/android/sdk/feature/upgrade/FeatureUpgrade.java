@@ -164,8 +164,6 @@ public class FeatureUpgrade extends FeatureScheduler
 	{
 		require(FeatureName.Component.REGISTER);
 		require(FeatureName.Scheduler.INTERNET);
-
-		Environment.getInstance().getEventMessenger().register(this, Environment.ON_INITIALIZE);
 	}
 
 	@Override
@@ -269,6 +267,7 @@ public class FeatureUpgrade extends FeatureScheduler
 			{
 				try
 				{
+					Environment.getInstance().resetPreferences();
 					RecoverySystem.installPackage(Environment.getInstance(), getUpgradeFile());
 				}
 				catch (IOException e)
@@ -340,9 +339,9 @@ public class FeatureUpgrade extends FeatureScheduler
 	public void onEvent(int msgId, Bundle bundle)
 	{
 		super.onEvent(msgId, bundle);
-		Prefs userPrefs = Environment.getInstance().getUserPrefs();
 		if (msgId == Environment.ON_LOADED)
 		{
+			Prefs userPrefs = Environment.getInstance().getUserPrefs();
 			if (userPrefs.has(UserParam.IS_AFTER_UPGRADE) && userPrefs.getBool(UserParam.IS_AFTER_UPGRADE))
 			{
 				getEventMessenger().trigger(ON_START_FROM_UPDATE);
@@ -351,16 +350,6 @@ public class FeatureUpgrade extends FeatureScheduler
 
 			// Start upgrade scheduling after the app is fully loaded
 			getEventMessenger().trigger(FeatureScheduler.ON_SCHEDULE);
-		}
-		else if (msgId == Environment.ON_INITIALIZE)
-		{
-			if (userPrefs.has(UserParam.IS_AFTER_UPGRADE) && userPrefs.getBool(UserParam.IS_AFTER_UPGRADE))
-			{
-				Environment.getInstance().resetPreferences();
-			}
-
-			// not exactly need to unregister, but doesn't hearts
-			Environment.getInstance().getEventMessenger().unregister(this, Environment.ON_INITIALIZE);
 		}
 	}
 

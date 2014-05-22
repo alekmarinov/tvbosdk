@@ -342,6 +342,8 @@ public class Environment extends Activity
 
 	/**
 	 * Reset all feature preferences to their initial constant values
+	 * The application must be rebooted after calling this method in order to
+	 * reinitialize Prefs objects with the initial values
 	 */
 	public void resetPreferences()
 	{
