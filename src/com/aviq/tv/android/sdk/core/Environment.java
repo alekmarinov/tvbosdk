@@ -321,9 +321,8 @@ public class Environment extends Activity
 	@Override
     public void onConfigurationChanged(Configuration newConfig)
 	{
+		Log.i(TAG, ".onConfigurationChanged: new language = " + newConfig.locale.getLanguage());
         super.onConfigurationChanged(newConfig);
-
-        Log.e(TAG, "----- CONFIG CHANGED: " + newConfig.locale.getLanguage());
 	}
 
 	/**
