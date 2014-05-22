@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.acra.ACRA;
 import org.xml.sax.SAXException;
 
 import android.app.Activity;
@@ -164,6 +165,10 @@ public class Environment extends Activity
 							Bundle bundle = new Bundle();
 							bundle.putInt(EXTRA_ERROR_CODE, resultCode);
 							_eventMessenger.trigger(ON_FEATURE_INIT_ERROR, bundle);
+
+							ACRA.getErrorReporter().handleSilentException(
+							        new Exception("Error during initializating feature: [" + feature.getName()
+							                + "]. Result code: [" + resultCode + "]"));
 						}
 						else
 						{
