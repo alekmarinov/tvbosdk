@@ -312,7 +312,10 @@ public abstract class FeatureEPG extends FeatureScheduler
 			parseChannelData(metaData, response.data);
 
 			if (_epgDataBeingLoaded == null)
+			{
+				Log.w(TAG, "LogoResponseCallback.onResponse: _epgDataBeingLoaded is null, that should not happens!");
 				return ;
+			}
 			final int nChannels = _epgDataBeingLoaded.getChannelCount();
 			Log.i(TAG, "Response with " + nChannels + " channels received");
 			_retrievedChannelLogos = 0;
@@ -354,7 +357,10 @@ public abstract class FeatureEPG extends FeatureScheduler
 		{
 			Log.d(TAG, "Received bitmap " + response.getWidth() + "x" + response.getHeight());
 			if (_epgDataBeingLoaded == null)
+			{
+				Log.w(TAG, "LogoResponseCallback.onResponse: _epgDataBeingLoaded is null, that should not happens!");
 				return ;
+			}
 			_epgDataBeingLoaded.setChannelLogo(_index, response);
 			logoProcessed();
 		}
@@ -438,6 +444,12 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 	private void checkInitializeFinished()
 	{
+		if (_epgDataBeingLoaded == null)
+		{
+			Log.w(TAG, ".checkInitializeFinished: _epgDataBeingLoaded is null, that should not happens!");
+			return ;
+		}
+
 		int numChannels = _epgDataBeingLoaded.getChannelCount();
 		if (_retrievedChannelPrograms == numChannels && _retrievedChannelLogos == numChannels)
 		{
