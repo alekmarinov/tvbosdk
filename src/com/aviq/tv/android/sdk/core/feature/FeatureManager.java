@@ -22,7 +22,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.acra.ACRA;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -765,10 +764,6 @@ public class FeatureManager
 			if (resultCode != ResultCode.OK)
 			{
 				_onFeatureInitialized.onInitialized(feature, resultCode);
-
-				ACRA.getErrorReporter().handleSilentException(
-				        new Exception("Error during initializating feature: [" + feature.getName()
-				                + "]. Result code: [" + resultCode + "]"));
 			}
 			else
 			{
