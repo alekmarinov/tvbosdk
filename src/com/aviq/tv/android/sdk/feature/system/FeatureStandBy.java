@@ -256,9 +256,9 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 						{
 							Log.i(TAG, "_detectStandByExit: Detected leaving standing by");
 
-							// Fix HDMI on
-							_feature.Component.SYSTEM.command("echo 720p > /sys/class/display/mode");
-							_feature.Component.SYSTEM.command("echo 0 0 1279 719 0 > /sys/class/ppmgr/ppscaler_rect");
+//							// Fix HDMI on
+//							_feature.Component.SYSTEM.command("echo 720p > /sys/class/display/mode");
+//							_feature.Component.SYSTEM.command("echo 0 0 1279 719 0 > /sys/class/ppmgr/ppscaler_rect");
 
 							getEventMessenger().trigger(ON_STANDBY_LEAVE);
 							postponeAutoStandBy();
@@ -267,8 +267,8 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 						{
 							// loop with one second delay and determine if the
 							// elapsed time is as expected unless standby has
-							// interrupted the loop _lastCurrentTime =
-							// System.currentTimeMillis();
+							// interrupted the loop
+							_lastCurrentTime = System.currentTimeMillis();
 							getEventMessenger().postDelayed(this, 1000);
 						}
 					}

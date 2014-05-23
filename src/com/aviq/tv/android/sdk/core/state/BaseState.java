@@ -27,6 +27,13 @@ public class BaseState extends Fragment
 {
 	private static final String TAG = BaseState.class.getSimpleName();
 
+	@Override
+	public void onSaveInstanceState(Bundle outState)
+	{
+		// Recommended solution by commuinity to avoid
+		// "Can not perform this action after onSaveInstanceState"
+	}
+
 	/**
 	 * Initialize State instance.
 	 */
