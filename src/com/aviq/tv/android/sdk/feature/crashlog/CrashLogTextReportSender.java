@@ -28,6 +28,7 @@ public class CrashLogTextReportSender implements ReportSender
 {
 	private static final String TAG = CrashLogTextReportSender.class.getSimpleName();
 
+	private static final String REPORT_PREFIX = "aviqv2-";
 	public static final String REPORT_NAME_TEMPLATE = "%s-%s-%s-%s-%s-%d.crashlog";
 	public static final String LOGCAT_NAME_TEMPLATE = "%s-%s-%s-%s-%s-%d.log";
 	private static final String SECTION_SEPARATOR = "------------------------------";
@@ -142,7 +143,7 @@ public class CrashLogTextReportSender implements ReportSender
 		Environment env = Environment.getInstance();
 		String buildType = env != null && env.getPrefs() != null ? env.getPrefs().getString(Param.RELEASE) : "null";
 
-		String reportFileName = String.format(mReportNameTemplate, buildType, customer, brandName, boxId,
+		String reportFileName = REPORT_PREFIX + String.format(mReportNameTemplate, buildType, customer, brandName, boxId,
 		        userCrashDate, randomNum);
 
 		_logcatFileName = String.format(mLogcatNameTemplate, buildType, customer, brandName, boxId, userCrashDate,

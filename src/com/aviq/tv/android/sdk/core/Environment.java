@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.acra.ACRA;
 import org.xml.sax.SAXException;
 
 import android.app.Activity;
@@ -66,6 +67,7 @@ public class Environment extends Activity
 	public static final int ON_RESUME = EventMessenger.ID("ON_RESUME");
 	public static final int ON_PAUSE = EventMessenger.ID("ON_PAUSE");
 	public static final String EXTRA_ERROR_CODE = "EXTRA_ERROR_CODE";
+	public static final String EXTRA_FEATURE_NAME = "EXTRA_FEATURE_NAME";
 	public static final String EXTRA_KEY = "KEY";
 	public static final String EXTRA_KEYCODE = "KEYCODE";
 	public static final String EXTRA_KEYCONSUMED = "KEYCONSUMED";
@@ -163,7 +165,12 @@ public class Environment extends Activity
 						{
 							Bundle bundle = new Bundle();
 							bundle.putInt(EXTRA_ERROR_CODE, resultCode);
+							bundle.putString(EXTRA_FEATURE_NAME, feature.getName());
 							_eventMessenger.trigger(ON_FEATURE_INIT_ERROR, bundle);
+
+							ACRA.getErrorReporter().handleSilentException(
+							        new Exception("Error during initializating feature: [" + feature.getName()
+							                + "]. Result code: [" + resultCode + "]"));
 						}
 						else
 						{

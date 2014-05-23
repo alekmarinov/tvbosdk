@@ -137,7 +137,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		config.setReportType(org.acra.sender.HttpSender.Type.FORM);
 		config.setSocketTimeout(20000);
 		config.setLogcatArguments(new String[]
-		{ "-t", "2000", "-v", "time" });
+		{ "-t", "3000", "-v", "time" });
 		config.setApplicationLogFile(null);
 		config.setApplicationLogFileLines(0);
 		config.setAdditionalSharedPreferences(null);
