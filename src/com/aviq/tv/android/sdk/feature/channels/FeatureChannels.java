@@ -29,7 +29,6 @@ import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
-import com.aviq.tv.android.sdk.feature.system.FeatureStandBy;
 
 /**
  * Component feature managing favorite channels
@@ -108,7 +107,6 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		require(FeatureName.Component.LANGUAGE);
 		require(FeatureName.Component.PLAYER);
 		require(FeatureName.Component.STREAMER);
-		require(FeatureName.Component.STANDBY);
 	}
 
 	@Override
@@ -141,8 +139,6 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_RESUME);
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_PAUSE);
-		_feature.Component.STANDBY.getEventMessenger().register(this, FeatureStandBy.ON_STANDBY_ENTER);
-		_feature.Component.STANDBY.getEventMessenger().register(this, FeatureStandBy.ON_STANDBY_LEAVE);
 
 		if (getPrefs().getBool(Param.AUTOPLAY))
 		{
@@ -467,14 +463,6 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				// restart playing on app resume
 				playLast();
 			}
-		}
-		else if (FeatureStandBy.ON_STANDBY_LEAVE == msgId)
-		{
-			playLast();
-		}
-		else if (FeatureStandBy.ON_STANDBY_ENTER == msgId)
-		{
-			_feature.Component.PLAYER.stop();
 		}
 		else if (Environment.ON_PAUSE == msgId)
 		{
