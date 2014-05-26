@@ -16,7 +16,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 
 import com.aviq.tv.android.sdk.core.Environment;
-import com.aviq.tv.android.sdk.core.Prefs;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
@@ -28,38 +28,9 @@ public class FeatureLanguage extends FeatureComponent
 {
 	public static final String TAG = FeatureLanguage.class.getSimpleName();
 
-	public enum UserParam
-	{
-		/**
-		 * Currently selected language, e.g. EN, DE, FR, IT, etc.
-		 */
-		LANGUAGE
-	}
-
-	public enum Param
-	{
-		/**
-		 * The default language
-		 */
-		DEFAULT_LANGUAGE("EN");
-
-		Param(String value)
-		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Component.LANGUAGE).put(name(), value);
-		}
-	}
-
 	public enum Code
 	{
 		BG, EN, FR, DE
-	}
-
-	@Override
-    public void initialize(OnFeatureInitialized onFeatureInitialized)
-	{
-		// update application language
-		setLanguage(getLanguage());
-		super.initialize(onFeatureInitialized);
 	}
 
 	@Override
@@ -77,7 +48,6 @@ public class FeatureLanguage extends FeatureComponent
 	 */
 	public void setLanguage(Code code)
 	{
-		Environment.getInstance().getUserPrefs().put(UserParam.LANGUAGE, code.name());
 		setSystemLanguage(getLocale());
 	}
 
@@ -88,9 +58,9 @@ public class FeatureLanguage extends FeatureComponent
 	 */
 	public Code getLanguage()
 	{
-		Prefs userPrefs = Environment.getInstance().getUserPrefs();
-		return userPrefs.has(UserParam.LANGUAGE) ? Code.valueOf(userPrefs.getString(UserParam.LANGUAGE).toUpperCase())
-		        : Code.valueOf(getPrefs().getString(Param.DEFAULT_LANGUAGE));
+		String langCode = Locale.getDefault().getLanguage().toUpperCase();
+		Log.d(TAG, ".getLanguage: -> " + langCode);
+		return Code.valueOf(langCode);
 	}
 
 	public Locale getLocale()
@@ -116,12 +86,6 @@ public class FeatureLanguage extends FeatureComponent
 			break;
 		}
 		return locale;
-	}
-
-	public boolean hasLanguage()
-	{
-		Prefs userPrefs = Environment.getInstance().getUserPrefs();
-		return userPrefs.has(UserParam.LANGUAGE);
 	}
 
 	private void setSystemLanguage(Locale locale)
