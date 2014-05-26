@@ -36,6 +36,11 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureEasterEgg.class.getSimpleName();
 
+	/** 738 = SET */
+	public static final String KEY_SEQ_SET = "RR738RR";
+	/** 564 = LOG */
+	public static final String KEY_SEQ_LOG = "RR564RR";
+
 	public static int ON_KEY_SEQUENCE = EventMessenger.ID("ON_KEY_SEQUENCE");
 	public static final String EXTRA_KEY_SEQUENCE = "KEY_SEQUENCE";
 
@@ -59,12 +64,17 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 		/**
 		 * Key sequence global to the application using this feature.
 		 */
-		KEY_SEQUENCE_YGRB("YGRB"),
+		KEY_SEQUENCE_SET(KEY_SEQ_SET),
+
+		/**
+		 * Key sequence global to the application using this feature.
+		 */
+		KEY_SEQUENCE_LOG(KEY_SEQ_LOG),
 
 		/**
 		 * The expected app package to start
 		 */
-		KEY_SEQUENCE_ACTION_YGRB("com.android.settings");
+		KEY_SEQUENCE_ACTION_SET("com.android.settings");
 
 		Param(int value)
 		{
@@ -91,16 +101,19 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 
 		String sequences = getPrefs().getString(Param.KEY_SEQUENCES);
 		String[] seqArray = sequences.split(",");
-		_sequenceList = Arrays.asList(seqArray);
+		_sequenceList.addAll(Arrays.asList(seqArray));
 
 		// Process global key sequence mapping
 
 		String keySeq = null;
 		String keySeqAction = null;
 
-		keySeq = getPrefs().getString(Param.KEY_SEQUENCE_YGRB);
-		keySeqAction = getPrefs().getString(Param.KEY_SEQUENCE_ACTION_YGRB);
+		keySeq = getPrefs().getString(Param.KEY_SEQUENCE_SET);
+		keySeqAction = getPrefs().getString(Param.KEY_SEQUENCE_ACTION_SET);
 		_globalSequenceMap.put(keySeq, keySeqAction);
+
+		keySeq = getPrefs().getString(Param.KEY_SEQUENCE_LOG);
+		_sequenceList.add(keySeq);
 
 		onFeatureInitialized.onInitialized(this, ResultCode.OK);
 	}

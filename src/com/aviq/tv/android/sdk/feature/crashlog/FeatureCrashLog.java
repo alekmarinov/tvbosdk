@@ -21,6 +21,7 @@ import org.json.JSONObject;
 import android.app.Application;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventReceiver;
@@ -29,6 +30,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
+import com.aviq.tv.android.sdk.core.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 
 /**
@@ -77,6 +79,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		require(FeatureName.Component.REGISTER);
 		require(FeatureName.Component.ETHERNET);
 		require(FeatureName.Scheduler.INTERNET);
+		require(FeatureName.Component.EASTER_EGG);
 	}
 
 	@Override
@@ -84,6 +87,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 		initAcra();
+		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -114,6 +118,18 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 					ACRA.getErrorReporter().putCustomData(Key.DEVICE, prepareDeviceObject());
 			}
 		}
+		else if (FeatureEasterEgg.ON_KEY_SEQUENCE == msgId)
+		{
+			String keySeq = bundle.getString(FeatureEasterEgg.EXTRA_KEY_SEQUENCE);
+			if (FeatureEasterEgg.KEY_SEQ_LOG.equals(keySeq))
+			{
+				ACRA.getErrorReporter().handleSilentException(
+				        new Exception("Sending logcat from user activity."));
+
+				Toast.makeText(Environment.getInstance().getApplicationContext(),
+				        "Log has been captured and sent for processing. Thank you!", Toast.LENGTH_LONG).show();
+			}
+		}
 	}
 
 	private void initAcra()
@@ -137,7 +153,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		config.setReportType(org.acra.sender.HttpSender.Type.FORM);
 		config.setSocketTimeout(20000);
 		config.setLogcatArguments(new String[]
-		{ "-t", "3000", "-v", "time" });
+		{ "-t", "5000", "-v", "time" });
 		config.setApplicationLogFile(null);
 		config.setApplicationLogFileLines(0);
 		config.setAdditionalSharedPreferences(null);
