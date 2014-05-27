@@ -132,7 +132,7 @@ public class CrashLogJsonReportSender implements ReportSender
 		String reportFileName = REPORT_PREFIX + String.format(mReportNameTemplate, buildType, customer, brandName, boxId,
 		        userCrashDate, randomNum);
 
-		_logcatFileName = String.format(mLogcatNameTemplate, buildType, customer, brandName, boxId, userCrashDate,
+		_logcatFileName = REPORT_PREFIX + String.format(mLogcatNameTemplate, buildType, customer, brandName, boxId, userCrashDate,
 		        randomNum);
 
 		try
