@@ -157,9 +157,12 @@ public class CrashLogTextReportSender implements ReportSender
 		sendData(_logcatFileName, _logcat, "text/plain");
 
 		// Send the report to the server
-		String data = reportBuilder.toString();
-		String contentType = ACRA.getConfig().reportType().getContentType();
-		sendData(reportFileName, data, contentType);
+		if (false == report.get(ReportField.STACK_TRACE).contains(FeatureCrashLog.EXCEPTION_TAG))
+		{
+			String data = reportBuilder.toString();
+			String contentType = ACRA.getConfig().reportType().getContentType();
+			sendData(reportFileName, data, contentType);
+		}
 
 		System.gc();
 	}
