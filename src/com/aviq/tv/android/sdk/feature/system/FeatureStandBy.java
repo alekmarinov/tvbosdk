@@ -49,6 +49,9 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		/** Turn on/off HDMI on standing by */
 		IS_STANDBY_HDMI(false),
 
+		/** Set system time from hardware clock when leaving StandBy */
+		IS_HARDWARE_CLOCK_WORKAROUND(false),
+
 		/** Time delay before sending the box to real StandBy on standby request */
 		STANDBY_DELAY(2500),
 
@@ -256,9 +259,10 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 						{
 							Log.i(TAG, "_detectStandByExit: Detected leaving standing by");
 
-//							// Fix HDMI on
-//							_feature.Component.SYSTEM.command("echo 720p > /sys/class/display/mode");
-//							_feature.Component.SYSTEM.command("echo 0 0 1279 719 0 > /sys/class/ppmgr/ppscaler_rect");
+							if (getPrefs().getBool(Param.IS_HARDWARE_CLOCK_WORKAROUND))
+							{
+								_feature.Component.SYSTEM.command("/system/xbin/busybox hwclock -s");
+							}
 
 							getEventMessenger().trigger(ON_STANDBY_LEAVE);
 							postponeAutoStandBy();
