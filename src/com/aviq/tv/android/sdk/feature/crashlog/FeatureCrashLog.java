@@ -42,6 +42,12 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureCrashLog.class.getSimpleName();
 
+	/**
+	 * Add this to any calls to ACRA.handleSilentException when sending logcat
+	 * to the server.
+	 */
+	public static final String EXCEPTION_TAG = "[SILENT-EXCEPTION-ID]";
+
 	public enum Param
 	{
 		/** Server location where crashlogs are uploaded. */
@@ -129,7 +135,8 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 			String keySeq = bundle.getString(FeatureEasterEgg.EXTRA_KEY_SEQUENCE);
 			if (FeatureEasterEgg.KEY_SEQ_LOG.equals(keySeq))
 			{
-				ACRA.getErrorReporter().handleSilentException(new Exception("Sending logcat from user activity."));
+				ACRA.getErrorReporter().handleSilentException(
+				        new Exception(EXCEPTION_TAG + " Sending logcat from user activity."));
 
 				Toast.makeText(Environment.getInstance().getApplicationContext(),
 				        "Log has been captured and sent for processing. Thank you!", Toast.LENGTH_LONG).show();
@@ -158,7 +165,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		config.setReportType(org.acra.sender.HttpSender.Type.FORM);
 		config.setSocketTimeout(20000);
 		config.setLogcatArguments(new String[]
-		{ "-t", "5000", "-v", "time" });
+		{ "-t", "6000", "-v", "time" });
 		config.setApplicationLogFile(null);
 		config.setApplicationLogFileLines(0);
 		config.setAdditionalSharedPreferences(null);

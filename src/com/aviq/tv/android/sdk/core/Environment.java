@@ -49,6 +49,7 @@ import com.aviq.tv.android.sdk.core.feature.IFeature.OnFeatureInitialized;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.core.state.StateManager;
+import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
 
@@ -168,8 +169,10 @@ public class Environment extends Activity
 							bundle.putString(EXTRA_FEATURE_NAME, feature.getName());
 							_eventMessenger.trigger(ON_FEATURE_INIT_ERROR, bundle);
 
-							Exception exception = new Exception("Error during initializating feature: ["
-							        + feature.getName() + "]. Result code: [" + resultCode + "]");
+							Exception exception = new Exception(FeatureCrashLog.EXCEPTION_TAG
+							        + " Error during initializating feature: [" + feature.getName()
+							        + "]. Result code: [" + resultCode + "]");
+							Log.e(TAG, exception.getMessage());
 							try
 							{
 								ACRA.getErrorReporter().handleSilentException(exception);
@@ -178,7 +181,6 @@ public class Environment extends Activity
 							{
 								Log.e(TAG, e.getMessage(), e);
 							}
-							Log.e(TAG, exception.getMessage(), exception);
 						}
 						else
 						{

@@ -146,7 +146,7 @@ public class CrashLogTextReportSender implements ReportSender
 		String reportFileName = REPORT_PREFIX + String.format(mReportNameTemplate, buildType, customer, brandName, boxId,
 		        userCrashDate, randomNum);
 
-		_logcatFileName = String.format(mLogcatNameTemplate, buildType, customer, brandName, boxId, userCrashDate,
+		_logcatFileName = REPORT_PREFIX + String.format(mLogcatNameTemplate, buildType, customer, brandName, boxId, userCrashDate,
 		        randomNum);
 
 		// Re-add the logcat field with the logcat file's name
@@ -157,9 +157,12 @@ public class CrashLogTextReportSender implements ReportSender
 		sendData(_logcatFileName, _logcat, "text/plain");
 
 		// Send the report to the server
-		String data = reportBuilder.toString();
-		String contentType = ACRA.getConfig().reportType().getContentType();
-		sendData(reportFileName, data, contentType);
+		if (false == report.get(ReportField.STACK_TRACE).contains(FeatureCrashLog.EXCEPTION_TAG))
+		{
+			String data = reportBuilder.toString();
+			String contentType = ACRA.getConfig().reportType().getContentType();
+			sendData(reportFileName, data, contentType);
+		}
 
 		System.gc();
 	}

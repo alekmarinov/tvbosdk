@@ -83,6 +83,7 @@ public class FeatureName
 		NETWORK_WIZARD,
 		BOOT_WIZARD,
 		STANDBY,
-		MEDIA
+		MEDIA,
+		NOTIFICATION
 	}
 }

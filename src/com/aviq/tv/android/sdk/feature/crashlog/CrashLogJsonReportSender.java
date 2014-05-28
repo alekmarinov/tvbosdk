@@ -132,7 +132,7 @@ public class CrashLogJsonReportSender implements ReportSender
 		String reportFileName = REPORT_PREFIX + String.format(mReportNameTemplate, buildType, customer, brandName, boxId,
 		        userCrashDate, randomNum);
 
-		_logcatFileName = String.format(mLogcatNameTemplate, buildType, customer, brandName, boxId, userCrashDate,
+		_logcatFileName = REPORT_PREFIX + String.format(mLogcatNameTemplate, buildType, customer, brandName, boxId, userCrashDate,
 		        randomNum);
 
 		try
@@ -143,8 +143,11 @@ public class CrashLogJsonReportSender implements ReportSender
 			sendData(_logcatFileName, _logcat, "text/plain");
 
 			// Send the report to the server
-			String contentType = ACRA.getConfig().reportType().getContentType();
-			sendData(reportFileName, data, contentType);
+			if (false == report.get(ReportField.STACK_TRACE).contains(FeatureCrashLog.EXCEPTION_TAG))
+			{
+				String contentType = ACRA.getConfig().reportType().getContentType();
+				sendData(reportFileName, data, contentType);
+			}
 		}
 		catch (JSONReportException e)
 		{
