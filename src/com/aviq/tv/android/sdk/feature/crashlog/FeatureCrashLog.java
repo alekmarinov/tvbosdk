@@ -32,6 +32,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
 import com.aviq.tv.android.sdk.core.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
+import com.aviq.tv.android.sdk.feature.network.FeatureEthernet;
 
 /**
  * Handle unhandled exceptions.
@@ -55,8 +56,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		/** Socket timeout in milliseconds */
 		SOCKET_TIMEOUT_MILLIS(20000),
 
-		CRASHLOG_CUSTOMER(""),
-		CRASHLOG_BRAND("");
+		CRASHLOG_CUSTOMER(""), CRASHLOG_BRAND("");
 
 		/*
 		 * TODO
@@ -74,10 +74,11 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		}
 	}
 
+	private FeatureEthernet _featureEthernet;
+
 	public FeatureCrashLog() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.REGISTER);
-		require(FeatureName.Component.ETHERNET);
 		require(FeatureName.Scheduler.INTERNET);
 		require(FeatureName.Component.EASTER_EGG);
 	}
@@ -87,6 +88,8 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 		initAcra();
+		_featureEthernet = (FeatureEthernet) Environment.getInstance().getFeatureComponent(
+		        FeatureName.Component.ETHERNET);
 		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
 		super.initialize(onFeatureInitialized);
 	}
@@ -110,8 +113,11 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 				ACRA.getErrorReporter().putCustomData("PUBLIC IP", publicIP);
 
 				// Ensure this is in the data as well
-				String localIP = _feature.Component.ETHERNET.getNetworkConfig().Addr;
-				ACRA.getErrorReporter().putCustomData("LOCAL IP", localIP);
+				if (_featureEthernet != null && _featureEthernet.isEnabled())
+				{
+					String localIP = _featureEthernet.getNetworkConfig().Addr;
+					ACRA.getErrorReporter().putCustomData("LOCAL IP", localIP);
+				}
 
 				// Only reset it if already there
 				if (ACRA.getErrorReporter().getCustomData(Key.DEVICE) != null)
@@ -123,8 +129,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 			String keySeq = bundle.getString(FeatureEasterEgg.EXTRA_KEY_SEQUENCE);
 			if (FeatureEasterEgg.KEY_SEQ_LOG.equals(keySeq))
 			{
-				ACRA.getErrorReporter().handleSilentException(
-				        new Exception("Sending logcat from user activity."));
+				ACRA.getErrorReporter().handleSilentException(new Exception("Sending logcat from user activity."));
 
 				Toast.makeText(Environment.getInstance().getApplicationContext(),
 				        "Log has been captured and sent for processing. Thank you!", Toast.LENGTH_LONG).show();
@@ -149,7 +154,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		config.setFormUriBasicAuthPassword(password);
 		config.setDisableSSLCertValidation(true);
 		config.setHttpMethod(org.acra.sender.HttpSender.Method.PUT);
-		//config.setReportType(org.acra.sender.HttpSender.Type.JSON);
+		// config.setReportType(org.acra.sender.HttpSender.Type.JSON);
 		config.setReportType(org.acra.sender.HttpSender.Type.FORM);
 		config.setSocketTimeout(20000);
 		config.setLogcatArguments(new String[]
@@ -171,7 +176,8 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		ACRA.init(app);
 
 		// Set a custom sender; always right after ACRA.init().
-		//CrashLogJsonReportSender crashLogSender = new CrashLogJsonReportSender(app);
+		// CrashLogJsonReportSender crashLogSender = new
+		// CrashLogJsonReportSender(app);
 		CrashLogTextReportSender crashLogSender = new CrashLogTextReportSender(app);
 		ACRA.getErrorReporter().setReportSender(crashLogSender);
 
@@ -196,8 +202,11 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		// FIXME: Take from FeatureEthernet when implemented.
 		errorReporter.putCustomData("ETHERNET_MAC", _feature.Component.REGISTER.getBoxId());
 
-		String localIP = _feature.Component.ETHERNET.getNetworkConfig().Addr;
-		errorReporter.putCustomData("LOCAL IP", localIP);
+		if (_featureEthernet != null && _featureEthernet.isEnabled())
+		{
+			String localIP = _featureEthernet.getNetworkConfig().Addr;
+			errorReporter.putCustomData("LOCAL IP", localIP);
+		}
 
 		String publicIP = _feature.Scheduler.INTERNET.getPublicIP();
 		errorReporter.putCustomData("PUBLIC IP", publicIP);
@@ -213,7 +222,12 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		try
 		{
 			device.accumulate(Key.MAC, _feature.Component.REGISTER.getBoxId());
-			device.accumulate(Key.IP, _feature.Component.ETHERNET.getNetworkConfig().Addr);
+
+			if (_featureEthernet != null && _featureEthernet.isEnabled())
+			{
+				device.accumulate(Key.IP, _featureEthernet.getNetworkConfig().Addr);
+			}
+
 			device.accumulate(Key.PUBLIC_IP, _feature.Scheduler.INTERNET.getPublicIP());
 
 			JSONObject sw = new JSONObject();

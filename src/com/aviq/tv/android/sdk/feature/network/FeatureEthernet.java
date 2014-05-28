@@ -94,7 +94,9 @@ public class FeatureEthernet extends FeatureComponent
 		Log.i(TAG, ".initialize");
 		if (!_ethernetManagerWrapper.isSupported())
 		{
-			onFeatureInitialized.onInitialized(this, ResultCode.NOT_SUPPORTED);
+			// FIXME: Should this be fatal error?
+			// onFeatureInitialized.onInitialized(this, ResultCode.NOT_SUPPORTED);
+			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 		}
 		else
 		{
@@ -303,8 +305,10 @@ public class FeatureEthernet extends FeatureComponent
 		{
 			try
 			{
-				Boolean result = (Boolean) _getEthState.invoke(_ethernetManager);
-				return result.booleanValue();
+				if (_getEthState == null)
+					return false;
+				Integer result = (Integer) _getEthState.invoke(_ethernetManager);
+				return result.intValue() == 2;
 			}
 			catch (IllegalAccessException e)
 			{

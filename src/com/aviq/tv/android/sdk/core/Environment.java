@@ -168,9 +168,17 @@ public class Environment extends Activity
 							bundle.putString(EXTRA_FEATURE_NAME, feature.getName());
 							_eventMessenger.trigger(ON_FEATURE_INIT_ERROR, bundle);
 
-							ACRA.getErrorReporter().handleSilentException(
-							        new Exception("Error during initializating feature: [" + feature.getName()
-							                + "]. Result code: [" + resultCode + "]"));
+							Exception exception = new Exception("Error during initializating feature: ["
+							        + feature.getName() + "]. Result code: [" + resultCode + "]");
+							try
+							{
+								ACRA.getErrorReporter().handleSilentException(exception);
+							}
+							catch (Exception e)
+							{
+								Log.e(TAG, e.getMessage(), e);
+							}
+							Log.e(TAG, exception.getMessage(), exception);
 						}
 						else
 						{
@@ -326,10 +334,10 @@ public class Environment extends Activity
 	}
 
 	@Override
-    public void onConfigurationChanged(Configuration newConfig)
+	public void onConfigurationChanged(Configuration newConfig)
 	{
 		Log.i(TAG, ".onConfigurationChanged: new language = " + newConfig.locale.getLanguage());
-        super.onConfigurationChanged(newConfig);
+		super.onConfigurationChanged(newConfig);
 	}
 
 	/**

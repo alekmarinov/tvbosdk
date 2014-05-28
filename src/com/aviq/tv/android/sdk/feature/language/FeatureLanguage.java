@@ -48,6 +48,7 @@ public class FeatureLanguage extends FeatureComponent
 	 */
 	public void setLanguage(Code code)
 	{
+		Log.i(TAG, ".setLanguage: code = " + code);
 		setSystemLanguage(getLocale());
 	}
 
