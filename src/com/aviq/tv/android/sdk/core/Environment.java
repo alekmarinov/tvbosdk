@@ -472,6 +472,25 @@ public class Environment extends Activity
 	}
 
 	/**
+	 * Get feature by specifying its class implementation
+	 *
+	 * @param featureClass
+	 *            The class of the feature
+	 * @return feature instance or null if not found
+	 */
+	public IFeature getFeature(Class<?> featureClass)
+	{
+		try
+		{
+			return _featureManager.getFeature(featureClass);
+		}
+		catch (FeatureNotFoundException e)
+		{
+			return null;
+		}
+	}
+
+	/**
 	 * @param featureName
 	 * @return FeatureComponent or null
 	 */

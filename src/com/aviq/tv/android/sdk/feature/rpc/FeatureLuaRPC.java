@@ -38,7 +38,6 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 public class FeatureLuaRPC extends FeatureRPC
 {
 	public static final String TAG = FeatureLuaRPC.class.getSimpleName();
-	public static final int RPC_SERVER_PORT = 6768;
 	private static final int BUF_SIZE = 1024 * 100;
 	private static final String EOL = "-- End of Lua";
 
@@ -47,12 +46,11 @@ public class FeatureLuaRPC extends FeatureRPC
 		/**
 		 * RPC server port
 		 */
-		PORT(RPC_SERVER_PORT);
+		PORT(6768);
 
 		Param(int value)
 		{
-			if (Environment.getInstance().isInitialized())
-				Environment.getInstance().getFeaturePrefs(FeatureName.Component.RPC).put(name(), value);
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.RPC).put(name(), value);
 		}
 	}
 
@@ -64,9 +62,7 @@ public class FeatureLuaRPC extends FeatureRPC
 	{
 		try
 		{
-			_port = RPC_SERVER_PORT;
-			if (Environment.getInstance().isInitialized())
-				_port = getPrefs().getInt(Param.PORT);
+			_port = getPrefs().getInt(Param.PORT);
 
 			ServerSocket serverSocket = new ServerSocket(_port);
 			_serverThread = new ServerThread(this, serverSocket);
@@ -249,7 +245,7 @@ public class FeatureLuaRPC extends FeatureRPC
 				byte[] luaBuffer = readAll(clientInput);
 				L.setTop(0);
 				final int ok = L.LloadBuffer(luaBuffer, "lua");
-				Log.i(TAG, "loaded ..." + ok);
+				Log.i(TAG, "loaded ..." + new String(luaBuffer) + " -> " + ok);
 				if (ok != 0)
 					throw new LuaException(errorReason(ok) + ": " + L.toString(-1));
 

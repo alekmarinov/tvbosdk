@@ -129,7 +129,7 @@ public class FeatureWireless extends FeatureComponent
 				}
 			}
 		};
-		Environment.getInstance().registerReceiver(receiver, filter);
+		// Environment.getInstance().registerReceiver(receiver, filter);
 		onFeatureInitialized.onInitialized(this, ResultCode.OK);
 	}
 
