@@ -50,6 +50,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	private boolean _isError;
 	private int _errWhat;
 	private int _errExtra;
+	private boolean _playPauseEnabled;
 
 	public enum Extras
 	{
@@ -66,9 +67,20 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		/**
 		 * Pause timeout in seconds
 		 */
-		PLAY_PAUSE_TIMEOUT(2000);
+		PLAY_PAUSE_TIMEOUT(2000),
+
+		/**
+		 * True when the player will be able to switch between play and pause
+		 * features. False otherwise.
+		 */
+		PLAY_PAUSE_ENABLED(true);
 
 		Param(int value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.PLAYER).put(name(), value);
+		}
+
+		Param(boolean value)
 		{
 			Environment.getInstance().getFeaturePrefs(FeatureName.Component.PLAYER).put(name(), value);
 		}
@@ -90,6 +102,9 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	{
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
 		_player = createPlayer();
+
+		_playPauseEnabled = getPrefs().has(Param.PLAY_PAUSE_ENABLED) ? getPrefs().getBool(Param.PLAY_PAUSE_ENABLED) : true;
+
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -468,7 +483,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		if (Environment.ON_KEY_PRESSED == msgId)
 		{
 			Key key = Key.valueOf(bundle.getString(Environment.EXTRA_KEY));
-			if (Key.PLAY_PAUSE.equals(key))
+			if (Key.PLAY_PAUSE.equals(key) && _playPauseEnabled)
 			{
 				if (isPaused())
 					resume();
