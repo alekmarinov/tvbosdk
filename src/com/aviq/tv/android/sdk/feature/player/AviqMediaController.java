@@ -131,7 +131,7 @@ public class AviqMediaController extends MediaController
 
 				if (event.getAction() == KeyEvent.ACTION_DOWN)
 				{
-					_player.seekTo(_player.getCurrentPosition() - _seekLargeStepMillis);
+					_player.seekTo(_player.getCurrentPosition() - _seekSmallStepMillis);
 					return true;
 				}
 
@@ -145,7 +145,7 @@ public class AviqMediaController extends MediaController
 
 				if (event.getAction() == KeyEvent.ACTION_DOWN)
 				{
-					_player.seekTo(_player.getCurrentPosition() + _seekLargeStepMillis);
+					_player.seekTo(_player.getCurrentPosition() + _seekSmallStepMillis);
 					return true;
 				}
 
