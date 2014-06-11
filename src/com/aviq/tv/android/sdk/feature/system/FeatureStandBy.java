@@ -188,7 +188,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			Key key = Key.valueOf(bundle.getString(Environment.EXTRA_KEY));
 			if (Key.SLEEP.equals(key))
 			{
-				if (isHDMIOff())
+				if (_isStandByHDMI && isHDMIOff())
 				{
 					Log.i(TAG, "Resume from standing by requested by user");
 					getEventMessenger().trigger(ON_STANDBY_LEAVE);
