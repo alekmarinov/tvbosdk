@@ -49,7 +49,7 @@ public class FeatureLanguage extends FeatureComponent
 	public void setLanguage(Code code)
 	{
 		Log.i(TAG, ".setLanguage: code = " + code);
-		setSystemLanguage(getLocale());
+		setSystemLanguage(getLocale(code));
 	}
 
 	/**
@@ -64,11 +64,11 @@ public class FeatureLanguage extends FeatureComponent
 		return Code.valueOf(langCode);
 	}
 
-	public Locale getLocale()
+	public Locale getLocale(Code code)
 	{
 		Locale locale = null;
 
-		switch (getLanguage())
+		switch (code)
 		{
 			case BG:
 				locale = new Locale("bg_BG");
