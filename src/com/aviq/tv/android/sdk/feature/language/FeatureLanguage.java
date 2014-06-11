@@ -39,6 +39,8 @@ public class FeatureLanguage extends FeatureComponent
 		return FeatureName.Component.LANGUAGE;
 	}
 
+	private Code _langCode;
+
 	/**
 	 * Set system language
 	 *
@@ -49,6 +51,7 @@ public class FeatureLanguage extends FeatureComponent
 	public void setLanguage(Code code)
 	{
 		Log.i(TAG, ".setLanguage: code = " + code);
+		_langCode = code;
 		setSystemLanguage(getLocale(code));
 	}
 
@@ -59,6 +62,9 @@ public class FeatureLanguage extends FeatureComponent
 	 */
 	public Code getLanguage()
 	{
+		if (_langCode != null)
+			return _langCode;
+
 		String langCode = Locale.getDefault().getLanguage().toUpperCase();
 		Log.d(TAG, ".getLanguage: -> " + langCode);
 		return Code.valueOf(langCode);
