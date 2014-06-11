@@ -23,54 +23,52 @@ public class AviqMediaController extends MediaController
 	public AviqMediaController(Context context, AttributeSet attrs)
 	{
 		super(context, attrs);
+		init();
 	}
 
 	public AviqMediaController(Context context, boolean useFastForward)
 	{
 		super(context);
+		init();
 	}
 
 	public AviqMediaController(Context context)
 	{
 		super(context);
+		init();
 	}
 
 	public void init()
 	{
-		ViewGroup rootLayout = (ViewGroup) getChildAt(0);
-		ViewGroup buttonContainer = (ViewGroup) rootLayout.getChildAt(0);
-
-for (int i = 0; i < buttonContainer.getChildCount(); i++)
-{
-	Log.e(TAG, "----- i = " + i + ", child = " + buttonContainer.getChildAt(i).getId());
-
-	final int idx = i;
-	buttonContainer.getChildAt(i).setOnClickListener(new OnClickListener()
-	{
-		@Override
-        public void onClick(View v)
-        {
-			Log.e(TAG, "----- i = " + idx + " clicked");
-        }
-	});
-}
-
-		ImageButton ffwdButton = (ImageButton) buttonContainer.getChildAt(1);
-		ffwdButton.setOnClickListener(new OnClickListener()
+		post(new Runnable()
 		{
 			@Override
-            public void onClick(View v)
+            public void run()
             {
-	            Log.e(TAG, "----- fast forward");
-            }
-		});
-		ImageButton rewButton = (ImageButton) buttonContainer.getChildAt(3);
-		rewButton.setOnClickListener(new OnClickListener()
-		{
-			@Override
-            public void onClick(View v)
-            {
-	            Log.e(TAG, "----- rewind");
+				ViewGroup rootLayout = (ViewGroup) getChildAt(0);
+				ViewGroup buttonContainer = (ViewGroup) rootLayout.getChildAt(0);
+
+				// Rewind button
+				ImageButton rewButton = (ImageButton) buttonContainer.getChildAt(1);
+				rewButton.setOnClickListener(new OnClickListener()
+				{
+					@Override
+		            public void onClick(View v)
+		            {
+						_player.seekTo(_player.getCurrentPosition() - _seekLargeStepMillis);
+		            }
+				});
+
+				// Fast forward button
+				ImageButton ffwdButton = (ImageButton) buttonContainer.getChildAt(3);
+				ffwdButton.setOnClickListener(new OnClickListener()
+				{
+					@Override
+		            public void onClick(View v)
+		            {
+						_player.seekTo(_player.getCurrentPosition() + _seekLargeStepMillis);
+		            }
+				});
             }
 		});
 	}
@@ -97,8 +95,8 @@ for (int i = 0; i < buttonContainer.getChildCount(); i++)
 		Log.e(TAG, ".dispatchKeyEvent: keyCode = " + keyCode);
 
 		// This used to not give focus to the MediaController widget
-		//ViewGroup rootLayout = (ViewGroup) getChildAt(0);
-		//ViewGroup buttonContainer = (ViewGroup) rootLayout.getChildAt(0);
+		ViewGroup rootLayout = (ViewGroup) getChildAt(0);
+		ViewGroup buttonContainer = (ViewGroup) rootLayout.getChildAt(0);
 		//ViewGroup progressContainer = (ViewGroup) rootLayout.getChildAt(1);
 		//View seekBar = progressContainer.getChildAt(1);
 
@@ -107,11 +105,33 @@ for (int i = 0; i < buttonContainer.getChildCount(); i++)
 
 		switch (key)
 		{
+			case LEFT:
+				if (buttonContainer.hasFocus())
+					break;
+
+				if (event.getAction() == KeyEvent.ACTION_DOWN)
+				{
+					_player.seekTo(_player.getCurrentPosition() - _seekSmallStepMillis);
+					return true;
+				}
+				break;
+
+			case RIGHT:
+				if (buttonContainer.hasFocus())
+					break;
+
+				if (event.getAction() == KeyEvent.ACTION_DOWN)
+				{
+					_player.seekTo(_player.getCurrentPosition() + _seekSmallStepMillis);
+					return true;
+				}
+				break;
+
 			case PLAY_BACKWARD:
 
 				if (event.getAction() == KeyEvent.ACTION_DOWN)
 				{
-					_player.seekTo(_player.getCurrentPosition() - _seekLargeStepMillis);
+					_player.seekTo(_player.getCurrentPosition() - _seekSmallStepMillis);
 					return true;
 				}
 
@@ -125,7 +145,7 @@ for (int i = 0; i < buttonContainer.getChildCount(); i++)
 
 				if (event.getAction() == KeyEvent.ACTION_DOWN)
 				{
-					_player.seekTo(_player.getCurrentPosition() + _seekLargeStepMillis);
+					_player.seekTo(_player.getCurrentPosition() + _seekSmallStepMillis);
 					return true;
 				}
 

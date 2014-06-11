@@ -237,6 +237,14 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	}
 
 	/**
+	 * @return Returns playback position
+	 */
+	public int getPosition()
+	{
+		return _player.getPosition();
+	}
+
+	/**
 	 * This can be either a VideoView or a SurfaceView.
 	 *
 	 * @return SurfaceView

@@ -211,7 +211,10 @@ public class EventMessenger extends Handler
 		{
 			Log.v(_tag, ".handleMessage: notifying " + msgListeners.size() + " listeners on " + idName(msg.what) + " (" + msg.what + ")");
 			for (EventReceiver eventReceiver : msgListeners)
+			{
+				Log.d(_tag, eventReceiver + ".onEvent " + idName(msg.what));
 				eventReceiver.onEvent(msg.what, (Bundle) msg.obj);
+			}
 		}
 		_inEventIteration = false;
 		for (RegisterCouple registerCouple : _registerLater)

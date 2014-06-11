@@ -121,6 +121,7 @@ public class Environment extends Activity
 	private static boolean _isCreated = false;
 	private FeatureRCU _featureRCU;
 	private FeatureSystem _featureSystem;
+	private boolean _keyEventsEnabled = true;
 
 	private OnResultReceived _onFeaturesReceived = new OnResultReceived()
 	{
@@ -612,6 +613,15 @@ public class Environment extends Activity
 	}
 
 	/**
+	 * Enable or disable broadcasts of key events throughout the application.
+	 * @param enabled true to enable key events, false to disable key events
+	 */
+	public void setKeyEventsEnabled(boolean enabled)
+	{
+		_keyEventsEnabled = enabled;
+	}
+
+	/**
 	 * Inject key press in the environment
 	 */
 	/* package */boolean onKeyDown(AVKeyEvent keyEvent)
@@ -625,7 +635,9 @@ public class Environment extends Activity
 		if (_isInitialized)
 		{
 			bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
-			_eventMessenger.trigger(ON_KEY_PRESSED, bundle);
+
+			if (_keyEventsEnabled || keyEvent.is(Key.SLEEP))
+				_eventMessenger.trigger(ON_KEY_PRESSED, bundle);
 		}
 
 		return consumed;
@@ -644,7 +656,9 @@ public class Environment extends Activity
 		if (_isInitialized)
 		{
 			bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
-			_eventMessenger.trigger(ON_KEY_RELEASED, bundle);
+
+			if (_keyEventsEnabled || keyEvent.is(Key.SLEEP))
+				_eventMessenger.trigger(ON_KEY_RELEASED, bundle);
 		}
 		return consumed;
 	}
