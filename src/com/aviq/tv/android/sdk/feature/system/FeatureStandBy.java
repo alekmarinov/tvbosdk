@@ -200,7 +200,8 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 				{
 					Log.i(TAG, "Standing by requested by user");
 					startStandBy(false);
-					Environment.getInstance().setKeyEventsEnabled(false);
+					if (_isStandByHDMI)
+						Environment.getInstance().setKeyEventsEnabled(false);
 				}
 			}
 			else
