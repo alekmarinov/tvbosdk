@@ -318,8 +318,11 @@ public class Environment extends Activity
 	{
 		super.onDestroy();
 		Log.i(TAG, ".onDestroy");
+	}
 
-		// _featureSystem.command("killall " + getPackageName());
+	public void suicide()
+	{
+		_featureSystem.command("killall " + getPackageName());
 	}
 
 	@Override
