@@ -17,7 +17,6 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
-import com.aviq.tv.android.sdk.core.Environment.ExceptKeysList;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Key;
@@ -201,9 +200,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 				{
 					Log.i(TAG, "Standing by requested by user");
 					startStandBy(false);
-					ExceptKeysList exceptKeysList = Environment.getInstance().setKeyEventsDisabled();
-//					if (_isStandByHDMI)
-						exceptKeysList.add(Key.SLEEP);
+					Environment.getInstance().setKeyEventsDisabled().except(Key.SLEEP);
 				}
 			}
 			else
