@@ -226,6 +226,40 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		}
 	}
 
+	private final Runnable _detectStandbyLeave = new Runnable()
+	{
+		private long _lastCurrentTime = 0;
+
+		@Override
+		public void run()
+		{
+			if (_lastCurrentTime == 0)
+			{
+				// Set last current time to now
+				_lastCurrentTime = System.currentTimeMillis();
+			}
+
+			// time left since the last current time was set
+			long timeLeft = (System.currentTimeMillis() - _lastCurrentTime);
+			Log.i(TAG, "_detectStandByExit: timeLeft = " + timeLeft);
+			if (timeLeft > 1500)
+			{
+				Log.i(TAG, "_detectStandByExit: Detected leaving standing by");
+				getEventMessenger().trigger(ON_STANDBY_LEAVE);
+				postponeAutoStandBy();
+				Environment.getInstance().setKeyEventsEnabled();
+			}
+			else
+			{
+				// loop with one second delay and determine if the
+				// elapsed time is as expected unless standby has
+				// interrupted the loop
+				_lastCurrentTime = System.currentTimeMillis();
+				getEventMessenger().postDelayed(this, 1000);
+			}
+		}
+	};
+
 	private final Runnable _enterStandByRunnable = new Runnable()
 	{
 		@Override
@@ -238,39 +272,8 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			else
 			{
 				// Start detection of StandBy leave
-				getEventMessenger().post(new Runnable()
-				{
-					private long _lastCurrentTime = 0;
-
-					@Override
-					public void run()
-					{
-						if (_lastCurrentTime == 0)
-						{
-							// Set last current time to now
-							_lastCurrentTime = System.currentTimeMillis();
-						}
-
-						// time left since the last current time was set
-						long timeLeft = (System.currentTimeMillis() - _lastCurrentTime);
-						Log.i(TAG, "_detectStandByExit: timeLeft = " + timeLeft);
-						if (timeLeft > 2000)
-						{
-							Log.i(TAG, "_detectStandByExit: Detected leaving standing by");
-							getEventMessenger().trigger(ON_STANDBY_LEAVE);
-							postponeAutoStandBy();
-							Environment.getInstance().setKeyEventsEnabled();
-						}
-						else
-						{
-							// loop with one second delay and determine if the
-							// elapsed time is as expected unless standby has
-							// interrupted the loop
-							_lastCurrentTime = System.currentTimeMillis();
-							getEventMessenger().postDelayed(this, 1000);
-						}
-					}
-				});
+				getEventMessenger().removeCallbacks(_detectStandbyLeave);
+				getEventMessenger().post(_detectStandbyLeave);
 
 				// Go to StandBy now
 				Log.i(TAG, "Entering standby mode...");
