@@ -12,6 +12,7 @@ package com.aviq.tv.android.sdk.core;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -122,6 +123,7 @@ public class Environment extends Activity
 	private FeatureRCU _featureRCU;
 	private FeatureSystem _featureSystem;
 	private boolean _keyEventsEnabled = true;
+	private ExceptKeysList _exceptKeys = new ExceptKeysList();
 
 	private OnResultReceived _onFeaturesReceived = new OnResultReceived()
 	{
@@ -208,6 +210,16 @@ public class Environment extends Activity
 			}
 		}
 	};
+
+	@SuppressWarnings("serial")
+    public class ExceptKeysList extends ArrayList<Key>
+	{
+		public ExceptKeysList except(Key key)
+		{
+			add(key);
+			return this;
+		}
+	}
 
 	/**
 	 * Environment constructor method
@@ -613,12 +625,21 @@ public class Environment extends Activity
 	}
 
 	/**
-	 * Enable or disable broadcasts of key events throughout the application.
+	 * Enable broadcasts of key events throughout the application.
+	 */
+	public void setKeyEventsEnabled()
+	{
+		_keyEventsEnabled = true;
+	}
+
+	/**
+	 * Disable broadcasts of key events throughout the application.
 	 * @param enabled true to enable key events, false to disable key events
 	 */
-	public void setKeyEventsEnabled(boolean enabled)
+	public ExceptKeysList setKeyEventsDisabled()
 	{
-		_keyEventsEnabled = enabled;
+		_keyEventsEnabled = false;
+		return _exceptKeys;
 	}
 
 	/**
@@ -636,7 +657,7 @@ public class Environment extends Activity
 		{
 			bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
 
-			if (_keyEventsEnabled || keyEvent.is(Key.SLEEP))
+			if (_keyEventsEnabled || _exceptKeys.contains(keyEvent.Code))
 				_eventMessenger.trigger(ON_KEY_PRESSED, bundle);
 		}
 
