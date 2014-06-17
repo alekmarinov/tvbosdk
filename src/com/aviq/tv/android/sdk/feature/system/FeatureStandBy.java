@@ -23,11 +23,13 @@ import com.aviq.tv.android.sdk.core.Key;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Controls standby logic
  */
+@PriorityFeature
 public class FeatureStandBy extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureStandBy.class.getSimpleName();
@@ -245,9 +247,23 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			if (timeLeft > 1500)
 			{
 				Log.i(TAG, "_detectStandByExit: Detected leaving standing by");
-				getEventMessenger().trigger(ON_STANDBY_LEAVE);
-				postponeAutoStandBy();
-				Environment.getInstance().setKeyEventsEnabled();
+
+				if (!Environment.getInstance().isInitialized())
+				{
+					/**
+					 * If we come back from standby when the application has not
+					 * been fully initialized, then we restart it. This may happen
+					 * if the user puts the STB into standby while
+					 * FeatureStateLoading is active.
+					 */
+					Environment.getInstance().suicide();
+				}
+				else
+				{
+					getEventMessenger().trigger(ON_STANDBY_LEAVE);
+					postponeAutoStandBy();
+					Environment.getInstance().setKeyEventsEnabled();
+				}
 			}
 			else
 			{

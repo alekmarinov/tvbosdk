@@ -656,12 +656,10 @@ public class Environment extends Activity
 		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
 		boolean consumed = _stateManager.onKeyDown(keyEvent);
 
-		if (_isInitialized)
+		if (_keyEventsEnabled || _exceptKeys.contains(keyEvent.Code))
 		{
 			bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
-
-			if (_keyEventsEnabled || _exceptKeys.contains(keyEvent.Code))
-				_eventMessenger.trigger(ON_KEY_PRESSED, bundle);
+			_eventMessenger.trigger(ON_KEY_PRESSED, bundle);
 		}
 
 		return consumed;
@@ -677,13 +675,13 @@ public class Environment extends Activity
 		bundle.putString(EXTRA_KEY, keyEvent.Code.name());
 		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
 		boolean consumed = _stateManager.onKeyUp(keyEvent);
-		if (_isInitialized)
+
+		if (_keyEventsEnabled || keyEvent.is(Key.SLEEP))
 		{
 			bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
-
-			if (_keyEventsEnabled || keyEvent.is(Key.SLEEP))
-				_eventMessenger.trigger(ON_KEY_RELEASED, bundle);
+			_eventMessenger.trigger(ON_KEY_RELEASED, bundle);
 		}
+
 		return consumed;
 	}
 
