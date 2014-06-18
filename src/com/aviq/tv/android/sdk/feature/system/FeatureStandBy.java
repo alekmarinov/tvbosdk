@@ -248,22 +248,24 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			{
 				Log.i(TAG, "_detectStandByExit: Detected leaving standing by");
 
-				if (!Environment.getInstance().isInitialized())
-				{
-					/**
-					 * If we come back from standby when the application has not
-					 * been fully initialized, then we restart it. This may happen
-					 * if the user puts the STB into standby while
-					 * FeatureStateLoading is active.
-					 */
-					Environment.getInstance().suicide();
-				}
-				else
-				{
-					getEventMessenger().trigger(ON_STANDBY_LEAVE);
-					postponeAutoStandBy();
-					Environment.getInstance().setKeyEventsEnabled();
-				}
+				Environment.getInstance().suicide();
+
+//				if (!Environment.getInstance().isInitialized())
+//				{
+//					/**
+//					 * If we come back from standby when the application has not
+//					 * been fully initialized, then we restart it. This may happen
+//					 * if the user puts the STB into standby while
+//					 * FeatureStateLoading is active.
+//					 */
+//					Environment.getInstance().suicide();
+//				}
+//				else
+//				{
+//					getEventMessenger().trigger(ON_STANDBY_LEAVE);
+//					postponeAutoStandBy();
+//					Environment.getInstance().setKeyEventsEnabled();
+//				}
 			}
 			else
 			{
