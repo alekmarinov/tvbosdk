@@ -13,6 +13,7 @@ package com.aviq.tv.android.sdk.feature.system;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -99,6 +100,8 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
+		Environment.getInstance().getEventMessenger().register(this, Environment.ON_RESUME);
+		Environment.getInstance().getEventMessenger().register(this, Environment.ON_PAUSE);
 		_isStandByHDMI = getPrefs().getBool(Param.IS_STANDBY_HDMI);
 		postponeAutoStandBy();
 		super.initialize(onFeatureInitialized);
@@ -210,6 +213,16 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 				// Postpone auto standby on user activity
 				postponeAutoStandBy();
 			}
+		}
+		else if (Environment.ON_RESUME == msgId)
+		{
+			Intent intent = new Intent("com.aviq.intent.action.app.onResume");
+			Environment.getInstance().sendBroadcast(intent);
+		}
+		else if (Environment.ON_PAUSE == msgId)
+		{
+			Intent intent = new Intent("com.aviq.intent.action.app.onPause");
+			Environment.getInstance().sendBroadcast(intent);
 		}
 	}
 
