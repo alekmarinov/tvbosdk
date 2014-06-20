@@ -10,7 +10,18 @@
 
 package com.aviq.tv.android.sdk.feature.epg;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -41,12 +52,16 @@ import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.feature.system.FeatureTimeZone;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
@@ -114,7 +129,9 @@ public abstract class FeatureEPG extends FeatureScheduler
 		/**
 		 * The number of maximum EPG channels
 		 */
-		MAX_CHANNELS(0);
+		MAX_CHANNELS(0),
+
+		EPG_CACHE_PATH("cache" + File.separator + "epg.data");
 
 		Param(int value)
 		{
@@ -125,6 +142,19 @@ public abstract class FeatureEPG extends FeatureScheduler
 		{
 			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.EPG).put(name(), value);
 		}
+	}
+
+	public enum UserParam
+	{
+		/**
+		 * Timestamp in milliseconds when the EPG cache file was created on.
+		 */
+		EPG_CACHE_CREATED_ON,
+
+		/**
+		 * MD5 of saved cache file.
+		 */
+		EPG_CACHE_MD5;
 	}
 
 	/**
@@ -157,6 +187,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 	private JsonObjectRequest _programDetailsRequest;
 	private FeatureTimeZone _featureTimeZone;
 	private int _maxChannels = 0;
+	private boolean _loadedFromCache = false;
 
 	public FeatureEPG() throws FeatureNotFoundException
 	{
@@ -182,6 +213,8 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 		_maxChannels = getPrefs().getInt(Param.MAX_CHANNELS);
 
+		uncacheEpgData();
+
 		onSchedule(onFeatureInitialized);
 	}
 
@@ -190,16 +223,31 @@ public abstract class FeatureEPG extends FeatureScheduler
 	{
 		_onFeatureInitialized = onFeatureInitialized;
 
-		// update epg data
-		String channelsUrl = getChannelsUrl();
-		Log.i(TAG, "Retrieving EPG channels from " + channelsUrl);
-		ChannelListResponseCallback responseCallback = new ChannelListResponseCallback();
+		if (!_loadedFromCache)
+		{
+			// update epg data
+			String channelsUrl = getChannelsUrl();
+			Log.i(TAG, "Retrieving EPG channels from " + channelsUrl);
+			ChannelListResponseCallback responseCallback = new ChannelListResponseCallback();
 
-		// retrieve channels
-		GsonRequest<ChannelListResponse> channelListRequest = new GsonRequest<ChannelListResponse>(Request.Method.GET,
-		        channelsUrl, ChannelListResponse.class, responseCallback, responseCallback);
+			// retrieve channels
+			GsonRequest<ChannelListResponse> channelListRequest = new GsonRequest<ChannelListResponse>(Request.Method.GET,
+			        channelsUrl, ChannelListResponse.class, responseCallback, responseCallback);
 
-		_httpQueue.add(channelListRequest);
+			_httpQueue.add(channelListRequest);
+		}
+		else
+		{
+			int nChannels = _epgData.getChannelCount();
+			for (int i = 0; i < nChannels; i++)
+			{
+				Channel channel = _epgData.getChannel(i);
+				retrieveChannelLogo(channel, i);
+			}
+
+			getEventMessenger().trigger(ON_EPG_UPDATED);
+			_onFeatureInitialized.onInitialized(FeatureEPG.this, ResultCode.OK);
+		}
 
 		// schedule update later
 		scheduleDelayed(getPrefs().getInt(Param.UPDATE_INTERVAL));
@@ -446,7 +494,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 	{
 		if (_epgDataBeingLoaded == null)
 		{
-			Log.w(TAG, ".checkInitializeFinished: _epgDataBeingLoaded is null, that should not happens!");
+			Log.w(TAG, ".checkInitializeFinished: _epgDataBeingLoaded is null, that should not happen!");
 			return ;
 		}
 
@@ -459,11 +507,19 @@ public abstract class FeatureEPG extends FeatureScheduler
 			// free up the memory.
 
 			_epgData = _epgDataBeingLoaded;
-			// TODO: Uncomment this if "parseProgramData()" is going to work
-			// without the AsyncTask logic
 			_epgDataBeingLoaded = null;
 			_retrievedChannelPrograms = 0;
 			_retrievedChannelLogos = 0;
+
+			new Thread(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					cacheEpgData();
+				}
+			}).start();
+
 			getEventMessenger().trigger(ON_EPG_UPDATED);
 			_onFeatureInitialized.onInitialized(FeatureEPG.this, ResultCode.OK);
 		}
@@ -644,6 +700,277 @@ public abstract class FeatureEPG extends FeatureScheduler
 		bundle.putString("ID", programId);
 
 		return getPrefs().getString(Param.EPG_PROGRAM_DETAILS_URL, bundle);
+	}
+
+	private File getEpgDataCacheFile()
+	{
+		String path = Environment.getInstance().getFilesDir() + File.separator + getPrefs().getString(Param.EPG_CACHE_PATH);
+		File cacheFile = new File(path);
+		if (!cacheFile.getParentFile().exists())
+			cacheFile.getParentFile().mkdirs();
+		return cacheFile;
+	}
+
+	private String calcMD5(File f)
+	{
+		MessageDigest md5;
+        try
+        {
+	        md5 = MessageDigest.getInstance("MD5");
+        	InputStream is = new FileInputStream(f);
+        	DigestInputStream dis = new DigestInputStream(is, md5);
+        	byte[] buffer = new byte[8192];
+        	int bytesRead = 1;
+        	while ((bytesRead = dis.read(buffer)) != -1) {}
+        	dis.close();
+        	is.close();
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+        	Log.e(TAG, "MD5 not available.");
+        	return null;
+        }
+        catch (FileNotFoundException e)
+        {
+        	Log.e(TAG, "File not found: " + f.getAbsoluteFile());
+        	return null;
+        }
+        catch (IOException e)
+        {
+        	Log.e(TAG, "Cannot read from EPG data cache file.", e);
+        	return null;
+        }
+
+        byte[] digest = md5.digest();
+		StringBuffer md5buf = new StringBuffer();
+		for (int i = 0; i < digest.length; i++)
+		{
+			md5buf.append(Integer.toString((digest[i] & 0xFF) + 0x100, 16).substring(1));
+		}
+		return md5buf.toString();
+	}
+
+	private boolean isEpgDataCacheHealthy()
+	{
+		File cacheFile = getEpgDataCacheFile();
+		if (!cacheFile.exists())
+			return false;
+
+		Prefs userPrefs = Environment.getInstance().getUserPrefs();
+		String savedMd5 = userPrefs.has(UserParam.EPG_CACHE_MD5) ? userPrefs.getString(UserParam.EPG_CACHE_MD5) : "";
+
+		String md5 = calcMD5(cacheFile);
+		Log.i(TAG, ".isEpgDataCacheHealthy: computed MD5 sum: " + md5 + ", saved MD5 sum: " + savedMd5);
+
+		return md5.toString().equals(savedMd5);
+	}
+
+	private void cacheEpgData()
+	{
+		Log.i(TAG, ".cacheEpgData");
+
+		// Load serialized cached data
+		boolean success = serializeData();
+		if (!success)
+		{
+			Log.w(TAG, "EPG data could not be cached.");
+			return;
+		}
+
+		Prefs userPrefs = Environment.getInstance().getUserPrefs();
+
+		// Calculate & save MD5 of cache file
+		String md5 = calcMD5(getEpgDataCacheFile());
+		userPrefs.put(UserParam.EPG_CACHE_MD5, md5);
+
+		// Save time of serialization to user settings
+		userPrefs.put(UserParam.EPG_CACHE_CREATED_ON, (int) System.currentTimeMillis());
+	}
+
+	private void uncacheEpgData()
+	{
+		Log.i(TAG, ".uncacheEpgData");
+
+		if (!isEpgDataCacheHealthy())
+		{
+			Log.i(TAG, "EPG cached data is invalid or has expired.");
+			return;
+		}
+
+		// Cache should be as old as the interval used to update the EPG data at
+		// the most.
+		int epgUpdateInterval = getPrefs().getInt(Param.UPDATE_INTERVAL);
+
+		// Read cache time when created from user settings
+		Prefs userPrefs = Environment.getInstance().getUserPrefs();
+		int cacheCreatedOn = userPrefs.has(UserParam.EPG_CACHE_CREATED_ON) ? userPrefs
+		        .getInt(UserParam.EPG_CACHE_CREATED_ON) : 0;
+
+		long age = System.currentTimeMillis() - cacheCreatedOn;
+		if (age < epgUpdateInterval)
+		{
+			Log.i(TAG, "EPG cached data is still valid. Age = " + age + " ms");
+			return;
+		}
+
+		// Load serialized cached data
+		_loadedFromCache = deserializeData();
+		if (!_loadedFromCache)
+			Log.w(TAG, "Cached EPG data is corrupt or no cache exists.");
+	}
+
+	private boolean serializeData()
+	{
+		Log.i(TAG, ".serializeData");
+
+		if (_epgData == null)
+			return false;
+
+
+
+		Kryo kryo = new Kryo();
+		try
+        {
+			File cacheFile = getEpgDataCacheFile();
+	        Output output = new Output(new FileOutputStream(cacheFile));
+	        kryo.writeObject(output, _epgData);
+	        output.close();
+        }
+        catch (FileNotFoundException e)
+        {
+        	Log.e(TAG, "Cannot create EPG data cache file.", e);
+        	return false;
+        }
+if (true) return true;
+
+
+
+		FileOutputStream fos = null;
+		ObjectOutputStream oos = null;
+		try
+        {
+			File cacheFile = getEpgDataCacheFile();
+	        fos = new FileOutputStream(cacheFile);
+	        oos = new ObjectOutputStream(fos);
+	        oos.writeObject(_epgData);
+        }
+        catch (FileNotFoundException e)
+        {
+        	Log.e(TAG, "Cannot create EPG data cache file.", e);
+        	return false;
+        }
+        catch (IOException e)
+        {
+        	Log.e(TAG, "Cannot write to EPG data to cache file.", e);
+        	return false;
+        }
+		finally
+		{
+			try
+			{
+				if (fos != null)
+					fos.close();
+			}
+			catch (IOException e)
+	        {
+	        	Log.e(TAG, "Cannot close file output stream.", e);
+	        }
+
+			try
+			{
+				if (oos != null)
+					oos.close();
+			}
+			catch (IOException e)
+	        {
+	        	Log.e(TAG, "Cannot close object output stream.", e);
+	        }
+		}
+
+		return true;
+	}
+
+	private boolean deserializeData()
+	{
+		Log.i(TAG, ".deserializeData");
+
+		FileInputStream fis = null;
+		ObjectInputStream ois = null;
+		try
+		{
+			File cacheFile = getEpgDataCacheFile();
+			if (!cacheFile.exists())
+			{
+				Log.i(TAG, "No EPG cached data exists. Nothing to do.");
+				return false;
+			}
+
+
+
+
+			Kryo kryo = new Kryo();
+			Input input = new Input(new FileInputStream(cacheFile));
+		    _epgData = kryo.readObject(input, EpgData.class);
+		    _epgDataBeingLoaded = _epgData;
+		    input.close();
+if (true) return true;
+
+
+
+
+			fis = new FileInputStream(cacheFile);
+
+			// Read object using ObjectInputStream
+			ois = new ObjectInputStream(fis);
+
+			// Read an object
+			Object obj = ois.readObject();
+
+			if (obj instanceof EpgData)
+			{
+				_epgData = (EpgData) obj;
+
+				// TODO do anything else
+			}
+		}
+		catch (FileNotFoundException e)
+        {
+        	Log.e(TAG, "Cannot open EPG data cache file.", e);
+        	return false;
+        }
+		catch (IOException e)
+        {
+        	Log.e(TAG, "Cannot read from EPG data cache file.", e);
+        	return false;
+        }
+        catch (ClassNotFoundException e)
+        {
+        	Log.e(TAG, "Cannot restore EPG data cache due to non-found class type.", e);
+        	return false;
+        }
+		finally
+		{
+			try
+			{
+				if (fis != null)
+					fis.close();
+			}
+			catch (IOException e)
+	        {
+	        	Log.e(TAG, "Cannot close file output stream.", e);
+	        }
+
+			try
+			{
+				if (ois != null)
+					ois.close();
+			}
+			catch (IOException e)
+	        {
+	        	Log.e(TAG, "Cannot close object output stream.", e);
+	        }
+		}
+		return true;
 	}
 
 	// GSON entity class of channel list response

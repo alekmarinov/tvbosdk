@@ -9,6 +9,7 @@
  */
 package com.aviq.tv.android.sdk.feature.epg;
 
+import java.io.Serializable;
 import java.util.Calendar;
 
 import org.json.JSONObject;
@@ -16,8 +17,10 @@ import org.json.JSONObject;
 /**
  * Program data holder class
  */
-public abstract class Program implements Comparable<Program>
+public abstract class Program implements Comparable<Program>, Serializable
 {
+    private static final long serialVersionUID = 7712628341257180116L;
+
 	// Bean properties
 	private String _id;
 	private Channel _channel;
@@ -32,6 +35,13 @@ public abstract class Program implements Comparable<Program>
 		public int metaStart;
 		public int metaStop;
 		public int metaTitle;
+	}
+
+	/**
+	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 */
+	public Program()
+	{
 	}
 
 	public Program(String id, Channel channel)

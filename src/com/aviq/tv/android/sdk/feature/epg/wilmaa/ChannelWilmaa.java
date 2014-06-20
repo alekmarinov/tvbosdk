@@ -10,13 +10,17 @@
 
 package com.aviq.tv.android.sdk.feature.epg.wilmaa;
 
+import java.io.Serializable;
+
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 
 /**
  * Wilmaa specific channel data holder class
  */
-public class ChannelWilmaa extends Channel
+public class ChannelWilmaa extends Channel implements Serializable
 {
+    private static final long serialVersionUID = 1863868397983235013L;
+
 	private String _streamUrl;
 
 	public ChannelWilmaa(int index)

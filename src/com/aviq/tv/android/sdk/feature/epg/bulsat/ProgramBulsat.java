@@ -10,6 +10,8 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
+import java.io.Serializable;
+
 import org.json.JSONObject;
 
 import com.aviq.tv.android.sdk.feature.epg.Channel;
@@ -19,8 +21,10 @@ import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
 /**
  * Bulsat specific program data holder class
  */
-public class ProgramBulsat extends Program
+public class ProgramBulsat extends Program implements Serializable
 {
+    private static final long serialVersionUID = 5914858738230945780L;
+
 	private String _description;
 
 	public static class MetaData extends Program.MetaData

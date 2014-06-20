@@ -10,6 +10,8 @@
 
 package com.aviq.tv.android.sdk.feature.epg.wilmaa;
 
+import java.io.Serializable;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -21,13 +23,15 @@ import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
 /**
  * RayV specific program data holder class
  */
-public class ProgramWilmaa extends Program
+public class ProgramWilmaa extends Program implements Serializable
 {
+    private static final long serialVersionUID = -8984621508518549321L;
+
 	public static int MAX_SUMMARY_LENGTH = 100;
 	public static int MIN_SUMMARY_LENGTH = 20;
 
 	private static final String TAG = ProgramWilmaa.class.getSimpleName();
-	private JSONObject _detailsResponse;
+	private transient JSONObject _detailsResponse;
 
 	public ProgramWilmaa(String id, Channel channel)
 	{

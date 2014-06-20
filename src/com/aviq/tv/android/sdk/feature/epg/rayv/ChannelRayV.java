@@ -10,13 +10,23 @@
 
 package com.aviq.tv.android.sdk.feature.epg.rayv;
 
+import java.io.Serializable;
+
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 
 /**
  * RayV specific channel data holder class
  */
-public class ChannelRayV extends Channel
+public class ChannelRayV extends Channel implements Serializable
 {
+    private static final long serialVersionUID = -4615784090400813696L;
+
+    /**
+	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 */
+	public ChannelRayV()
+	{
+	}
 
 	public ChannelRayV(int index)
     {
