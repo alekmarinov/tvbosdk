@@ -124,7 +124,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		/**
 		 * Schedule interval
 		 */
-		UPDATE_INTERVAL(60 * 60 * 1000),
+		UPDATE_INTERVAL(24 * 60 * 60 * 1000),
 
 		/**
 		 * The number of maximum EPG channels
