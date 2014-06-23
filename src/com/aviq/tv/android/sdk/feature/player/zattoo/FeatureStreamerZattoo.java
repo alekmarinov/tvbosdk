@@ -71,6 +71,7 @@ public class FeatureStreamerZattoo extends FeatureStreamer
 
 	public FeatureStreamerZattoo() throws FeatureNotFoundException
 	{
+		require(FeatureName.State.NETWORK_WIZARD);
 	}
 
 	@Override
