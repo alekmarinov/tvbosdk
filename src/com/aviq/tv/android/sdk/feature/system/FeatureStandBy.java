@@ -223,7 +223,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			getEventMessenger().postDelayed(_autoStandByRunnable, timeout);
 			Log.i(TAG, ".postponeAutoStandBy: timeout = " + (timeout / 1000) + " secs");
 
-			// remove warnings triggerer
+			// remove warnings trigger
 			getEventMessenger().removeCallbacks(_autoStandByWarningRunnable);
 		}
 	}
