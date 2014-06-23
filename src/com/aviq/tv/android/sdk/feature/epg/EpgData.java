@@ -1,5 +1,6 @@
 package com.aviq.tv.android.sdk.feature.epg;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -11,12 +12,14 @@ import java.util.NavigableMap;
 import android.graphics.Bitmap;
 import android.util.Log;
 
-public class EpgData implements IEpgDataProvider
+public class EpgData implements IEpgDataProvider, Serializable
 {
+    private static final long serialVersionUID = -1450062885594378941L;
+
 	private static final String TAG = EpgData.class.getSimpleName();
 
 	private List<Channel> _channelList;
-	private Bitmap[] _channelLogos;
+	private transient Bitmap[] _channelLogos;
 	private Calendar _maxEpgStopTime;
 	private Calendar _minEpgStartTime;
 
@@ -25,6 +28,13 @@ public class EpgData implements IEpgDataProvider
 
 	/** key = channel id; value = program list for the specific channel */
 	private Map<String, List<Program>> _channelToProgramListMap = new LinkedHashMap<String, List<Program>>();
+
+	/**
+	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 */
+	public EpgData()
+	{
+	}
 
 	public EpgData(List<Channel> newChannelList)
 	{
@@ -42,6 +52,10 @@ public class EpgData implements IEpgDataProvider
 
 	synchronized boolean setChannelLogo(int channelIndex, Bitmap newLogo)
 	{
+		// Added for Kryo's serialization since the Bitmap array is transient
+		if (_channelLogos == null)
+			_channelLogos = new Bitmap[_channelList.size()];
+
 		if (newLogo == null || channelIndex < 0 || channelIndex > _channelList.size())
 			return false;
 

@@ -10,6 +10,8 @@
 
 package com.aviq.tv.android.sdk.feature.epg.rayv;
 
+import java.io.Serializable;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -21,13 +23,22 @@ import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
 /**
  * RayV specific program data holder class
  */
-public class ProgramRayV extends Program
+public class ProgramRayV extends Program implements Serializable
 {
+    private static final long serialVersionUID = -6544884557709312724L;
+
 	public static int MAX_SUMMARY_LENGTH = 100;
 	public static int MIN_SUMMARY_LENGTH = 20;
 
 	private static final String TAG = ProgramRayV.class.getSimpleName();
-	private JSONObject _detailsResponse;
+	private transient JSONObject _detailsResponse;
+
+	/**
+	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 */
+	public ProgramRayV()
+	{
+	}
 
 	public ProgramRayV(String id, Channel channel)
 	{

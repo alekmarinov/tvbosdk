@@ -11,13 +11,17 @@
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
 import com.aviq.tv.android.sdk.core.Log;
+import java.io.Serializable;
+
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 
 /**
  * Bulsat specific channel data holder class
  */
-public class ChannelBulsat extends Channel
+public class ChannelBulsat extends Channel implements Serializable
 {
+    private static final long serialVersionUID = -8718850662391176233L;
+
 	private String _streamUrl;
 	private int _channelNo;
 

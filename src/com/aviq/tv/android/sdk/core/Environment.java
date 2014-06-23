@@ -651,7 +651,8 @@ public class Environment extends Activity
 	 */
 	/* package */boolean onKeyDown(AVKeyEvent keyEvent)
 	{
-		Log.i(TAG, ".onKeyDown: key = " + keyEvent);
+		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", keyEventsEnabled = " + _keyEventsEnabled);
+
 		Bundle bundle = new Bundle();
 		bundle.putString(EXTRA_KEY, keyEvent.Code.name());
 		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
@@ -671,13 +672,13 @@ public class Environment extends Activity
 	 */
 	/* package */boolean onKeyUp(AVKeyEvent keyEvent)
 	{
-		Log.i(TAG, ".onKeyUp: key = " + keyEvent);
+		Log.i(TAG, ".onKeyUp: key = " + keyEvent + ", keyEventsEnabled = " + _keyEventsEnabled);
 		Bundle bundle = new Bundle();
 		bundle.putString(EXTRA_KEY, keyEvent.Code.name());
 		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
 		boolean consumed = _stateManager.onKeyUp(keyEvent);
 
-		if (_keyEventsEnabled || keyEvent.is(Key.SLEEP))
+		if (_keyEventsEnabled || _exceptKeys.contains(keyEvent.Code))
 		{
 			bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
 			_eventMessenger.trigger(ON_KEY_RELEASED, bundle);

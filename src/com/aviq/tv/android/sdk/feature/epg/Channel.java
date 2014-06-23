@@ -9,9 +9,13 @@
  */
 package com.aviq.tv.android.sdk.feature.epg;
 
+import java.io.Serializable;
 
-public abstract class Channel
+
+public abstract class Channel implements Serializable
 {
+    private static final long serialVersionUID = 6801678500699483646L;
+
 	private int _index;
 	private String _channelId;
 	private String _title;
@@ -22,6 +26,13 @@ public abstract class Channel
 		public int metaChannelId;
 		public int metaChannelTitle;
 		public int metaChannelThumbnail;
+	}
+
+	/**
+	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 */
+	public Channel()
+	{
 	}
 
 	public Channel(int index)
