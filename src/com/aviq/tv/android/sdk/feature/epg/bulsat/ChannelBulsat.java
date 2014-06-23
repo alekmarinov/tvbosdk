@@ -10,6 +10,7 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 
 /**
@@ -18,6 +19,7 @@ import com.aviq.tv.android.sdk.feature.epg.Channel;
 public class ChannelBulsat extends Channel
 {
 	private String _streamUrl;
+	private int _channelNo;
 
 	public ChannelBulsat(int index)
     {
@@ -27,6 +29,7 @@ public class ChannelBulsat extends Channel
 	public static class MetaData extends Channel.MetaData
 	{
 		public int metaChannelStreamUrl;
+		public int metaChannelChannelNo;
 	}
 
 	public void setStreamUrl(String streamUrl)
@@ -39,10 +42,27 @@ public class ChannelBulsat extends Channel
 		return _streamUrl;
 	}
 
+	public void setChannelNo(int channelNo)
+	{
+		_channelNo = channelNo;
+	}
+
+	public int getChannelNo()
+	{
+		return _channelNo;
+	}
+
 	@Override
     public void setAttributes(Channel.MetaData channelMetaData, String[] attributes)
 	{
 		MetaData channelBulsatMetaData = (MetaData)channelMetaData;
 		setStreamUrl(attributes[channelBulsatMetaData.metaChannelStreamUrl]);
+		try {
+			setChannelNo(Integer.parseInt(attributes[channelBulsatMetaData.metaChannelChannelNo]));
+		}
+		catch (NumberFormatException pe)
+		{
+			Log.e("ChannelBulsat", pe.getMessage(), pe);
+		}
 	}
 }
