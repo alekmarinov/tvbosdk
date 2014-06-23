@@ -17,6 +17,14 @@ import com.aviq.tv.android.sdk.feature.epg.Channel;
  */
 public class ChannelZattoo extends Channel
 {
+    private static final long serialVersionUID = -8718850662391176233L;
+
+	/**
+	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 */
+	public ChannelZattoo()
+	{
+	}
 
 	public ChannelZattoo(int index)
     {

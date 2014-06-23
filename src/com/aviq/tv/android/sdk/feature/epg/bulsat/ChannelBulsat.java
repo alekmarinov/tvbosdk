@@ -10,9 +10,9 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
-import com.aviq.tv.android.sdk.core.Log;
 import java.io.Serializable;
 
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 
 /**
@@ -24,6 +24,13 @@ public class ChannelBulsat extends Channel implements Serializable
 
 	private String _streamUrl;
 	private int _channelNo;
+
+    /**
+	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 */
+	public ChannelBulsat()
+	{
+	}
 
 	public ChannelBulsat(int index)
     {

@@ -23,6 +23,13 @@ public class ChannelWilmaa extends Channel implements Serializable
 
 	private String _streamUrl;
 
+    /**
+	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 */
+	public ChannelWilmaa()
+    {
+    }
+
 	public ChannelWilmaa(int index)
     {
 	    super(index);
