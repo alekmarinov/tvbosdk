@@ -165,7 +165,7 @@ public class AndroidPlayer extends BasePlayer implements OnCompletionListener, O
 		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(w, h);
 		params.leftMargin = x;
 		params.topMargin = y;
-		_videoView.setLayoutParams(params);
+		setPlayerLayoutParams(params);
 	}
 
 	@Override
@@ -176,6 +176,11 @@ public class AndroidPlayer extends BasePlayer implements OnCompletionListener, O
 		        RelativeLayout.LayoutParams.WRAP_CONTENT);
 		params.addRule(RelativeLayout.CENTER_HORIZONTAL);
 		params.addRule(RelativeLayout.CENTER_VERTICAL);
+		setPlayerLayoutParams(params);
+	}
+
+	public void setPlayerLayoutParams(RelativeLayout.LayoutParams params)
+	{
 		_videoView.setLayoutParams(params);
 	}
 

@@ -61,7 +61,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 	public enum Provider
 	{
-		rayv, wilmaa, bulsat
+		rayv, wilmaa, bulsat, zattoo
 	}
 
 	public enum Param

@@ -95,7 +95,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	}
 
 	protected BasePlayer _player;
-	private VideoView _videoView;
+	protected VideoView _videoView;
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)

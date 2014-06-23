@@ -19,6 +19,11 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
  */
 public class FeatureStreamer extends FeatureComponent
 {
+	public interface OnStreamURLReceived
+	{
+		void onStreamURL(String streamUrl);
+	}
+
 	/**
 	 * Default implementation returning streamerId as url.
 	 * This method can be overridden in order to provide url depending on local
