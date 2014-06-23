@@ -286,8 +286,8 @@ public class StateManager
 	 * @param isOverlay
 	 *            If this State overlays the current
 	 */
-	private void setState(BaseState newState, Bundle params, boolean isOverlay, boolean isOverlayAdd)
-	        throws StateException
+	private void setState(BaseState newState, Bundle params, boolean isOverlay, boolean isOverlayAdd,
+	        boolean replaceMainState) throws StateException
 	{
 		StringBuffer logMsg = new StringBuffer();
 		String stateName;
@@ -328,10 +328,16 @@ public class StateManager
 				}
 				else
 				{
-					removeState(_activeStates.pop());
+					if (!replaceMainState)
+						removeState(_activeStates.pop());
+					else
+						removeState(_activeStates.remove(0));
 					if (newState != null)
 					{
-						_activeStates.add(newState);
+						if (!replaceMainState)
+							_activeStates.add(newState);
+						else
+							_activeStates.add(0, newState);
 						createState(newState, StateLayer.MAIN, params);
 					}
 				}
@@ -361,11 +367,21 @@ public class StateManager
 				}
 				else
 				{
-					while (_activeStates.size() > 0)
-						removeState(_activeStates.pop());
+					if (!replaceMainState)
+					{
+						while (_activeStates.size() > 0)
+							removeState(_activeStates.pop());
+					}
+					else
+					{
+						removeState(_activeStates.remove(0));
+					}
 					if (newState != null)
 					{
-						_activeStates.add(newState);
+						if (!replaceMainState)
+							_activeStates.add(newState);
+						else
+							_activeStates.add(0, newState);
 						createState(newState, StateLayer.MAIN, params);
 					}
 				}
@@ -417,7 +433,20 @@ public class StateManager
 	 */
 	public void setStateMain(BaseState state, Bundle params) throws StateException
 	{
-		setState(state, params, false, false);
+		setState(state, params, false, false, false);
+	}
+
+	/**
+	 * Replace the main State with keeping the above overlays
+	 *
+	 * @param state
+	 *            The new State to activate replacing the current
+	 * @param params
+	 *            Bundle holding params to be sent to the State when showing
+	 */
+	public void replaceStateMain(BaseState state, Bundle params) throws StateException
+	{
+		setState(state, params, false, false, true);
 	}
 
 	/**
@@ -430,7 +459,7 @@ public class StateManager
 	 */
 	public void setStateOverlay(BaseState state, Bundle params) throws StateException
 	{
-		setState(state, params, true, false);
+		setState(state, params, true, false, false);
 	}
 
 	/**
@@ -443,7 +472,7 @@ public class StateManager
 	 */
 	public void addStateOverlay(BaseState state, Bundle params) throws StateException
 	{
-		setState(state, params, true, true);
+		setState(state, params, true, true, false);
 	}
 
 	/**
@@ -453,7 +482,7 @@ public class StateManager
 	{
 		try
 		{
-			setState(null, null, true, false);
+			setState(null, null, true, false, false);
 		}
 		catch (StateException e)
 		{
@@ -517,7 +546,7 @@ public class StateManager
 				ft.add(fragmentId, state);
 				// FIXME: make transition effect depending on state's StateLayer
 				ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-				//ft.commit();
+				// ft.commit();
 				ft.commitAllowingStateLoss();
 
 				_handler.post(new Runnable()
@@ -543,7 +572,8 @@ public class StateManager
 							{
 								Log.e(TAG, "The view of overlay " + state.getClass().getName() + " is null!");
 							}
-							// _activeStates.get(_activeStates.size() - 1).onHide(true);
+							// _activeStates.get(_activeStates.size() -
+							// 1).onHide(true);
 						}
 
 						// notify state is shown
@@ -745,7 +775,7 @@ public class StateManager
 			}
 			else if (StateLayer.OVERLAY.equals(stateLayer))
 			{
-				setState(null, null, true, true);
+				setState(null, null, true, true, false);
 			}
 		}
 		catch (StateException e)
