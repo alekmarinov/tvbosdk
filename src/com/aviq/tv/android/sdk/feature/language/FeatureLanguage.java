@@ -72,27 +72,33 @@ public class FeatureLanguage extends FeatureComponent
 
 	public Locale getLocale(Code code)
 	{
-		Locale locale = null;
+		Locale locale = Locale.getDefault();
 
-		switch (code)
+		if (code != null)
 		{
-			case BG:
-				locale = new Locale("bg_BG");
-			break;
-			case EN:
-				locale = Locale.UK;
-			break;
-			case FR:
-				locale = Locale.FRENCH;
-			break;
-			case DE:
-				locale = Locale.GERMAN;
-			break;
-			default:
-				locale = Locale.UK;
-			break;
+			switch (code)
+			{
+				case BG:
+					locale = new Locale("bg_BG");
+				break;
+				case EN:
+					locale = Locale.UK;
+				break;
+				case FR:
+					locale = Locale.FRENCH;
+				break;
+				case DE:
+					locale = Locale.GERMAN;
+				break;
+			}
 		}
+
 		return locale;
+	}
+
+	public Locale getLocale()
+	{
+		return getLocale(null);
 	}
 
 	private void setSystemLanguage(Locale locale)
