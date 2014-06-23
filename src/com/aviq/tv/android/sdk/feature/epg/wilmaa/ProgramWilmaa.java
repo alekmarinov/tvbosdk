@@ -33,6 +33,13 @@ public class ProgramWilmaa extends Program implements Serializable
 	private static final String TAG = ProgramWilmaa.class.getSimpleName();
 	private transient JSONObject _detailsResponse;
 
+	/**
+	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 */
+	public ProgramWilmaa()
+	{
+	}
+
 	public ProgramWilmaa(String id, Channel channel)
 	{
 		super(id, channel);

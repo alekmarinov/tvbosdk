@@ -32,6 +32,13 @@ public class ProgramBulsat extends Program implements Serializable
 		public int metaDescription;
 	}
 
+	/**
+	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 */
+	public ProgramBulsat()
+	{
+	}
+
 	public ProgramBulsat(String id, Channel channel)
 	{
 		super(id, channel);

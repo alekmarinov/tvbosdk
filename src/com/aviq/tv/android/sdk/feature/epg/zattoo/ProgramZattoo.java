@@ -23,11 +23,20 @@ import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
  */
 public class ProgramZattoo extends Program
 {
+    private static final long serialVersionUID = 6850910305560837142L;
+
 	public static int MAX_SUMMARY_LENGTH = 100;
 	public static int MIN_SUMMARY_LENGTH = 20;
 
 	private static final String TAG = ProgramZattoo.class.getSimpleName();
 	private JSONObject _detailsResponse;
+
+	/**
+	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 */
+	public ProgramZattoo()
+	{
+	}
 
 	public ProgramZattoo(String id, Channel channel)
 	{
