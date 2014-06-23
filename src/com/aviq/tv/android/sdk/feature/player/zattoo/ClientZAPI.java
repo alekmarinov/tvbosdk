@@ -13,6 +13,9 @@ package com.aviq.tv.android.sdk.feature.player.zattoo;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.os.Bundle;
 
 import com.android.volley.AuthFailureError;
@@ -34,21 +37,22 @@ import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 public class ClientZAPI
 {
 	private static final String TAG = ClientZAPI.class.getSimpleName();
+	public static final String EXTRA_ERROR = "ERROR";
+	public static final String EXTRA_URL = "URL";
+	public static final String EXTRA_STOP_URL = "STOP_URL";
 	private String _baseUri;
 	private String _cookie;
-	public static final String EXTRA_ERROR = "ERROR";
+	private RequestQueue _requestQueue;
 
 	public ClientZAPI(String baseUri)
 	{
 		_baseUri = baseUri;
+		_requestQueue = Volley.newRequestQueue(Environment.getInstance(), new ExtHttpClientStack(new SslHttpClient()));
 	}
 
 	public void hello(final String appTid, final String uuid, OnResultReceived onResultReceived)
 	{
-		RequestQueue requestQueue = Volley.newRequestQueue(Environment.getInstance(), new ExtHttpClientStack(
-		        new SslHttpClient()));
-
-		ResponseCallbackHello responseCallbackHello = new ResponseCallbackHello(onResultReceived);
+		ResponseCallback responseCallbackHello = new ResponseCallback(onResultReceived);
 		StringRequest stringRequest = new StringRequest(Request.Method.POST, _baseUri + "/zapi/session/hello",
 		        responseCallbackHello, responseCallbackHello)
 		{
@@ -68,22 +72,72 @@ public class ClientZAPI
 			{
 				Map<String, String> responseHeaders = response.headers;
 				_cookie = responseHeaders.get("set-cookie");
+				Log.i(TAG, "hello::_cookie = " + _cookie);
 				return super.parseNetworkResponse(response);
 			}
 		};
-		requestQueue.add(stringRequest);
+		_requestQueue.add(stringRequest);
 	}
 
-	public void login(String username, String password, OnResultReceived onResultReceived)
+	public void login(final String username, final String password, OnResultReceived onResultReceived)
 	{
+		ResponseCallback responseCallback = new ResponseCallback(onResultReceived);
+		StringRequest stringRequest = new StringRequest(Request.Method.POST, _baseUri + "/zapi/account/login",
+		        responseCallback, responseCallback)
+		{
+			@Override
+			protected Map<String, String> getParams() throws AuthFailureError
+			{
+				Map<String, String> params = new HashMap<String, String>();
+				params.put("login", username);
+				params.put("password", password);
+				return params;
+			}
 
+			@Override
+			protected Response<String> parseNetworkResponse(NetworkResponse response)
+			{
+				Map<String, String> responseHeaders = response.headers;
+				_cookie = responseHeaders.get("set-cookie");
+				Log.i(TAG, "login::_cookie = " + _cookie);
+				return super.parseNetworkResponse(response);
+			}
+		};
+		_requestQueue.add(stringRequest);
 	}
 
-	private class ResponseCallbackHello implements Response.Listener<String>, Response.ErrorListener
+	public void watch(final String channelId, final String streamType, OnResultReceived onResultReceived)
 	{
-		private OnResultReceived _onResultReceived;
+		ResponseCallbackWatch responseCallback = new ResponseCallbackWatch(onResultReceived);
+		StringRequest stringRequest = new StringRequest(Request.Method.POST, _baseUri + "/zapi/watch",
+		        responseCallback, responseCallback)
+		{
+			@Override
+			protected Map<String, String> getParams() throws AuthFailureError
+			{
+				Map<String, String> params = new HashMap<String, String>();
+				params.put("cid", channelId);
+				params.put("stream_type", streamType);
+				return params;
+			}
 
-		ResponseCallbackHello(OnResultReceived onResultReceived)
+			@Override
+			protected Response<String> parseNetworkResponse(NetworkResponse response)
+			{
+				Map<String, String> responseHeaders = response.headers;
+				_cookie = responseHeaders.get("set-cookie");
+				Log.i(TAG, "login::_cookie = " + _cookie);
+				return super.parseNetworkResponse(response);
+			}
+		};
+		_requestQueue.add(stringRequest);
+	}
+
+	private class ResponseCallback implements Response.Listener<String>, Response.ErrorListener
+	{
+		protected OnResultReceived _onResultReceived;
+
+		ResponseCallback(OnResultReceived onResultReceived)
 		{
 			_onResultReceived = onResultReceived;
 		}
@@ -101,7 +155,46 @@ public class ClientZAPI
 			Log.i(TAG, ".onErrorResponse: error = " + error);
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Hello Error  " + statusCode + ": " + error);
+			Log.e(TAG, "Error  " + statusCode + ": " + error);
+			Bundle bundle = new Bundle();
+			bundle.putString(EXTRA_ERROR, error.toString());
+			_onResultReceived.onReceiveResult(statusCode, bundle);
+		}
+	}
+
+	private class ResponseCallbackWatch extends ResponseCallback
+	{
+		ResponseCallbackWatch(OnResultReceived onResultReceived)
+        {
+	        super(onResultReceived);
+        }
+
+		@Override
+		public void onResponse(String response)
+		{
+			Log.i(TAG, ".onResponse: response = " + response);
+			try
+            {
+				JSONObject json = new JSONObject(response);
+				JSONObject stream = json.getJSONObject("stream");
+				Bundle bundle = new Bundle();
+				bundle.putString(EXTRA_URL, stream.getString("url"));
+				bundle.putString(EXTRA_STOP_URL, stream.getString("stop_url"));
+				_onResultReceived.onReceiveResult(ResultCode.OK, bundle);
+            }
+            catch (JSONException e)
+            {
+            	Log.e(TAG, e.getMessage(), e);
+            }
+		}
+
+		@Override
+		public void onErrorResponse(VolleyError error)
+		{
+			Log.i(TAG, ".onErrorResponse: error = " + error);
+			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
+			        : ResultCode.GENERAL_FAILURE;
+			Log.e(TAG, "Watch Error  " + statusCode + ": " + error);
 			Bundle bundle = new Bundle();
 			bundle.putString(EXTRA_ERROR, error.toString());
 			_onResultReceived.onReceiveResult(statusCode, bundle);

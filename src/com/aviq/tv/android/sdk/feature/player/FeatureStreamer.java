@@ -30,11 +30,11 @@ public class FeatureStreamer extends FeatureComponent
 	 * streaming service.
 	 *
 	 * @param streamId
-	 * @return stream url
+	 * @param onStreamURLReceived callback invoked with corresponding stream url to specified streamId
 	 */
-	public String getUrlByStreamId(String streamId)
+	public void getUrlByStreamId(String streamId, OnStreamURLReceived onStreamURLReceived)
 	{
-		return streamId;
+		onStreamURLReceived.onStreamURL(streamId);
 	}
 
 	@Override

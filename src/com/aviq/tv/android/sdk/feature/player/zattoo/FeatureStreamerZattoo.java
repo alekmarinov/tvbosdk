@@ -13,6 +13,7 @@ package com.aviq.tv.android.sdk.feature.player.zattoo;
 import android.os.Bundle;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
@@ -91,6 +92,7 @@ public class FeatureStreamerZattoo extends FeatureStreamer
 						                @Override
 						                public void onReceiveResult(int resultCode, Bundle resultData)
 						                {
+						                	Log.i(TAG, "login response: " + resultCode);
 							                onFeatureInitialized.onInitialized(FeatureStreamerZattoo.this, resultCode);
 						                }
 					                });
@@ -103,16 +105,23 @@ public class FeatureStreamerZattoo extends FeatureStreamer
 		        });
 	}
 
+	/**
+	 * Fetch stream url by specified streamId using ZAPI watch method
+	 *
+	 * @param streamId
+	 * @param onStreamURLReceived callback invoked with corresponding stream url to specified streamId
+	 */
 	@Override
-	public String getUrlByStreamId(String streamId)
+    public void getUrlByStreamId(String streamId, final OnStreamURLReceived onStreamURLReceived)
 	{
-		return null;
-	}
-
-	public void getUrlByStreamId(String streamId, OnStreamURLReceived onStreamURLReceived)
-	{
-		String streamUrl = null;
-		onStreamURLReceived.onStreamURL(streamUrl);
+		_clientZAPI.watch(streamId, "hls", new OnResultReceived()
+		{
+			@Override
+			public void onReceiveResult(int resultCode, Bundle resultData)
+			{
+				onStreamURLReceived.onStreamURL(resultData.getString(ClientZAPI.EXTRA_URL));
+			}
+		});
 	}
 
 	@Override

@@ -101,7 +101,7 @@ public class FeatureStreamerRayV extends FeatureStreamer
 	}
 
 	@Override
-    public String getUrlByStreamId(String streamId)
+    public void getUrlByStreamId(String streamId, OnStreamURLReceived onStreamURLReceived)
 	{
 		Bundle bundle = new Bundle();
 		bundle.putString("USER", getPrefs().getString(Param.RAYV_USER));
@@ -109,7 +109,7 @@ public class FeatureStreamerRayV extends FeatureStreamer
 		bundle.putString("STREAM_ID", streamId);
 		bundle.putInt("BITRATE", getPrefs().getInt(Param.RAYV_STREAM_BITRATE));
 		bundle.putInt("PORT", getPrefs().getInt(Param.RAYV_STREAM_PORT));
-		return getPrefs().getString(Param.RAYV_STREAM_URL_PATTERN, bundle);
+		onStreamURLReceived.onStreamURL(getPrefs().getString(Param.RAYV_STREAM_URL_PATTERN, bundle));
 	}
 
 	@Override

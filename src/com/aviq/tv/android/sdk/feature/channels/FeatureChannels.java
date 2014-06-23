@@ -28,6 +28,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
+import com.aviq.tv.android.sdk.feature.player.FeatureStreamer.OnStreamURLReceived;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 
 /**
@@ -280,7 +281,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 			return;
 		if (index < 0 || index >= channels.size())
 			index = 0;
-		Channel channel = channels.get(index);
+		final Channel channel = channels.get(index);
 
 		if (hasLastChannel())
 		{
@@ -298,27 +299,34 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		}
 		setLastChannelId(channel.getChannelId());
 		int globalIndex = channel.getIndex();
-		String streamId = _feature.Scheduler.EPG.getChannelStreamId(globalIndex);
-		String streamUrl = _feature.Component.STREAMER.getUrlByStreamId(streamId);
-		if (streamUrl == null)
+		final String streamId = _feature.Scheduler.EPG.getChannelStreamId(globalIndex);
+
+		_feature.Component.STREAMER.getUrlByStreamId(streamId, new OnStreamURLReceived()
 		{
-			Log.e(TAG, channel + " has no stream to play!");
-		}
-		else
-		{
-			if (_featureTimeshift != null)
+			@Override
+			public void onStreamURL(String streamUrl)
 			{
-				// play with timeshift
-				Log.d(TAG, ".play: timeshift " + streamId);
-				_featureTimeshift.play(streamUrl);
+				if (streamUrl == null)
+				{
+					Log.e(TAG, channel + " has no stream to play!");
+				}
+				else
+				{
+					if (_featureTimeshift != null)
+					{
+						// play with timeshift
+						Log.d(TAG, ".play: timeshift " + streamId);
+						_featureTimeshift.play(streamUrl);
+					}
+					else
+					{
+						// play directly
+						Log.d(TAG, ".play: directly " + streamId);
+						_feature.Component.PLAYER.play(streamUrl);
+					}
+				}
 			}
-			else
-			{
-				// play directly
-				Log.d(TAG, ".play: directly " + streamId);
-				_feature.Component.PLAYER.play(streamUrl);
-			}
-		}
+		});
 	}
 
 	/**
