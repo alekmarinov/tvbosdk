@@ -49,6 +49,8 @@ public class StateManager
 	private List<Integer> _overlayFragmentIds = new ArrayList<Integer>();
 	private RelativeLayout _overlayLayout;
 	private int _viewLayerId = 0x00af0001;
+	private boolean _inSetState = false;
+	private boolean _inCreateState = false;
 
 	public enum StateLayer
 	{
@@ -178,34 +180,6 @@ public class StateManager
 		}
 	}
 
-	/**
-	 * Initialize StateManager instance.
-	 *
-	 * @param mainActivity
-	 *            The owner MainActivity of this StateManager
-	 */
-	// public StateManager(Activity activity)
-	// {
-	// _activity = activity;
-	// _contentView = createContentView(_activity);
-	// _activity.setContentView(_contentView);
-	//
-	// View mainFragment = createFrameLayout();
-	// View overlayFragment = createFrameLayout();
-	// View messageFragment = createFrameLayout();
-	//
-	// addViewLayer(mainFragment, false);
-	// addViewLayer(overlayFragment, false);
-	// addViewLayer(messageFragment, false);
-	//
-	// _mainFragmentId = mainFragment.getId();
-	// _overlayFragmentId = overlayFragment.getId();
-	// _messageFragmentId = messageFragment.getId();
-	//
-	// Log.i(TAG, "StateManager created: " + _mainFragmentId + ", " +
-	// _overlayFragmentId + ", " + _messageFragmentId);
-	// }
-
 	public StateManager(Activity activity)
 	{
 		_activity = activity;
@@ -289,103 +263,115 @@ public class StateManager
 	private void setState(BaseState newState, Bundle params, boolean isOverlay, boolean isOverlayAdd,
 	        boolean replaceMainState) throws StateException
 	{
-		StringBuffer logMsg = new StringBuffer();
-		String stateName;
-		if (newState != null)
-			stateName = newState.getClass().getSimpleName();
-		else
-			stateName = "null";
-
-		logMsg.append(".setState: ").append(stateName).append('(');
-		TextUtils.implodeBundle(logMsg, params, '=', ',').append("), overlay=").append(isOverlay);
-		Log.i(TAG, logMsg.toString());
-
-		switch (_activeStates.size())
+		try
 		{
-			case 0:
-				if (isOverlay)
-				{
-					throw new StateException(null, "Can't set overlay state `" + stateName + "' without main State");
-				}
-				else
-				{
-					if (newState != null)
-					{
-						_activeStates.add(newState);
-						createState(newState, StateLayer.MAIN, params);
-					}
-				}
-			break;
-			case 1:
-				if (isOverlay)
-				{
-					if (newState != null)
-					{
-						_activeStates.get(_activeStates.size() - 1).onHide(true);
-						_activeStates.add(newState);
-						createState(newState, StateLayer.OVERLAY, params);
-					}
-				}
-				else
-				{
-					if (!replaceMainState)
-						removeState(_activeStates.pop());
-					else
-						removeState(_activeStates.remove(0));
-					if (newState != null)
-					{
-						if (!replaceMainState)
-							_activeStates.add(newState);
-						else
-							_activeStates.add(0, newState);
-						createState(newState, StateLayer.MAIN, params);
-					}
-				}
-			break;
-			default:
-				if (isOverlay)
-				{
-					if (!isOverlayAdd)
-					{
-						while (_activeStates.size() > 1)
-							removeState(_activeStates.pop());
-					}
-					if (newState != null)
-					{
-						_activeStates.get(_activeStates.size() - 1).onHide(true);
-						_activeStates.add(newState);
-						createState(newState, StateLayer.OVERLAY, params);
-					}
-					else
-					{
-						if (isOverlayAdd)
-							removeState(_activeStates.pop());
+			if (_inSetState)
+			{
+				throw new StateException(null, "setState is not re-entrant!");
+			}
+			_inSetState = true;
+			StringBuffer logMsg = new StringBuffer();
+			String stateName;
+			if (newState != null)
+				stateName = newState.getClass().getSimpleName();
+			else
+				stateName = "null";
 
-						// restore focus of the uncovered view
-						_activeStates.get(_activeStates.size() - 1).onShow(true);
-					}
-				}
-				else
-				{
-					if (!replaceMainState)
+			logMsg.append(".setState: ").append(stateName).append('(');
+			TextUtils.implodeBundle(logMsg, params, '=', ',').append("), overlay=").append(isOverlay);
+			Log.i(TAG, logMsg.toString());
+
+			switch (_activeStates.size())
+			{
+				case 0:
+					if (isOverlay)
 					{
-						while (_activeStates.size() > 0)
-							removeState(_activeStates.pop());
+						throw new StateException(null, "Can't set overlay state `" + stateName + "' without main State");
 					}
 					else
 					{
-						removeState(_activeStates.remove(0));
+						if (newState != null)
+						{
+							_activeStates.add(newState);
+							createState(newState, StateLayer.MAIN, params);
+						}
 					}
-					if (newState != null)
+				break;
+				case 1:
+					if (isOverlay)
+					{
+						if (newState != null)
+						{
+							_activeStates.get(_activeStates.size() - 1).onHide(true);
+							_activeStates.add(newState);
+							createState(newState, StateLayer.OVERLAY, params);
+						}
+					}
+					else
 					{
 						if (!replaceMainState)
-							_activeStates.add(newState);
+							removeState(_activeStates.pop());
 						else
-							_activeStates.add(0, newState);
-						createState(newState, StateLayer.MAIN, params);
+							removeState(_activeStates.remove(0));
+						if (newState != null)
+						{
+							if (!replaceMainState)
+								_activeStates.add(newState);
+							else
+								_activeStates.add(0, newState);
+							createState(newState, StateLayer.MAIN, params);
+						}
 					}
-				}
-			break;
+				break;
+				default:
+					if (isOverlay)
+					{
+						if (!isOverlayAdd)
+						{
+							while (_activeStates.size() > 1)
+								removeState(_activeStates.pop());
+						}
+						if (newState != null)
+						{
+							_activeStates.get(_activeStates.size() - 1).onHide(true);
+							_activeStates.add(newState);
+							createState(newState, StateLayer.OVERLAY, params);
+						}
+						else
+						{
+							if (isOverlayAdd)
+								removeState(_activeStates.pop());
+
+							// restore focus of the uncovered view
+							_activeStates.get(_activeStates.size() - 1).onShow(true);
+						}
+					}
+					else
+					{
+						if (!replaceMainState)
+						{
+							while (_activeStates.size() > 0)
+								removeState(_activeStates.pop());
+						}
+						else
+						{
+							removeState(_activeStates.remove(0));
+						}
+						if (newState != null)
+						{
+							if (!replaceMainState)
+								_activeStates.add(newState);
+							else
+								_activeStates.add(0, newState);
+							createState(newState, StateLayer.MAIN, params);
+						}
+					}
+				break;
+			}
+		}
+		finally
+		{
+			_inSetState = false;
 		}
 	}
 
@@ -499,97 +485,110 @@ public class StateManager
 	 *            the layer which this state will occupy
 	 * @param params
 	 *            Bundle with State params
+	 * @throws StateException
 	 */
-	/* package */void createState(final BaseState state, final StateLayer stateLayer, final Bundle params)
+	/* package */void createState(final BaseState state, final StateLayer stateLayer, final Bundle params) throws StateException
 	{
-		StringBuffer logMsg = new StringBuffer();
-		logMsg.append(".showState: ").append(state.getClass().getSimpleName()).append('(');
-		TextUtils.implodeBundle(logMsg, params, '=', ',').append("), layer=").append(stateLayer.name());
-		Log.i(TAG, logMsg.toString());
-
-		// Workaround of setting fragment arguments when the fragment is already
-		// added
-		Runnable showFragmentChunk = new Runnable()
+		try
 		{
-			@Override
-			public void run()
+			if (_inCreateState)
 			{
-				state.setArguments(params);
-				FragmentTransaction ft = _activity.getFragmentManager().beginTransaction();
-				int fragmentId = 0;
-				switch (stateLayer)
-				{
-					case MAIN:
-						fragmentId = _mainFragmentId;
-					break;
-					case OVERLAY:
-						int nOverlays = _activeStates.size() - 1;
-						while (nOverlays > _overlayFragmentIds.size())
-						{
-							// add new overlay frame
-							View overlayFrame = new FrameLayout(_activity);
-							overlayFrame.setId(_viewLayerId++);
-							RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
-							        RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-							_overlayLayout.addView(overlayFrame, lp);
-							_overlayFragmentIds.add(overlayFrame.getId());
-						}
-						fragmentId = _overlayFragmentIds.get(_overlayFragmentIds.size() - 1);
-					break;
-					case MESSAGE:
-						fragmentId = _messageFragmentId;
-					break;
-				}
-				if (fragmentId == 0)
-					throw new RuntimeException("Set fragment layer resource ids with method setFragmentLayerResources");
+				throw new StateException(null, "createState is not re-entrant!");
+			}
+			_inCreateState = true;
+			StringBuffer logMsg = new StringBuffer();
+			logMsg.append(".showState: ").append(state.getClass().getSimpleName()).append('(');
+			TextUtils.implodeBundle(logMsg, params, '=', ',').append("), layer=").append(stateLayer.name());
+			Log.i(TAG, logMsg.toString());
 
-				ft.add(fragmentId, state);
-				// FIXME: make transition effect depending on state's StateLayer
-				ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-				// ft.commit();
-				ft.commitAllowingStateLoss();
-
-				_handler.post(new Runnable()
+			// Workaround of setting fragment arguments when the fragment is already
+			// added
+			Runnable showFragmentChunk = new Runnable()
+			{
+				@Override
+				public void run()
 				{
-					@Override
-					public void run()
+					state.setArguments(params);
+					FragmentTransaction ft = _activity.getFragmentManager().beginTransaction();
+					int fragmentId = 0;
+					switch (stateLayer)
 					{
-						if (stateLayer.equals(StateLayer.OVERLAY))
-						{
-							View stateView = state.getView();
-							if (stateView != null)
+						case MAIN:
+							fragmentId = _mainFragmentId;
+						break;
+						case OVERLAY:
+							int nOverlays = _activeStates.size() - 1;
+							while (nOverlays > _overlayFragmentIds.size())
 							{
-								if (_overlayBackgroundImage != 0)
-									state.getView().setBackgroundResource(_overlayBackgroundImage);
-								else if (_overlayBackgroundColor != 0)
-									state.getView().setBackgroundColor(_overlayBackgroundColor);
+								// add new overlay frame
+								View overlayFrame = new FrameLayout(_activity);
+								overlayFrame.setId(_viewLayerId++);
+								RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
+								        RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+								_overlayLayout.addView(overlayFrame, lp);
+								_overlayFragmentIds.add(overlayFrame.getId());
+							}
+							fragmentId = _overlayFragmentIds.get(_overlayFragmentIds.size() - 1);
+						break;
+						case MESSAGE:
+							fragmentId = _messageFragmentId;
+						break;
+					}
+					if (fragmentId == 0)
+						throw new RuntimeException("Set fragment layer resource ids with method setFragmentLayerResources");
+
+					ft.add(fragmentId, state);
+					// FIXME: make transition effect depending on state's StateLayer
+					ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+					// ft.commit();
+					ft.commitAllowingStateLoss();
+
+					_handler.post(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							if (stateLayer.equals(StateLayer.OVERLAY))
+							{
+								View stateView = state.getView();
+								if (stateView != null)
+								{
+									if (_overlayBackgroundImage != 0)
+										state.getView().setBackgroundResource(_overlayBackgroundImage);
+									else if (_overlayBackgroundColor != 0)
+										state.getView().setBackgroundColor(_overlayBackgroundColor);
+									else
+									{
+										Log.i(TAG, "Overlay background is not defined in StateManager");
+									}
+								}
 								else
 								{
-									Log.i(TAG, "Overlay background is not defined in StateManager");
+									Log.e(TAG, "The view of overlay " + state.getClass().getName() + " is null!");
 								}
+								// _activeStates.get(_activeStates.size() -
+								// 1).onHide(true);
 							}
-							else
-							{
-								Log.e(TAG, "The view of overlay " + state.getClass().getName() + " is null!");
-							}
-							// _activeStates.get(_activeStates.size() -
-							// 1).onHide(true);
-						}
 
-						// notify state is shown
-						state.onShow(false);
-					}
-				});
+							// notify state is shown
+							state.onShow(false);
+						}
+					});
+				}
+			};
+			if (state.isAdded())
+			{
+				removeState(state);
+				_handler.post(showFragmentChunk);
 			}
-		};
-		if (state.isAdded())
-		{
-			removeState(state);
-			_handler.post(showFragmentChunk);
+			else
+			{
+				showFragmentChunk.run();
+			}
 		}
-		else
+		finally
 		{
-			showFragmentChunk.run();
+			_inCreateState = false;
 		}
 	}
 
@@ -741,7 +740,14 @@ public class StateManager
 	 */
 	public BaseState showMessage(MessageParams messageParams)
 	{
-		createState(_messageState, StateLayer.MESSAGE, messageParams.getParamsBundle());
+		try
+        {
+	        createState(_messageState, StateLayer.MESSAGE, messageParams.getParamsBundle());
+        }
+        catch (StateException e)
+        {
+        	Log.e(TAG, e.getMessage(), e);
+        }
 		return _messageState;
 	}
 
