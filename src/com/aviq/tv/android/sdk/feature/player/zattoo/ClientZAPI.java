@@ -118,6 +118,8 @@ public class ClientZAPI
 				Map<String, String> params = new HashMap<String, String>();
 				params.put("cid", channelId);
 				params.put("stream_type", streamType);
+				params.put("initialrate", "2000000");
+				params.put("minrate", "1100000");
 				return params;
 			}
 
