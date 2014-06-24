@@ -58,6 +58,11 @@ public class FeatureInternet extends FeatureScheduler
 		CHECK_ATTEMPTS(6),
 
 		/**
+		 * Timeout in seconds to attempt checking
+		 */
+		CHECK_ATTEMPTS_TIMEOUT(10000),
+
+		/**
 		 * Delay between internet check attempts
 		 */
 		CHECK_ATTEMPT_DELAY(1000),
@@ -141,6 +146,7 @@ public class FeatureInternet extends FeatureScheduler
 		class InternetCheckResponse implements OnResultReceived, Runnable
 		{
 			private int _attemptsCounter = 0;
+			private long _checkStart = System.currentTimeMillis();
 
 			@Override
 			public void run()
@@ -154,7 +160,9 @@ public class FeatureInternet extends FeatureScheduler
 				if (resultCode != ResultCode.OK)
 				{
 					int checkAttempts = getPrefs().getInt(Param.CHECK_ATTEMPTS);
-					if (_attemptsCounter < checkAttempts)
+					long timeElapsed = System.currentTimeMillis() - _checkStart;
+					if (_attemptsCounter < checkAttempts
+					        || (timeElapsed < getPrefs().getInt(Param.CHECK_ATTEMPTS_TIMEOUT)))
 					{
 						_attemptsCounter++;
 						Log.w(TAG, "Check internet failed. Trying " + (checkAttempts - _attemptsCounter + 1)
@@ -300,27 +308,30 @@ public class FeatureInternet extends FeatureScheduler
 		getUrlContent(url, new OnResultReceived()
 		{
 			@Override
-            public void onReceiveResult(int resultCode, Bundle resultData)
-            {
-                if (resultCode == ResultCode.OK)
-                {
-                	String content = resultData.getString(ResultExtras.CONTENT.name());
+			public void onReceiveResult(int resultCode, Bundle resultData)
+			{
+				if (resultCode == ResultCode.OK)
+				{
+					String content = resultData.getString(ResultExtras.CONTENT.name());
 
-                	String ip = null;
+					String ip = null;
 
-                	// <html><head><title>Current IP Check</title></head><body>Current IP Address: 78.90.178.220</body></html>
-                	Pattern pattern = Pattern.compile("\\<body\\>Current IP Address\\:\\s.*?(\\w+\\.\\w+.\\w+.\\w+)\\s*?\\<\\/body\\>");
-    				Matcher matcher = pattern.matcher(content);
-    				if (matcher.find())
-    				{
-    					ip = matcher.group(1).trim();
-    				}
-    				if (ip != null && !"".equals(ip))
-    					_publicIP = ip;
+					// <html><head><title>Current IP
+					// Check</title></head><body>Current IP Address:
+					// 78.90.178.220</body></html>
+					Pattern pattern = Pattern
+					        .compile("\\<body\\>Current IP Address\\:\\s.*?(\\w+\\.\\w+.\\w+.\\w+)\\s*?\\<\\/body\\>");
+					Matcher matcher = pattern.matcher(content);
+					if (matcher.find())
+					{
+						ip = matcher.group(1).trim();
+					}
+					if (ip != null && !"".equals(ip))
+						_publicIP = ip;
 
-    				Log.i(TAG, ".retrievePublicIPAsync: public IP = " + _publicIP);
-                }
-            }
+					Log.i(TAG, ".retrievePublicIPAsync: public IP = " + _publicIP);
+				}
+			}
 		});
 	}
 
