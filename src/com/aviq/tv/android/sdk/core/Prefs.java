@@ -97,6 +97,20 @@ public class Prefs
 	}
 
 	/**
+	 * Returns long parameter from preferences
+	 *
+	 * @param key
+	 *            parameter name
+	 * @return Long value corresponding to the specified key
+	 */
+	public long getLong(Object key)
+	{
+		if (!_prefs.contains(key.toString()))
+			throw new RuntimeException("Parameter " + key + " is not set");
+		return _prefs.getLong(key.toString(), 0);
+	}
+
+	/**
 	 * Returns boolean parameter from preferences
 	 *
 	 * @param key
@@ -159,6 +173,31 @@ public class Prefs
 			Log.v(TAG + ":" + _name, "Skip setting " + key + " = " + value + ", previous value = " + getInt(key));
 		}
 	}
+
+	/**
+	 * Sets int parameter in preferences
+	 *
+	 * @param key
+	 *            parameter name
+	 * @param long
+	 *        value
+	 */
+	public void put(Object key, long value)
+    {
+		if (_isOverwrite || !_prefs.contains(key.toString()))
+		{
+			Log.d(TAG + ":" + _name, "Set " + key + " = " + value);
+			Editor edit = _prefs.edit();
+			edit.putLong(key.toString(), value);
+			edit.commit();
+		}
+		else
+		{
+			// FIXME: Consider throwing exception if the new value differs from
+			// the previous
+			Log.v(TAG + ":" + _name, "Skip setting " + key + " = " + value + ", previous value = " + getLong(key));
+		}
+    }
 
 	/**
 	 * Sets boolean parameter in preferences
