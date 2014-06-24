@@ -211,16 +211,14 @@ public abstract class FeatureEPG extends FeatureScheduler
 		{
 			// Download bitmaps
 			int nChannels = _epgData.getChannelCount();
+			_retrievedChannelPrograms = nChannels;
 			for (int i = 0; i < nChannels; i++)
 			{
 				Channel channel = _epgData.getChannel(i);
 				retrieveChannelLogo(channel, i);
 			}
 
-			getEventMessenger().trigger(ON_EPG_UPDATED);
 			_onFeatureInitialized = onFeatureInitialized;
-			_onFeatureInitialized.onInitialized(FeatureEPG.this, ResultCode.OK);
-
 			scheduleDelayed(getPrefs().getInt(Param.UPDATE_INTERVAL));
 		}
 	}
@@ -490,6 +488,9 @@ public abstract class FeatureEPG extends FeatureScheduler
 		}
 
 		int numChannels = _epgDataBeingLoaded.getChannelCount();
+		final float processedCount = _retrievedChannelPrograms + _retrievedChannelLogos;
+		Log.i(TAG, ".checkInitializeFinished: processedCount = " + processedCount + ", numChannels = " + numChannels);
+
 		if (_retrievedChannelPrograms == numChannels && _retrievedChannelLogos == numChannels)
 		{
 			// Forget the old EpgData object, from now on work with the new
@@ -516,7 +517,6 @@ public abstract class FeatureEPG extends FeatureScheduler
 		}
 		else
 		{
-			final float processedCount = _retrievedChannelPrograms + _retrievedChannelLogos;
 			final float totalCount = 2 * numChannels; // The number of all programs
 			                                    // and logos queries
 			getEventMessenger().post(new Runnable()
