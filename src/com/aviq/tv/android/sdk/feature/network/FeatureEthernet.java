@@ -29,7 +29,6 @@ import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.ResultCode;
-import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.utils.Files;
@@ -38,7 +37,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Ethernet Settings component
  */
-public class FeatureEthernet extends FeatureComponent
+public class FeatureEthernet extends FeatureNetwork
 {
 	public static final String TAG = FeatureEthernet.class.getSimpleName();
 	private static final String ETH_SERVICE = "ethernet";
