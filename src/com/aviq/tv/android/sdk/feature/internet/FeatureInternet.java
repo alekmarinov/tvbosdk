@@ -60,7 +60,7 @@ public class FeatureInternet extends FeatureScheduler
 		/**
 		 * Timeout in seconds to attempt checking
 		 */
-		CHECK_ATTEMPTS_TIMEOUT(10000),
+		CHECK_ATTEMPTS_TIMEOUT(20000),
 
 		/**
 		 * Delay between internet check attempts
