@@ -34,7 +34,6 @@ import android.util.Log;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.ResultCode;
-import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -44,7 +43,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Wireless Settings component
  */
-public class FeatureWireless extends FeatureComponent
+public class FeatureWireless extends FeatureNetwork
 {
 	public static final String TAG = FeatureWireless.class.getSimpleName();
 	public static final int RESCAN_INTERVAL = 10000;
