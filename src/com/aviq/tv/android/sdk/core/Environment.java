@@ -240,6 +240,7 @@ public class Environment extends Activity
 		super.onCreate(savedInstanceState);
 		if (_isCreated)
 		{
+			suicide();
 			throw new RuntimeException("This process has already started!");
 		}
 		_isCreated = true;
