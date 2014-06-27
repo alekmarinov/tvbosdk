@@ -336,7 +336,8 @@ public class Environment extends Activity
 	public void suicide()
 	{
 		Log.i(TAG, ".suicide: Comitting suicide...");
-		_featureSystem.command("killall " + getPackageName());
+		// _featureSystem.command("killall " + getPackageName());
+		finish();
 	}
 
 	@Override
