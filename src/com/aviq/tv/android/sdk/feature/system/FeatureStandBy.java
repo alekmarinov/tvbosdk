@@ -24,6 +24,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
+import com.aviq.tv.android.sdk.core.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
@@ -45,6 +46,10 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 
 	// Triggered on leaving standby mode
 	public static final int ON_STANDBY_LEAVE = EventMessenger.ID("ON_STANDBY_LEAVE");
+
+	// Triggered when enabling or disabling the auto standby feature
+	public static final int ON_STANDBY_AUTO_ENABLED = EventMessenger.ID("ON_STANDBY_AUTO_ENABLED");
+	public static final int ON_STANDBY_AUTO_DISABLED = EventMessenger.ID("ON_STANDBY_AUTO_DISABLED");
 
 	public enum Param
 	{
@@ -80,12 +85,14 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	}
 
 	private int _autoStandByWarnTimeout;
+	private int _autoStandbyTimeout;
 	private boolean _isStandByHDMI;
 
 	public FeatureStandBy() throws FeatureNotFoundException
 	{
 		require(FeatureName.Scheduler.INTERNET);
 		require(FeatureName.Component.SYSTEM);
+		require(FeatureName.Component.EASTER_EGG);
 	}
 
 	@Override
@@ -98,9 +105,15 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
+
+		_autoStandbyTimeout = getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT);
+
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
+		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
+
 		_isStandByHDMI = getPrefs().getBool(Param.IS_STANDBY_HDMI);
-		postponeAutoStandBy();
+		postponeAutoStandBy(_autoStandbyTimeout);
+
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -140,7 +153,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	{
 		getEventMessenger().removeCallbacks(_enterStandByRunnable);
 
-		// remove warnings triggerer
+		// remove warnings trigger
 		getEventMessenger().removeCallbacks(_autoStandByWarningRunnable);
 	}
 
@@ -195,7 +208,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 					Log.i(TAG, "Resume from standing by requested by user");
 					getEventMessenger().trigger(ON_STANDBY_LEAVE);
 					setHDMIEnabled(true);
-					postponeAutoStandBy();
+					postponeAutoStandBy(_autoStandbyTimeout);
 					Environment.getInstance().setKeyEventsEnabled();
 				}
 				else
@@ -208,20 +221,40 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			else
 			{
 				// Postpone auto standby on user activity
-				postponeAutoStandBy();
+				postponeAutoStandBy(_autoStandbyTimeout);
+			}
+		}
+		else if (FeatureEasterEgg.ON_KEY_SEQUENCE == msgId)
+		{
+			String keySeq = bundle.getString(FeatureEasterEgg.EXTRA_KEY_SEQUENCE);
+			if ("RR272RR".equals(keySeq) || "YGRB11".equals(keySeq))
+			{
+				if (_autoStandbyTimeout > 0)
+				{
+					Log.i(TAG, "Auto standby disabled.");
+					_autoStandbyTimeout = 0;
+					getEventMessenger().removeCallbacks(_autoStandByRunnable);
+					getEventMessenger().trigger(ON_STANDBY_AUTO_DISABLED);
+				}
+				else
+				{
+					Log.i(TAG, "Auto standby enabled.");
+					_autoStandbyTimeout = getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT);
+					postponeAutoStandBy(_autoStandbyTimeout);
+					getEventMessenger().trigger(ON_STANDBY_AUTO_ENABLED);
+				}
 			}
 		}
 	}
 
-	private void postponeAutoStandBy()
+	private void postponeAutoStandBy(int autoStandbyTimeout)
 	{
-		int timeout = getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT);
-		if (timeout > 0)
+		if (autoStandbyTimeout > 0)
 		{
 			// postpones auto standby
 			getEventMessenger().removeCallbacks(_autoStandByRunnable);
-			getEventMessenger().postDelayed(_autoStandByRunnable, timeout);
-			Log.i(TAG, ".postponeAutoStandBy: timeout = " + (timeout / 1000) + " secs");
+			getEventMessenger().postDelayed(_autoStandByRunnable, autoStandbyTimeout);
+			Log.i(TAG, ".postponeAutoStandBy: timeout = " + (autoStandbyTimeout / 1000) + " secs");
 
 			// remove warnings trigger
 			getEventMessenger().removeCallbacks(_autoStandByWarningRunnable);

@@ -15,6 +15,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -40,14 +42,21 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 	public static final String KEY_SEQ_SET = "RR738RR";
 	/** 564 = LOG */
 	public static final String KEY_SEQ_LOG = "RR564RR";
+	/** 272 = ASB -> Auto StandBy */
+	public static final String KEY_SEQ_AUTO_STANDBY = "RR272RR";
 
 	public static int ON_KEY_SEQUENCE = EventMessenger.ID("ON_KEY_SEQUENCE");
 	public static final String EXTRA_KEY_SEQUENCE = "KEY_SEQUENCE";
+
+	private static final int SEQUENCE_PREFIX_NUM_CHARS = 2;
 
 	private long lastKeyPress = 0;
 	private StringBuffer _sequence = new StringBuffer();
 	private List<String> _sequenceList = new ArrayList<String>();
 	private Map<String, String> _globalSequenceMap = new HashMap<String, String>();
+	private Set<String> _sequencePrefixes = new TreeSet<String>();
+	private boolean _inEasterEggMode = false;
+	private int _minKeyDelay;
 
 	public enum Param
 	{
@@ -62,14 +71,11 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 		KEY_SEQUENCES(""),
 
 		/**
-		 * Key sequence global to the application using this feature.
+		 * Key sequences global to the application using this feature.
 		 */
 		KEY_SEQUENCE_SET(KEY_SEQ_SET),
-
-		/**
-		 * Key sequence global to the application using this feature.
-		 */
 		KEY_SEQUENCE_LOG(KEY_SEQ_LOG),
+		KEY_SEQUENCE_AUTO_STANDBY(KEY_SEQ_AUTO_STANDBY),
 
 		/**
 		 * The expected app package to start
@@ -102,18 +108,31 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 		String sequences = getPrefs().getString(Param.KEY_SEQUENCES);
 		String[] seqArray = sequences.split(",");
 		_sequenceList.addAll(Arrays.asList(seqArray));
+		for (String seq : seqArray)
+			_sequencePrefixes.add(seq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
 
 		// Process global key sequence mapping
 
 		String keySeq = null;
 		String keySeqAction = null;
 
+		// Settings
 		keySeq = getPrefs().getString(Param.KEY_SEQUENCE_SET);
 		keySeqAction = getPrefs().getString(Param.KEY_SEQUENCE_ACTION_SET);
 		_globalSequenceMap.put(keySeq, keySeqAction);
+		_sequencePrefixes.add(keySeq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
 
+		// Logcat
 		keySeq = getPrefs().getString(Param.KEY_SEQUENCE_LOG);
 		_sequenceList.add(keySeq);
+		_sequencePrefixes.add(keySeq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
+
+		// Auto StandBy
+		keySeq = getPrefs().getString(Param.KEY_SEQUENCE_AUTO_STANDBY);
+		_sequenceList.add(keySeq);
+		_sequencePrefixes.add(keySeq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
+
+		_minKeyDelay = getPrefs().getInt(Param.MIN_KEY_DELAY);
 
 		onFeatureInitialized.onInitialized(this, ResultCode.OK);
 	}
@@ -131,15 +150,24 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 		if (Environment.ON_KEY_PRESSED == msgId)
 		{
 			long delay = System.currentTimeMillis() - lastKeyPress;
-			if (delay > getPrefs().getInt(Param.MIN_KEY_DELAY))
+			if (delay > _minKeyDelay)
 			{
 				_sequence.setLength(0);
+				_disableEasterEggModeRunnable.run();
 			}
+
 			Key key = Key.valueOf(bundle.getString(Environment.EXTRA_KEY));
 			char chr = expectedKeyToChar(key);
 			if (chr != '\0')
 			{
 				_sequence.append(chr);
+
+				if (_sequence.length() == SEQUENCE_PREFIX_NUM_CHARS && _sequencePrefixes.contains(_sequence.toString()))
+				{
+					_inEasterEggMode = true;
+					getEventMessenger().postDelayed(_disableEasterEggModeRunnable, _minKeyDelay);
+				}
+
 				String keySeq = _sequence.toString();
 
 				if (_globalSequenceMap.containsKey(keySeq))
@@ -156,6 +184,11 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 				lastKeyPress = System.currentTimeMillis();
 			}
 		}
+	}
+
+	public boolean isInEasterEggMode()
+	{
+		return _inEasterEggMode;
 	}
 
 	private char expectedKeyToChar(Key key)
@@ -194,4 +227,13 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 				return '\0';
 		}
 	}
+
+	private Runnable _disableEasterEggModeRunnable = new Runnable()
+	{
+		@Override
+		public void run()
+		{
+			_inEasterEggMode = false;
+		}
+	};
 }
