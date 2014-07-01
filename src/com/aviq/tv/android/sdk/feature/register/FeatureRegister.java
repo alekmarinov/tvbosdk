@@ -16,7 +16,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -78,7 +81,6 @@ public class FeatureRegister extends FeatureComponent
 	private String _boxId;
 	private String _userToken;
 	private String _version;
-	private String _registrationUrl;
 	private String _brand;
 
 	/**
@@ -100,16 +102,10 @@ public class FeatureRegister extends FeatureComponent
 			_userToken = createUserToken(_boxId);
 			_version = Environment.getInstance().getBuildVersion();
 
-			Bundle bundle = new Bundle();
-			bundle.putString("SERVER", getPrefs().getString(Param.ABMP_SERVER));
-			bundle.putString("BOX_ID", _boxId);
-			bundle.putString("VERSION", _version);
-			bundle.putString("BRAND", _brand);
-			bundle.putString("NETWORK", getActiveNetworkType());
+			String registrationUrl = getRegistrationUrl(_brand, _boxId, _version);
+			_feature.Scheduler.INTERNET.startCheckUrl(registrationUrl);
 
-			_registrationUrl = getPrefs().getString(Param.ABMP_REGISTER_URL, bundle);
-
-			_feature.Scheduler.INTERNET.startCheckUrl(_registrationUrl);
+			registerConnectivityActionReceiver();
 
 			super.initialize(onFeatureInitialized);
 		}
@@ -140,7 +136,7 @@ public class FeatureRegister extends FeatureComponent
 	 */
 	public String getRegistrationUrl()
 	{
-		return _registrationUrl;
+		return getRegistrationUrl(_brand, _boxId, _version);
 	}
 
 	/**
@@ -190,5 +186,55 @@ public class FeatureRegister extends FeatureComponent
 			Log.e(TAG, e.getMessage(), e);
 		}
 		return null;
+	}
+
+	private String getRegistrationUrl(String brand, String boxId, String version)
+	{
+		Bundle bundle = new Bundle();
+		bundle.putString("SERVER", getPrefs().getString(Param.ABMP_SERVER));
+		bundle.putString("BOX_ID", boxId);
+		bundle.putString("VERSION", version);
+		bundle.putString("BRAND", brand);
+		bundle.putString("NETWORK", getActiveNetworkType());
+
+		String registrationUrl = getPrefs().getString(Param.ABMP_REGISTER_URL, bundle);
+		return registrationUrl;
+	}
+
+	private void registerConnectivityActionReceiver()
+	{
+		IntentFilter filter = new IntentFilter();
+		filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+
+		BroadcastReceiver receiver = new BroadcastReceiver()
+		{
+			@Override
+			public void onReceive(Context context, Intent intent)
+			{
+				String action = intent.getAction();
+				Log.i(TAG, "BroadcastReceiver.onReceive: action = " + action);
+
+				if (ConnectivityManager.CONNECTIVITY_ACTION.equals(action))
+				{
+					String registrationUrl = getRegistrationUrl(_brand, _boxId, _version);
+					_feature.Scheduler.INTERNET.startCheckUrl(registrationUrl);
+				}
+
+				// boolean noConnectivity =
+				// intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY,
+				// false);
+				// String reason =
+				// intent.getStringExtra(ConnectivityManager.EXTRA_REASON);
+				// boolean isFailover =
+				// intent.getBooleanExtra(ConnectivityManager.EXTRA_IS_FAILOVER,
+				// false);
+
+				// NetworkInfo currentNetworkInfo = (NetworkInfo)
+				// intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK_INFO);
+				// NetworkInfo otherNetworkInfo = (NetworkInfo)
+				// intent.getParcelableExtra(ConnectivityManager.EXTRA_OTHER_NETWORK_INFO);
+			}
+		};
+		Environment.getInstance().registerReceiver(receiver, filter);
 	}
 }

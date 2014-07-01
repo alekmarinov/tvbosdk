@@ -132,6 +132,7 @@ public class FeatureInternet extends FeatureScheduler
 	{
 		Log.i(TAG, ".startCheckUrl: " + url);
 		_checkUrl = url;
+		getEventMessenger().removeMessages(ON_SCHEDULE);
 		getEventMessenger().trigger(ON_SCHEDULE);
 	}
 
