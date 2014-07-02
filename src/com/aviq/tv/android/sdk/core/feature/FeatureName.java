@@ -37,7 +37,8 @@ public class FeatureName
 		TIMEZONE,
 		NETHOGS,
 		STREAMER,
-		STANDBY
+		STANDBY,
+		DEBUG
 	}
 
 	public static enum Scheduler

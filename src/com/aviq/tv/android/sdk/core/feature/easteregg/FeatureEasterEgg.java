@@ -44,6 +44,8 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 	public static final String KEY_SEQ_LOG = "RR564RR";
 	/** 272 = ASB -> Auto StandBy */
 	public static final String KEY_SEQ_AUTO_STANDBY = "RR272RR";
+	/** 847 = VHR */
+	public static final String KEY_SEQ_VHR = "RR847RR";
 
 	public static int ON_KEY_SEQUENCE = EventMessenger.ID("ON_KEY_SEQUENCE");
 	public static final String EXTRA_KEY_SEQUENCE = "KEY_SEQUENCE";
@@ -76,6 +78,7 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 		KEY_SEQUENCE_SET(KEY_SEQ_SET),
 		KEY_SEQUENCE_LOG(KEY_SEQ_LOG),
 		KEY_SEQUENCE_AUTO_STANDBY(KEY_SEQ_AUTO_STANDBY),
+		KEY_SEQUENCE_VHR(KEY_SEQ_VHR),
 
 		/**
 		 * The expected app package to start
@@ -129,6 +132,11 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 
 		// Auto StandBy
 		keySeq = getPrefs().getString(Param.KEY_SEQUENCE_AUTO_STANDBY);
+		_sequenceList.add(keySeq);
+		_sequencePrefixes.add(keySeq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
+
+		// View Hierarchy
+		keySeq = getPrefs().getString(Param.KEY_SEQUENCE_VHR);
 		_sequenceList.add(keySeq);
 		_sequencePrefixes.add(keySeq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
 
