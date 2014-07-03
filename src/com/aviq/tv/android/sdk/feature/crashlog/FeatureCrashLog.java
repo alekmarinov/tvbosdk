@@ -47,6 +47,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 	 * to the server.
 	 */
 	public static final String EXCEPTION_TAG = "[SILENT-EXCEPTION-ID]";
+	public static final String NO_VALUE = "n/a";
 
 	public enum Param
 	{
@@ -116,6 +117,8 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 
 				// Ensure this is in the data as well
 				String localIP = FeatureNetwork.getLocalIP();
+				if (localIP == null || localIP.trim().length() == 0)
+					localIP = NO_VALUE;
 				ACRA.getErrorReporter().putCustomData("LOCAL_IP", localIP);
 
 				// Only reset it if already there
@@ -203,13 +206,17 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		errorReporter.putCustomData("ETHERNET_MAC", _feature.Component.REGISTER.getBoxId());
 
 		String localIP = FeatureNetwork.getLocalIP();
+		if (localIP == null || localIP.trim().length() == 0)
+			localIP = NO_VALUE;
 		errorReporter.putCustomData("LOCAL_IP", localIP);
 
 		String publicIP = _feature.Scheduler.INTERNET.getPublicIP();
+		if (publicIP == null || publicIP.trim().length() == 0)
+			publicIP = NO_VALUE;
 		errorReporter.putCustomData("PUBLIC_IP", publicIP);
 
 		// If the public IP is null, wait for Internet to show up and recheck
-		if (publicIP == null)
+		if (NO_VALUE.equals(publicIP))
 			_feature.Scheduler.INTERNET.getEventMessenger().register(this, FeatureInternet.ON_CONNECTED);
 	}
 
@@ -219,8 +226,16 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		try
 		{
 			device.accumulate(Key.MAC, _feature.Component.REGISTER.getBoxId());
-			device.accumulate(Key.IP, FeatureNetwork.getLocalIP());
-			device.accumulate(Key.PUBLIC_IP, _feature.Scheduler.INTERNET.getPublicIP());
+
+			String localIP = FeatureNetwork.getLocalIP();
+			if (localIP == null || localIP.trim().length() == 0)
+				localIP = NO_VALUE;
+			device.accumulate(Key.IP, localIP);
+
+			String publicIP = _feature.Scheduler.INTERNET.getPublicIP();
+			if (publicIP == null || publicIP.trim().length() == 0)
+				publicIP = NO_VALUE;
+			device.accumulate(Key.PUBLIC_IP, publicIP);
 
 			JSONObject sw = new JSONObject();
 			sw.accumulate(Key.VERSION, Environment.getInstance().getBuildVersion());
