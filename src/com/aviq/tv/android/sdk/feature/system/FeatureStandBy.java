@@ -194,6 +194,17 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		}
 	}
 
+	public void setStandByHDMI(boolean isStandByHDMI)
+	{
+		Log.i(TAG, ".setStandByHDMI: isStandByHDMI = " + isStandByHDMI);
+		_isStandByHDMI = isStandByHDMI;
+	}
+
+	public boolean isStandByHDMI()
+	{
+		return _isStandByHDMI;
+	}
+
 	@Override
 	public void onEvent(int msgId, Bundle bundle)
 	{
