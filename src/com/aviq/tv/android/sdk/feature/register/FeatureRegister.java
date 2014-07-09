@@ -46,6 +46,11 @@ public class FeatureRegister extends FeatureComponent
 	public enum Param
 	{
 		/**
+		 * Box ID
+		 */
+		BOX_ID(""),
+
+		/**
 		 * ABMP Server address
 		 */
 		ABMP_SERVER(""),
@@ -98,7 +103,10 @@ public class FeatureRegister extends FeatureComponent
 		try
 		{
 			_brand = getPrefs().getString(Param.BRAND);
-			_boxId = readMacAddress();
+
+			_boxId = getPrefs().getString(Param.BOX_ID);
+			if (_boxId.length() == 0)
+				_boxId = readMacAddress();
 			_userToken = createUserToken(_boxId);
 			_version = Environment.getInstance().getBuildVersion();
 
@@ -127,7 +135,6 @@ public class FeatureRegister extends FeatureComponent
 	 */
 	public String getBoxId()
 	{
-		// if (true) return "902B34F69D99"; //TODO used to test FW download
 		return _boxId;
 	}
 
