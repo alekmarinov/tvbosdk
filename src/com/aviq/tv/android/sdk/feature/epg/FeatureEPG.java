@@ -529,10 +529,15 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 			getEventMessenger().trigger(ON_EPG_UPDATED);
 
-			SimpleDateFormat ddf = new SimpleDateFormat("yyyyMMdd HH:mm", Locale.getDefault());
-			Log.d(TAG,
-			        "EPG programs in range " + ddf.format(_minDate.getTime()) + " - " + ddf.format(_maxDate.getTime()));
-			resetMinMaxDates();
+			// _minDate and _maxDate will be null when the EPG
+			if (_minDate != null && _maxDate != null)
+			{
+				SimpleDateFormat ddf = new SimpleDateFormat("yyyyMMdd HH:mm", Locale.getDefault());
+				Log.d(TAG,
+				        "EPG programs in range " + ddf.format(_minDate.getTime()) + " - "
+				                + ddf.format(_maxDate.getTime()));
+				resetMinMaxDates();
+			}
 			_onFeatureInitialized.onInitialized(FeatureEPG.this, ResultCode.OK);
 
 		}
