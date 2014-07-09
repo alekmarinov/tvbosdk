@@ -126,7 +126,19 @@ public abstract class FeatureEPG extends FeatureScheduler
 		 */
 		MAX_CHANNELS(0),
 
-		EPG_CACHE_PATH("cache" + File.separator + "epg.data");
+		EPG_CACHE_PATH("cache" + File.separator + "epg.data"),
+
+		/**
+		 * The number of days in past the program is allowed to be imported by
+		 * EPG
+		 */
+		PROGRAM_RANGE_MIN_DAYS(7),
+
+		/**
+		 * The number of days in future the program is allowed to be imported by
+		 * EPG
+		 */
+		PROGRAM_RANGE_MAX_DAYS(7);
 
 		Param(int value)
 		{
@@ -164,6 +176,8 @@ public abstract class FeatureEPG extends FeatureScheduler
 	private String _epgProvider;
 	private int _channelLogoWidth;
 	private int _channelLogoHeight;
+	private Calendar _minDate;
+	private Calendar _maxDate;
 
 	// used to detect when all channel logos are retrieved with success or error
 	private int _retrievedChannelLogos;
@@ -236,6 +250,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		GsonRequest<ChannelListResponse> channelListRequest = new GsonRequest<ChannelListResponse>(Request.Method.GET,
 		        channelsUrl, ChannelListResponse.class, responseCallback, responseCallback);
 
+		resetMinMaxDates();
 		_httpQueue.add(channelListRequest);
 
 		// schedule update later
@@ -302,9 +317,9 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 	/**
 	 * Creates program instance associated with Channel and program Id
+	 *
 	 * @param channel
 	 * @param id
-	 *
 	 * @return new program instance
 	 */
 	protected abstract Program createProgram(String id, Channel channel);
@@ -351,7 +366,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 			if (_epgDataBeingLoaded == null)
 			{
 				Log.w(TAG, "LogoResponseCallback.onResponse: _epgDataBeingLoaded is null, that should not happens!");
-				return ;
+				return;
 			}
 			final int nChannels = _epgDataBeingLoaded.getChannelCount();
 			Log.i(TAG, "Response with " + nChannels + " channels received");
@@ -396,7 +411,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 			if (_epgDataBeingLoaded == null)
 			{
 				Log.w(TAG, "LogoResponseCallback.onResponse: _epgDataBeingLoaded is null, that should not happens!");
-				return ;
+				return;
 			}
 			_epgDataBeingLoaded.setChannelLogo(_index, response);
 			logoProcessed();
@@ -484,7 +499,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		if (_epgDataBeingLoaded == null)
 		{
 			Log.w(TAG, ".checkInitializeFinished: _epgDataBeingLoaded is null, that should not happen!");
-			return ;
+			return;
 		}
 
 		int numChannels = _epgDataBeingLoaded.getChannelCount();
@@ -513,12 +528,19 @@ public abstract class FeatureEPG extends FeatureScheduler
 			}).start();
 
 			getEventMessenger().trigger(ON_EPG_UPDATED);
+
+			SimpleDateFormat ddf = new SimpleDateFormat("yyyyMMdd HH:mm", Locale.getDefault());
+			Log.d(TAG,
+			        "EPG programs in range " + ddf.format(_minDate.getTime()) + " - " + ddf.format(_maxDate.getTime()));
+			resetMinMaxDates();
 			_onFeatureInitialized.onInitialized(FeatureEPG.this, ResultCode.OK);
+
 		}
 		else
 		{
-			final float totalCount = 2 * numChannels; // The number of all programs
-			                                    // and logos queries
+			final float totalCount = 2 * numChannels; // The number of all
+			                                          // programs
+			// and logos queries
 			getEventMessenger().post(new Runnable()
 			{
 				@Override
@@ -615,12 +637,33 @@ public abstract class FeatureEPG extends FeatureScheduler
 		SimpleDateFormat ddf = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
 		ddf.setTimeZone(_featureTimeZone.getTimeZone());
 
+		Calendar programRangeMin = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+		Calendar programRangeMax = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+		programRangeMin.add(Calendar.DATE, -getPrefs().getInt(Param.PROGRAM_RANGE_MIN_DAYS));
+		programRangeMax.add(Calendar.DATE, getPrefs().getInt(Param.PROGRAM_RANGE_MAX_DAYS));
+
 		for (int i = 0; i < data.length; i++)
 		{
 			try
 			{
 				Calendar startTime = Calendar.getInstance();
 				startTime.setTime(sdf.parse(data[i][metaData.metaStart]));
+
+				if (startTime.before(programRangeMin) || startTime.after(programRangeMax))
+				{
+					continue;
+				}
+
+				if (_minDate.after(startTime))
+				{
+					_minDate = startTime;
+				}
+
+				if (_maxDate.before(startTime))
+				{
+					_maxDate = startTime;
+				}
+
 				Calendar stopTime = Calendar.getInstance();
 				stopTime.setTime(sdf.parse(data[i][metaData.metaStop]));
 
@@ -633,7 +676,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 				// set custom provider attributes
 				program.setDetailAttributes(metaData, data[i]);
 				programList.add(program);
-				programMap.put(program.getStartTime(), i);
+				programMap.put(program.getStartTime(), programList.size() - 1);
 			}
 			catch (ParseException e)
 			{
@@ -646,6 +689,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		long processEnd = System.nanoTime();
 		double processTime = (processEnd - processStart) / 1000000000.0;
 		Log.d(TAG, "Parsed " + data.length + " program items for channel " + channelId + " for " + processTime + " sec");
+
 	}
 
 	protected String getChannelsUrl()
@@ -695,7 +739,8 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 	private File getEpgDataCacheFile()
 	{
-		String path = Environment.getInstance().getFilesDir() + File.separator + getPrefs().getString(Param.EPG_CACHE_PATH);
+		String path = Environment.getInstance().getFilesDir() + File.separator
+		        + getPrefs().getString(Param.EPG_CACHE_PATH);
 		File cacheFile = new File(path);
 		if (!cacheFile.getParentFile().exists())
 			cacheFile.getParentFile().mkdirs();
@@ -735,22 +780,22 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 		Kryo kryo = new Kryo();
 		try
-        {
+		{
 			File cacheFile = getEpgDataCacheFile();
-	        Output output = new Output(new FileOutputStream(cacheFile));
-	        kryo.writeObject(output, _epgData);
-	        output.close();
-        }
-        catch (FileNotFoundException e)
-        {
-        	Log.e(TAG, "Cannot create EPG data cache file.", e);
-        	return false;
-        }
+			Output output = new Output(new FileOutputStream(cacheFile));
+			kryo.writeObject(output, _epgData);
+			output.close();
+		}
+		catch (FileNotFoundException e)
+		{
+			Log.e(TAG, "Cannot create EPG data cache file.", e);
+			return false;
+		}
 		catch (Exception e)
-        {
-        	Log.e(TAG, "Cannot create EPG data cache file.", e);
-        	return false;
-        }
+		{
+			Log.e(TAG, "Cannot create EPG data cache file.", e);
+			return false;
+		}
 		return true;
 	}
 
@@ -771,20 +816,20 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 			Kryo kryo = new Kryo();
 			Input input = new Input(new FileInputStream(cacheFile));
-		    _epgData = kryo.readObject(input, EpgData.class);
-		    _epgDataBeingLoaded = _epgData;
-		    input.close();
+			_epgData = kryo.readObject(input, EpgData.class);
+			_epgDataBeingLoaded = _epgData;
+			input.close();
 		}
 		catch (FileNotFoundException e)
-        {
-        	Log.e(TAG, "Cannot open EPG data cache file.", e);
-        	return false;
-        }
+		{
+			Log.e(TAG, "Cannot open EPG data cache file.", e);
+			return false;
+		}
 		catch (Exception e)
-        {
-        	Log.e(TAG, "Cannot open EPG data cache file.", e);
-        	return false;
-        }
+		{
+			Log.e(TAG, "Cannot open EPG data cache file.", e);
+			return false;
+		}
 		finally
 		{
 			try
@@ -793,9 +838,9 @@ public abstract class FeatureEPG extends FeatureScheduler
 					fis.close();
 			}
 			catch (IOException e)
-	        {
-	        	Log.e(TAG, "Cannot close file output stream.", e);
-	        }
+			{
+				Log.e(TAG, "Cannot close file output stream.", e);
+			}
 
 			try
 			{
@@ -803,9 +848,9 @@ public abstract class FeatureEPG extends FeatureScheduler
 					ois.close();
 			}
 			catch (IOException e)
-	        {
-	        	Log.e(TAG, "Cannot close object output stream.", e);
-	        }
+			{
+				Log.e(TAG, "Cannot close object output stream.", e);
+			}
 		}
 		return true;
 	}
@@ -871,5 +916,13 @@ public abstract class FeatureEPG extends FeatureScheduler
 				return Response.error(new ParseError(e));
 			}
 		}
+	}
+
+	private void resetMinMaxDates()
+	{
+		_minDate = Calendar.getInstance();
+		_minDate.setTimeInMillis(Long.MAX_VALUE);
+		_maxDate = Calendar.getInstance();
+		_maxDate.setTimeInMillis(Long.MIN_VALUE);
 	}
 }
