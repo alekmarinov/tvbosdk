@@ -253,6 +253,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		else if (FeatureEasterEgg.ON_KEY_SEQUENCE == msgId)
 		{
 			String keySeq = bundle.getString(FeatureEasterEgg.EXTRA_KEY_SEQUENCE);
+			// FIXME: declare key sequences as constants
 			if ("RR272RR".equals(keySeq) || "YGRB11".equals(keySeq))
 			{
 				if (_autoStandbyTimeout > 0)
