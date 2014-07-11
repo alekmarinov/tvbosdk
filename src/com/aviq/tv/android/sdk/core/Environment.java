@@ -123,6 +123,7 @@ public class Environment extends Activity
 	private boolean _keyEventsEnabled = true;
 	private ExceptKeysList _exceptKeys = new ExceptKeysList();
 	private Context _context;
+	private boolean _isPause;
 
 	private OnResultReceived _onFeaturesReceived = new OnResultReceived()
 	{
@@ -322,6 +323,8 @@ public class Environment extends Activity
 	{
 		super.onResume();
 		Log.i(TAG, ".onResume");
+		_isPause = false;
+		_stateManager.onResume();
 		getEventMessenger().trigger(ON_RESUME);
 	}
 
@@ -330,6 +333,8 @@ public class Environment extends Activity
 	{
 		super.onPause();
 		Log.i(TAG, ".onPause");
+		_isPause = true;
+		_stateManager.onPause();
 		getEventMessenger().trigger(ON_PAUSE);
 	}
 
@@ -338,6 +343,14 @@ public class Environment extends Activity
 	{
 		super.onDestroy();
 		Log.i(TAG, ".onDestroy");
+	}
+
+	/**
+	 * @return true if this activity is on pause
+	 */
+	public boolean isPause()
+	{
+		return _isPause;
 	}
 
 	public void suicide()
