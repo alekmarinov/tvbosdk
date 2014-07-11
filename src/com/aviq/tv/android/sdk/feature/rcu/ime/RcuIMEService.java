@@ -9,10 +9,7 @@
  */
 package com.aviq.tv.android.sdk.feature.rcu.ime;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.inputmethodservice.InputMethodService;
 import android.os.SystemClock;
 import android.util.Log;
@@ -21,7 +18,6 @@ import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 
-import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Key;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
@@ -29,8 +25,7 @@ import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
 public abstract class RcuIMEService extends InputMethodService
 {
 	private static final String TAG = RcuIMEService.class.getSimpleName();
-	private static final String INTENT_ACTION_DISABLE_STANDBY = "com.aviq.tipc.android.ime.DISABLE_STANDBY";
-	private static final String INTENT_ACTION_ENABLE_STANDBY = "com.aviq.tipc.android.ime.ENABLE_STANDBY";
+	public static final String BROADCAST_ACTION_SLEEP = "com.aviq.tv.android.sdk.feature.rcu.ime.broadcast.SLEEP";
 	private static final SparseArray<String> _sRecs = new SparseArray<String>();
 	private static final SparseArray<String> _nRecs = new SparseArray<String>();
 	private static final int KEY_ROTATE_INTERVAL = 1000;
@@ -70,7 +65,6 @@ public abstract class RcuIMEService extends InputMethodService
 	private int _keyIdx = 0;
 
 	private long _lastEventTime = 0;
-	private boolean _enableStandby = false;
 	private FeatureSystem _featureSystem;
 	private FeatureRCU _featureRCU;
 
@@ -84,17 +78,10 @@ public abstract class RcuIMEService extends InputMethodService
 		super.onCreate();
 		this.setCandidatesViewShown(false);
 
-		new Environment(this);
 		_featureRCU = createFeatureRCU();
 		_featureRCU.initialize(null);
-		_featureSystem = new FeatureSystem();
+		_featureSystem = new FeatureSystem(FeatureSystem.DEFAULT_HOST, FeatureSystem.DEFAULT_PORT);
 		_featureSystem.initialize(null);
-
-		// Register custom application lifecycle hook
-		IntentFilter filter = new IntentFilter();
-		filter.addAction(INTENT_ACTION_DISABLE_STANDBY);
-		filter.addAction(INTENT_ACTION_ENABLE_STANDBY);
-		registerReceiver(_globalReceiver, filter);
 	}
 
 	private InputConnection getInputConnection()
@@ -104,20 +91,6 @@ public abstract class RcuIMEService extends InputMethodService
 
 		Log.d(TAG, ".getInputConnection() -> " + _inputConnection);
 		return _inputConnection;
-	}
-
-	@Override
-	public void onDestroy()
-	{
-		Log.d(TAG, ".onDestroy()");
-		super.onDestroy();
-		unregisterReceiver(_globalReceiver);
-	}
-
-	@Override
-	public void onInitializeInterface()
-	{
-		Log.d(TAG, ".onInitializeInterface");
 	}
 
 	@Override
@@ -147,6 +120,12 @@ public abstract class RcuIMEService extends InputMethodService
 		        + _isNumeric);
 	}
 
+	@Override
+	public void onInitializeInterface()
+	{
+		Log.d(TAG, ".onInitializeInterface");
+	}
+
 	/**
 	 * This is called when the user is done editing a field. We can use this to
 	 * reset our state.
@@ -174,13 +153,13 @@ public abstract class RcuIMEService extends InputMethodService
 
 		if (Key.SLEEP.equals(key))
 		{
-			Log.i(TAG, "_enableStandby = " + _enableStandby);
-
-			if (_enableStandby)
-			{
-				_featureSystem.command("input keyevent 26");
-				return true;
-			}
+			Log.i(TAG, "Sending broadcast " + BROADCAST_ACTION_SLEEP);
+			Intent intent = new Intent();
+			intent.setAction(BROADCAST_ACTION_SLEEP);
+			sendBroadcast(intent);
+			// register for the broadcasted
+			// intent instead handling SLEEP key directly
+			return true;
 		}
 
 		event.startTracking();
@@ -242,25 +221,4 @@ public abstract class RcuIMEService extends InputMethodService
 		}
 		return false;
 	}
-
-	private BroadcastReceiver _globalReceiver = new BroadcastReceiver()
-	{
-		@Override
-		public void onReceive(Context context, Intent intent)
-		{
-			String action = intent.getAction();
-			Log.i(TAG, ".onReceive: action = " + action);
-
-			if (INTENT_ACTION_DISABLE_STANDBY.equals(action))
-			{
-				_enableStandby = false;
-				Log.i(TAG, "StandBy disabled");
-			}
-			else if (INTENT_ACTION_ENABLE_STANDBY.equals(action))
-			{
-				_enableStandby = true;
-				Log.i(TAG, "StandBy enabled");
-			}
-		}
-	};
 }
