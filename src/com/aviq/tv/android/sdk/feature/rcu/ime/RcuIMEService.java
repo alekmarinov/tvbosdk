@@ -14,7 +14,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.inputmethodservice.InputMethodService;
-import android.os.Handler;
 import android.os.SystemClock;
 import android.util.Log;
 import android.util.SparseArray;
@@ -72,7 +71,6 @@ public abstract class RcuIMEService extends InputMethodService
 
 	private long _lastEventTime = 0;
 	private boolean _enableStandby = false;
-	private Handler _handler;
 	private FeatureSystem _featureSystem;
 	private FeatureRCU _featureRCU;
 
@@ -85,8 +83,6 @@ public abstract class RcuIMEService extends InputMethodService
 		//
 		super.onCreate();
 		this.setCandidatesViewShown(false);
-
-		_handler = new Handler();
 
 		new Environment(this);
 		_featureRCU = createFeatureRCU();
@@ -182,9 +178,6 @@ public abstract class RcuIMEService extends InputMethodService
 
 			if (_enableStandby)
 			{
-				_handler.removeCallbacks(_detectStandbyLeave);
-				_handler.post(_detectStandbyLeave);
-
 				_featureSystem.command("input keyevent 26");
 				return true;
 			}
@@ -267,42 +260,6 @@ public abstract class RcuIMEService extends InputMethodService
 			{
 				_enableStandby = true;
 				Log.i(TAG, "StandBy enabled");
-			}
-		}
-	};
-
-	private final Runnable _detectStandbyLeave = new Runnable()
-	{
-		private long _lastCurrentTime = 0;
-
-		@Override
-		public void run()
-		{
-			if (_lastCurrentTime == 0)
-			{
-				// Set last current time to now
-				_lastCurrentTime = System.currentTimeMillis();
-			}
-
-			// time left since the last current time was set
-			long timeLeft = (System.currentTimeMillis() - _lastCurrentTime);
-			Log.i(TAG, "_detectStandByExit: timeLeft = " + timeLeft);
-			if (timeLeft > 1500)
-			{
-				Log.i(TAG, "_detectStandByExit: Detected leaving standing by");
-
-				// self suicide
-				Log.w(TAG, "Comitting suicide");
-				_featureSystem.command("killall " + getPackageName());
-				_lastCurrentTime = 0;
-			}
-			else
-			{
-				// loop with one second delay and determine if the
-				// elapsed time is as expected unless standby has
-				// interrupted the loop
-				_lastCurrentTime = System.currentTimeMillis();
-				_handler.postDelayed(this, 1000);
 			}
 		}
 	};
