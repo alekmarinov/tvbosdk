@@ -48,6 +48,7 @@ import com.aviq.tv.android.sdk.feature.internet.DownloadService;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet.ResultExtras;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
+import com.aviq.tv.android.sdk.feature.system.FeatureStandBy;
 import com.aviq.tv.android.sdk.utils.Files;
 
 /**
@@ -159,6 +160,7 @@ public class FeatureUpgrade extends FeatureScheduler
 	private int _errorCode = ResultCode.OK;
 	private UpgradeException _exception;
 	private Prefs _userPrefs;
+	private boolean _standingBy = false;
 
 	public FeatureUpgrade() throws FeatureNotFoundException
 	{
@@ -172,6 +174,15 @@ public class FeatureUpgrade extends FeatureScheduler
 		Log.i(TAG, ".initialize");
 		_userPrefs = Environment.getInstance().getUserPrefs();
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_LOADED);
+
+		FeatureStandBy featureStandBy = (FeatureStandBy) Environment.getInstance().getFeatureComponent(
+		        FeatureName.Component.STANDBY);
+		if (featureStandBy != null)
+		{
+			featureStandBy.getEventMessenger().register(this, FeatureStandBy.ON_STANDBY_ENTER);
+			featureStandBy.getEventMessenger().register(this, FeatureStandBy.ON_STANDBY_LEAVE);
+		}
+
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -351,6 +362,14 @@ public class FeatureUpgrade extends FeatureScheduler
 			// Start upgrade scheduling after the app is fully loaded
 			getEventMessenger().trigger(FeatureScheduler.ON_SCHEDULE);
 		}
+		else if (msgId == FeatureStandBy.ON_STANDBY_ENTER)
+		{
+			_standingBy = true;
+		}
+		else if (msgId == FeatureStandBy.ON_STANDBY_LEAVE)
+		{
+			_standingBy = false;
+		}
 	}
 
 	private boolean checkForUpdate(final boolean isDownload)
@@ -485,7 +504,10 @@ public class FeatureUpgrade extends FeatureScheduler
 
 	private void setStatus(UpgradeException exception)
 	{
-		Log.e(TAG, exception.getMessage(), exception);
+		if (_standingBy)
+			Log.w(TAG, exception.getMessage());
+		else
+			Log.e(TAG, exception.getMessage(), exception);
 		_exception = exception;
 		setStatus(Status.ERROR, ErrorReason.EXCEPTION, exception.getResultCode());
 	}
