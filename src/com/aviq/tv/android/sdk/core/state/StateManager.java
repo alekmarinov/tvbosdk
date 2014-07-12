@@ -827,26 +827,4 @@ public class StateManager
 	{
 		_overlayBackgroundImage = overlayBackgroundImage;
 	}
-
-	// FIXME: Investigate why the method onShow is called twice for the main state
-	public void onResume()
-    {
-		Log.i(TAG, ".onResume");
-		for (int i = 0; i < _activeStates.size(); i++)
-		{
-			BaseState state = _activeStates.get(i);
-			state.onShow(false);
-		}
-    }
-
-	// FIXME: Investigate why the subscriptions are not unregistered
-	public void onPause()
-    {
-		Log.i(TAG, ".onPause");
-		for (int i = _activeStates.size() - 1; i >= 0; i--)
-		{
-			BaseState state = _activeStates.get(i);
-			state.onHide(false);
-		}
-    }
 }

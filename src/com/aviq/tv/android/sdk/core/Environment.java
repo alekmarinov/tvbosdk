@@ -324,7 +324,6 @@ public class Environment extends Activity
 		super.onResume();
 		Log.i(TAG, ".onResume");
 		_isPause = false;
-		_stateManager.onResume();
 		getEventMessenger().trigger(ON_RESUME);
 	}
 
@@ -334,7 +333,6 @@ public class Environment extends Activity
 		super.onPause();
 		Log.i(TAG, ".onPause");
 		_isPause = true;
-		_stateManager.onPause();
 		getEventMessenger().trigger(ON_PAUSE);
 	}
 
