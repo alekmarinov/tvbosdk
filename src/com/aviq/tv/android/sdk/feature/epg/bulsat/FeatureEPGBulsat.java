@@ -55,6 +55,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 				bulsatMetaData.metaChannelChannelNo = j;
 			else if ("streams.1.url".equals(key))
 				bulsatMetaData.metaChannelStreamUrl = j;
+			else if ("genre".equals(key))
+				bulsatMetaData.metaChannelGenre = j;
 		}
 	}
 
@@ -75,7 +77,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 	protected String getChannelsUrl()
 	{
 		String url = super.getChannelsUrl();
-		return url + "?attr=channel,streams.1.url";
+		return url + "?attr=channel,streams.1.url,genre";
 	}
 
 	@Override
