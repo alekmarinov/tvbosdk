@@ -25,13 +25,14 @@ import com.rayv.StreamingAgent.Loader;
 public class FeatureStreamerRayV extends FeatureStreamer
 {
 	public static final String TAG = FeatureStreamerRayV.class.getSimpleName();
+	public static final int DEFAULT_STREAM_PORT = 1234;
 
 	public enum Param
 	{
 		/**
 		 * RayV streamer initialization
 		 */
-		STREAMER_INI("port=1234\n" + "distributor=vtx\n" + "product_id=test\n" + "allow_external_streams=1\n"
+		STREAMER_INI("port=" + DEFAULT_STREAM_PORT + "\n" + "distributor=vtx\n" + "product_id=test\n" + "allow_external_streams=1\n"
 		        + "localhost=127.0.0.1\n" + "thread_pool=10\n" + "udp_port=0\n" + "udp_port_pairs=1\n"
 		        + "StopBrokenFrames=0\n" + "BitrateOverhead=50\n" + "ManualBitrateSwitching=1\n" + "MinBitrate=0\n"
 		        + "MaxBitrate=0\n" + "MinStartBitrate=0\n" + "MaxStartBitrate=0\n" + "MediaQueueSize=100\n"),
@@ -54,7 +55,7 @@ public class FeatureStreamerRayV extends FeatureStreamer
 		/**
 		 * RayV service port
 		 */
-		RAYV_STREAM_PORT(1234),
+		RAYV_STREAM_PORT(DEFAULT_STREAM_PORT),
 
 		/**
 		 * Pattern composing channel stream url for RayV provider
@@ -74,6 +75,8 @@ public class FeatureStreamerRayV extends FeatureStreamer
 		}
 	}
 
+	private int _streamPort = DEFAULT_STREAM_PORT;
+
 	public FeatureStreamerRayV() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.REGISTER);
@@ -86,6 +89,8 @@ public class FeatureStreamerRayV extends FeatureStreamer
 			getPrefs().put(Param.RAYV_USER, _feature.Component.REGISTER.getBoxId());
 		if (!getPrefs().has(Param.RAYV_PASS))
 			getPrefs().put(Param.RAYV_PASS, _feature.Component.REGISTER.getBoxId());
+
+		_streamPort = getPrefs().getInt(Param.RAYV_STREAM_PORT);
 
 		// Start streaming agent
 		Log.i(TAG, "Start RayV streaming agent");
@@ -108,8 +113,19 @@ public class FeatureStreamerRayV extends FeatureStreamer
 		bundle.putString("PASS", getPrefs().getString(Param.RAYV_PASS));
 		bundle.putString("STREAM_ID", streamId);
 		bundle.putInt("BITRATE", getPrefs().getInt(Param.RAYV_STREAM_BITRATE));
-		bundle.putInt("PORT", getPrefs().getInt(Param.RAYV_STREAM_PORT));
+		bundle.putInt("PORT", _streamPort);
 		onStreamURLReceived.onStreamURL(getPrefs().getString(Param.RAYV_STREAM_URL_PATTERN, bundle));
+	}
+
+	public void setStreamPort(int streamPort)
+	{
+		Log.i(TAG, ".setStreamPort: streamPort = " + streamPort);
+		_streamPort = streamPort;
+	}
+
+	public int getStreamPort()
+	{
+		return _streamPort;
 	}
 
 	@Override

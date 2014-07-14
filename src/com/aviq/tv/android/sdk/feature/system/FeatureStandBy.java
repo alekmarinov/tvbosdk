@@ -13,6 +13,10 @@ package com.aviq.tv.android.sdk.feature.system;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -25,6 +29,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
 import com.aviq.tv.android.sdk.core.feature.easteregg.FeatureEasterEgg;
+import com.aviq.tv.android.sdk.feature.rcu.ime.RcuIMEService;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
@@ -106,12 +111,43 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 
-		_autoStandbyTimeout = getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT);
-
-		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
+		// Environment.getInstance().getEventMessenger().register(this,
+		// Environment.ON_KEY_PRESSED);
 		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
 
+		// RcuIMEService will broadcast BROADCAST_ACTION_SLEEP in response to
+		// sleep button pressed. This event may occur at any time even when the
+		// current activity holding this fragment is inactive (e.g. on pause)
+		Log.i(TAG, "Registering on " + RcuIMEService.BROADCAST_ACTION_SLEEP);
+		IntentFilter intentFilter = new IntentFilter(RcuIMEService.BROADCAST_ACTION_SLEEP);
+		Environment.getInstance().registerReceiver(new BroadcastReceiver()
+		{
+			@Override
+			public void onReceive(Context context, Intent intent)
+			{
+				Log.i(TAG, ".onReceive: action = " + intent.getAction());
+				if (RcuIMEService.BROADCAST_ACTION_SLEEP.equals(intent.getAction()))
+				{
+					if (_isStandByHDMI && isHDMIOff())
+					{
+						Log.i(TAG, "Resume from standing by requested by user");
+						getEventMessenger().trigger(ON_STANDBY_LEAVE);
+						setHDMIEnabled(true);
+						postponeAutoStandBy(_autoStandbyTimeout);
+						Environment.getInstance().setKeyEventsEnabled();
+					}
+					else
+					{
+						Log.i(TAG, "Standing by requested by user");
+						startStandBy(false);
+						Environment.getInstance().setKeyEventsDisabled().except(Key.SLEEP);
+					}
+				}
+			}
+		}, intentFilter);
+
 		_isStandByHDMI = getPrefs().getBool(Param.IS_STANDBY_HDMI);
+		_autoStandbyTimeout = getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT);
 		postponeAutoStandBy(_autoStandbyTimeout);
 
 		super.initialize(onFeatureInitialized);
@@ -211,33 +247,13 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
 		if (Environment.ON_KEY_PRESSED == msgId)
 		{
-			Key key = Key.valueOf(bundle.getString(Environment.EXTRA_KEY));
-			if (Key.SLEEP.equals(key))
-			{
-				if (_isStandByHDMI && isHDMIOff())
-				{
-					Log.i(TAG, "Resume from standing by requested by user");
-					getEventMessenger().trigger(ON_STANDBY_LEAVE);
-					setHDMIEnabled(true);
-					postponeAutoStandBy(_autoStandbyTimeout);
-					Environment.getInstance().setKeyEventsEnabled();
-				}
-				else
-				{
-					Log.i(TAG, "Standing by requested by user");
-					startStandBy(false);
-					Environment.getInstance().setKeyEventsDisabled().except(Key.SLEEP);
-				}
-			}
-			else
-			{
-				// Postpone auto standby on user activity
-				postponeAutoStandBy(_autoStandbyTimeout);
-			}
+			// Postpone auto standby on user activity
+			postponeAutoStandBy(_autoStandbyTimeout);
 		}
 		else if (FeatureEasterEgg.ON_KEY_SEQUENCE == msgId)
 		{
 			String keySeq = bundle.getString(FeatureEasterEgg.EXTRA_KEY_SEQUENCE);
+			// FIXME: declare key sequences as constants
 			if ("RR272RR".equals(keySeq) || "YGRB11".equals(keySeq))
 			{
 				if (_autoStandbyTimeout > 0)

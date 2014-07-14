@@ -27,6 +27,7 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 
 /**
  * Provides low level access to system
@@ -34,6 +35,8 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 public class FeatureSystem extends FeatureComponent
 {
 	public static final String TAG = FeatureSystem.class.getSimpleName();
+	public static final String DEFAULT_HOST = "localhost";
+	public static final int DEFAULT_PORT = 6869;
 	private BufferedReader _bufferedReader;
 	private final BlockingQueue<String> _cmdQueue = new LinkedBlockingQueue<String>();
 	private Socket _socket;
@@ -46,30 +49,45 @@ public class FeatureSystem extends FeatureComponent
 		/**
 		 * Executor port number
 		 */
-		PORT(6869),
+		PORT(DEFAULT_PORT),
 
 		/**
 		 * Executor host address
 		 */
-		HOST("localhost");
+		HOST(DEFAULT_HOST);
 
 		Param(int value)
 		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Component.SYSTEM).put(name(), value);
+			if (Environment.getInstance() != null)
+				Environment.getInstance().getFeaturePrefs(FeatureName.Component.SYSTEM).put(name(), value);
 		}
 
 		Param(String value)
 		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Component.SYSTEM).put(name(), value);
+			if (Environment.getInstance() != null)
+				Environment.getInstance().getFeaturePrefs(FeatureName.Component.SYSTEM).put(name(), value);
 		}
+	}
+
+	public FeatureSystem() throws FeatureNotFoundException
+	{
+	}
+
+	public FeatureSystem(String host, int port)
+	{
+		_host = host;
+		_port = port;
 	}
 
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		_port = getPrefs().getInt(Param.PORT);
-		_host = getPrefs().getString(Param.HOST);
+		if (_host == null && _port == 0)
+		{
+			_host = getPrefs().getString(Param.HOST);
+			_port = getPrefs().getInt(Param.PORT);
+		}
 		connect(new Runnable()
 		{
 			@Override
@@ -169,7 +187,8 @@ public class FeatureSystem extends FeatureComponent
 				}
 				finally
 				{
-					Environment.getInstance().runOnUiThread(callback);
+					if (Environment.getInstance() != null)
+						Environment.getInstance().runOnUiThread(callback);
 				}
 			}
 		}).start();

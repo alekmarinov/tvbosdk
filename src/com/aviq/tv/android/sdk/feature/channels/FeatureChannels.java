@@ -270,7 +270,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	}
 
 	/**
-	 * Start playing channel at specified index in the channels favorite list
+	 * Start playing channel at specified index in the active channels list
 	 *
 	 * @param index
 	 */

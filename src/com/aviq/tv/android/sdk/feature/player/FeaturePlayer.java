@@ -42,7 +42,6 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	public static final int ON_PLAY_STARTED = EventMessenger.ID("ON_PLAY_STARTED");
 	public static final int ON_PLAY_TIMEOUT = EventMessenger.ID("ON_PLAY_TIMEOUT");
 	public static final int ON_PLAY_ERROR = EventMessenger.ID("ON_PLAY_ERROR");
-	public static final String EXTRA_TIME_ELAPSED = "TIME_ELAPSED";
 	private PlayerStatusPoller _playerStartPoller = new PlayerStatusPoller(new PlayerStartVerifier());
 	private PlayerStatusPoller _playerStopPoller = new PlayerStatusPoller(new PlayerStopVerifier());
 	private PlayerStatusPoller _playerPausePoller = new PlayerStatusPoller(new PlayerPauseVerifier());
@@ -54,7 +53,10 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 
 	public enum Extras
 	{
-		URL
+		URL,
+		TIME_ELAPSED,
+		WHAT,
+		EXTRA
 	}
 
 	public enum Param
@@ -350,7 +352,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 			{
 				// trigger player started
 				Bundle bundle = new Bundle();
-				bundle.putLong(EXTRA_TIME_ELAPSED, timeElapsed);
+				bundle.putLong(Extras.TIME_ELAPSED.name(), timeElapsed);
 				getEventMessenger().trigger(ON_PLAY_STARTED, bundle);
 				return true;
 			}
@@ -368,7 +370,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		{
 			// trigger timeout
 			Bundle bundle = new Bundle();
-			bundle.putLong(EXTRA_TIME_ELAPSED, timeElapsed);
+			bundle.putLong(Extras.TIME_ELAPSED.name(), timeElapsed);
 			getEventMessenger().trigger(ON_PLAY_TIMEOUT, bundle);
 		}
 
@@ -388,7 +390,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 			{
 				// trigger player stopped
 				Bundle bundle = new Bundle();
-				bundle.putLong(EXTRA_TIME_ELAPSED, timeElapsed);
+				bundle.putLong(Extras.TIME_ELAPSED.name(), timeElapsed);
 				getEventMessenger().trigger(ON_PLAY_STOP, bundle);
 				return true;
 			}
@@ -423,7 +425,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 			{
 				// trigger player paused
 				Bundle bundle = new Bundle();
-				bundle.putLong(EXTRA_TIME_ELAPSED, timeElapsed);
+				bundle.putLong(Extras.TIME_ELAPSED.name(), timeElapsed);
 				getEventMessenger().trigger(ON_PLAY_PAUSE, bundle);
 				return true;
 			}
@@ -458,7 +460,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 			{
 				// trigger player resume
 				Bundle bundle = new Bundle();
-				bundle.putLong(EXTRA_TIME_ELAPSED, timeElapsed);
+				bundle.putLong(Extras.TIME_ELAPSED.name(), timeElapsed);
 				getEventMessenger().trigger(ON_PLAY_PAUSE, bundle);
 				return true;
 			}
@@ -513,8 +515,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	{
 		Log.w(TAG, ".onError: what = " + what + ", extra = " + extra);
 		Bundle bundle = new Bundle();
-		bundle.putInt("WHAT", what);
-		bundle.putInt("EXTRA", extra);
+		bundle.putInt(Extras.WHAT.name(), what);
+		bundle.putInt(Extras.EXTRA.name(), extra);
 		getEventMessenger().trigger(ON_PLAY_ERROR, bundle);
 		_errWhat = what;
 		_errExtra = extra;

@@ -52,7 +52,6 @@ import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.core.state.StateManager;
 import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
-import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
 
 /**
  * Defines application environment
@@ -73,7 +72,7 @@ public class Environment extends Activity
 	public static final String EXTRA_KEY = "KEY";
 	public static final String EXTRA_KEYCODE = "KEYCODE";
 	public static final String EXTRA_KEYCONSUMED = "KEYCONSUMED";
-	private static final String SYSTEM_PREFS = "system";
+	public static final String SYSTEM_PREFS = "system";
 	private static final String AVIQTV_XML_RESOURCE = "aviqtv";
 	private static final String ECLIPSE_XML_RESOURCE = "eclipse";
 	private static final String RELEASE_XML_RESOURCE = "release";
@@ -121,9 +120,10 @@ public class Environment extends Activity
 	private boolean _isInitialized = false;
 	private static boolean _isCreated = false;
 	private FeatureRCU _featureRCU;
-	private FeatureSystem _featureSystem;
 	private boolean _keyEventsEnabled = true;
 	private ExceptKeysList _exceptKeys = new ExceptKeysList();
+	private Context _context;
+	private boolean _isPause;
 
 	private OnResultReceived _onFeaturesReceived = new OnResultReceived()
 	{
@@ -145,7 +145,6 @@ public class Environment extends Activity
 				_stateManager.setMessageState(_featureManager.use(FeatureName.State.MESSAGE_BOX));
 				_stateManager.setOverlayBackgroundColor(getPrefs().getInt(Param.OVERLAY_BACKGROUND_COLOR));
 				_featureRCU = (FeatureRCU) _featureManager.use(FeatureName.Component.RCU);
-				_featureSystem = (FeatureSystem) _featureManager.use(FeatureName.Component.SYSTEM);
 
 				_serviceController = new ServiceController(Environment.this);
 				_requestQueue = Volley.newRequestQueue(Environment.this);
@@ -212,7 +211,7 @@ public class Environment extends Activity
 	};
 
 	@SuppressWarnings("serial")
-    public class ExceptKeysList extends ArrayList<Key>
+	public class ExceptKeysList extends ArrayList<Key>
 	{
 		public ExceptKeysList except(Key key)
 		{
@@ -226,6 +225,16 @@ public class Environment extends Activity
 	 */
 	public Environment()
 	{
+		_context = this;
+		_instance = this;
+	}
+
+	/**
+	 * Environment constructor method with external Context
+	 */
+	public Environment(Context context)
+	{
+		_context = context;
 		_instance = this;
 	}
 
@@ -251,7 +260,6 @@ public class Environment extends Activity
 			// initialize preferences
 			_userPrefs = createUserPrefs();
 			_prefs = createPrefs(SYSTEM_PREFS);
-
 			int appDebugXmlId = getResources().getIdentifier(ECLIPSE_XML_RESOURCE, "raw", getPackageName());
 			if (appDebugXmlId != 0)
 			{
@@ -315,6 +323,7 @@ public class Environment extends Activity
 	{
 		super.onResume();
 		Log.i(TAG, ".onResume");
+		_isPause = false;
 		getEventMessenger().trigger(ON_RESUME);
 	}
 
@@ -323,6 +332,7 @@ public class Environment extends Activity
 	{
 		super.onPause();
 		Log.i(TAG, ".onPause");
+		_isPause = true;
 		getEventMessenger().trigger(ON_PAUSE);
 	}
 
@@ -333,10 +343,17 @@ public class Environment extends Activity
 		Log.i(TAG, ".onDestroy");
 	}
 
+	/**
+	 * @return true if this activity is on pause
+	 */
+	public boolean isPause()
+	{
+		return _isPause;
+	}
+
 	public void suicide()
 	{
 		Log.i(TAG, ".suicide: Comitting suicide...");
-		// _featureSystem.command("killall " + getPackageName());
 		finish();
 	}
 
@@ -609,14 +626,14 @@ public class Environment extends Activity
 	public void startAppPackage(String packageName)
 	{
 		Log.i(TAG, "Starting " + packageName);
-		Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
+		Intent intent = _context.getPackageManager().getLaunchIntentForPackage(packageName);
 		if (intent == null)
 		{
 			Log.w(getClass().getSimpleName(), "Can't find pacakge `" + packageName + "'");
 		}
 		else
 		{
-			startActivity(intent);
+			_context.startActivity(intent);
 		}
 	}
 
@@ -640,7 +657,9 @@ public class Environment extends Activity
 
 	/**
 	 * Disable broadcasts of key events throughout the application.
-	 * @param enabled true to enable key events, false to disable key events
+	 *
+	 * @param enabled
+	 *            true to enable key events, false to disable key events
 	 */
 	public ExceptKeysList setKeyEventsDisabled()
 	{
@@ -692,13 +711,13 @@ public class Environment extends Activity
 	private Prefs createUserPrefs()
 	{
 		Log.i(TAG, ".createUserPrefs");
-		return new Prefs("user", getSharedPreferences("user", Activity.MODE_PRIVATE), true);
+		return new Prefs("user", _context.getSharedPreferences("user", Activity.MODE_PRIVATE), true);
 	}
 
 	private Prefs createPrefs(String name)
 	{
 		Log.i(TAG, ".createPrefs: name = " + name);
-		return new Prefs(name, getSharedPreferences(name, Activity.MODE_PRIVATE), false);
+		return new Prefs(name, _context.getSharedPreferences(name, Activity.MODE_PRIVATE), false);
 	}
 
 	private class BitmapLruCache extends LruCache<String, Bitmap> implements ImageCache
