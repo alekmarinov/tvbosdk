@@ -65,6 +65,8 @@ public class FeatureUpgrade extends FeatureScheduler
 	public static final int ON_START_FROM_UPDATE = EventMessenger.ID("ON_START_FROM_UPDATE");
 
 	public static final String EXTRA_VERSION = "VERSION";
+	public static final String EXTRA_VERSION_PREV = "VERSION_PREV";
+	public static final String EXTRA_UPGRADE_DURATION = "UPGRADE_DURATION";
 
 	public enum Param
 	{
@@ -128,9 +130,19 @@ public class FeatureUpgrade extends FeatureScheduler
 		UPGRADE_BRAND,
 
 		/**
-		 * Whether the system has started after upgrade
+		 * Whether the system has started after upgrade.
 		 */
-		IS_AFTER_UPGRADE;
+		IS_AFTER_UPGRADE,
+
+		/**
+		 * Keeps the version from which we upgraded from.
+		 */
+		UPGRADE_VERSION_PREV,
+
+		/**
+		 * Keeps when the upgrade was started in order to measure the upgrade duration.
+		 */
+		UPGRADE_START_TIME_MILLIS;
 	}
 
 	public enum Status
@@ -260,7 +272,11 @@ public class FeatureUpgrade extends FeatureScheduler
 			throw new UpgradeException(ResultCode.GENERAL_FAILURE, "rebootToInstall: Not ready for software upgrade");
 		}
 
+		int delay = getPrefs().getInt(Param.UPGRADE_REBOOT_DELAY);
+
 		_userPrefs.put(UserParam.IS_AFTER_UPGRADE, true);
+		_userPrefs.put(UserParam.UPGRADE_VERSION_PREV, Environment.getInstance().getBuildVersion());
+		_userPrefs.put(UserParam.UPGRADE_START_TIME_MILLIS, System.currentTimeMillis() + delay);
 
 		Bundle params = null;
 		if (_updateInfo != null)
@@ -270,7 +286,6 @@ public class FeatureUpgrade extends FeatureScheduler
 		}
 		getEventMessenger().trigger(ON_START_UPDATE, params);
 
-		int delay = getPrefs().getInt(Param.UPGRADE_REBOOT_DELAY);
 		getEventMessenger().postDelayed(new Runnable()
 		{
 			@Override
@@ -355,7 +370,17 @@ public class FeatureUpgrade extends FeatureScheduler
 			Prefs userPrefs = Environment.getInstance().getUserPrefs();
 			if (userPrefs.has(UserParam.IS_AFTER_UPGRADE) && userPrefs.getBool(UserParam.IS_AFTER_UPGRADE))
 			{
-				getEventMessenger().trigger(ON_START_FROM_UPDATE);
+				Bundle params = new Bundle();
+
+				String oldVersion = userPrefs.has(UserParam.UPGRADE_VERSION_PREV) ? userPrefs
+				        .getString(UserParam.UPGRADE_VERSION_PREV) : null;
+				params.putString(EXTRA_VERSION_PREV, oldVersion);
+
+				long duration = userPrefs.has(UserParam.UPGRADE_START_TIME_MILLIS) ? (System.currentTimeMillis() - userPrefs
+				        .getLong(UserParam.UPGRADE_START_TIME_MILLIS)) / 1000 : -1;
+				params.putLong(EXTRA_UPGRADE_DURATION, duration);
+
+				getEventMessenger().trigger(ON_START_FROM_UPDATE, params);
 				userPrefs.put(UserParam.IS_AFTER_UPGRADE, false);
 			}
 

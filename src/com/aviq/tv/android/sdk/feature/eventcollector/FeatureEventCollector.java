@@ -551,6 +551,16 @@ public class FeatureEventCollector extends FeatureScheduler
 	        {
 				Bundle params = prepareParams("system", Key.UPGRADE, "completed", FeatureUpgrade.class.getSimpleName(),
 				        Severity.INFO);
+
+				Bundle swBundle = new Bundle();
+				swBundle.putString(Key.PREV_VERSION, bundle.getString(FeatureUpgrade.EXTRA_VERSION_PREV));
+				swBundle.putLong(Key.DURATION, bundle.getLong(FeatureUpgrade.EXTRA_UPGRADE_DURATION));
+
+				Bundle upgradeBundle = new Bundle();
+				upgradeBundle.putBundle(Key.SW, swBundle);
+
+				params.putBundle(Key.UPGRADE, upgradeBundle);
+
 				addEvent(params);
 	        }
 		}, FeatureUpgrade.ON_START_FROM_UPDATE);
@@ -610,6 +620,7 @@ public class FeatureEventCollector extends FeatureScheduler
 		String PUBLIC_IP = "public_ip";
 		String SW = "sw";
 		String VERSION = "version";
+		String PREV_VERSION = "prev_version";
 		String KIND = "kind";
 		String CUSTOMER = "customer";
 		String BRAND = "brand";
@@ -642,5 +653,7 @@ public class FeatureEventCollector extends FeatureScheduler
 		String HOST = "host";
 		String DOWNLOAD = "download";
 		String TEXT = "text";
+		String MODE = "mode";
+		String BACKEND = "backend";
 	}
 }
