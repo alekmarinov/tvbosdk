@@ -321,6 +321,11 @@ public class FeatureEventCollector extends FeatureScheduler
 		_eventList.add(event);
 	}
 
+	protected void setAntiFloodProtectionForEvent(int eventId)
+	{
+		_antiFloodEvents.put(eventId, 0L);
+	}
+
 	private String getCustomer()
 	{
 		return getPrefs().getString(Param.EVENT_COLLECTOR_CUSTOMER);
@@ -655,5 +660,7 @@ public class FeatureEventCollector extends FeatureScheduler
 		String TEXT = "text";
 		String MODE = "mode";
 		String BACKEND = "backend";
+		String FREE_SPACE = "free_space";
+		String REQUIRED_SPACE = "required_space";
 	}
 }
