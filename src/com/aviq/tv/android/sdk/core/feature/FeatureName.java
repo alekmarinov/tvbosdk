@@ -39,7 +39,7 @@ public class FeatureName
 		STREAMER,
 		STANDBY,
 		DEBUG,
-		SCHEDULE_RECORDER
+		RECORDING_SCHEDULER
 	}
 
 	public static enum Scheduler

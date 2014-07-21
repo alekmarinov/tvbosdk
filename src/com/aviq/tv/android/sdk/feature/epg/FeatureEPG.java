@@ -642,8 +642,8 @@ public abstract class FeatureEPG extends FeatureScheduler
 		SimpleDateFormat ddf = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
 		ddf.setTimeZone(_featureTimeZone.getTimeZone());
 
-		Calendar programRangeMin = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-		Calendar programRangeMax = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+		Calendar programRangeMin = Calendar.getInstance(_featureTimeZone.getTimeZone());
+		Calendar programRangeMax = Calendar.getInstance(_featureTimeZone.getTimeZone());
 		programRangeMin.add(Calendar.DATE, -getPrefs().getInt(Param.PROGRAM_RANGE_MIN_DAYS));
 		programRangeMax.add(Calendar.DATE, getPrefs().getInt(Param.PROGRAM_RANGE_MAX_DAYS));
 
