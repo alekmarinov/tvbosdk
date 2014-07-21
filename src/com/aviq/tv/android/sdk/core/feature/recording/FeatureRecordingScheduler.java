@@ -136,7 +136,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			// get record with least start time great than record's start time
 			nextRecord = navMap.ceilingKey(startTime);
 			
-			// check if such record doen't exist or it starts after newly added record
+			// check if such record doen't exist or it starts after newly added
+			// record
 			// has finished
 			if ((nextRecord == null) || (nextRecord.compareTo(endTime) >= 0))
 			{
@@ -154,7 +155,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 						int secDuration = navMap.get(prevRecord).getDuration();
 						calTime.add(Calendar.SECOND, secDuration);
 						String prevEndTime = sdf.format(calTime.getTime());
-						// check if newly added record start after prevRecord has
+						// check if newly added record start after prevRecord
+						// has
 						// finished
 						isRecordValid = (startTime.compareTo(prevEndTime) >= 0);
 					}
@@ -327,7 +329,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		{
 			return false;
 		}
-		return true;
+		return navMap.size() > 0;
 	}
 	
 	/**
