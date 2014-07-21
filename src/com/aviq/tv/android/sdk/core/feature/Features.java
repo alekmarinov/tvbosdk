@@ -15,6 +15,7 @@ import java.lang.reflect.Field;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.easteregg.FeatureEasterEgg;
+import com.aviq.tv.android.sdk.core.feature.recording.FeatureRecordingScheduler;
 import com.aviq.tv.android.sdk.feature.channels.FeatureChannels;
 import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
@@ -69,6 +70,7 @@ public class Features
 		public FeatureNethogs NETHOGS;
 		public FeatureStreamer STREAMER;
 		public FeatureStandBy STANDBY;
+		public FeatureRecordingScheduler RECORDING_SCHEDULER;
 	}
 
 	public class Schedulers
