@@ -56,8 +56,14 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	public static final int ON_STANDBY_AUTO_ENABLED = EventMessenger.ID("ON_STANDBY_AUTO_ENABLED");
 	public static final int ON_STANDBY_AUTO_DISABLED = EventMessenger.ID("ON_STANDBY_AUTO_DISABLED");
 
+	private static final String ACTION_HDMI_HW_PLUGGED = "android.intent.action.HDMI_HW_PLUGGED";
+	private static final String EXTRA_HDMI_HW_PLUGGED_STATE = "state";
+
 	public enum Param
 	{
+		/** Enter standby when HDMI cable is unplugged */
+		IS_STANDBY_BY_HDMI_OFF(false),
+
 		/** Turn on/off HDMI on standing by */
 		IS_STANDBY_HDMI(false),
 
@@ -119,14 +125,20 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		// sleep button pressed. This event may occur at any time even when the
 		// current activity holding this fragment is inactive (e.g. on pause)
 		Log.i(TAG, "Registering on " + RcuIMEService.BROADCAST_ACTION_SLEEP);
-		IntentFilter intentFilter = new IntentFilter(RcuIMEService.BROADCAST_ACTION_SLEEP);
+		IntentFilter intentFilter = new IntentFilter();
+		intentFilter.addAction(RcuIMEService.BROADCAST_ACTION_SLEEP);
+		if (getPrefs().getBool(Param.IS_STANDBY_BY_HDMI_OFF))
+		{
+			intentFilter.addAction(ACTION_HDMI_HW_PLUGGED);
+		}
 		Environment.getInstance().registerReceiver(new BroadcastReceiver()
 		{
 			@Override
 			public void onReceive(Context context, Intent intent)
 			{
-				Log.i(TAG, ".onReceive: action = " + intent.getAction());
-				if (RcuIMEService.BROADCAST_ACTION_SLEEP.equals(intent.getAction()))
+				String action = intent.getAction();
+				Log.i(TAG, ".onReceive: action = " + action);
+				if (RcuIMEService.BROADCAST_ACTION_SLEEP.equals(action))
 				{
 					if (_isStandByHDMI && isHDMIOff())
 					{
@@ -141,6 +153,14 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 						Log.i(TAG, "Standing by requested by user");
 						startStandBy(false);
 						Environment.getInstance().setKeyEventsDisabled().except(Key.SLEEP);
+					}
+				}
+				else if (ACTION_HDMI_HW_PLUGGED.equals(action))
+				{
+					boolean plugged = intent.getBooleanExtra(EXTRA_HDMI_HW_PLUGGED_STATE, false);
+					if (!plugged)
+					{
+						startStandBy(false);
 					}
 				}
 			}
