@@ -232,7 +232,10 @@ public class DownloadService extends BaseService
 
 			// delete if file with the same name already exists
 			if (targetFile.exists())
+			{
 				targetFile.delete();
+				Log.i(TAG, "Deleting previous file: " + targetFile.getAbsolutePath());
+			}
 
 			// rename file to requested name
 			partFile.renameTo(targetFile);
