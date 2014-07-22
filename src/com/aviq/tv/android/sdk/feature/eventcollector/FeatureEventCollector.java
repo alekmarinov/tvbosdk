@@ -517,21 +517,23 @@ public class FeatureEventCollector extends FeatureScheduler
 
 	public void registerForOnPlayTimeoutEvent()
 	{
-		Environment.getInstance().getEventMessenger().register(new EventReceiver()
-		{
-			@Override
-	        public void onEvent(int msgId, Bundle bundle)
-	        {
-				Bundle params = prepareParams("system", Key.CONNECTION, Key.ERROR, FeatureInternet.class.getSimpleName(),
-				        Severity.ERROR);
-				addEvent(params);
-	        }
-		}, FeaturePlayer.ON_PLAY_TIMEOUT);
+		Environment.getInstance().getFeatureComponent(FeatureName.Component.PLAYER).getEventMessenger()
+		        .register(new EventReceiver()
+		        {
+			        @Override
+			        public void onEvent(int msgId, Bundle bundle)
+			        {
+				        Bundle params = prepareParams("system", Key.CONNECTION, Key.ERROR,
+				                FeatureInternet.class.getSimpleName(), Severity.ERROR);
+				        addEvent(params);
+			        }
+		        }, FeaturePlayer.ON_PLAY_TIMEOUT);
 	}
 
 	public void registerForOnPlayStartedEvent()
 	{
-		Environment.getInstance().getEventMessenger().register(new EventReceiver()
+		Environment.getInstance().getFeatureComponent(FeatureName.Component.PLAYER).getEventMessenger()
+		        .register(new EventReceiver()
 		{
 			@Override
 	        public void onEvent(int msgId, Bundle bundle)
@@ -549,7 +551,8 @@ public class FeatureEventCollector extends FeatureScheduler
 
 	public void registerForOnStartFromUpdateEvent()
 	{
-		Environment.getInstance().getEventMessenger().register(new EventReceiver()
+		Environment.getInstance().getFeatureScheduler(FeatureName.Scheduler.UPGRADE).getEventMessenger()
+		        .register(new EventReceiver()
 		{
 			@Override
 	        public void onEvent(int msgId, Bundle bundle)
@@ -573,7 +576,8 @@ public class FeatureEventCollector extends FeatureScheduler
 
 	public void registerForOnStartUpdateEvent()
 	{
-		Environment.getInstance().getEventMessenger().register(new EventReceiver()
+		Environment.getInstance().getFeatureScheduler(FeatureName.Scheduler.UPGRADE).getEventMessenger()
+		        .register(new EventReceiver()
 		{
 			@Override
 	        public void onEvent(int msgId, Bundle bundle)
@@ -591,12 +595,13 @@ public class FeatureEventCollector extends FeatureScheduler
 
 				addEvent(params);
 	        }
-		}, FeatureUpgrade.ON_START_UPDATE);
+		        }, FeatureUpgrade.ON_START_UPDATE);
 	}
 
 	public void registerForOnDisconnectedEvent()
 	{
-		Environment.getInstance().getEventMessenger().register(new EventReceiver()
+		Environment.getInstance().getFeatureScheduler(FeatureName.Scheduler.INTERNET).getEventMessenger()
+		        .register(new EventReceiver()
 		{
 			@Override
 	        public void onEvent(int msgId, Bundle bundle)
