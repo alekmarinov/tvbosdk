@@ -85,6 +85,8 @@ public class DownloadService extends BaseService
 	{
 		Log.i(TAG, ".onHandleIntent");
 
+		_cancelService = false;
+
 		BufferedInputStream inputStream = null;
 		HttpURLConnection conn = null;
 		FileOutputStream outputStream = null;
@@ -280,7 +282,6 @@ public class DownloadService extends BaseService
 				// Service is cancelled
 
 				result = DOWNLOAD_CANCELLED;
-				_cancelService = false;
 
 				boolean isDeleted = partFile.delete();
 				Log.i(TAG, "Deleting temporary file: " + partFile.getAbsolutePath() + " --> "
