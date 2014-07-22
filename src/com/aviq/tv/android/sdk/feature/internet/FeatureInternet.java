@@ -290,6 +290,12 @@ public class FeatureInternet extends FeatureScheduler
 		});
 	}
 
+	public void stopFileDownload()
+	{
+		Log.i(TAG, ".stopFileDownload");
+		DownloadService.stopIfRunning();
+	}
+
 	/**
 	 * Return the download speed measured in MB/sec.
 	 * FIXME: download rate must be obtained dynamically during download

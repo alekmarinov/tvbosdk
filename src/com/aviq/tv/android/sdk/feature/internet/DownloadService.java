@@ -54,6 +54,7 @@ public class DownloadService extends BaseService
 	public static final int DOWNLOAD_PROGRESS = EventMessenger.ID("DOWNLOAD_PROGRESS");
 	public static final int DOWNLOAD_SUCCESS = EventMessenger.ID("DOWNLOAD_SUCCESS");
 	public static final int DOWNLOAD_FAILED = EventMessenger.ID("DOWNLOAD_FAILED");
+	public static final int DOWNLOAD_CANCELLED = EventMessenger.ID("DOWNLOAD_CANCELLED");
 	public static final int DOWNLOAD_OUT_OF_FREE_SPACE = EventMessenger.ID("DOWNLOAD_OUT_OF_FREE_SPACE");
 
 	/**
@@ -72,6 +73,8 @@ public class DownloadService extends BaseService
 		PROGRESS, MD5, BYTES_DOWNLOADED, BYTES_TOTAL, EXCEPTION, DOWNLOAD_RATE_MB_PER_SEC, TOTAL_TIME, FREE_SPACE, REQUIRED_SPACE
 	}
 
+	private static boolean _cancelService = false;
+
 	public DownloadService()
 	{
 		super(TAG);
@@ -81,6 +84,7 @@ public class DownloadService extends BaseService
 	protected void onHandleIntent(Intent intent, ResultReceiver resultReceiver)
 	{
 		Log.i(TAG, ".onHandleIntent");
+
 		BufferedInputStream inputStream = null;
 		HttpURLConnection conn = null;
 		FileOutputStream outputStream = null;
@@ -185,6 +189,9 @@ public class DownloadService extends BaseService
 			long lastIterTime = System.currentTimeMillis();
 			while ((count = inputStream.read(data, 0, bufSize)) != -1)
 			{
+				if (_cancelService)
+					break;
+
 				if (md5 != null)
 					md5.update(data, 0, count);
 				outputStream.write(data, 0, count);
@@ -217,52 +224,68 @@ public class DownloadService extends BaseService
 						Bundle outOfSpaceData = new Bundle();
 						outOfSpaceData.putLong(ResultExtras.FREE_SPACE.name(), freeSpace);
 						outOfSpaceData.putLong(ResultExtras.REQUIRED_SPACE.name(), requiredSpace);
-						resultReceiver.send(DOWNLOAD_OUT_OF_FREE_SPACE, resultData);
+						resultReceiver.send(DOWNLOAD_OUT_OF_FREE_SPACE, outOfSpaceData);
 					}
 				}
 			}
 
-			duration = System.currentTimeMillis() - downloadStart;
-
-			// send full progress event to fill up the progress bars
-			progressData.putFloat(ResultExtras.PROGRESS.name(), 1.0f);
-			progressData.putFloat(ResultExtras.BYTES_DOWNLOADED.name(), total);
-			progressData.putFloat(ResultExtras.BYTES_TOTAL.name(), total);
-			progressData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
-			progressData.putLong(ResultExtras.TOTAL_TIME.name(), duration);
-			resultReceiver.send(DOWNLOAD_PROGRESS, progressData);
-
-			//resultData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
-			resultData.putAll(progressData);
-			Log.i(TAG, bytesWritten + " bytes in " + duration + " ms downloaded from " + url + ", download rate = "
-			        + downloadRateMbPerSec + " MB/sec");
-
-			if (md5 != null)
+			if (!_cancelService)
 			{
-				// format md5 string
-				byte[] digest = md5.digest();
-				StringBuffer downloadedMd5 = new StringBuffer();
-				for (int i = 0; i < digest.length; i++)
+				// Service completed OK
+
+				duration = System.currentTimeMillis() - downloadStart;
+
+				// send full progress event to fill up the progress bars
+				progressData.putFloat(ResultExtras.PROGRESS.name(), 1.0f);
+				progressData.putFloat(ResultExtras.BYTES_DOWNLOADED.name(), total);
+				progressData.putFloat(ResultExtras.BYTES_TOTAL.name(), total);
+				progressData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
+				progressData.putLong(ResultExtras.TOTAL_TIME.name(), duration);
+				resultReceiver.send(DOWNLOAD_PROGRESS, progressData);
+
+				//resultData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
+				resultData.putAll(progressData);
+				Log.i(TAG, bytesWritten + " bytes in " + duration + " ms downloaded from " + url + ", download rate = "
+				        + downloadRateMbPerSec + " MB/sec");
+
+				if (md5 != null)
 				{
-					downloadedMd5.append(Integer.toString((digest[i] & 0xFF) + 0x100, 16).substring(1));
+					// format md5 string
+					byte[] digest = md5.digest();
+					StringBuffer downloadedMd5 = new StringBuffer();
+					for (int i = 0; i < digest.length; i++)
+					{
+						downloadedMd5.append(Integer.toString((digest[i] & 0xFF) + 0x100, 16).substring(1));
+					}
+					Log.i(TAG, "Computed MD5 sum: " + downloadedMd5);
+					resultData.putString(ResultExtras.MD5.name(), downloadedMd5.toString());
 				}
-				Log.i(TAG, "Computed MD5 sum: " + downloadedMd5);
-				resultData.putString(ResultExtras.MD5.name(), downloadedMd5.toString());
-			}
 
-			// delete if file with the same name already exists
-			if (targetFile.exists())
+				// delete if file with the same name already exists
+				if (targetFile.exists())
+				{
+					targetFile.delete();
+					Log.i(TAG, "Deleting previous file: " + targetFile.getAbsolutePath());
+				}
+
+				// rename file to requested name
+				partFile.renameTo(targetFile);
+
+				// finish success
+				Log.i(TAG, "Download success: " + targetFile);
+				result = DOWNLOAD_SUCCESS;
+			}
+			else
 			{
-				targetFile.delete();
-				Log.i(TAG, "Deleting previous file: " + targetFile.getAbsolutePath());
+				// Service is cancelled
+
+				result = DOWNLOAD_CANCELLED;
+				_cancelService = false;
+
+				boolean isDeleted = partFile.delete();
+				Log.i(TAG, "Deleting temporary file: " + partFile.getAbsolutePath() + " --> "
+				        + (isDeleted ? "succeeded" : "failed"));
 			}
-
-			// rename file to requested name
-			partFile.renameTo(targetFile);
-
-			// finish success
-			Log.i(TAG, "Download success: " + targetFile);
-			result = DOWNLOAD_SUCCESS;
 		}
 		catch (MalformedURLException e)
 		{
@@ -290,7 +313,6 @@ public class DownloadService extends BaseService
 
 			// send download status to result receiver
 			resultReceiver.send(result, resultData);
-
 			Log.i(TAG, ".onHandleIntent: finished");
 		}
 	}
@@ -338,5 +360,10 @@ public class DownloadService extends BaseService
 		{
 			e.printStackTrace();
 		}
+	}
+
+	public static void stopIfRunning()
+	{
+		_cancelService = true;
 	}
 }

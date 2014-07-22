@@ -662,5 +662,6 @@ public class FeatureEventCollector extends FeatureScheduler
 		String BACKEND = "backend";
 		String FREE_SPACE = "free_space";
 		String REQUIRED_SPACE = "required_space";
+		String CANCELLED = "cancelled";
 	}
 }
