@@ -29,6 +29,7 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 
 /**
@@ -79,16 +80,16 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		
 		loadRecordFromDataProvider(new OnLoadRecordings()
 		{
-
+			
 			@Override
-            public void onRecordingLoaded(Map<String, NavigableMap<String, RecordingScheduler>> channelToRecordsNavigableMap)
-            {
+			public void onRecordingLoaded(
+			        Map<String, NavigableMap<String, RecordingScheduler>> channelToRecordsNavigableMap)
+			{
 				_channelToRecordsNavigableMap = channelToRecordsNavigableMap;
-	            
-            }
-		},
-		onFeatureInitialized);
-
+				
+			}
+		}, onFeatureInitialized);
+		
 	}
 	
 	@Override
@@ -135,7 +136,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			// get record with least start time great than record's start time
 			nextRecord = navMap.ceilingKey(startTime);
 			
-			// check if such record doen't exist or it starts after newly added record
+			// check if such record doen't exist or it starts after newly added
+			// record
 			// has finished
 			if ((nextRecord == null) || (nextRecord.compareTo(endTime) >= 0))
 			{
@@ -146,14 +148,15 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					String prevRecord = navMap.floorKey(startTime);
 					boolean isRecordValid = false;
 					
-					// check if such prevRecord ()  doen't exist
+					// check if such prevRecord () doen't exist
 					if (prevRecord != null)
 					{
 						calTime.setTime(sdf.parse(prevRecord));
 						int secDuration = navMap.get(prevRecord).getDuration();
 						calTime.add(Calendar.SECOND, secDuration);
 						String prevEndTime = sdf.format(calTime.getTime());
-						// check if newly added record start after prevRecord has
+						// check if newly added record start after prevRecord
+						// has
 						// finished
 						isRecordValid = (startTime.compareTo(prevEndTime) >= 0);
 					}
@@ -233,7 +236,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		if (navMap != null)
 		{
 			String startTime = sdf.format(start.getTime());
-			navMap.remove(startTime);			
+			navMap.remove(startTime);
 			return saveRecords();
 		}
 		return true;
@@ -313,7 +316,23 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		return date.before(now);
 	}
 	
-	/**	 
+	/**
+	 * Checks if there exists records on given channel
+	 * 
+	 * @param channel
+	 * @return true if there exists records on given channel, otherwise false
+	 */
+	public boolean isAvailableRecordOnChannel(Channel channel)
+	{
+		NavigableMap<String, RecordingScheduler> navMap = _channelToRecordsNavigableMap.get(channel.getChannelId());
+		if (navMap == null)
+		{
+			return false;
+		}
+		return navMap.size() > 0;
+	}
+	
+	/**
 	 * Stores records to data repository
 	 */
 	private boolean saveRecords()
@@ -328,7 +347,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 				try
 				{
 					calStartTime.setTime(sdf.parse(entry.getStartTime()));
-					if (isDateExpiredForRecordings(calStartTime,null))
+					if (isDateExpiredForRecordings(calStartTime, null))
 					{
 						continue;
 					}
@@ -345,8 +364,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					return false;
 				}
 			}
-		}	
-		return true;
+		}
+		return saveRecordsToDataProvider(buffer.toString());
 		
 	}
 	
@@ -357,17 +376,19 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 *            - OnLoadRecordings callback
 	 * @return true - if operation completed successfully
 	 */
-	protected boolean loadRecordFromDataProvider(OnLoadRecordings onLoadRecordings,OnFeatureInitialized onFeatureInitialized)
+	protected boolean loadRecordFromDataProvider(OnLoadRecordings onLoadRecordings,
+	        OnFeatureInitialized onFeatureInitialized)
 	{
+		
+		HashMap<String, NavigableMap<String, RecordingScheduler>> _channelToRecordsNavigableMap = new HashMap<String, NavigableMap<String, RecordingScheduler>>();
 		if (_userPrefs.has(UserParam.RECORDINGS))
 		{
-			String recordings = _userPrefs.getString(UserParam.RECORDINGS);			
+			String recordings = _userPrefs.getString(UserParam.RECORDINGS);
 			String[] records = recordings.split(RECORD_DELIMITER);
 			int statusCode = ResultCode.OK;
-			HashMap<String, NavigableMap<String, RecordingScheduler>> _channelToRecordsNavigableMap = new HashMap<String, NavigableMap<String, RecordingScheduler>>();
+			
 			try
 			{
-				
 				for (String record : records)
 				{
 					
@@ -401,7 +422,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					navigableMap.put(startTime, rc);
 					
 				}
-				
+				statusCode = ResultCode.OK;
 			}
 			catch (ParseException e)
 			{
@@ -418,19 +439,27 @@ public class FeatureRecordingScheduler extends FeatureComponent
 				{
 					onFeatureInitialized.onInitialized(FeatureRecordingScheduler.this, statusCode);
 				}
+				
 			}
-		
 		}
+		else
+		{
 			
+			if (onFeatureInitialized != null)
+			{
+				onFeatureInitialized.onInitialized(FeatureRecordingScheduler.this, ResultCode.OK);
+			}
+			
+		}
 		onLoadRecordings.onRecordingLoaded(_channelToRecordsNavigableMap);
+		
 		return true;
 		
 	}
 	
-
 	protected boolean saveRecordsToDataProvider(String recordings)
 	{
-		_userPrefs.put(UserParam.RECORDINGS, recordings);		
+		_userPrefs.put(UserParam.RECORDINGS, recordings);
 		return true;
 	}
 	
