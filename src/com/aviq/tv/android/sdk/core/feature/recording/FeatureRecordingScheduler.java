@@ -365,7 +365,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 				}
 			}
 		}
-		return true;
+		return saveRecordsToDataProvider(buffer.toString());
 		
 	}
 	
