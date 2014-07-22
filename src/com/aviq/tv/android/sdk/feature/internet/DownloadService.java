@@ -33,6 +33,7 @@ import javax.net.ssl.X509TrustManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.ResultReceiver;
+import android.os.StatFs;
 
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Log;
@@ -53,6 +54,7 @@ public class DownloadService extends BaseService
 	public static final int DOWNLOAD_PROGRESS = EventMessenger.ID("DOWNLOAD_PROGRESS");
 	public static final int DOWNLOAD_SUCCESS = EventMessenger.ID("DOWNLOAD_SUCCESS");
 	public static final int DOWNLOAD_FAILED = EventMessenger.ID("DOWNLOAD_FAILED");
+	public static final int DOWNLOAD_OUT_OF_FREE_SPACE = EventMessenger.ID("DOWNLOAD_OUT_OF_FREE_SPACE");
 
 	/**
 	 * Service extras
@@ -67,7 +69,7 @@ public class DownloadService extends BaseService
 	 */
 	public enum ResultExtras
 	{
-		PROGRESS, MD5, BYTES_DOWNLOADED, BYTES_TOTAL, EXCEPTION, DOWNLOAD_RATE_MB_PER_SEC, TOTAL_TIME
+		PROGRESS, MD5, BYTES_DOWNLOADED, BYTES_TOTAL, EXCEPTION, DOWNLOAD_RATE_MB_PER_SEC, TOTAL_TIME, FREE_SPACE, REQUIRED_SPACE
 	}
 
 	public DownloadService()
@@ -141,6 +143,8 @@ public class DownloadService extends BaseService
 			int responseCode = conn.getResponseCode();
 			Log.i(TAG, "`" + url + "' -> HTTP " + responseCode);
 
+			int contentLength = conn.getHeaderFieldInt("Content-Length", -1);
+
 			// prepare md5 digest
 			boolean isComputeMd5 = intent.getBooleanExtra(Extras.IS_COMPUTE_MD5.name(), false);
 			MessageDigest md5 = null;
@@ -200,6 +204,22 @@ public class DownloadService extends BaseService
 					resultReceiver.send(DOWNLOAD_PROGRESS, progressData);
 					lastIterTime = System.currentTimeMillis();
 				}
+
+				if (contentLength > 0)
+				{
+					long freeSpace = getFreeSpace(partFile.getParent());
+					long requiredSpace = contentLength - bytesWritten;
+					if (freeSpace < requiredSpace)
+					{
+						Log.w(TAG, "Running out of free space... free space left = " + freeSpace + ", require space = "
+						        + requiredSpace);
+
+						Bundle outOfSpaceData = new Bundle();
+						outOfSpaceData.putLong(ResultExtras.FREE_SPACE.name(), freeSpace);
+						outOfSpaceData.putLong(ResultExtras.REQUIRED_SPACE.name(), requiredSpace);
+						resultReceiver.send(DOWNLOAD_OUT_OF_FREE_SPACE, resultData);
+					}
+				}
 			}
 
 			duration = System.currentTimeMillis() - downloadStart;
@@ -212,8 +232,8 @@ public class DownloadService extends BaseService
 			progressData.putLong(ResultExtras.TOTAL_TIME.name(), duration);
 			resultReceiver.send(DOWNLOAD_PROGRESS, progressData);
 
-
-			resultData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
+			//resultData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
+			resultData.putAll(progressData);
 			Log.i(TAG, bytesWritten + " bytes in " + duration + " ms downloaded from " + url + ", download rate = "
 			        + downloadRateMbPerSec + " MB/sec");
 
@@ -232,7 +252,10 @@ public class DownloadService extends BaseService
 
 			// delete if file with the same name already exists
 			if (targetFile.exists())
+			{
 				targetFile.delete();
+				Log.i(TAG, "Deleting previous file: " + targetFile.getAbsolutePath());
+			}
 
 			// rename file to requested name
 			partFile.renameTo(targetFile);
@@ -271,6 +294,13 @@ public class DownloadService extends BaseService
 			Log.i(TAG, ".onHandleIntent: finished");
 		}
 	}
+
+	private long getFreeSpace(String path)
+    {
+        StatFs statFs = new StatFs(path);
+        long free = ((long) statFs.getAvailableBlocks() *  (long) statFs.getBlockSize());
+        return free;
+    }
 
 	// quick solution to bypass SSL verification
 	private static void trustAllHosts()
