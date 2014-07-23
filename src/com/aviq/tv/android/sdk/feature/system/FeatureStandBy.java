@@ -160,7 +160,8 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 					boolean plugged = intent.getBooleanExtra(EXTRA_HDMI_HW_PLUGGED_STATE, false);
 					if (!plugged)
 					{
-						startStandBy(false);
+						// enter standby immediately
+						_enterStandByRunnable.run();
 					}
 				}
 			}
