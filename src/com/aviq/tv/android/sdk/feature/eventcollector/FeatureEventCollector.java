@@ -508,7 +508,7 @@ public class FeatureEventCollector extends FeatureScheduler
 			@Override
 	        public void onEvent(int msgId, Bundle bundle)
 	        {
-				Bundle params = prepareParams(")", "", "completed", BasePlayer.class.getSimpleName(),
+				Bundle params = prepareParams("player", "", "completed", BasePlayer.class.getSimpleName(),
 				        Severity.INFO);
 				addEvent(params);
 	        }
