@@ -23,6 +23,7 @@ import android.os.Bundle;
 import android.widget.Toast;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
@@ -41,6 +42,8 @@ import com.aviq.tv.android.sdk.feature.network.FeatureNetwork;
 public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureCrashLog.class.getSimpleName();
+
+	public static final int ON_RUNTIME_EXCEPTION = EventMessenger.ID("ON_RUNTIME_EXCEPTION");
 
 	/**
 	 * Add this to any calls to ACRA.handleSilentException when sending logcat
@@ -94,6 +97,13 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".initialize");
 		initAcra();
 		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
+
+		/**
+		 * The purpose of this is to be able to catch requests for crash events
+		 * triggered from outside the app.
+		 */
+		getEventMessenger().register(this, ON_RUNTIME_EXCEPTION);
+
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -137,6 +147,10 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 				Toast.makeText(Environment.getInstance().getApplicationContext(),
 				        "Log has been captured and sent for processing. Thank you!", Toast.LENGTH_LONG).show();
 			}
+		}
+		else if (ON_RUNTIME_EXCEPTION == msgId)
+		{
+			throw new RuntimeException("User-triggered runtime error.");
 		}
 	}
 
