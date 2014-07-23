@@ -385,7 +385,7 @@ public class FeatureUpgrade extends FeatureScheduler
 			}
 
 			// Start upgrade scheduling after the app is fully loaded
-			getEventMessenger().trigger(FeatureScheduler.ON_SCHEDULE);
+			getEventMessenger().trigger(FeatureScheduler.ON_SCHEDULE, getPrefs().getInt(Param.UPDATE_CHECK_INTERVAL));
 		}
 		else if (msgId == FeatureStandBy.ON_STANDBY_ENTER)
 		{
