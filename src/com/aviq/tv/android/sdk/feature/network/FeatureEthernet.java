@@ -371,6 +371,8 @@ public class FeatureEthernet extends FeatureNetwork
 			{
 				_ethernetDevInfo = _getSavedEthConfig.invoke(_ethernetManager);
 				networkConfig.Iface = (String) _getIfName.invoke(_ethernetDevInfo);
+				if (networkConfig.Iface == null)
+					networkConfig.Iface = "eth0";
 
 				NetworkInterface networkInterface = NetworkInterface.getByName(networkConfig.Iface);
 				if (networkInterface != null)
