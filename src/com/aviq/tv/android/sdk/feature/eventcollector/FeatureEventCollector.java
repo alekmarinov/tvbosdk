@@ -304,12 +304,16 @@ public class FeatureEventCollector extends FeatureScheduler
 
 		bundle.putBundle(Key.DEVICE, deviceBundle);
 
+		Environment env = Environment.getInstance();
+		String version = env.getBuildVersion();
+		String build = version.substring(1 + version.lastIndexOf('.'));
+
 		Bundle swBundle = new Bundle();
-		swBundle.putString(Key.VERSION, Environment.getInstance().getBuildVersion());
-		swBundle
-		        .putString(Key.KIND, Environment.getInstance().getPrefs().getString(Environment.Param.RELEASE));
+		swBundle.putString(Key.VERSION, version);
+		swBundle.putString(Key.KIND, env.getPrefs().getString(Environment.Param.RELEASE));
 		swBundle.putString(Key.CUSTOMER, getCustomer()); // _featureRegister.getBrand()
 		swBundle.putString(Key.BRAND, getBrand()); // _featureRegister.getBrand()
+		swBundle.putString(Key.BUILD, build);
 		deviceBundle.putBundle(Key.SW, swBundle);
 
 		return bundle;
@@ -630,6 +634,7 @@ public class FeatureEventCollector extends FeatureScheduler
 		String PUBLIC_IP = "public_ip";
 		String SW = "sw";
 		String VERSION = "version";
+		String BUILD = "build";
 		String PREV_VERSION = "prev_version";
 		String KIND = "kind";
 		String CUSTOMER = "customer";
