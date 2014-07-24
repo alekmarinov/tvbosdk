@@ -27,6 +27,9 @@ import android.content.Context;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Environment.Param;
 import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.feature.FeatureName;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog.AppRestartReasonType;
 
 public class CrashLogJsonReportSender implements ReportSender
 {
@@ -52,6 +55,18 @@ public class CrashLogJsonReportSender implements ReportSender
 	@Override
 	public void send(CrashReportData report) throws ReportSenderException
 	{
+		// save app restart reason
+        try
+        {
+        	FeatureCrashLog featureCrashLog = (FeatureCrashLog) Environment.getInstance().getFeatureManager()
+	                .getFeatureComponent(FeatureName.Component.CRASHLOG);
+	        featureCrashLog.setAppRestartReason(AppRestartReasonType.UNHANDLED_CRASH);
+        }
+        catch (FeatureNotFoundException e)
+        {
+	        Log.e(TAG, "Cannot save app restart reason", e);
+        }
+
 		String boxId = "";
 		String userCrashDate = "";
 		String brandName = "";

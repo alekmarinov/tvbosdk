@@ -37,6 +37,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
+import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet.ResultExtras;
 import com.aviq.tv.android.sdk.feature.internet.UploadService;
@@ -133,6 +134,7 @@ public class FeatureEventCollector extends FeatureScheduler
 	private FeatureInternet _featureInternet;
 	private FeatureRegister _featureRegister;
 	private FeatureEthernet _featureEthernet;
+	private FeatureCrashLog _featureCrashLog;
 	private List<Bundle> _eventList = Collections.synchronizedList(new ArrayList<Bundle>());
 	private SparseArray<Long> _antiFloodEvents = new SparseArray<Long>();
 	private int _antiFloodInterval;
@@ -161,6 +163,10 @@ public class FeatureEventCollector extends FeatureScheduler
 			// Internet
 			_featureInternet = (FeatureInternet) env.getFeatureScheduler(FeatureName.Scheduler.INTERNET);
 			_featureInternet.getEventMessenger().register(this, FeatureInternet.ON_CONNECTED);
+
+			// Crash Log
+			_featureCrashLog = (FeatureCrashLog) env.getFeatureComponent(FeatureName.Component.CRASHLOG);
+			_featureCrashLog.getEventMessenger().register(this, FeatureCrashLog.ON_APP_STARTED);
 
 			onSchedule(onFeatureInitialized);
 			super.initialize(onFeatureInitialized);
@@ -222,6 +228,18 @@ public class FeatureEventCollector extends FeatureScheduler
 		if (FeatureInternet.ON_CONNECTED == msgId)
 		{
 			processCollectedEvents();
+		}
+		else if (FeatureCrashLog.ON_APP_STARTED == msgId)
+		{
+			String reason = bundle != null ? bundle.getString(Key.REASON) : "n/a";
+			String severity = bundle != null ? bundle.getString(Key.SEVERITY) : "n/a";
+
+			Bundle params = prepareParams("system", Key.APP, "started",
+			        FeatureCrashLog.class.getSimpleName(), Severity.valueOf(severity));
+
+			params.putString(Key.REASON, reason);
+
+			addEvent(params);
 		}
 	}
 
@@ -626,7 +644,7 @@ public class FeatureEventCollector extends FeatureScheduler
 		}, FeatureInternet.ON_DISCONNECTED);
 	}
 
-	protected static interface Key
+	public static interface Key
 	{
 		String DEVICE = "device";
 		String MAC = "mac";
@@ -673,5 +691,7 @@ public class FeatureEventCollector extends FeatureScheduler
 		String FREE_SPACE = "free_space";
 		String REQUIRED_SPACE = "required_space";
 		String CANCELLED = "cancelled";
+		String APP = "app";
+		String REASON = "reason";
 	}
 }
