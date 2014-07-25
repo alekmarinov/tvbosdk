@@ -94,7 +94,12 @@ public class FeatureUpgrade extends FeatureScheduler
 		 * Milliseconds to wait before rebooting the box from calling
 		 * rebootToInstall
 		 */
-		UPGRADE_REBOOT_DELAY(5000);
+		UPGRADE_REBOOT_DELAY(5000),
+
+		/**
+		 * Milliseconds to wait after saving every downloaded buffer
+		 */
+		DOWNLOAD_DELAY(20);
 
 		Param(int value)
 		{
@@ -589,6 +594,7 @@ public class FeatureUpgrade extends FeatureScheduler
 					downloadParams.putString(DownloadService.Extras.URL.name(), updateUrl);
 					downloadParams.putString(DownloadService.Extras.LOCAL_FILE.name(), updateFile);
 					downloadParams.putBoolean(DownloadService.Extras.IS_COMPUTE_MD5.name(), true);
+					downloadParams.putLong(DownloadService.Extras.DOWNLOAD_DELAY.name(), getPrefs().getInt(Param.DOWNLOAD_DELAY));
 					// FIXME: Add other params like proxy, connection timeouts
 					// etc.
 
