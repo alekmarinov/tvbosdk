@@ -44,6 +44,7 @@ import org.apache.http.params.HttpParams;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.text.TextUtils;
 import android.util.Log;
 
 public class UploadService extends IntentService
@@ -90,6 +91,12 @@ public class UploadService extends IntentService
 	private HttpClient getHttpClient(HttpParams httpParams) throws CertificateException, IOException,
 	        KeyStoreException, NoSuchAlgorithmException, KeyManagementException, UnrecoverableKeyException
 	{
+
+		if (TextUtils.isEmpty(_caCertPath))
+		{
+			return new DefaultHttpClient(httpParams);
+		}
+
 		// Load CAs from an InputStream
 		CertificateFactory cf = CertificateFactory.getInstance("X.509");
 		InputStream is = getAssets().open(_caCertPath);
@@ -157,6 +164,8 @@ public class UploadService extends IntentService
 			Credentials creds = new UsernamePasswordCredentials(_reportUrlUser, _reportUrlPass);
 			((AbstractHttpClient) httpClient).getCredentialsProvider().setCredentials(new AuthScope(null, -1), creds);
 
+			Log.i(TAG, ".sendData: _reportUrl = " + _reportUrl + remoteFileName + ", _reportUrlUser = "
+			        + _reportUrlUser + ", _reportUrlPass = " + _reportUrlPass);
 			HttpResponse response = httpClient.execute(httpPut);
 		}
 		catch (Exception e)
@@ -180,27 +189,27 @@ public class UploadService extends IntentService
 	protected void sendData(String data, String remoteFileName)
 	{
 		HttpEntity entity;
-        try
-        {
-	        entity = new StringEntity(data);
+		try
+		{
+			entity = new StringEntity(data);
 			sendData(entity, remoteFileName);
-        }
-        catch (UnsupportedEncodingException e)
-        {
+		}
+		catch (UnsupportedEncodingException e)
+		{
 			Log.e(TAG, e.getMessage(), e);
-        }
+		}
 	}
 
 	protected boolean zip(String srcFileName, String destFileName)
 	{
 		FileInputStream in = null;
 		GZIPOutputStream gzipOut = null;
-        try
-        {
-            in = new FileInputStream(srcFileName);
-            gzipOut = new GZIPOutputStream(openFileOutput(destFileName, Context.MODE_PRIVATE));
+		try
+		{
+			in = new FileInputStream(srcFileName);
+			gzipOut = new GZIPOutputStream(openFileOutput(destFileName, Context.MODE_PRIVATE));
 
-			byte [] buffer = new byte[8192];
+			byte[] buffer = new byte[8192];
 
 			int nread = in.read(buffer);
 			while (nread > 0)
@@ -210,31 +219,31 @@ public class UploadService extends IntentService
 					break;
 				nread = in.read(buffer);
 			}
-        }
-        catch (FileNotFoundException e)
-        {
-        	Log.e(TAG, "Source file not found", e);
-        	return false;
-        }
-        catch (IOException e)
-        {
-        	Log.e(TAG, "IO error", e);
-        	return false;
-        }
-        finally
-        {
-        	try
-        	{
-        		if (in != null)
-        			in.close();
+		}
+		catch (FileNotFoundException e)
+		{
+			Log.e(TAG, "Source file not found", e);
+			return false;
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, "IO error", e);
+			return false;
+		}
+		finally
+		{
+			try
+			{
+				if (in != null)
+					in.close();
 
-        		if (gzipOut != null)
-        			gzipOut.close();
-        	}
-        	catch (IOException e2)
-        	{
-        	}
-        }
-        return true;
+				if (gzipOut != null)
+					gzipOut.close();
+			}
+			catch (IOException e2)
+			{
+			}
+		}
+		return true;
 	}
 }
