@@ -62,7 +62,9 @@ public class DownloadService extends BaseService
 	 */
 	public enum Extras
 	{
-		URL, LOCAL_FILE, IS_COMPUTE_MD5, PROXY_HOST, PROXY_PORT, CONNECT_TIMEOUT, READ_TIMEOUT, BUFFER_SIZE, USERNAME, PASSWORD
+		URL, LOCAL_FILE, IS_COMPUTE_MD5, PROXY_HOST, PROXY_PORT, CONNECT_TIMEOUT, READ_TIMEOUT, BUFFER_SIZE, USERNAME, PASSWORD,
+		/** time in milliseconds to sleep after saving each downloaded buffer */
+		DOWNLOAD_DELAY
 	}
 
 	/**
@@ -113,6 +115,7 @@ public class DownloadService extends BaseService
 			String localFile = intent.getStringExtra(Extras.LOCAL_FILE.name());
 			URL url = new URL(fileUrl);
 			Log.i(TAG, "Downloading " + fileUrl + " to " + localFile);
+			long downloadDelay = intent.getLongExtra(Extras.DOWNLOAD_DELAY.name(), 0);
 
 			// Bypass SSL verification
 			trustAllHosts();
@@ -197,7 +200,18 @@ public class DownloadService extends BaseService
 				if (md5 != null)
 					md5.update(data, 0, count);
 				outputStream.write(data, 0, count);
-				bytesWritten += count;
+				if (count > 0)
+				{
+					try
+                    {
+	                    Thread.sleep(downloadDelay);
+                    }
+                    catch (InterruptedException e)
+                    {
+                    	Log.e(TAG, e.getMessage(), e);
+                    }
+					bytesWritten += count;
+				}
 
 				duration = System.currentTimeMillis() - downloadStart;
 				downloadRateMbPerSec = (bytesWritten / ((double) duration / 1000)) / ONE_MEGABYTE;
@@ -245,7 +259,8 @@ public class DownloadService extends BaseService
 				progressData.putLong(ResultExtras.TOTAL_TIME.name(), duration);
 				resultReceiver.send(DOWNLOAD_PROGRESS, progressData);
 
-				//resultData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(), downloadRateMbPerSec);
+				// resultData.putDouble(ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name(),
+				// downloadRateMbPerSec);
 				resultData.putAll(progressData);
 				Log.i(TAG, bytesWritten + " bytes in " + duration + " ms downloaded from " + url + ", download rate = "
 				        + downloadRateMbPerSec + " MB/sec");
@@ -319,11 +334,11 @@ public class DownloadService extends BaseService
 	}
 
 	private long getFreeSpace(String path)
-    {
-        StatFs statFs = new StatFs(path);
-        long free = ((long) statFs.getAvailableBlocks() *  (long) statFs.getBlockSize());
-        return free;
-    }
+	{
+		StatFs statFs = new StatFs(path);
+		long free = ((long) statFs.getAvailableBlocks() * (long) statFs.getBlockSize());
+		return free;
+	}
 
 	// quick solution to bypass SSL verification
 	private static void trustAllHosts()
