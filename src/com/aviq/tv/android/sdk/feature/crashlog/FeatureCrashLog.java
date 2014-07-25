@@ -10,10 +10,16 @@
 
 package com.aviq.tv.android.sdk.feature.crashlog;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.acra.ACRA;
 import org.acra.ACRAConfiguration;
@@ -124,62 +130,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		getEventMessenger().register(this, ON_RUNTIME_EXCEPTION);
 
 		// Detect the reason for the app start
-
-		boolean isColdBood = isColdBoot();
-		Log.i(TAG, "isColdBoot = " + isColdBood);
-
-		File f = new File(Environment.getInstance().getFilesDir(), getPrefs().getString(Param.APP_START_REASON_FILE));
-		if (isColdBood)
-		{
-			// Cold boot => OK, delete reason file
-			f.delete();
-
-			Bundle params = new Bundle();
-			params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.COLDBOOT.getName());
-			params.putString(FeatureEventCollector.Key.SEVERITY, AppRestartReasonType.COLDBOOT.getSeverity());
-			getEventMessenger().trigger(ON_APP_STARTED, params);
-		}
-		else
-		{
-			// Reason file does not exists - unknown reason for app restart
-			if (!f.exists())
-			{
-				Bundle params = new Bundle();
-				params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.UNKNOWN.getName());
-				params.putString(FeatureEventCollector.Key.SEVERITY, AppRestartReasonType.UNKNOWN.getSeverity());
-				getEventMessenger().trigger(ON_APP_STARTED, params);
-			}
-			else
-			{
-				int reason = getAppRestartReason();
-				if (AppRestartReasonType.STANDBY_WAKEUP.getReason() == reason)
-				{
-					Bundle params = new Bundle();
-					params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.STANDBY_WAKEUP.getName());
-					params.putString(FeatureEventCollector.Key.SEVERITY, AppRestartReasonType.STANDBY_WAKEUP.getSeverity());
-					getEventMessenger().trigger(ON_APP_STARTED, params);
-				}
-				else if (AppRestartReasonType.UNHANDLED_CRASH.getReason() == reason)
-				{
-					Bundle params = new Bundle();
-					params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.UNHANDLED_CRASH.getName());
-					params.putString(FeatureEventCollector.Key.SEVERITY, AppRestartReasonType.UNHANDLED_CRASH.getSeverity());
-					getEventMessenger().trigger(ON_APP_STARTED, params);
-				}
-				/* other reasons
-				else if (AppRestartReasonType.UNHANDLED_CRASH.getReason() == reason)
-				{
-					Bundle params = new Bundle();
-					params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.UNHANDLED_CRASH.getName());
-					params.putString(FeatureEventCollector.Key.SEVERITY, AppRestartReasonType.UNHANDLED_CRASH.getSeverity());
-					getEventMessenger().trigger(ON_APP_STARTED, params);
-				}
-				*/
-			}
-
-			// Delete the file, don't need it anymore
-			f.delete();
-		}
+		sendAppStartEvent();
 
 		super.initialize(onFeatureInitialized);
 	}
@@ -369,6 +320,172 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		return getPrefs().getString(Param.CRASHLOG_BRAND);
 	}
 
+	private void sendAppStartEvent()
+	{
+		Log.i(TAG, ".sendAppStartEvent");
+
+		boolean isColdBood = isColdBoot();
+		Log.i(TAG, "isColdBoot = " + isColdBood);
+
+		File f = new File(Environment.getInstance().getFilesDir(), getPrefs().getString(Param.APP_START_REASON_FILE));
+		if (isColdBood)
+		{
+			// Cold boot => OK, delete reason file
+			f.delete();
+
+			Bundle params = new Bundle();
+			params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.COLDBOOT.getName());
+			params.putString(FeatureEventCollector.Key.SEVERITY, AppRestartReasonType.COLDBOOT.getSeverity());
+			getEventMessenger().trigger(ON_APP_STARTED, params);
+		}
+		else
+		{
+			// Reason file does not exists - unknown reason for app restart
+			if (!f.exists())
+			{
+				new Thread(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						// Pattern for Signal 7 = SIGBUS, Incorrect access to
+						// memory (data misalignment)
+						//
+						// Pattern for Signal 11 = SIGSEGV, Incorrect access to
+						// memory (write to inaccessible memory)
+
+						Pattern patternSignal711 = Pattern.compile(".*?Fatal signal (7|11).*?", Pattern.MULTILINE
+						        | Pattern.CASE_INSENSITIVE);
+
+						// Pattern for Signal 15 = SIGTERM, Termination request.
+						// JVM will exit normally.
+						// Sample: Process 5035 terminated by signal (15)
+
+						Pattern patternSignal15 = Pattern.compile(
+								".*?Process\\s.*?\\sterminated by signal \\(15\\).*?", Pattern.MULTILINE
+						                | Pattern.CASE_INSENSITIVE);
+
+						// Pattern for Signal 9 = App kill
+						// Sample: Sending signal. PID: 6364 SIG: 9
+						Pattern patternSignal9 = Pattern.compile(
+						        ".*?Sending signal\\.\\sPID:\\s.*?\\sSIG:\\s9.*?", Pattern.MULTILINE
+						                | Pattern.CASE_INSENSITIVE);
+
+						boolean foundMatch = false;
+
+						List<String> logcat = readLogcat();
+						for (int i = logcat.size() - 1; i > -1; i--)
+						{
+							String line = logcat.get(i);
+
+							// Search for crashes resulting from signals 9 and 15
+							Matcher matcher = patternSignal9.matcher(line);
+							if (matcher.find())
+							{
+								Bundle params = new Bundle();
+								params.putString(FeatureEventCollector.Key.REASON,
+								        AppRestartReasonType.APP_KILLED.getName());
+								params.putString(FeatureEventCollector.Key.SEVERITY,
+								        AppRestartReasonType.APP_KILLED.getSeverity());
+								getEventMessenger().trigger(ON_APP_STARTED, params);
+
+								ACRA.getErrorReporter().handleSilentException(
+								        new RuntimeException(
+								                "Generated exception due to unexpected application restart."));
+
+								foundMatch = true;
+								break;
+							}
+
+							matcher = patternSignal15.matcher(line);
+							if (matcher.find())
+							{
+								Bundle params = new Bundle();
+								params.putString(FeatureEventCollector.Key.REASON,
+								        AppRestartReasonType.APP_KILLED.getName());
+								params.putString(FeatureEventCollector.Key.SEVERITY,
+								        AppRestartReasonType.APP_KILLED.getSeverity());
+								getEventMessenger().trigger(ON_APP_STARTED, params);
+
+								ACRA.getErrorReporter().handleSilentException(
+								        new RuntimeException(
+								                "Generated exception due to unexpected application restart."));
+
+								foundMatch = true;
+								break;
+							}
+
+							matcher = patternSignal711.matcher(line);
+							if (matcher.find())
+							{
+								Bundle params = new Bundle();
+								params.putString(FeatureEventCollector.Key.REASON,
+								        AppRestartReasonType.SIGNAL_CRASH.getName());
+								params.putString(FeatureEventCollector.Key.SEVERITY,
+								        AppRestartReasonType.SIGNAL_CRASH.getSeverity());
+								getEventMessenger().trigger(ON_APP_STARTED, params);
+
+								ACRA.getErrorReporter().handleSilentException(
+								        new RuntimeException(
+								                "Generated exception due to unexpected application restart."));
+
+								foundMatch = true;
+								break;
+							}
+						}
+
+						if (!foundMatch)
+						{
+							Bundle params = new Bundle();
+							params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.UNKNOWN.getName());
+							params.putString(FeatureEventCollector.Key.SEVERITY,
+							        AppRestartReasonType.UNKNOWN.getSeverity());
+							getEventMessenger().trigger(ON_APP_STARTED, params);
+
+							ACRA.getErrorReporter().handleSilentException(
+							        new RuntimeException(
+							                "Generated exception due to unexpected application restart."));
+						}
+					}
+				}).start();
+			}
+			else
+			{
+				int reason = getAppRestartReason();
+				if (AppRestartReasonType.STANDBY_WAKEUP.getReason() == reason)
+				{
+					Bundle params = new Bundle();
+					params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.STANDBY_WAKEUP.getName());
+					params.putString(FeatureEventCollector.Key.SEVERITY,
+					        AppRestartReasonType.STANDBY_WAKEUP.getSeverity());
+					getEventMessenger().trigger(ON_APP_STARTED, params);
+				}
+				else if (AppRestartReasonType.UNHANDLED_CRASH.getReason() == reason)
+				{
+					Bundle params = new Bundle();
+					params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.UNHANDLED_CRASH.getName());
+					params.putString(FeatureEventCollector.Key.SEVERITY,
+					        AppRestartReasonType.UNHANDLED_CRASH.getSeverity());
+					getEventMessenger().trigger(ON_APP_STARTED, params);
+				}
+				else
+				{
+					Bundle params = new Bundle();
+					params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.UNKNOWN.getName());
+					params.putString(FeatureEventCollector.Key.SEVERITY, AppRestartReasonType.UNKNOWN.getSeverity());
+					getEventMessenger().trigger(ON_APP_STARTED, params);
+
+					ACRA.getErrorReporter().handleSilentException(
+					        new RuntimeException(
+					                "Generated exception due to unexpected application restart."));
+				}
+			}
+
+			// Delete the file, don't need it anymore
+			f.delete();
+		}
+	}
+
 	private boolean isColdBoot()
 	{
 		File file = new File(getPrefs().getString(Param.COLD_BOOT_FILE));
@@ -478,6 +595,28 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 	        }
 	    }
 		return reason;
+	}
+
+	private List<String> readLogcat()
+	{
+		List<String> log = new ArrayList<String>(10000);
+		try
+		{
+			Process process = Runtime.getRuntime().exec("logcat -v time -t 6000 -d");
+			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+			String line = "";
+			while ((line = bufferedReader.readLine()) != null)
+			{
+				log.add(line);
+			}
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, "Cannot retrieve logcat.", e);
+		}
+
+		return log;
 	}
 
 	private static interface Key
