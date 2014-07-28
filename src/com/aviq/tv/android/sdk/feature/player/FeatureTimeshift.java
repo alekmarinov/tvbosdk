@@ -169,9 +169,9 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	 */
 	public long getTimeshiftDuration()
 	{
-		//E.P : change for tests only
-		//Math.min(_timeshiftMaxBufSize, currentTime() - _timeshiftTimeStart);
-		return _timeshiftMaxBufSize;
+		
+		return Math.min(_timeshiftMaxBufSize, currentTime() - _timeshiftTimeStart);
+		
 	}
 
 	@Override
