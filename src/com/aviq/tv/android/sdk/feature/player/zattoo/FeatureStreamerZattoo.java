@@ -113,7 +113,7 @@ public class FeatureStreamerZattoo extends FeatureStreamer
 	 * @param onStreamURLReceived callback invoked with corresponding stream url to specified streamId
 	 */
 	@Override
-    public void getUrlByStreamId(String streamId, final OnStreamURLReceived onStreamURLReceived)
+    public void getUrlByStreamId(String streamId, long playTimeDelta, final OnStreamURLReceived onStreamURLReceived)
 	{
 		_clientZAPI.watch(streamId, "hls", new OnResultReceived()
 		{

@@ -10,6 +10,7 @@
 
 package com.aviq.tv.android.sdk.feature.player;
 
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
@@ -19,6 +20,8 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
  */
 public class FeatureStreamer extends FeatureComponent
 {
+	private static final String TAG = FeatureStreamer.class.getSimpleName();
+
 	public interface OnStreamURLReceived
 	{
 		void onStreamURL(String streamUrl);
@@ -30,10 +33,19 @@ public class FeatureStreamer extends FeatureComponent
 	 * streaming service.
 	 *
 	 * @param streamId
-	 * @param onStreamURLReceived callback invoked with corresponding stream url to specified streamId
+	 * @param playTimeDelta
+	 *            offset in seconds from real time, > 0 in the past, < 0 in the
+	 *            future
+	 * @param onStreamURLReceived
+	 *            callback invoked with corresponding stream url to specified
+	 *            streamId
 	 */
-	public void getUrlByStreamId(String streamId, OnStreamURLReceived onStreamURLReceived)
+	public void getUrlByStreamId(String streamId, long playTimeDelta, OnStreamURLReceived onStreamURLReceived)
 	{
+		if (playTimeDelta > 0)
+		{
+			Log.w(TAG, "Can't handle positive playTimeDelta = " + playTimeDelta + " for streamId = `" + streamId + "'");
+		}
 		onStreamURLReceived.onStreamURL(streamId);
 	}
 

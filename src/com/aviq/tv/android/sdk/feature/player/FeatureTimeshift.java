@@ -34,22 +34,13 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	 * buffer during pause
 	 */
 	public static final int ON_AUTO_RESUME = EventMessenger.ID("ON_AUTO_RESUME");
+	public static final int ON_SEEK = EventMessenger.ID("ON_SEEK");
+	public static final String EXTRA_PLAY_TIME_DELTA = "PLAY_TIME_DELTA";
 	private long _timeshiftTimeStart;
 	private long _pauseTimeStart;
 	private long _playTimeDelta;
-	private int _timeshiftMaxBufSize;
+	private int _timeshiftDuration;
 	private AutoResumer _autoResumer = new AutoResumer();
-	private String _streamUrl;
-
-	private Runnable _seeker = new Runnable()
-	{
-		@Override
-		public void run()
-		{
-			String seekUrl = _streamUrl + "&timeshift=" + _playTimeDelta;
-			_feature.Component.PLAYER.play(seekUrl);
-		}
-	};
 
 	public enum Param
 	{
@@ -67,37 +58,26 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	public FeatureTimeshift() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.PLAYER);
-		require(FeatureName.Component.SYSTEM);
 	}
 
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-
-		_feature.Component.SYSTEM.command("stop tsproxy");
-		_feature.Component.SYSTEM.command("start tsproxy");
-
 		_feature.Component.PLAYER.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_PAUSE);
-		_timeshiftMaxBufSize = getPrefs().getInt(Param.TIMESHIFT_DURATION);
-
 		reset();
-
 		super.initialize(onFeatureInitialized);
 	}
 
 	/**
-	 * Play url with timeshift buffer
-	 *
-	 * @param streamUrl
+	 * Reset the timeshift buffer with new timeshift duration
 	 */
-	public void play(final String streamUrl)
+	public void reset(int timeshiftDuration)
 	{
-		Log.i(TAG, ".play: " + streamUrl);
-		reset();
-
-		_streamUrl = streamUrl;
-		_feature.Component.PLAYER.play(streamUrl);
+		Log.i(TAG, ".reset: timeshiftDuration = " + timeshiftDuration);
+		_timeshiftTimeStart = currentTime();
+		_timeshiftDuration = timeshiftDuration;
+		setPlayTimeDelta(0);
 	}
 
 	/**
@@ -106,8 +86,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	public void reset()
 	{
 		Log.i(TAG, ".reset");
-		_timeshiftTimeStart = currentTime();
-		_playTimeDelta = 0;
+		reset(getPrefs().getInt(Param.TIMESHIFT_DURATION));
 	}
 
 	/**
@@ -129,9 +108,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".seekAt: " + (timestamp - currentTime()) + " secs relative to current time");
 		long adjustedTime = adjustInTimeshift(timestamp);
-		getEventMessenger().removeCallbacks(_seeker);
-		getEventMessenger().postDelayed(_seeker, 1000);
-		_playTimeDelta = currentTime() - adjustedTime;
+		setPlayTimeDelta(currentTime() - adjustedTime);
 	}
 
 	/**
@@ -170,7 +147,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	 */
 	public long getTimeshiftDuration()
 	{
-		return Math.min(_timeshiftMaxBufSize, currentTime() - _timeshiftTimeStart);
+		return Math.min(_timeshiftDuration, currentTime() - _timeshiftTimeStart);
 	}
 
 	@Override
@@ -217,7 +194,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".resume");
 		_autoResumer.stop();
-		_playTimeDelta += currentTime() - _pauseTimeStart;
+		setPlayTimeDelta(_playTimeDelta + currentTime() - _pauseTimeStart);
 	}
 
 	/**
@@ -228,6 +205,23 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		timestamp = Math.min(timestamp, currentTime());
 		timestamp = Math.max(timestamp, currentTime() - getTimeshiftDuration());
 		return timestamp;
+	}
+
+	/**
+	 * call to change playTimeDelta which will trigger notification event to
+	 * tell the client to seek in stream
+	 *
+	 * @param playTimeDelta
+	 */
+	private void setPlayTimeDelta(long playTimeDelta)
+	{
+		if (_playTimeDelta != playTimeDelta)
+		{
+			_playTimeDelta = playTimeDelta;
+			Bundle bundle = new Bundle();
+			bundle.putLong(EXTRA_PLAY_TIME_DELTA, playTimeDelta);
+			getEventMessenger().trigger(ON_SEEK, bundle);
+		}
 	}
 
 	private class AutoResumer implements Runnable

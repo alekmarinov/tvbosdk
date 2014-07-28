@@ -137,6 +137,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 
 		_featureTimeshift = (FeatureTimeshift) Environment.getInstance().getFeatureComponent(
 		        FeatureName.Component.TIMESHIFT);
+		_featureTimeshift.getEventMessenger().register(this, FeatureTimeshift.ON_SEEK);
 
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_RESUME);
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_PAUSE);
@@ -276,35 +277,51 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	 */
 	public void play(int index)
 	{
+		play(index, 0);
+	}
+
+	/**
+	 * Start playing channel at specified index and offset in time in the active
+	 * channels list
+	 *
+	 * @param playTimeDelta
+	 *            offset in seconds from real time, > 0 in the past, < 0 in the
+	 *            future
+	 * @param index
+	 */
+	public void play(int index, final long playTimeDelta)
+	{
+		Log.i(TAG, ".play: index = " + index + ", playTimeDelta = " + playTimeDelta);
 		List<Channel> channels = getActiveChannels();
 		if (channels.size() == 0)
 			return;
 		if (index < 0 || index >= channels.size())
 			index = 0;
 		final Channel channel = channels.get(index);
+		final boolean[] isResetTimeshift = new boolean[]
+		{ true };
 
 		if (hasLastChannel())
 		{
 			String lastChannelId = _userPrefs.getString(UserParam.LAST_CHANNEL_ID);
 			Log.i(TAG, ".play: last channel = " + lastChannelId + ", new channel = " + channel.getChannelId());
-			if (_feature.Component.PLAYER.isPlaying() && channel.getChannelId().equals(lastChannelId))
+
+			if (!channel.getChannelId().equals(lastChannelId))
 			{
-				Log.d(TAG, ".play: already playing");
-				return;
+				_userPrefs.put(UserParam.PREV_CHANNEL_ID, lastChannelId);
 			}
 			else
 			{
-				_userPrefs.put(UserParam.PREV_CHANNEL_ID, lastChannelId);
+				isResetTimeshift[0] = false;
 			}
 		}
 		setLastChannelId(channel.getChannelId());
 		int globalIndex = channel.getIndex();
 		final String streamId = _feature.Scheduler.EPG.getChannelStreamId(globalIndex);
-
-		_feature.Component.STREAMER.getUrlByStreamId(streamId, new OnStreamURLReceived()
+		_feature.Component.STREAMER.getUrlByStreamId(streamId, playTimeDelta, new OnStreamURLReceived()
 		{
 			@Override
-			public void onStreamURL(String streamUrl)
+			public void onStreamURL(final String streamUrl)
 			{
 				if (streamUrl == null)
 				{
@@ -312,17 +329,15 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				}
 				else
 				{
-					if (_featureTimeshift != null)
+					// play stream
+					_feature.Component.PLAYER.play(streamUrl);
+					Log.d(TAG, ".play:onStreamURL: play `" + streamUrl + "'");
+
+					if (isResetTimeshift[0] && _featureTimeshift != null)
 					{
-						// play with timeshift
-						Log.d(TAG, ".play: timeshift " + streamId);
-						_featureTimeshift.play(streamUrl);
-					}
-					else
-					{
-						// play directly
-						Log.d(TAG, ".play: directly " + streamId);
-						_feature.Component.PLAYER.play(streamUrl);
+						// reset timeshift to live
+						Log.d(TAG, ".play:onStreamURL: timeshift reset");
+						_featureTimeshift.reset();
 					}
 				}
 			}
@@ -479,6 +494,11 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				// stop playing on app pause
 				_feature.Component.PLAYER.stop();
 			}
+		}
+		else if (FeatureTimeshift.ON_SEEK == msgId)
+		{
+			long playTimeDelta = bundle.getLong(FeatureTimeshift.EXTRA_PLAY_TIME_DELTA, 0);
+			play(getLastChannelIndex(), playTimeDelta);
 		}
 	}
 

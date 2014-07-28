@@ -32,10 +32,11 @@ public class FeatureStreamerRayV extends FeatureStreamer
 		/**
 		 * RayV streamer initialization
 		 */
-		STREAMER_INI("port=" + DEFAULT_STREAM_PORT + "\n" + "distributor=vtx\n" + "product_id=test\n" + "allow_external_streams=1\n"
-		        + "localhost=127.0.0.1\n" + "thread_pool=10\n" + "udp_port=0\n" + "udp_port_pairs=1\n"
-		        + "StopBrokenFrames=0\n" + "BitrateOverhead=50\n" + "ManualBitrateSwitching=1\n" + "MinBitrate=0\n"
-		        + "MaxBitrate=0\n" + "MinStartBitrate=0\n" + "MaxStartBitrate=0\n" + "MediaQueueSize=100\n"),
+		STREAMER_INI("port=" + DEFAULT_STREAM_PORT + "\n" + "distributor=vtx\n" + "product_id=test\n"
+		        + "allow_external_streams=1\n" + "localhost=127.0.0.1\n" + "thread_pool=10\n" + "udp_port=0\n"
+		        + "udp_port_pairs=1\n" + "StopBrokenFrames=0\n" + "BitrateOverhead=50\n" + "ManualBitrateSwitching=1\n"
+		        + "MinBitrate=0\n" + "MaxBitrate=0\n" + "MinStartBitrate=0\n" + "MaxStartBitrate=0\n"
+		        + "MediaQueueSize=100\n"),
 
 		/**
 		 * Registered RayV user account name
@@ -106,7 +107,7 @@ public class FeatureStreamerRayV extends FeatureStreamer
 	}
 
 	@Override
-    public void getUrlByStreamId(String streamId, OnStreamURLReceived onStreamURLReceived)
+	public void getUrlByStreamId(String streamId, long playTimeDelta, OnStreamURLReceived onStreamURLReceived)
 	{
 		Bundle bundle = new Bundle();
 		bundle.putString("USER", getPrefs().getString(Param.RAYV_USER));
@@ -114,7 +115,11 @@ public class FeatureStreamerRayV extends FeatureStreamer
 		bundle.putString("STREAM_ID", streamId);
 		bundle.putInt("BITRATE", getPrefs().getInt(Param.RAYV_STREAM_BITRATE));
 		bundle.putInt("PORT", _streamPort);
-		onStreamURLReceived.onStreamURL(getPrefs().getString(Param.RAYV_STREAM_URL_PATTERN, bundle));
+
+		String streamUrl = getPrefs().getString(Param.RAYV_STREAM_URL_PATTERN, bundle);
+		if (playTimeDelta > 0)
+			streamUrl += "&timeshift=" + playTimeDelta;
+		onStreamURLReceived.onStreamURL(streamUrl);
 	}
 
 	public void setStreamPort(int streamPort)
