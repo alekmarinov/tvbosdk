@@ -56,8 +56,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		/**
 		 * Timeshift max buffer size in seconds
 		 */
-		TIMESHIFT_DURATION(60 * 60);
-
+		TIMESHIFT_DURATION(60 * 60);		
 		Param(int value)
 		{
 			Environment.getInstance().getFeaturePrefs(FeatureName.Component.TIMESHIFT).put(name(), value);
@@ -170,7 +169,9 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	 */
 	public long getTimeshiftDuration()
 	{
-		return Math.min(_timeshiftMaxBufSize, currentTime() - _timeshiftTimeStart);
+		//E.P : change for tests only
+		//Math.min(_timeshiftMaxBufSize, currentTime() - _timeshiftTimeStart);
+		return _timeshiftMaxBufSize;
 	}
 
 	@Override
