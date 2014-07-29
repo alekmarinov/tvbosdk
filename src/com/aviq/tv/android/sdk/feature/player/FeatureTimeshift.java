@@ -45,7 +45,9 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	public enum Param
 	{
 		/**
-		 * Timeshift max buffer size in seconds
+		 * Timeshift max buffer size in seconds. If > 0 then the buffer
+		 * increases from 0 to parameter value, otherwise timeshiftDuration is
+		 * determined by the parameter of reset method
 		 */
 		TIMESHIFT_DURATION(60 * 60);
 
@@ -147,7 +149,10 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	 */
 	public long getTimeshiftDuration()
 	{
-		return Math.min(_timeshiftDuration, currentTime() - _timeshiftTimeStart);
+		if (getPrefs().getInt(Param.TIMESHIFT_DURATION) > 0)
+			return Math.min(_timeshiftDuration, currentTime() - _timeshiftTimeStart);
+		else
+			return _timeshiftDuration;
 	}
 
 	@Override
