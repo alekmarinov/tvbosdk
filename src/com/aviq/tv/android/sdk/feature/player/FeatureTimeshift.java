@@ -50,7 +50,6 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		 * determined by the parameter of reset method
 		 */
 		TIMESHIFT_DURATION(60 * 60);
-
 		Param(int value)
 		{
 			Environment.getInstance().getFeaturePrefs(FeatureName.Component.TIMESHIFT).put(name(), value);

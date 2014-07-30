@@ -10,6 +10,11 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Locale;
+import java.util.TimeZone;
+
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
@@ -90,19 +95,6 @@ public class FeatureEPGBulsat extends FeatureEPG
 		return new ProgramBulsat(id, channel);
 	}
 
-	/**
-	 * Return stream url for specified channel
-	 *
-	 * @param channelIndex
-	 * @return stream url
-	 */
-	@Override
-	public String getChannelStreamId(int channelIndex)
-	{
-		ChannelBulsat channel = (ChannelBulsat) getEpgData().getChannel(channelIndex);
-		return channel.getStreamUrl();
-	}
-
 	@Override
 	protected Program.MetaData createProgramMetaData()
 	{
@@ -120,6 +112,36 @@ public class FeatureEPGBulsat extends FeatureEPG
 			String key = meta[j];
 			if ("description".equals(key))
 				bulsatMetaData.metaDescription = j;
+		}
+	}
+
+	@Override
+	public void getStreamUrl(Channel channel, long playTimeDelta, long playDuration, OnStreamURLReceived onStreamURLReceived)
+	{
+		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
+		if (playTimeDelta > 0)
+		{
+			long startTimeInMs = System.currentTimeMillis() / 1000 - playTimeDelta;
+			Calendar startTime = Calendar.getInstance();
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
+			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+			startTime.setTimeInMillis(1000 * startTimeInMs);
+			String formatStartTime = sdf.format(startTime.getTime());
+
+			String seekUrl = channelBulsat.getSeekUrl();
+			if (seekUrl.indexOf('?') > 0)
+				seekUrl += '&';
+			else
+				seekUrl += '?';
+
+			seekUrl += "wowzadvrplayliststart=" + formatStartTime + "&wowzadvrplaylistduration=" + playDuration * 1000;
+			// return seek url
+			onStreamURLReceived.onStreamURL(seekUrl);
+		}
+		else
+		{
+			// return live url
+			onStreamURLReceived.onStreamURL(channelBulsat.getStreamUrl());
 		}
 	}
 }

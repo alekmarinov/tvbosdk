@@ -29,6 +29,7 @@ import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.player.FeatureStreamer.OnStreamURLReceived;
+import com.aviq.tv.android.sdk.feature.player.FeatureStreamerBulsat;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 
 /**
@@ -318,7 +319,33 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		setLastChannelId(channel.getChannelId());
 		int globalIndex = channel.getIndex();
 		final String streamId = _feature.Scheduler.EPG.getChannelStreamId(globalIndex);
-		_feature.Component.STREAMER.getUrlByStreamId(streamId, playTimeDelta, new OnStreamURLReceived()
+//		_feature.Component.STREAMER.getUrlByStreamId(streamId, playTimeDelta, new OnStreamURLReceived()
+//		{
+//			@Override
+//			public void onStreamURL(final String streamUrl)
+//			{
+//				if (streamUrl == null)
+//				{
+//					Log.e(TAG, channel + " has no stream to play!");
+//				}
+//				else
+//				{
+//					// play stream
+//					_feature.Component.PLAYER.play(streamUrl);
+//					Log.d(TAG, ".play:onStreamURL: play `" + streamUrl + "'");
+//
+//					if (isResetTimeshift[0] && _featureTimeshift != null)
+//					{
+//						// reset timeshift to live
+//						Log.d(TAG, ".play:onStreamURL: timeshift reset");
+//						_featureTimeshift.reset();
+//					}
+//				}
+//			}
+//		});
+		// FIXME: HORRIBLE HACK! USE IT ONLY FOR THE QUICK DEMO!
+		FeatureStreamerBulsat featureStreamerBulsat = (FeatureStreamerBulsat) _feature.Component.STREAMER;
+		featureStreamerBulsat.getUrlByStreamTestId(channel, playTimeDelta, new OnStreamURLReceived()
 		{
 			@Override
 			public void onStreamURL(final String streamUrl)
