@@ -115,26 +115,36 @@ public class FeatureEPGBulsat extends FeatureEPG
 		}
 	}
 
+	/**
+	 * Return stream url by channel index and delta from real time in seconds
+	 *
+	 * @param channel
+	 *            the channel to obtain the stream from
+	 * @param playTime
+	 *            timestamp in seconds or 0 for live stream
+	 * @param playDuration
+	 *            stream duration in seconds
+	 * @param onStreamURLReceived
+	 *            callback interface where the stream will be returned
+	 */
 	@Override
-	public void getStreamUrl(Channel channel, long playTimeDelta, long playDuration, OnStreamURLReceived onStreamURLReceived)
+	public void getStreamUrl(Channel channel, long playTime, long playDuration, OnStreamURLReceived onStreamURLReceived)
 	{
 		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
-		if (playTimeDelta > 0)
+		if (playTime > 0)
 		{
-			long startTimeInMs = System.currentTimeMillis() / 1000 - playTimeDelta;
 			Calendar startTime = Calendar.getInstance();
+			startTime.setTimeInMillis(1000 * playTime);
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
 			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-			startTime.setTimeInMillis(1000 * startTimeInMs);
-			String formatStartTime = sdf.format(startTime.getTime());
-
+			String startTimeFormat = sdf.format(startTime.getTime());
 			String seekUrl = channelBulsat.getSeekUrl();
 			if (seekUrl.indexOf('?') > 0)
 				seekUrl += '&';
 			else
 				seekUrl += '?';
+			seekUrl += "wowzadvrplayliststart=" + startTimeFormat + "&wowzadvrplaylistduration=" + playDuration * 1000;
 
-			seekUrl += "wowzadvrplayliststart=" + formatStartTime + "&wowzadvrplaylistduration=" + playDuration * 1000;
 			// return seek url
 			onStreamURLReceived.onStreamURL(seekUrl);
 		}
@@ -144,4 +154,11 @@ public class FeatureEPGBulsat extends FeatureEPG
 			onStreamURLReceived.onStreamURL(channelBulsat.getStreamUrl());
 		}
 	}
+
+	@Override
+    public long getStreamBufferSize(Channel channel)
+    {
+		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
+	    return channelBulsat.getNDVR();
+    }
 }

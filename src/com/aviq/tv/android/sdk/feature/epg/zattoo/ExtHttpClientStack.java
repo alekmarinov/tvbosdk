@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.aviq.tv.android.sdk.feature.player.zattoo;
+package com.aviq.tv.android.sdk.feature.epg.zattoo;
 
 import java.io.IOException;
 import java.util.ArrayList;

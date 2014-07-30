@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.aviq.tv.android.sdk.feature.player.zattoo;
+package com.aviq.tv.android.sdk.feature.epg.zattoo;
 
 import khandroid.ext.apache.http.conn.ClientConnectionManager;
 import khandroid.ext.apache.http.conn.scheme.PlainSocketFactory;

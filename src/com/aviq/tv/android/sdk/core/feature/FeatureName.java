@@ -36,7 +36,6 @@ public class FeatureName
 		CRASHLOG,
 		TIMEZONE,
 		NETHOGS,
-		STREAMER,
 		STANDBY,
 		DEBUG,
 		RECORDING_SCHEDULER

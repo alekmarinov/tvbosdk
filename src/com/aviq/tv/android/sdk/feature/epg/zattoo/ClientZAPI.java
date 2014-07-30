@@ -8,7 +8,7 @@
  * Description: Zattoo API http client
  */
 
-package com.aviq.tv.android.sdk.feature.player.zattoo;
+package com.aviq.tv.android.sdk.feature.epg.zattoo;
 
 import java.util.HashMap;
 import java.util.Map;

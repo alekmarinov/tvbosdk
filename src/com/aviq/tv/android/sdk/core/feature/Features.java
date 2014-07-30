@@ -25,7 +25,6 @@ import com.aviq.tv.android.sdk.feature.language.FeatureLanguage;
 import com.aviq.tv.android.sdk.feature.network.FeatureEthernet;
 import com.aviq.tv.android.sdk.feature.network.FeatureWireless;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
-import com.aviq.tv.android.sdk.feature.player.FeatureStreamer;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
@@ -68,7 +67,6 @@ public class Features
 		public FeatureCrashLog CRASHLOG;
 		public FeatureTimeZone TIMEZONE;
 		public FeatureNethogs NETHOGS;
-		public FeatureStreamer STREAMER;
 		public FeatureStandBy STANDBY;
 		public FeatureRecordingScheduler RECORDING_SCHEDULER;
 	}

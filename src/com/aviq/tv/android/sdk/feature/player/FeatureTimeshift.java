@@ -39,7 +39,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	private long _timeshiftTimeStart;
 	private long _pauseTimeStart;
 	private long _playTimeDelta;
-	private int _timeshiftDuration;
+	private long _timeshiftDuration;
 	private AutoResumer _autoResumer = new AutoResumer();
 
 	public enum Param
@@ -47,9 +47,10 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		/**
 		 * Timeshift max buffer size in seconds. If > 0 then the buffer
 		 * increases from 0 to parameter value, otherwise timeshiftDuration is
-		 * determined by the parameter of reset method
+		 * determined by setTimeshiftDuration method
 		 */
 		TIMESHIFT_DURATION(60 * 60);
+
 		Param(int value)
 		{
 			Environment.getInstance().getFeaturePrefs(FeatureName.Component.TIMESHIFT).put(name(), value);
@@ -66,37 +67,63 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 		_feature.Component.PLAYER.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_PAUSE);
-		reset();
 		super.initialize(onFeatureInitialized);
 	}
 
 	/**
-	 * Reset the timeshift buffer with new timeshift duration
+	 * Set timeshift buffer size
 	 */
-	public void reset(int timeshiftDuration)
+	public void setTimeshiftDuration(long timeshiftDuration)
 	{
-		Log.i(TAG, ".reset: timeshiftDuration = " + timeshiftDuration);
-		_timeshiftTimeStart = currentTime();
+		Log.i(TAG, ".setTimeshiftDuration: timeshiftDuration = " + timeshiftDuration);
 		_timeshiftDuration = timeshiftDuration;
-		setPlayTimeDelta(0);
 	}
 
 	/**
-	 * Reset the timeshift buffer
+	 * Start timeshift buffer recording
 	 */
-	public void reset()
+	public void startTimeshift()
 	{
-		Log.i(TAG, ".reset");
-		reset(getPrefs().getInt(Param.TIMESHIFT_DURATION));
+		Log.i(TAG, ".startTimeshift");
+		_timeshiftTimeStart = currentTime();
+		setTimeshiftDuration(0);
 	}
 
 	/**
 	 * Seek at live position
+	 *
+	 * @return current time
 	 */
-	public void seekLive()
+	public long seekLive()
 	{
 		Log.i(TAG, ".seekLive");
-		seekAt(currentTime());
+		return seekAt(currentTime());
+	}
+
+	/**
+	 * Seek at play time delta from live
+	 *
+	 * @param playTimeDelta
+	 *            delta from real time in seconds
+	 * @return adjusted timestamp to not exceed the timeshift buffer
+	 */
+	public long seekDelta(long playTimeDelta)
+	{
+		Log.i(TAG, ".seekDelta: " + playTimeDelta + " secs from live");
+		return seekAt(currentTime() - playTimeDelta);
+	}
+
+	/**
+	 * Seek at playable buffer by relative time
+	 *
+	 * @param secs
+	 *            the number of secs to seek relatively
+	 * @return adjusted timestamp to not exceed the timeshift buffer
+	 */
+	public long seekRel(long secs)
+	{
+		Log.i(TAG, ".seekRel: secs = " + secs);
+		return seekAt(getPlayingTime() + secs);
 	}
 
 	/**
@@ -104,24 +131,14 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	 *
 	 * @param timestamp
 	 *            the time moment where to set the cursor position.
+	 * @return adjusted timestamp to not exceed the timeshift buffer
 	 */
-	public void seekAt(long timestamp)
+	public long seekAt(long timestamp)
 	{
 		Log.i(TAG, ".seekAt: " + (timestamp - currentTime()) + " secs relative to current time");
 		long adjustedTime = adjustInTimeshift(timestamp);
 		setPlayTimeDelta(currentTime() - adjustedTime);
-	}
-
-	/**
-	 * Seek at playable buffer by relative time
-	 *
-	 * @param secs
-	 *            the number of secs to seek relatively.
-	 */
-	public void seekRel(long secs)
-	{
-		Log.i(TAG, ".seekRel: secs = " + secs);
-		seekAt(getPlayingTime() + secs);
+		return adjustedTime;
 	}
 
 	/**
@@ -149,7 +166,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	public long getTimeshiftDuration()
 	{
 		if (getPrefs().getInt(Param.TIMESHIFT_DURATION) > 0)
-			return Math.min(_timeshiftDuration, currentTime() - _timeshiftTimeStart);
+			return Math.min(getPrefs().getInt(Param.TIMESHIFT_DURATION), currentTime() - _timeshiftTimeStart);
 		else
 			return _timeshiftDuration;
 	}

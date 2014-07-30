@@ -28,8 +28,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
-import com.aviq.tv.android.sdk.feature.player.FeatureStreamer.OnStreamURLReceived;
-import com.aviq.tv.android.sdk.feature.player.FeatureStreamerBulsat;
+import com.aviq.tv.android.sdk.feature.epg.FeatureEPG.OnStreamURLReceived;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 
 /**
@@ -108,7 +107,6 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		require(FeatureName.Scheduler.EPG);
 		require(FeatureName.Component.LANGUAGE);
 		require(FeatureName.Component.PLAYER);
-		require(FeatureName.Component.STREAMER);
 	}
 
 	@Override
@@ -278,74 +276,59 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	 */
 	public void play(int index)
 	{
-		play(index, 0);
+		play(index, 0, 0);
 	}
 
 	/**
-	 * Start playing channel at specified index and offset in time in the active
-	 * channels list
+	 * Start playing channel at specified position and duration, set playTime to
+	 * 0 for live stream
 	 *
-	 * @param playTimeDelta
-	 *            offset in seconds from real time, > 0 in the past, < 0 in the
-	 *            future
+	 * @param playTime
+	 *            timestamp to start channel from
+	 * @param playDuration
+	 *            stream duration in seconds
 	 * @param index
 	 */
-	public void play(int index, final long playTimeDelta)
+	public void play(int index, long playTime, final long playDuration)
 	{
-		Log.i(TAG, ".play: index = " + index + ", playTimeDelta = " + playTimeDelta);
+		Log.i(TAG, ".play: index = " + index + ", playTime = " + playTime + ", playDuration = " + playDuration);
 		List<Channel> channels = getActiveChannels();
 		if (channels.size() == 0)
 			return;
 		if (index < 0 || index >= channels.size())
 			index = 0;
+		int lastChannelIndex = -1;
 		final Channel channel = channels.get(index);
-		final boolean[] isResetTimeshift = new boolean[]
-		{ true };
-
 		if (hasLastChannel())
 		{
-			String lastChannelId = _userPrefs.getString(UserParam.LAST_CHANNEL_ID);
-			Log.i(TAG, ".play: last channel = " + lastChannelId + ", new channel = " + channel.getChannelId());
-
-			if (!channel.getChannelId().equals(lastChannelId))
-			{
-				_userPrefs.put(UserParam.PREV_CHANNEL_ID, lastChannelId);
-			}
-			else
-			{
-				isResetTimeshift[0] = false;
-			}
+			_userPrefs.put(UserParam.PREV_CHANNEL_ID, getLastChannelId());
+			lastChannelIndex = getLastChannelIndex();
 		}
 		setLastChannelId(channel.getChannelId());
-		int globalIndex = channel.getIndex();
-		final String streamId = _feature.Scheduler.EPG.getChannelStreamId(globalIndex);
-//		_feature.Component.STREAMER.getUrlByStreamId(streamId, playTimeDelta, new OnStreamURLReceived()
-//		{
-//			@Override
-//			public void onStreamURL(final String streamUrl)
-//			{
-//				if (streamUrl == null)
-//				{
-//					Log.e(TAG, channel + " has no stream to play!");
-//				}
-//				else
-//				{
-//					// play stream
-//					_feature.Component.PLAYER.play(streamUrl);
-//					Log.d(TAG, ".play:onStreamURL: play `" + streamUrl + "'");
-//
-//					if (isResetTimeshift[0] && _featureTimeshift != null)
-//					{
-//						// reset timeshift to live
-//						Log.d(TAG, ".play:onStreamURL: timeshift reset");
-//						_featureTimeshift.reset();
-//					}
-//				}
-//			}
-//		});
-		// FIXME: HORRIBLE HACK! USE IT ONLY FOR THE QUICK DEMO!
-		FeatureStreamerBulsat featureStreamerBulsat = (FeatureStreamerBulsat) _feature.Component.STREAMER;
-		featureStreamerBulsat.getUrlByStreamTestId(channel, playTimeDelta, new OnStreamURLReceived()
+
+		// set timeshift buffer size
+		if (_featureTimeshift != null)
+		{
+			// will not modify timeshift parameters unless the channel is changed
+			if (index != lastChannelIndex)
+			{
+				long bufferSize = _feature.Scheduler.EPG.getStreamBufferSize(channel);
+				if (bufferSize > 0)
+				{
+					// timeshift buffer is defined by stream provider
+					_featureTimeshift.setTimeshiftDuration(bufferSize);
+				}
+				else
+				{
+					// start timeshift buffer recording
+					_featureTimeshift.startTimeshift();
+				}
+			}
+			playTime = _featureTimeshift.seekAt(playTime);
+		}
+
+		// start playing retrieved channel stream
+		_feature.Scheduler.EPG.getStreamUrl(channel, playTime, playDuration, new OnStreamURLReceived()
 		{
 			@Override
 			public void onStreamURL(final String streamUrl)
@@ -358,14 +341,6 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				{
 					// play stream
 					_feature.Component.PLAYER.play(streamUrl);
-					Log.d(TAG, ".play:onStreamURL: play `" + streamUrl + "'");
-
-					if (isResetTimeshift[0] && _featureTimeshift != null)
-					{
-						// reset timeshift to live
-						Log.d(TAG, ".play:onStreamURL: timeshift reset");
-						_featureTimeshift.reset();
-					}
 				}
 			}
 		});
@@ -521,11 +496,6 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				// stop playing on app pause
 				_feature.Component.PLAYER.stop();
 			}
-		}
-		else if (FeatureTimeshift.ON_SEEK == msgId)
-		{
-			long playTimeDelta = bundle.getLong(FeatureTimeshift.EXTRA_PLAY_TIME_DELTA, 0);
-			play(getLastChannelIndex(), playTimeDelta);
 		}
 	}
 
