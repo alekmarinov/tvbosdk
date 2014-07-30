@@ -65,7 +65,7 @@ public class FeatureInternet extends FeatureScheduler
 		/**
 		 * Delay between internet check attempts
 		 */
-		CHECK_ATTEMPT_DELAY(2000),
+		CHECK_ATTEMPT_DELAY(4000),
 
 		/** URL to check against for the box's public IP. */
 		PUBLIC_IP_CHECK_URL("http://checkip.dyndns.org");
