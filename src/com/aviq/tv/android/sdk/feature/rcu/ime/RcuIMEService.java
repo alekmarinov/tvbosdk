@@ -163,7 +163,8 @@ public abstract class RcuIMEService extends InputMethodService
 		}
 
 		event.startTracking();
-		if (event.getEventTime() - _lastEventTime < 110)
+		// if (event.getEventTime() - _lastEventTime < 110)
+		if (event.getEventTime() - _lastEventTime < 300)
 		{
 			return true;
 		}
