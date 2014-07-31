@@ -49,7 +49,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		 * increases from 0 to parameter value, otherwise timeshiftDuration is
 		 * determined by setTimeshiftDuration method
 		 */
-		TIMESHIFT_DURATION(60 * 60);
+		TIMESHIFT_DURATION(0);
 
 		Param(int value)
 		{

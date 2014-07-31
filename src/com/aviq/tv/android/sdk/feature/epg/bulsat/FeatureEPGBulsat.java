@@ -25,6 +25,8 @@ import com.aviq.tv.android.sdk.feature.epg.Program;
  */
 public class FeatureEPGBulsat extends FeatureEPG
 {
+	private static final int DEFAULT_STREAM_PLAY_DURATION = 3600;
+
 	public FeatureEPGBulsat() throws FeatureNotFoundException
 	{
 		super();
@@ -131,7 +133,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 	public void getStreamUrl(Channel channel, long playTime, long playDuration, OnStreamURLReceived onStreamURLReceived)
 	{
 		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
-		if (playTime > 0)
+		long playTimeDelta = System.currentTimeMillis() / 1000 - playTime;
+		if (playTime > 0 && playTimeDelta > 0 && channelBulsat.getSeekUrl() != null)
 		{
 			Calendar startTime = Calendar.getInstance();
 			startTime.setTimeInMillis(1000 * playTime);
@@ -143,6 +146,9 @@ public class FeatureEPGBulsat extends FeatureEPG
 				seekUrl += '&';
 			else
 				seekUrl += '?';
+
+			if (playDuration == 0)
+				playDuration = DEFAULT_STREAM_PLAY_DURATION;
 			seekUrl += "wowzadvrplayliststart=" + startTimeFormat + "&wowzadvrplaylistduration=" + playDuration * 1000;
 
 			// return seek url
@@ -156,9 +162,9 @@ public class FeatureEPGBulsat extends FeatureEPG
 	}
 
 	@Override
-    public long getStreamBufferSize(Channel channel)
-    {
+	public long getStreamBufferSize(Channel channel)
+	{
 		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
-	    return channelBulsat.getNDVR();
-    }
+		return channelBulsat.getNDVR();
+	}
 }
