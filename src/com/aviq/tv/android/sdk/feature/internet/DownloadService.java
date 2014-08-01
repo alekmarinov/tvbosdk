@@ -72,7 +72,7 @@ public class DownloadService extends BaseService
 	 */
 	public enum ResultExtras
 	{
-		PROGRESS, MD5, BYTES_DOWNLOADED, BYTES_TOTAL, EXCEPTION, DOWNLOAD_RATE_MB_PER_SEC, TOTAL_TIME, FREE_SPACE, REQUIRED_SPACE
+		PROGRESS, MD5, BYTES_DOWNLOADED, BYTES_TOTAL, EXCEPTION, DOWNLOAD_RATE_MB_PER_SEC, TOTAL_TIME, FREE_SPACE, REQUIRED_SPACE, REQUIRED_SPACE_TOTAL, REASON
 	}
 
 	private static boolean _cancelService = false;
@@ -185,6 +185,7 @@ public class DownloadService extends BaseService
 			long downloadStart = System.currentTimeMillis();
 			long duration = 0;
 			double downloadRateMbPerSec = 0.0;
+			boolean isOutOfFreeSpace = false;
 			int total = conn.getContentLength();
 			byte data[] = new byte[bufSize];
 			int count;
@@ -237,11 +238,20 @@ public class DownloadService extends BaseService
 						Log.w(TAG, "Running out of free space... free space left = " + freeSpace + ", require space = "
 						        + requiredSpace);
 
-						Bundle outOfSpaceData = new Bundle();
-						outOfSpaceData.putLong(ResultExtras.FREE_SPACE.name(), freeSpace);
-						outOfSpaceData.putLong(ResultExtras.REQUIRED_SPACE.name(), requiredSpace);
-						resultReceiver.send(DOWNLOAD_OUT_OF_FREE_SPACE, outOfSpaceData);
+						if (!isOutOfFreeSpace)
+						{
+							isOutOfFreeSpace = true;
+
+							Bundle outOfSpaceData = new Bundle();
+							outOfSpaceData.putLong(ResultExtras.FREE_SPACE.name(), freeSpace);
+							outOfSpaceData.putLong(ResultExtras.REQUIRED_SPACE.name(), requiredSpace);
+							resultReceiver.send(DOWNLOAD_OUT_OF_FREE_SPACE, outOfSpaceData);
+
+							_cancelService = true;
+						}
 					}
+					else
+						isOutOfFreeSpace = false;
 				}
 			}
 
@@ -301,6 +311,20 @@ public class DownloadService extends BaseService
 				boolean isDeleted = partFile.delete();
 				Log.i(TAG, "Deleting temporary file: " + partFile.getAbsolutePath() + " --> "
 				        + (isDeleted ? "succeeded" : "failed"));
+
+				if (isOutOfFreeSpace)
+				{
+					long freeSpace = getFreeSpace(partFile.getParent());
+					long requiredSpace = contentLength - bytesWritten;
+
+					resultData.putString(ResultExtras.REASON.name(),
+					        "File download cancelled due to lack of enough free space: free space = " + freeSpace
+					                + ", required space to complete download = " + requiredSpace
+					                + ", total file size = " + contentLength);
+					resultData.putLong(ResultExtras.FREE_SPACE.name(), freeSpace);
+					resultData.putLong(ResultExtras.REQUIRED_SPACE.name(), requiredSpace);
+					resultData.putLong(ResultExtras.REQUIRED_SPACE_TOTAL.name(), contentLength);
+				}
 			}
 		}
 		catch (MalformedURLException e)
