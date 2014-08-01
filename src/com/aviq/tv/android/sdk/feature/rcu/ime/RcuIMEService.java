@@ -9,7 +9,13 @@
  */
 package com.aviq.tv.android.sdk.feature.rcu.ime;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.inputmethodservice.InputMethodService;
 import android.os.SystemClock;
 import android.util.Log;
@@ -28,7 +34,10 @@ public abstract class RcuIMEService extends InputMethodService
 	public static final String BROADCAST_ACTION_SLEEP = "com.aviq.tv.android.sdk.feature.rcu.ime.broadcast.SLEEP";
 	private static final SparseArray<String> _sRecs = new SparseArray<String>();
 	private static final SparseArray<String> _nRecs = new SparseArray<String>();
-	private static final int KEY_ROTATE_INTERVAL = 1000;
+	private static final int ROTATE_INTERVAL = 1000;
+	private static final int MAX_FREQ_GLOBAL_INTERVAL = 110;
+	private static final String MAX_FREQ_KEYS = "UP,DOWN";
+	private static final String MAX_FREQ_INTERVALS = "200,200";
 
 	static
 	{
@@ -63,10 +72,15 @@ public abstract class RcuIMEService extends InputMethodService
 	private long _lastPressed = 0;
 	private Key _lastKey;
 	private int _keyIdx = 0;
+	private int _keyRotateInterval;
+	private int _keyMaxFreqInterval;
 
 	private long _lastEventTime = 0;
 	private FeatureSystem _featureSystem;
 	private FeatureRCU _featureRCU;
+	private SharedPreferences _sharedPrefs;
+	private List<Key> _slowKeys = new ArrayList<Key>();
+	private List<Integer> _slowKeyFreqs = new ArrayList<Integer>();
 
 	protected abstract FeatureRCU createFeatureRCU();
 
@@ -82,6 +96,69 @@ public abstract class RcuIMEService extends InputMethodService
 		_featureRCU.initialize(null);
 		_featureSystem = new FeatureSystem(FeatureSystem.DEFAULT_HOST, FeatureSystem.DEFAULT_PORT);
 		_featureSystem.initialize(null);
+
+		_sharedPrefs = getSharedPreferences("RcuIME", Context.MODE_PRIVATE);
+		_keyRotateInterval = getIntPref("ROTATE_INTERVAL", ROTATE_INTERVAL);
+		_keyMaxFreqInterval = getIntPref("MAX_FREQ_GLOBAL_INTERVAL", MAX_FREQ_GLOBAL_INTERVAL);
+		String keyListStr = getStrPref("MAX_FREQ_KEYS", MAX_FREQ_KEYS);
+		String[] keyListArr = keyListStr.split(",");
+		for (String keyName : keyListArr)
+		{
+			Key key = Key.valueOf(keyName);
+			if (key == null)
+				Log.e(TAG, "Unknown key name `" + keyName + "' in pref MAX_FREQ_KEYS");
+			else
+			{
+				Log.i(TAG, "Registering key `" + key + "' for slowing down");
+				_slowKeys.add(key);
+			}
+		}
+
+		String keyListFreqStr = getStrPref("MAX_FREQ_INTERVALS", MAX_FREQ_INTERVALS);
+		String[] keyListFreqArr = keyListFreqStr.split(",");
+		if (keyListFreqArr.length != keyListArr.length)
+		{
+			Log.e(TAG, "Number of elements " + keyListFreqArr.length
+			        + " in pref MAX_FREQ_INTERVALS should be equal to number of elements " + keyListArr.length
+			        + " in MAX_FREQ_KEYS");
+			_slowKeys.clear();
+		}
+		else
+			for (String keyFreqStr : keyListFreqArr)
+			{
+				try
+				{
+					Integer keyFreq = Integer.valueOf(keyFreqStr);
+					Log.i(TAG, "Key `" + _slowKeys.get(_slowKeyFreqs.size()) + "' will get maximum " + keyFreq
+					        + " ms frequency");
+					_slowKeyFreqs.add(keyFreq);
+				}
+				catch (NumberFormatException nfe)
+				{
+					Log.e(TAG, nfe.getMessage(), nfe);
+					_slowKeys.clear();
+					_slowKeyFreqs.clear();
+					break;
+				}
+			}
+	}
+
+	private int getIntPref(String name, int defValue)
+	{
+		int value = _sharedPrefs.getInt(name, defValue);
+		Editor edit = _sharedPrefs.edit();
+		edit.putInt(name, value);
+		edit.commit();
+		return value;
+	}
+
+	private String getStrPref(String name, String defValue)
+	{
+		String value = _sharedPrefs.getString(name, defValue);
+		Editor edit = _sharedPrefs.edit();
+		edit.putString(name, value);
+		edit.commit();
+		return value;
 	}
 
 	private InputConnection getInputConnection()
@@ -162,9 +239,12 @@ public abstract class RcuIMEService extends InputMethodService
 			return true;
 		}
 
-		event.startTracking();
-		// if (event.getEventTime() - _lastEventTime < 110)
-		if (event.getEventTime() - _lastEventTime < 300)
+		int freqInterval = _keyMaxFreqInterval;
+		int keyIdx = _slowKeys.indexOf(key);
+		if (keyIdx >= 0)
+			freqInterval = _slowKeyFreqs.get(keyIdx);
+
+		if (event.getEventTime() - _lastEventTime < freqInterval)
 		{
 			return true;
 		}
@@ -199,7 +279,7 @@ public abstract class RcuIMEService extends InputMethodService
 			if (chars != null)
 			{
 				Log.i(TAG, "Delta: " + (int) (SystemClock.uptimeMillis() - _lastPressed));
-				if (key.equals(_lastKey) && ((int) (SystemClock.uptimeMillis() - _lastPressed)) < KEY_ROTATE_INTERVAL)
+				if (key.equals(_lastKey) && ((int) (SystemClock.uptimeMillis() - _lastPressed)) < _keyRotateInterval)
 				{
 					_keyIdx++;
 					delete();
