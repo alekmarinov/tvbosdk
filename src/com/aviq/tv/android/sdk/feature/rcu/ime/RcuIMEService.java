@@ -244,6 +244,7 @@ public abstract class RcuIMEService extends InputMethodService
 		if (keyIdx >= 0)
 			freqInterval = _slowKeyFreqs.get(keyIdx);
 
+		event.startTracking();
 		if (event.getEventTime() - _lastEventTime < freqInterval)
 		{
 			return true;
