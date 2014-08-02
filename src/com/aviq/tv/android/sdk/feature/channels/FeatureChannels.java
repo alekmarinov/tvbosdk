@@ -28,7 +28,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
-import com.aviq.tv.android.sdk.feature.player.FeatureStreamer.OnStreamURLReceived;
+import com.aviq.tv.android.sdk.feature.epg.FeatureEPG.OnStreamURLReceived;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 
 /**
@@ -107,7 +107,6 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		require(FeatureName.Scheduler.EPG);
 		require(FeatureName.Component.LANGUAGE);
 		require(FeatureName.Component.PLAYER);
-		require(FeatureName.Component.STREAMER);
 	}
 
 	@Override
@@ -137,6 +136,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 
 		_featureTimeshift = (FeatureTimeshift) Environment.getInstance().getFeatureComponent(
 		        FeatureName.Component.TIMESHIFT);
+		_featureTimeshift.getEventMessenger().register(this, FeatureTimeshift.ON_SEEK);
 
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_RESUME);
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_PAUSE);
@@ -276,35 +276,62 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	 */
 	public void play(int index)
 	{
+		play(index, System.currentTimeMillis() / 1000, 0);
+	}
+
+	/**
+	 * Start playing channel at specified position and duration, set playTime to
+	 * 0 for live stream
+	 *
+	 * @param playTime
+	 *            timestamp to start channel from
+	 * @param playDuration
+	 *            stream duration in seconds
+	 * @param index
+	 */
+	public void play(int index, long playTime, final long playDuration)
+	{
+		Log.i(TAG, ".play: index = " + index + ", playTime = " + playTime + ", playDuration = " + playDuration);
 		List<Channel> channels = getActiveChannels();
 		if (channels.size() == 0)
 			return;
 		if (index < 0 || index >= channels.size())
 			index = 0;
+		int lastChannelIndex = -1;
 		final Channel channel = channels.get(index);
-
 		if (hasLastChannel())
 		{
-			String lastChannelId = _userPrefs.getString(UserParam.LAST_CHANNEL_ID);
-			Log.i(TAG, ".play: last channel = " + lastChannelId + ", new channel = " + channel.getChannelId());
-			if (_feature.Component.PLAYER.isPlaying() && channel.getChannelId().equals(lastChannelId))
-			{
-				Log.d(TAG, ".play: already playing");
-				return;
-			}
-			else
-			{
-				_userPrefs.put(UserParam.PREV_CHANNEL_ID, lastChannelId);
-			}
+			_userPrefs.put(UserParam.PREV_CHANNEL_ID, getLastChannelId());
+			lastChannelIndex = getLastChannelIndex();
 		}
 		setLastChannelId(channel.getChannelId());
-		int globalIndex = channel.getIndex();
-		final String streamId = _feature.Scheduler.EPG.getChannelStreamId(globalIndex);
 
-		_feature.Component.STREAMER.getUrlByStreamId(streamId, new OnStreamURLReceived()
+		// set timeshift buffer size
+		if (_featureTimeshift != null)
+		{
+			// will not modify timeshift parameters unless the channel is changed
+			if (index != lastChannelIndex)
+			{
+				long bufferSize = _feature.Scheduler.EPG.getStreamBufferSize(channel);
+				if (bufferSize > 0)
+				{
+					// timeshift buffer is defined by stream provider
+					_featureTimeshift.setTimeshiftDuration(bufferSize);
+				}
+				else
+				{
+					// start timeshift buffer recording
+					_featureTimeshift.startTimeshift();
+				}
+			}
+			playTime = _featureTimeshift.seekAt(playTime);
+		}
+
+		// start playing retrieved channel stream
+		_feature.Scheduler.EPG.getStreamUrl(channel, playTime, playDuration, new OnStreamURLReceived()
 		{
 			@Override
-			public void onStreamURL(String streamUrl)
+			public void onStreamURL(final String streamUrl)
 			{
 				if (streamUrl == null)
 				{
@@ -312,18 +339,8 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				}
 				else
 				{
-					if (_featureTimeshift != null)
-					{
-						// play with timeshift
-						Log.d(TAG, ".play: timeshift " + streamId);
-						_featureTimeshift.play(streamUrl);
-					}
-					else
-					{
-						// play directly
-						Log.d(TAG, ".play: directly " + streamId);
-						_feature.Component.PLAYER.play(streamUrl);
-					}
+					// play stream
+					_feature.Component.PLAYER.play(streamUrl);
 				}
 			}
 		});

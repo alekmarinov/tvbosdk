@@ -35,8 +35,7 @@ public class FeatureName
 		EASTER_EGG,
 		CRASHLOG,
 		TIMEZONE,
-		NETHOGS,
-		STREAMER,
+		NETHOGS,		
 		STANDBY,
 		DEBUG,
 		RECORDING_SCHEDULER
@@ -50,7 +49,8 @@ public class FeatureName
 		TICKER,
 		UPGRADE,
 		MENU,
-		TEST
+		TEST,
+		VOD
 	}
 
 	public static enum State

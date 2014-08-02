@@ -62,20 +62,6 @@ public class FeatureEPGWilmaa extends FeatureEPG
 		return url + "?attr=streams.1.url";
 	}
 
-	/**
-	 * Return stream url for specified channel
-	 *
-	 * @param channelIndex
-	 * @return stream url
-	 */
-	@Override
-    public String getChannelStreamId(int channelIndex)
-	{
-		// FIXME: Refactore to return stream id here, but provide the real url from new Bulsat streamer
-		ChannelWilmaa channel = (ChannelWilmaa)getEpgData().getChannel(channelIndex);
-		return channel.getStreamUrl();
-	}
-
 	@Override
     protected Channel createChannel(int index)
     {
@@ -87,4 +73,32 @@ public class FeatureEPGWilmaa extends FeatureEPG
     {
 	    return new ProgramWilmaa(id, channel);
     }
+
+	@Override
+    public void getStreamUrl(Channel channel, long playTime, long playDuration, OnStreamURLReceived onStreamURLReceived)
+    {
+		ChannelWilmaa channelWilmaa = (ChannelWilmaa)channel;
+		StringBuffer url = new StringBuffer(channelWilmaa.getStreamUrl());
+		if (playTime > 0)
+		{
+			if (url.indexOf("?") > 0)
+				url.append('&');
+			else
+				url.append('?');
+			url.append("start=").append(playTime);
+			if (playDuration > 0)
+			{
+				url.append('&');
+				url.append("end=").append(playTime + playDuration);
+			}
+		}
+		onStreamURLReceived.onStreamURL(url.toString());
+    }
+
+	@Override
+    public long getStreamBufferSize(Channel channel)
+	{
+		// FIXME: Retrieve Wilmaa channel npvr value to preset stream buffer size
+		return 0;
+	}
 }

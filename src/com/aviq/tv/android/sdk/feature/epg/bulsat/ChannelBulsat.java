@@ -24,9 +24,11 @@ public class ChannelBulsat extends Channel implements Serializable
 {
 	private static final String TAG = ChannelBulsat.class.getSimpleName();
 	private static final long serialVersionUID = -8718850662391176233L;
-	private String _streamUrl;
 	private int _channelNo;
 	private Genre _genre;
+	private int _ndvr;
+	private String _streamUrl;
+	private String _seekUrl;
 
 	public static enum Genre
 	{
@@ -63,9 +65,11 @@ public class ChannelBulsat extends Channel implements Serializable
 
 	public static class MetaData extends Channel.MetaData
 	{
-		public int metaChannelStreamUrl;
 		public int metaChannelChannelNo;
 		public int metaChannelGenre;
+		public int metaChannelNdvr;
+		public int metaChannelStreamUrl;
+		public int metaChannelSeekUrl;
 	}
 
 	public void setStreamUrl(String streamUrl)
@@ -76,6 +80,16 @@ public class ChannelBulsat extends Channel implements Serializable
 	public String getStreamUrl()
 	{
 		return _streamUrl;
+	}
+
+	public void setSeekUrl(String seekUrl)
+	{
+		_seekUrl = seekUrl;
+	}
+
+	public String getSeekUrl()
+	{
+		return _seekUrl;
 	}
 
 	public void setChannelNo(int channelNo)
@@ -98,11 +112,20 @@ public class ChannelBulsat extends Channel implements Serializable
 		return _genre;
 	}
 
+	public void setNDVR(int ndvr)
+	{
+		_ndvr = ndvr;
+	}
+
+	public int getNDVR()
+	{
+		return _ndvr;
+	}
+
 	@Override
 	public void setAttributes(Channel.MetaData channelMetaData, String[] attributes)
 	{
 		MetaData channelBulsatMetaData = (MetaData) channelMetaData;
-		setStreamUrl(attributes[channelBulsatMetaData.metaChannelStreamUrl]);
 		try
 		{
 			setChannelNo(Integer.parseInt(attributes[channelBulsatMetaData.metaChannelChannelNo]));
@@ -120,5 +143,16 @@ public class ChannelBulsat extends Channel implements Serializable
 			genre = Genre.OTHER;
 		}
 		setGenre(genre);
+
+		try
+		{
+			setNDVR(Integer.parseInt(attributes[channelBulsatMetaData.metaChannelNdvr]));
+		}
+		catch (NumberFormatException nfe)
+		{
+			Log.e("ChannelBulsat", nfe.getMessage(), nfe);
+		}
+		setStreamUrl(attributes[channelBulsatMetaData.metaChannelStreamUrl]);
+		setSeekUrl(attributes[channelBulsatMetaData.metaChannelSeekUrl]);
 	}
 }

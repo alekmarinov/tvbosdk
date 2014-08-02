@@ -19,13 +19,13 @@ import com.aviq.tv.android.sdk.core.feature.recording.FeatureRecordingScheduler;
 import com.aviq.tv.android.sdk.feature.channels.FeatureChannels;
 import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
+import com.aviq.tv.android.sdk.feature.epg.FeatureVOD;
 import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.language.FeatureLanguage;
 import com.aviq.tv.android.sdk.feature.network.FeatureEthernet;
 import com.aviq.tv.android.sdk.feature.network.FeatureWireless;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
-import com.aviq.tv.android.sdk.feature.player.FeatureStreamer;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
@@ -67,8 +67,7 @@ public class Features
 		public FeatureEasterEgg EASTER_EGG;
 		public FeatureCrashLog CRASHLOG;
 		public FeatureTimeZone TIMEZONE;
-		public FeatureNethogs NETHOGS;
-		public FeatureStreamer STREAMER;
+		public FeatureNethogs NETHOGS;	
 		public FeatureStandBy STANDBY;
 		public FeatureRecordingScheduler RECORDING_SCHEDULER;
 	}
@@ -78,6 +77,7 @@ public class Features
 		public FeatureInternet INTERNET;
 		public FeatureEPG EPG;
 		public FeatureUpgrade UPGRADE;
+		public FeatureVOD VOD;
 	}
 
 	public class States

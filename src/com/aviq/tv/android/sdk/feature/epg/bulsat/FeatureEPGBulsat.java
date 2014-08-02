@@ -10,6 +10,12 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Locale;
+import java.util.TimeZone;
+
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
@@ -20,6 +26,8 @@ import com.aviq.tv.android.sdk.feature.epg.Program;
  */
 public class FeatureEPGBulsat extends FeatureEPG
 {
+	private static final int DEFAULT_STREAM_PLAY_DURATION = 3600;
+
 	public FeatureEPGBulsat() throws FeatureNotFoundException
 	{
 		super();
@@ -53,10 +61,14 @@ public class FeatureEPGBulsat extends FeatureEPG
 			String key = meta[j];
 			if ("channel".equals(key))
 				bulsatMetaData.metaChannelChannelNo = j;
-			else if ("streams.1.url".equals(key))
-				bulsatMetaData.metaChannelStreamUrl = j;
 			else if ("genre".equals(key))
 				bulsatMetaData.metaChannelGenre = j;
+			else if ("ndvr".equals(key))
+				bulsatMetaData.metaChannelNdvr = j;
+			else if ("streams.1.url".equals(key))
+				bulsatMetaData.metaChannelStreamUrl = j;
+			else if ("streams.2.url".equals(key))
+				bulsatMetaData.metaChannelSeekUrl = j;
 		}
 	}
 
@@ -77,26 +89,13 @@ public class FeatureEPGBulsat extends FeatureEPG
 	protected String getChannelsUrl()
 	{
 		String url = super.getChannelsUrl();
-		return url + "?attr=channel,streams.1.url,genre";
+		return url + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url";
 	}
 
 	@Override
 	protected Program createProgram(String id, Channel channel)
 	{
 		return new ProgramBulsat(id, channel);
-	}
-
-	/**
-	 * Return stream url for specified channel
-	 *
-	 * @param channelIndex
-	 * @return stream url
-	 */
-	@Override
-	public String getChannelStreamId(int channelIndex)
-	{
-		ChannelBulsat channel = (ChannelBulsat) getEpgData().getChannel(channelIndex);
-		return channel.getStreamUrl();
 	}
 
 	@Override
@@ -117,5 +116,59 @@ public class FeatureEPGBulsat extends FeatureEPG
 			if ("description".equals(key))
 				bulsatMetaData.metaDescription = j;
 		}
+	}
+
+	/**
+	 * Return stream url by channel index and delta from real time in seconds
+	 *
+	 * @param channel
+	 *            the channel to obtain the stream from
+	 * @param playTime
+	 *            timestamp in seconds or 0 for live stream
+	 * @param playDuration
+	 *            stream duration in seconds
+	 * @param onStreamURLReceived
+	 *            callback interface where the stream will be returned
+	 */
+	@Override
+	public void getStreamUrl(Channel channel, long playTime, long playDuration, OnStreamURLReceived onStreamURLReceived)
+	{
+		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
+		long playTimeDelta = System.currentTimeMillis() / 1000 - playTime;
+		String streamUrl;
+		if (playTime > 0 && playTimeDelta > 0 && channelBulsat.getSeekUrl() != null)
+		{
+			Calendar startTime = Calendar.getInstance();
+			startTime.setTimeInMillis(1000 * playTime);
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
+			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+			String startTimeFormat = sdf.format(startTime.getTime());
+			String seekUrl = channelBulsat.getSeekUrl();
+			if (seekUrl.indexOf('?') > 0)
+				seekUrl += '&';
+			else
+				seekUrl += '?';
+
+			if (playDuration == 0)
+				playDuration = DEFAULT_STREAM_PLAY_DURATION;
+			seekUrl += "wowzadvrplayliststart=" + startTimeFormat + "&wowzadvrplaylistduration=" + playDuration * 1000;
+
+			// set seek url
+			streamUrl = seekUrl;
+		}
+		else
+		{
+			// set live url
+			streamUrl = channelBulsat.getStreamUrl();
+		}
+		Log.d(TAG, ".getStreamUrl: channel = " + channel.getChannelId() + ", playTime = " + playTime + ", playDuration = " + playDuration + " -> " + streamUrl);
+		onStreamURLReceived.onStreamURL(streamUrl);
+	}
+
+	@Override
+	public long getStreamBufferSize(Channel channel)
+	{
+		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
+		return channelBulsat.getNDVR();
 	}
 }

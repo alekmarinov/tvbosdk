@@ -192,6 +192,11 @@ public abstract class FeatureEPG extends FeatureScheduler
 	private FeatureTimeZone _featureTimeZone;
 	private int _maxChannels = 0;
 
+	public interface OnStreamURLReceived
+	{
+		void onStreamURL(String streamUrl);
+	}
+
 	public FeatureEPG() throws FeatureNotFoundException
 	{
 		require(FeatureName.Scheduler.INTERNET);
@@ -303,10 +308,22 @@ public abstract class FeatureEPG extends FeatureScheduler
 	protected abstract Provider getEPGProvider();
 
 	/**
-	 * @param channelIndex
-	 * @return URL to video stream corresponding to the requested channel index
+	 * Return stream url by channel channel, play position and duration in seconds
+	 *
+	 * @param channel the channel to obtain the stream from
+	 * @param playTime timestamp in seconds or 0 for live stream
+	 * @param playDuration stream duration in seconds
+	 * @param onStreamURLReceived callback interface where the stream will be returned
 	 */
-	public abstract String getChannelStreamId(int channelIndex);
+	public abstract void getStreamUrl(Channel channel, long playTime, long playDuration, OnStreamURLReceived onStreamURLReceived);
+
+	/**
+	 * Return stream buffer size by channel
+	 *
+	 * @param channel the channel to obtain stream buffer size from
+	 * @return stream buffer size in seconds, or 0 if there is no buffer
+	 */
+	public abstract long getStreamBufferSize(Channel channel);
 
 	/**
 	 * @return create channel instance
@@ -503,7 +520,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		}
 
 		int numChannels = _epgDataBeingLoaded.getChannelCount();
-		final float processedCount = _retrievedChannelPrograms + _retrievedChannelLogos;
+		final int processedCount = _retrievedChannelPrograms + _retrievedChannelLogos;
 		Log.i(TAG, ".checkInitializeFinished: processedCount = " + processedCount + ", numChannels = " + numChannels);
 
 		if (_retrievedChannelPrograms == numChannels && _retrievedChannelLogos == numChannels)
@@ -613,19 +630,6 @@ public abstract class FeatureEPG extends FeatureScheduler
 				metaData.metaStop = j;
 			else if ("title".equals(key))
 				metaData.metaTitle = j;
-		}
-	}
-
-	private String adjustDateTime(SimpleDateFormat sdf, SimpleDateFormat ddf, String dateTime)
-	{
-		try
-		{
-			return ddf.format(sdf.parse(dateTime));
-		}
-		catch (ParseException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-			return null;
 		}
 	}
 
