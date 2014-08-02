@@ -7,7 +7,7 @@
  * Date:        14 Jul 2014
  * Description: Holds data representing scheduled recording
  */
-package com.aviq.tv.android.sdk.core.feature.recording;
+package com.aviq.tv.android.sdk.feature.recording;
 
 /**
  * Holds data representing scheduled recording

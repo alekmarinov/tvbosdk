@@ -7,7 +7,7 @@
  * Date:        14 Jul 2014
  * Description: Feature managing scheduled recordings
  */
-package com.aviq.tv.android.sdk.core.feature.recording;
+package com.aviq.tv.android.sdk.feature.recording;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

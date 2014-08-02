@@ -8,7 +8,7 @@
  * Description: Opens the Settings app when detected special key sequence by the RCU
  */
 
-package com.aviq.tv.android.sdk.core.feature.easteregg;
+package com.aviq.tv.android.sdk.feature.easteregg;
 
 import java.util.ArrayList;
 import java.util.Arrays;
