@@ -135,7 +135,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	 */
 	public long seekAt(long timestamp)
 	{
-		Log.i(TAG, ".seekAt: " + (timestamp - currentTime()) + " secs relative to current time");
+		Log.i(TAG, ".seekAt: " + (currentTime() - timestamp) + " secs from current time");
 		long adjustedTime = adjustInTimeshift(timestamp);
 		setPlayTimeDelta(currentTime() - adjustedTime);
 		return adjustedTime;

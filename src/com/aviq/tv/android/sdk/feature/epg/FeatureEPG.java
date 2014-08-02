@@ -520,7 +520,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		}
 
 		int numChannels = _epgDataBeingLoaded.getChannelCount();
-		final float processedCount = _retrievedChannelPrograms + _retrievedChannelLogos;
+		final int processedCount = _retrievedChannelPrograms + _retrievedChannelLogos;
 		Log.i(TAG, ".checkInitializeFinished: processedCount = " + processedCount + ", numChannels = " + numChannels);
 
 		if (_retrievedChannelPrograms == numChannels && _retrievedChannelLogos == numChannels)

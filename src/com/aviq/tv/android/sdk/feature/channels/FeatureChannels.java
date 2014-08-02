@@ -276,7 +276,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	 */
 	public void play(int index)
 	{
-		play(index, 0, 0);
+		play(index, System.currentTimeMillis() / 1000, 0);
 	}
 
 	/**

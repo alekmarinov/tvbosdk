@@ -15,6 +15,7 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
@@ -134,6 +135,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 	{
 		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
 		long playTimeDelta = System.currentTimeMillis() / 1000 - playTime;
+		String streamUrl;
 		if (playTime > 0 && playTimeDelta > 0 && channelBulsat.getSeekUrl() != null)
 		{
 			Calendar startTime = Calendar.getInstance();
@@ -151,14 +153,16 @@ public class FeatureEPGBulsat extends FeatureEPG
 				playDuration = DEFAULT_STREAM_PLAY_DURATION;
 			seekUrl += "wowzadvrplayliststart=" + startTimeFormat + "&wowzadvrplaylistduration=" + playDuration * 1000;
 
-			// return seek url
-			onStreamURLReceived.onStreamURL(seekUrl);
+			// set seek url
+			streamUrl = seekUrl;
 		}
 		else
 		{
-			// return live url
-			onStreamURLReceived.onStreamURL(channelBulsat.getStreamUrl());
+			// set live url
+			streamUrl = channelBulsat.getStreamUrl();
 		}
+		Log.d(TAG, ".getStreamUrl: channel = " + channel.getChannelId() + ", playTime = " + playTime + ", playDuration = " + playDuration + " -> " + streamUrl);
+		onStreamURLReceived.onStreamURL(streamUrl);
 	}
 
 	@Override
