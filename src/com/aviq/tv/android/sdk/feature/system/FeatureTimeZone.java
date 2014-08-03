@@ -10,6 +10,7 @@
 
 package com.aviq.tv.android.sdk.feature.system;
 
+import java.util.Calendar;
 import java.util.TimeZone;
 
 import android.app.AlarmManager;
@@ -68,5 +69,13 @@ public class FeatureTimeZone extends FeatureComponent
 	public TimeZone getTimeZone()
 	{
 		return _timeZone;
+	}
+
+	/**
+	 * @return the current time according to this timezone
+	 */
+	public Calendar getCurrentTime()
+	{
+		return Calendar.getInstance(_timeZone);
 	}
 }
