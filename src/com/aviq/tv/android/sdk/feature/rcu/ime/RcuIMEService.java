@@ -37,7 +37,7 @@ public abstract class RcuIMEService extends InputMethodService
 	private static final int ROTATE_INTERVAL = 1000;
 	private static final int MAX_FREQ_GLOBAL_INTERVAL = 110;
 	private static final String MAX_FREQ_KEYS = "UP,DOWN";
-	private static final String MAX_FREQ_INTERVALS = "220,220";
+	private static final String MAX_FREQ_INTERVALS = "175,175";
 
 	static
 	{
