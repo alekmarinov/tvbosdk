@@ -50,14 +50,6 @@ public class FeatureManager
 	private final FeatureInitializer _featureInitializer = new FeatureInitializer();
 	private FeatureFactoryCustom _featureFactory = new FeatureFactoryCustom();
 
-	/*
-	 * Public methods
-	 * *********************
-	 */
-
-	/**
-	 *
-	 */
 	public FeatureManager()
 	{
 	}
@@ -645,7 +637,7 @@ public class FeatureManager
 		for (int i = 0; i < sorted.size(); i++)
 		{
 			IFeature feature = sorted.get(i);
-			Log.i(TAG, i + ". " + feature);
+			Log.i(TAG, i + ". " + feature + " (" + feature.getClass().getName() + ")");
 		}
 
 		_features = sorted;

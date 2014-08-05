@@ -95,7 +95,7 @@ public class FeatureEPGZattoo extends FeatureEPG
 						                public void onReceiveResult(int resultCode, Bundle resultData)
 						                {
 							                Log.i(TAG, "login response: " + resultCode);
-							                onFeatureInitialized.onInitialized(FeatureEPGZattoo.this, resultCode);
+							                FeatureEPGZattoo.super.initialize(onFeatureInitialized);
 						                }
 					                });
 				        }
