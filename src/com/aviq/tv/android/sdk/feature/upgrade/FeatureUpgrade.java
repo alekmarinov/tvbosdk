@@ -470,6 +470,18 @@ public class FeatureUpgrade extends FeatureScheduler
 
 							if (isDownload)
 							{
+								if (isUpgradeReady())
+								{
+									if (isVersionsDiffer(_userPrefs.getString(UserParam.UPGRADE_VERSION), _userPrefs.getString(UserParam.UPGRADE_BRAND), updateData.Version, updateData.Brand))
+									{
+										_userPrefs.remove(UserParam.UPGRADE_VERSION);
+										_userPrefs.remove(UserParam.UPGRADE_BRAND);
+
+										// The old upgrade file will be deleted before new downloading starts
+										_userPrefs.remove(UserParam.UPGRADE_FILE);
+									}
+								}
+
 								// Proceed with downloading new software
 								downloadUpdate();
 							}
@@ -675,42 +687,39 @@ public class FeatureUpgrade extends FeatureScheduler
 		});
 	}
 
-	private boolean isNewVersion(String otherVersion, String brand)
+	private boolean isVersionsDiffer(String version1, String brand1, String version2, String brand2)
 	{
-		if (otherVersion == null)
-			throw new IllegalArgumentException("Arguments cannot be null");
-		String currentVersion = Environment.getInstance().getBuildVersion();
+		if (version1 == null || brand1 == null || version2 == null || brand2 == null)
+			throw new IllegalArgumentException("Arguments cannot be null: " + version1 + ", " + brand1 + ", " + version2 + ", " + brand2);
 
-		// check if BoxID is reassigned to new brand to allow FW update
-		boolean isNewBrand = !(TextUtils.isEmpty(brand) || _feature.Component.REGISTER.getPrefs()
-		        .getString(FeatureRegister.Param.BRAND).equalsIgnoreCase(brand));
+		boolean isNewBrand = !(TextUtils.isEmpty(brand2) || brand2.equalsIgnoreCase(brand1));
 		if (isNewBrand)
 			return true;
 
-		String[] currentVersionParts = currentVersion.split("\\.");
-		String[] otherVersionParts = otherVersion.split("\\.");
-		if (currentVersionParts.length != otherVersionParts.length)
+		String[] version1Parts = version1.split("\\.");
+		String[] version2Parts = version2.split("\\.");
+		if (version1Parts.length != version2Parts.length)
 		{
-			Log.i(TAG, ".isNewVersion: No compatible versions formats current=" + currentVersion + ", other="
-			        + otherVersion + ". Assuming new version!");
+			Log.i(TAG, ".isVersionsDiffer: No compatible versions formats current=" + version1 + ", other="
+			        + version2 + ". Assuming new version!");
 			return true;
 		}
 
 		try
 		{
-			for (int i = 0; i < currentVersionParts.length; i++)
+			for (int i = 0; i < version1Parts.length; i++)
 			{
-				int currentVer = Integer.parseInt(currentVersionParts[i]);
-				int otherVer = Integer.parseInt(otherVersionParts[i]);
+				int currentVer = Integer.parseInt(version1Parts[i]);
+				int otherVer = Integer.parseInt(version2Parts[i]);
 				if (currentVer > otherVer)
 				{
-					Log.i(TAG, ".isNewVersion: current=" + currentVersion + " is newer than other=" + otherVersion
+					Log.i(TAG, ".isVersionsDiffer: current=" + version1 + " is newer than other=" + version2
 					        + ". Assuming new version!");
 					return true;
 				}
 				else if (currentVer < otherVer)
 				{
-					Log.i(TAG, ".isNewVersion: current=" + currentVersion + " is older than other=" + otherVersion
+					Log.i(TAG, ".isVersionsDiffer: current=" + version1 + " is older than other=" + version2
 					        + ". New version!");
 					return true;
 				}
@@ -718,13 +727,19 @@ public class FeatureUpgrade extends FeatureScheduler
 		}
 		catch (NumberFormatException e)
 		{
-			Log.i(TAG, ".isNewVersion: Invalid version component in current=" + currentVersion + " or other="
-			        + otherVersion + ". Assuming new version!");
+			Log.i(TAG, ".isVersionsDiffer: Invalid version component in current=" + version1 + " or other="
+			        + version2 + ". Assuming new version!");
 			return true;
 		}
 
-		Log.i(TAG, ".isNewVersion: Current version " + currentVersion + " is the same as the new reported "
-		        + otherVersion + ". No new software version!");
+		Log.i(TAG, ".isVersionsDiffer: Current version " + version1 + " is the same as the new reported "
+		        + version2 + ". No new software version!");
 		return false;
+	}
+
+	private boolean isNewVersion(String otherVersion, String brand)
+	{
+		return isVersionsDiffer(Environment.getInstance().getBuildVersion(), _feature.Component.REGISTER.getPrefs()
+		        .getString(FeatureRegister.Param.BRAND), otherVersion, brand);
 	}
 }
