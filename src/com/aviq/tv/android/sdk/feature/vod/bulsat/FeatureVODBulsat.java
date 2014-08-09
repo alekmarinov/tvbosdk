@@ -1,4 +1,4 @@
-package com.aviq.tv.android.sdk.feature.epg;
+package com.aviq.tv.android.sdk.feature.vod.bulsat;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -12,36 +12,27 @@ import android.util.Log;
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
 import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
+import com.android.volley.VolleyError;
 import com.android.volley.toolbox.HttpHeaderParser;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.ResultCode;
-import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
+import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.google.gson.JsonSyntaxException;
 
-public class FeatureVOD extends FeatureScheduler
+public class FeatureVODBulsat extends FeatureScheduler
 {
+	public static final String TAG = FeatureVODBulsat.class.getSimpleName();
 	
-	public static final String TAG = FeatureEPG.class.getSimpleName();
-	
-	private String _vodServerURL;
-	private RequestQueue _httpQueue;
 	private OnFeatureInitialized _onFeatureInitialized;
-	private XMLVodParser _xmlParser;
-	private VodGroup _vodData;
+	private VodTree<VodGroup> _vodData;
 	
 	public enum Param
 	{
-		
-		/**
-		 * VOD XML URL
-		 */
 		VOD_XML_URL("http://185.4.83.193/?xml&vod"),
 		
 		/**
@@ -64,69 +55,48 @@ public class FeatureVOD extends FeatureScheduler
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		_vodServerURL = getPrefs().getString(Param.VOD_XML_URL);
-		_httpQueue = Environment.getInstance().getRequestQueue();
-		_xmlParser = new XMLVodParser();
-
-		try
-		{
-			_xmlParser.initialize();
-			onSchedule(onFeatureInitialized);
-		}
-		catch (ParserConfigurationException e)
-		{
-			Log.e(TAG, "Error during XML SAX Parser initialization " + e.getMessage());
-			onFeatureInitialized.onInitialized(FeatureVOD.this, ResultCode.GENERAL_FAILURE);
-		}
-		catch (SAXException e)
-		{
-			Log.e(TAG, "Error during XML SAX Parser initialization " + e.getMessage());
-			onFeatureInitialized.onInitialized(FeatureVOD.this, ResultCode.PROTOCOL_ERROR);
-		}
-	}
-	
-	public VodGroup getVodData()
-	{
-		return _vodData;
-	}
-
-	@Override
-	protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
-	{
-		_onFeatureInitialized = onFeatureInitialized;
-		
-		Log.i(TAG, "Retrieving VOD data from " + _vodServerURL);
-		
-		VodListResponseCallback responseCallback = new VodListResponseCallback();
-		
-		XmlRequest<VodGroup> channelListRequest = new XmlRequest<VodGroup>(Request.Method.GET, _vodServerURL,
-		        VodGroup.class, responseCallback, responseCallback);
-		
-		_httpQueue.add(channelListRequest);
-		
-		scheduleDelayed(getPrefs().getInt(Param.VOD_UPDATE_INTERVAL));
+		onSchedule(onFeatureInitialized);
 	}
 	
 	@Override
 	public Scheduler getSchedulerName()
 	{
-		// TODO Auto-generated method stub
 		return FeatureName.Scheduler.VOD;
 	}
 	
-	// XML volley request
-	private class XmlRequest<T> extends Request<T>
+	@Override
+	protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
 	{
+		_onFeatureInitialized = onFeatureInitialized;
 		
+		String vodServerURL = getPrefs().getString(Param.VOD_XML_URL);
+		Log.i(TAG, "Retrieving VOD data from: " + vodServerURL);
+		
+		VodListResponseCallback responseCallback = new VodListResponseCallback();
+		
+		@SuppressWarnings("rawtypes")
+		VodRequest<VodTree> vodRequest = new VodRequest<VodTree>(Request.Method.GET, vodServerURL,
+				VodTree.class, responseCallback, responseCallback);
+		Environment.getInstance().getRequestQueue().add(vodRequest);
+		
+		scheduleDelayed(getPrefs().getInt(Param.VOD_UPDATE_INTERVAL));
+	}
+	
+	public VodTree<VodGroup> getVodData()
+	{
+		return _vodData;
+	}
+	
+	private class VodRequest<T> extends Request<T>
+	{
 		private final Class<T> mClazz;
 		private final Listener<T> mListener;
 		
-		public XmlRequest(int method, String url, Class<T> clazz, Listener<T> listener, ErrorListener errorListener)
+		public VodRequest(int method, String url, Class<T> clazz, Listener<T> listener, ErrorListener errorListener)
 		{
 			super(Method.GET, url, errorListener);
 			this.mClazz = clazz;
 			this.mListener = listener;
-			
 		}
 		
 		@Override
@@ -141,7 +111,24 @@ public class FeatureVOD extends FeatureScheduler
 			try
 			{
 				String inputString = new String(response.data, HttpHeaderParser.parseCharset(response.headers));
-				T xml = mClazz.cast(_xmlParser.fromXMl(inputString));
+				
+				VodXmlParser xmlParser = new VodXmlParser();
+				try 
+				{
+					xmlParser.initialize();
+				}
+				catch (ParserConfigurationException e)
+				{
+					Log.e(TAG, "Cannot configure SAX parser.", e);
+					return Response.error(new VolleyError(e));
+				}
+				catch (SAXException e)
+				{
+					Log.e(TAG, "SAX parser error.", e);
+					return Response.error(new VolleyError(e));
+				}
+				
+				T xml = mClazz.cast(xmlParser.fromXML(inputString));
 				return Response.success(xml, HttpHeaderParser.parseCacheHeaders(response));
 			}
 			catch (UnsupportedEncodingException e)
@@ -154,24 +141,27 @@ public class FeatureVOD extends FeatureScheduler
 			}
 			catch (SAXException e)
 			{
-				// TODO Auto-generated catch block
 				return Response.error(new ParseError(e));
 			}
 			catch (IOException e)
 			{
-				// TODO Auto-generated catch block
 				return Response.error(new ParseError(e));
 			}
 		}
 	}
 	
-	private class VodListResponseCallback implements Response.Listener<VodGroup>, Response.ErrorListener
+	@SuppressWarnings("rawtypes")
+	private class VodListResponseCallback implements Response.Listener<VodTree>, Response.ErrorListener
 	{
+		@SuppressWarnings("unchecked")
 		@Override
-		public void onResponse(VodGroup response)
+		public void onResponse(VodTree response)
 		{
-			_vodData = response;			
-			_onFeatureInitialized.onInitialized(FeatureVOD.this, ResultCode.OK);
+			_vodData = response;
+		
+			//print(_vodData.getRoot()); // Dump tree data to logcat
+			
+			_onFeatureInitialized.onInitialized(FeatureVODBulsat.this, ResultCode.OK);
 		}
 		
 		@Override
@@ -179,10 +169,33 @@ public class FeatureVOD extends FeatureScheduler
 		{
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving vod data with code " + statusCode + ": " + error);
-			_onFeatureInitialized.onInitialized(FeatureVOD.this, statusCode);
+			Log.e(TAG, "Error retrieving VOD data: code " + statusCode + ": " + error);
+			_onFeatureInitialized.onInitialized(FeatureVODBulsat.this, statusCode);
 		}
 		
 	}
 	
+	//---------------------------------------------------
+	// DEBUGGING CODE TO DUMP THE VOD TREE RECURSIVELY
+	//---------------------------------------------------
+	
+	private int _treeDepth;
+	
+	private void print(VodTree.Node<VodGroup> node)
+	{
+		if (node.equals(_vodData.getRoot()))
+			_treeDepth = 0;
+		
+		Log.v(TAG, "depth = " + _treeDepth 
+				+ ", title = " + node.getData().getTitle() 
+				+ ", num VODs = " + node.getData().getVodList().size());
+		
+		_treeDepth++;
+		if (node.hasChildren())
+		{
+			for (VodTree.Node<VodGroup> child : node.getChildren())
+				print(child);
+		}
+		_treeDepth--;
+	}
 }
