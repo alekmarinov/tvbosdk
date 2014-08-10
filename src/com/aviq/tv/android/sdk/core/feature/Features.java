@@ -18,6 +18,7 @@ import com.aviq.tv.android.sdk.feature.channels.FeatureChannels;
 import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
+import com.aviq.tv.android.sdk.feature.eventcollector.FeatureEventCollector;
 import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.language.FeatureLanguage;
@@ -67,7 +68,7 @@ public class Features
 		public FeatureEasterEgg EASTER_EGG;
 		public FeatureCrashLog CRASHLOG;
 		public FeatureTimeZone TIMEZONE;
-		public FeatureNethogs NETHOGS;	
+		public FeatureNethogs NETHOGS;
 		public FeatureStandBy STANDBY;
 		public FeatureRecordingScheduler RECORDING_SCHEDULER;
 	}
@@ -77,7 +78,8 @@ public class Features
 		public FeatureInternet INTERNET;
 		public FeatureEPG EPG;
 		public FeatureUpgrade UPGRADE;
-		public FeatureVODBulsat VOD;
+		public FeatureEventCollector EVENT_COLLECTOR;
+		public FeatureVOD VOD;
 	}
 
 	public class States

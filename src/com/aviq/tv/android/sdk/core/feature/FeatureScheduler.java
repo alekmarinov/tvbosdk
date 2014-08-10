@@ -153,14 +153,14 @@ public abstract class FeatureScheduler implements IFeature, EventReceiver
 				@Override
 				public void onInitialized(IFeature feature, int resultCode)
 				{
-					Log.i(TAG, ".onInitialized: feature = " + feature + ", resultCode = " + resultCode);
+					Log.i(TAG, "onSchedule.onInitialized: feature = " + feature + ", resultCode = " + resultCode);
 					getEventMessenger().trigger(ON_SCHEDULE_FINISHED);
 				}
 
 				@Override
 				public void onInitializeProgress(IFeature feature, float progress)
 				{
-					Log.i(TAG, ".onInitializeProgress: feature = " + feature + ", progress = " + progress);
+					Log.i(TAG, "onSchedule.onInitializeProgress: feature = " + feature + ", progress = " + progress);
 				}
 			});
 		}

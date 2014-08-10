@@ -35,7 +35,7 @@ public class FeatureName
 		EASTER_EGG,
 		CRASHLOG,
 		TIMEZONE,
-		NETHOGS,		
+		NETHOGS,
 		STANDBY,
 		DEBUG,
 		RECORDING_SCHEDULER
@@ -49,7 +49,7 @@ public class FeatureName
 		TICKER,
 		UPGRADE,
 		MENU,
-		TEST,
+		EVENT_COLLECTOR,
 		VOD
 	}
 

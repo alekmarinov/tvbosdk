@@ -198,7 +198,7 @@ public class FeatureEventCollector extends FeatureScheduler
 	@Override
 	public Scheduler getSchedulerName()
 	{
-		return FeatureName.Scheduler.SPECIAL;
+		return FeatureName.Scheduler.EVENT_COLLECTOR;
 	}
 
 	@Override
