@@ -1,11 +1,12 @@
 package com.aviq.tv.android.sdk.feature.vod.bulsat;
 
+
 public class Vod
 {
 	private String _title;
-	private String _logo;
+	private String _poster;
 	private String _sources;
-
+	
 	public String getTitle()
 	{
 		return _title;
@@ -16,14 +17,14 @@ public class Vod
 		_title = title;
 	}
 
-	public String getLogo()
+	public String getPoster()
 	{
-		return _logo;
+		return _poster;
 	}
 	
-	public void setLogo(String logo)
+	public void setPoster(String poster)
 	{
-		_logo = logo;
+		_poster = poster;
 	}
 	
 	public String getSources()

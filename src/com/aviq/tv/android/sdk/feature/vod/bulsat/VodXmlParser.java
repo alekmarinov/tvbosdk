@@ -22,6 +22,10 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.ImageLoader.ImageContainer;
+import com.android.volley.toolbox.ImageLoader.ImageListener;
+import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 
 class VodXmlParser
@@ -33,7 +37,7 @@ class VodXmlParser
 	private static final String TAG_VODGROUP = "vodgroup";
 	private static final String TAG_VOD = "vod";
 	private static final String TAG_TITLE = "title";
-	private static final String TAG_LOGO = "logo";
+	private static final String TAG_POSTER = "poster";
 	private static final String TAG_SOURCES = "sources";
 	
 	private SAXParser _saxParser;
@@ -118,9 +122,12 @@ class VodXmlParser
 				else if (_inVodGroup)
 					_currentVodGroup.setTitle(_currentValue.toString());
 			}
-			else if (TAG_LOGO.equals(localName))
+			else if (TAG_POSTER.equals(localName))
 			{
-				_currentVod.setLogo(_currentValue.toString());
+				_currentVod.setPoster(_currentValue.toString());
+				
+				// Fetch the image and cache it
+				fetchVodPoster(_currentVod.getTitle(), _currentVod.getPoster());
 			}
 			else if (TAG_SOURCES.equals(localName))
 			{
@@ -141,5 +148,34 @@ class VodXmlParser
 		{
 			return _vodTree;
 		}
+	}
+	
+	private void fetchVodPoster(final String title, final String posterUrl)
+	{
+		// Fetch the image and cache it
+		Environment.getInstance().runOnUiThread(new Runnable() 
+		{
+			@Override
+			public void run()
+			{
+				// ImageLoader must be invoked from the main thread
+				Environment.getInstance().getImageLoader().get(_currentVod.getPoster(), new ImageListener() 
+				{
+					@Override
+					public void onErrorResponse(VolleyError error) 
+					{
+						Log.e(TAG, "Could not download poster for VOD [" + title 
+								+ "] from [" + posterUrl + "]", error);
+					}
+
+					@Override
+					public void onResponse(ImageContainer response, boolean isImmediate) 
+					{
+						Log.v(TAG, "Successful download of poster for VOD [" + title 
+								+ "] from [" + posterUrl + "]");
+					}
+				});
+			}
+		});
 	}
 }
