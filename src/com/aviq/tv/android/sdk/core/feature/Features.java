@@ -35,7 +35,7 @@ import com.aviq.tv.android.sdk.feature.system.FeatureStandBy;
 import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
 import com.aviq.tv.android.sdk.feature.system.FeatureTimeZone;
 import com.aviq.tv.android.sdk.feature.upgrade.FeatureUpgrade;
-import com.aviq.tv.android.sdk.feature.vod.bulsat.FeatureVODBulsat;
+import com.aviq.tv.android.sdk.feature.vod.FeatureVOD;
 import com.aviq.tv.android.sdk.feature.watchlist.FeatureWatchlist;
 import com.aviq.tv.android.sdk.feature.webtv.FeatureWebTV;
 
