@@ -9,7 +9,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 public abstract class FeatureVOD extends FeatureScheduler
 {
 	public static final String TAG = FeatureVOD.class.getSimpleName();
-	
+
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
@@ -22,10 +22,12 @@ public abstract class FeatureVOD extends FeatureScheduler
 	{
 		super.onSchedule(onFeatureInitialized);
 	}
-	
+
 	@Override
 	public Scheduler getSchedulerName()
 	{
 		return FeatureName.Scheduler.VOD;
 	}
+
+	public abstract <T> T getVodData();
 }
