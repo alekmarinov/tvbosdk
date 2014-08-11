@@ -73,7 +73,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		/**
 		 * Schedule interval
 		 */
-		UPDATE_CHECK_INTERVAL(30 * 60 * 1000),
+		UPDATE_CHECK_INTERVAL(10 * 60 * 1000),
 
 		/**
 		 * ABMP update check URL format
@@ -99,7 +99,17 @@ public class FeatureUpgrade extends FeatureScheduler
 		/**
 		 * Milliseconds to wait after saving every downloaded buffer
 		 */
-		DOWNLOAD_DELAY(20);
+		DOWNLOAD_DELAY(20),
+
+		/**
+		 * Download software update automatically when new version is detected
+		 */
+		AUTO_DOWNLOAD(true);
+
+		Param(boolean value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.UPGRADE).put(name(), value);
+		}
 
 		Param(int value)
 		{
@@ -211,7 +221,7 @@ public class FeatureUpgrade extends FeatureScheduler
 
 		// check for new software update. This method will run only if the
 		// current status is IDLE or ERROR
-		checkForUpdateAndDownload();
+		checkForUpdate(getPrefs().getBool(Param.AUTO_DOWNLOAD));
 
 		// Schedule another update
 		scheduleDelayed(getPrefs().getInt(Param.UPDATE_CHECK_INTERVAL));
