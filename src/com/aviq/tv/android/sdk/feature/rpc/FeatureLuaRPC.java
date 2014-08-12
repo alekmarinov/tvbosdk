@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -44,6 +45,11 @@ public class FeatureLuaRPC extends FeatureRPC
 	public enum Param
 	{
 		/**
+		 * RPC host listen
+		 */
+		HOST("127.0.0.1"),
+
+		/**
 		 * RPC server port
 		 */
 		PORT(6768);
@@ -52,9 +58,15 @@ public class FeatureLuaRPC extends FeatureRPC
 		{
 			Environment.getInstance().getFeaturePrefs(FeatureName.Component.RPC).put(name(), value);
 		}
+
+		Param(String value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.RPC).put(name(), value);
+		}
 	}
 
 	private int _port;
+	private String _host;
 	private ServerThread _serverThread;
 
 	@Override
@@ -63,8 +75,15 @@ public class FeatureLuaRPC extends FeatureRPC
 		try
 		{
 			_port = getPrefs().getInt(Param.PORT);
+			_host = getPrefs().getString(Param.HOST);
 
-			ServerSocket serverSocket = new ServerSocket(_port);
+			ServerSocket serverSocket;
+			if (Environment.getInstance().isDevel())
+				// listen to any host if under development environment
+				serverSocket = new ServerSocket(_port);
+			else
+				// limit listening to parameterized host if under release environment
+				serverSocket = new ServerSocket(_port, 0, InetAddress.getByName(_host));
 			_serverThread = new ServerThread(this, serverSocket);
 			_serverThread.start();
 
@@ -85,7 +104,7 @@ public class FeatureLuaRPC extends FeatureRPC
 	 * @param inputStream
 	 */
 	@Override
-    public void execute(InputStream inputStream)
+	public void execute(InputStream inputStream)
 	{
 		try
 		{
