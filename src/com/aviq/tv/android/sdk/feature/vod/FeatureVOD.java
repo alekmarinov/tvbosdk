@@ -28,4 +28,6 @@ public abstract class FeatureVOD extends FeatureScheduler
 	{
 		return FeatureName.Scheduler.VOD;
 	}
+	
+	public abstract <T> T getVodData();
 }
