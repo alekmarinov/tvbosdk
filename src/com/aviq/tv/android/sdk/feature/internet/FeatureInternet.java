@@ -13,6 +13,7 @@ package com.aviq.tv.android.sdk.feature.internet;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -21,6 +22,7 @@ import java.util.regex.Pattern;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
@@ -179,6 +181,30 @@ public class FeatureInternet extends FeatureScheduler
 	}
 
 	/**
+	 * Get content from Url with custom headers
+	 *
+	 * @param url
+	 *            the url to get content from
+	 * @param headers a hashmap with custom headers
+	 * @param onResultReceived
+	 *            result callback interface
+	 */
+	public void getUrlContent(String url, final Map<String, String> headers, OnResultReceived onResultReceived)
+	{
+		Log.i(TAG, ".getUrlContent: " + url);
+		CheckResponse responseSuccess = new CheckResponse(url, onResultReceived);
+		CheckResponse responseError = new CheckResponse(url, onResultReceived);
+		StringRequest stringRequest = new StringRequest(url, responseSuccess, responseError)
+		{
+			  @Override
+		        public Map<String, String> getHeaders() throws AuthFailureError {
+		                return headers;
+		        }
+		};
+		Environment.getInstance().getRequestQueue().add(stringRequest);
+	}
+
+	/**
 	 * Get content from Url
 	 *
 	 * @param url
@@ -188,11 +214,7 @@ public class FeatureInternet extends FeatureScheduler
 	 */
 	public void getUrlContent(String url, OnResultReceived onResultReceived)
 	{
-		Log.i(TAG, ".getUrlContent: " + url);
-		CheckResponse responseSuccess = new CheckResponse(url, onResultReceived);
-		CheckResponse responseError = new CheckResponse(url, onResultReceived);
-		StringRequest stringRequest = new StringRequest(url, responseSuccess, responseError);
-		Environment.getInstance().getRequestQueue().add(stringRequest);
+		getUrlContent(url, new HashMap<String, String>(), onResultReceived);
 	}
 
 	/**
@@ -381,9 +403,17 @@ public class FeatureInternet extends FeatureScheduler
 		public void onErrorResponse(VolleyError error)
 		{
 			int statusCode = ResultCode.GENERAL_FAILURE;
+			StringBuffer headerInfo = new StringBuffer();
 			if (error.networkResponse != null)
+			{
 				statusCode = error.networkResponse.statusCode;
-			Log.e(TAG, _url + " -> " + statusCode + " ( " + error.getMessage() + ")");
+				for (String key: error.networkResponse.headers.keySet())
+				{
+					String value = error.networkResponse.headers.get(key);
+					headerInfo.append(key).append('=').append(value).append('\n');
+				}
+			}
+			Log.e(TAG, _url + " -> " + statusCode + " ( " + error.getMessage() + "), header = {" + headerInfo + "}");
 			Bundle resultData = new Bundle();
 			resultData.putString(ResultExtras.URL.name(), _url);
 			resultData.putString(ResultExtras.ERROR_MESSAGE.name(), error.getMessage());
