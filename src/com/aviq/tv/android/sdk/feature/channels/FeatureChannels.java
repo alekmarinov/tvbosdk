@@ -136,7 +136,10 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 
 		_featureTimeshift = (FeatureTimeshift) Environment.getInstance().getFeatureComponent(
 		        FeatureName.Component.TIMESHIFT);
-		_featureTimeshift.getEventMessenger().register(this, FeatureTimeshift.ON_SEEK);
+		if (_featureTimeshift != null)
+		{
+			_featureTimeshift.getEventMessenger().register(this, FeatureTimeshift.ON_SEEK);
+		}
 
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_RESUME);
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_PAUSE);
