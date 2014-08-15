@@ -22,6 +22,8 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import android.net.Uri;
+
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader.ImageContainer;
 import com.android.volley.toolbox.ImageLoader.ImageListener;
@@ -38,7 +40,7 @@ class VodXmlParser
 	private static final String TAG_VOD = "vod";
 	private static final String TAG_TITLE = "title";
 	private static final String TAG_POSTER = "poster";
-	private static final String TAG_SOURCES = "sources";
+	private static final String TAG_SOURCE = "source";
 	
 	private SAXParser _saxParser;
 	private XmlVodHandler _handler;
@@ -129,9 +131,9 @@ class VodXmlParser
 				// Fetch the image and cache it
 				fetchVodPoster(_currentVod.getTitle(), _currentVod.getPoster());
 			}
-			else if (TAG_SOURCES.equals(localName))
+			else if (TAG_SOURCE.equals(localName))
 			{
-				_currentVod.setSources(_currentValue.toString());
+				_currentVod.setSources(Uri.decode(_currentValue.toString()));
 			}
 		}
 		
