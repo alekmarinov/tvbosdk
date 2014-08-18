@@ -35,6 +35,7 @@ public class RecordingScheduler
 		_channelID = channelID;
 	}
 
+	// FIXME: It's more convenient and safe to use Calendar object instead string. Consider refactoring.
 	public String getStartTime()
 	{
 		return _startTime;
