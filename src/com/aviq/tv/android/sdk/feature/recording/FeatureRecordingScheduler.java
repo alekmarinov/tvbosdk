@@ -172,6 +172,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					{
 						RecordingScheduler rc = new RecordingScheduler(channelID, startTime, duration);
 						navMap.put(startTime, rc);
+						_dayOffsets.add(Calendars.getDayOffsetByDate(start));
 					}
 					else
 					{

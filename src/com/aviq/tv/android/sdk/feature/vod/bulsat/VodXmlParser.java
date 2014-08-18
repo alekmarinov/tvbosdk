@@ -33,18 +33,18 @@ import com.aviq.tv.android.sdk.core.Log;
 class VodXmlParser
 {
 	private static final String TAG = VodXmlParser.class.getSimpleName();
-	
+
 	private static final String TAG_VODLISTS = "vodlists";
-	
+
 	private static final String TAG_VODGROUP = "vodgroup";
 	private static final String TAG_VOD = "vod";
 	private static final String TAG_TITLE = "title";
 	private static final String TAG_POSTER = "poster";
 	private static final String TAG_SOURCE = "source";
-	
+
 	private SAXParser _saxParser;
 	private XmlVodHandler _handler;
-	
+
 	private Boolean _currentElement = false;
 	private StringBuffer _currentValue;
 	private VodGroup _currentVodGroup = null;
@@ -53,7 +53,7 @@ class VodXmlParser
 	private boolean _inVod = false;
 	private VodTree.Node<VodGroup> _currentNode;
 	private VodTree<VodGroup> _vodTree;
-	
+
 	public void initialize() throws ParserConfigurationException, SAXException
 	{
 		SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
@@ -61,15 +61,15 @@ class VodXmlParser
 		_handler = new XmlVodHandler();
 		_currentValue = new StringBuffer();
 	}
-	
+
 	public VodTree<VodGroup> fromXML(String inputString) throws SAXException, IOException
 	{
 		_currentNode = null;
 		_saxParser.parse(new InputSource(new StringReader(inputString)), _handler);
-		
+
 		return _handler.getResult();
 	}
-	
+
 	private class XmlVodHandler extends DefaultHandler
 	{
 		@Override
@@ -82,14 +82,14 @@ class VodXmlParser
 			{
 				VodGroup rootData = new VodGroup();
 				rootData.setTitle("VOD");
-				
+
 				_vodTree = new VodTree<VodGroup>(rootData);
 				_currentNode = _vodTree.getRoot();
 			}
 			else if (TAG_VODGROUP.equals(localName))
 			{
 				_inVodGroup = true;
-				
+
 				_currentVodGroup = new VodGroup();
 				_currentNode = _currentNode.add(_currentVodGroup);
 			}
@@ -100,7 +100,7 @@ class VodXmlParser
 				_currentVodGroup.addVod(_currentVod);
 			}
 		}
-		
+
 		@Override
 		public void endElement(String uri, String localName, String qName) throws SAXException
 		{
@@ -127,16 +127,17 @@ class VodXmlParser
 			else if (TAG_POSTER.equals(localName))
 			{
 				_currentVod.setPoster(_currentValue.toString());
-				
+
 				// Fetch the image and cache it
-				fetchVodPoster(_currentVod.getTitle(), _currentVod.getPoster());
+				// FIXME: Alek, this causes NullPtrException
+				// fetchVodPoster(_currentVod.getTitle(), _currentVod.getPoster());
 			}
 			else if (TAG_SOURCE.equals(localName))
 			{
 				_currentVod.setSources(Uri.decode(_currentValue.toString()));
 			}
 		}
-		
+
 		@Override
 		public void characters(char[] ch, int start, int length) throws SAXException
 		{
@@ -145,35 +146,35 @@ class VodXmlParser
 				_currentValue.append(ch, start, length);
 			}
 		}
-		
+
 		public VodTree<VodGroup> getResult()
 		{
 			return _vodTree;
 		}
 	}
-	
+
 	private void fetchVodPoster(final String title, final String posterUrl)
 	{
 		// Fetch the image and cache it
-		Environment.getInstance().runOnUiThread(new Runnable() 
+		Environment.getInstance().runOnUiThread(new Runnable()
 		{
 			@Override
 			public void run()
 			{
 				// ImageLoader must be invoked from the main thread
-				Environment.getInstance().getImageLoader().get(_currentVod.getPoster(), new ImageListener() 
+				Environment.getInstance().getImageLoader().get(_currentVod.getPoster(), new ImageListener()
 				{
 					@Override
-					public void onErrorResponse(VolleyError error) 
+					public void onErrorResponse(VolleyError error)
 					{
-						Log.e(TAG, "Could not download poster for VOD [" + title 
+						Log.e(TAG, "Could not download poster for VOD [" + title
 								+ "] from [" + posterUrl + "]", error);
 					}
 
 					@Override
-					public void onResponse(ImageContainer response, boolean isImmediate) 
+					public void onResponse(ImageContainer response, boolean isImmediate)
 					{
-						Log.v(TAG, "Successful download of poster for VOD [" + title 
+						Log.v(TAG, "Successful download of poster for VOD [" + title
 								+ "] from [" + posterUrl + "]");
 					}
 				});
