@@ -46,6 +46,7 @@ import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.eventcollector.FeatureEventCollector;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.network.FeatureNetwork;
+import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 
 /**
  * Handle unhandled exceptions.
@@ -110,7 +111,6 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 
 	public FeatureCrashLog() throws FeatureNotFoundException
 	{
-		require(FeatureName.Component.REGISTER);
 		require(FeatureName.Scheduler.INTERNET);
 		require(FeatureName.Component.EASTER_EGG);
 		require(FeatureEventCollector.class);
@@ -239,13 +239,19 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 			errorReporter.putCustomData(Key.EVENT, prepareEventObject());
 		}
 
-		errorReporter.putCustomData("BOX_ID", _feature.Component.REGISTER.getBoxId());
+		String boxId = "00:00:00:00:00:00";
+		FeatureRegister featureRegister = (FeatureRegister) Environment.getInstance().getFeatureComponent(FeatureName.Component.REGISTER);
+		if (featureRegister != null)
+		{
+			boxId = featureRegister.getBoxId();
+		}
+		errorReporter.putCustomData("BOX_ID", boxId);
 		errorReporter.putCustomData("BRAND", getBrand());
 		errorReporter.putCustomData("CUSTOMER", getCustomer());
 		errorReporter.putCustomData("SW_VERSION", Environment.getInstance().getBuildVersion());
 
 		// FIXME: Take from FeatureEthernet when implemented.
-		errorReporter.putCustomData("ETHERNET_MAC", _feature.Component.REGISTER.getBoxId());
+		errorReporter.putCustomData("ETHERNET_MAC", boxId);
 
 		String localIP = FeatureNetwork.getLocalIP();
 		if (localIP == null || localIP.trim().length() == 0)
@@ -267,7 +273,15 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		JSONObject device = new JSONObject();
 		try
 		{
-			device.accumulate(Key.MAC, _feature.Component.REGISTER.getBoxId());
+
+			String boxId = "00:00:00:00:00:00";
+			FeatureRegister featureRegister = (FeatureRegister) Environment.getInstance().getFeatureComponent(FeatureName.Component.REGISTER);
+			if (featureRegister != null)
+			{
+				boxId = featureRegister.getBoxId();
+			}
+
+			device.accumulate(Key.MAC, boxId);
 
 			String localIP = FeatureNetwork.getLocalIP();
 			if (localIP == null || localIP.trim().length() == 0)
