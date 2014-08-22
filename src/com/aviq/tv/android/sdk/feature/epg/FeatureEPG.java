@@ -143,7 +143,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		/**
 		 * Enable/disable local epg cache
 		 */
-		USE_LOCAL_CACHE(false);
+		USE_LOCAL_CACHE(true);
 
 		Param(boolean value)
 		{
