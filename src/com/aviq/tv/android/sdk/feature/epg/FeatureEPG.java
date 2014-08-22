@@ -138,7 +138,17 @@ public abstract class FeatureEPG extends FeatureScheduler
 		 * The number of days in future the program is allowed to be imported by
 		 * EPG
 		 */
-		PROGRAM_RANGE_MAX_DAYS(7);
+		PROGRAM_RANGE_MAX_DAYS(7),
+
+		/**
+		 * Enable/disable local epg cache
+		 */
+		USE_LOCAL_CACHE(false);
+
+		Param(boolean value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.EPG).put(name(), value);
+		}
 
 		Param(int value)
 		{
@@ -308,19 +318,26 @@ public abstract class FeatureEPG extends FeatureScheduler
 	protected abstract Provider getEPGProvider();
 
 	/**
-	 * Return stream url by channel channel, play position and duration in seconds
+	 * Return stream url by channel channel, play position and duration in
+	 * seconds
 	 *
-	 * @param channel the channel to obtain the stream from
-	 * @param playTime timestamp in seconds or 0 for live stream
-	 * @param playDuration stream duration in seconds
-	 * @param onStreamURLReceived callback interface where the stream will be returned
+	 * @param channel
+	 *            the channel to obtain the stream from
+	 * @param playTime
+	 *            timestamp in seconds or 0 for live stream
+	 * @param playDuration
+	 *            stream duration in seconds
+	 * @param onStreamURLReceived
+	 *            callback interface where the stream will be returned
 	 */
-	public abstract void getStreamUrl(Channel channel, long playTime, long playDuration, OnStreamURLReceived onStreamURLReceived);
+	public abstract void getStreamUrl(Channel channel, long playTime, long playDuration,
+	        OnStreamURLReceived onStreamURLReceived);
 
 	/**
 	 * Return stream buffer size by channel
 	 *
-	 * @param channel the channel to obtain stream buffer size from
+	 * @param channel
+	 *            the channel to obtain stream buffer size from
 	 * @return stream buffer size in seconds, or 0 if there is no buffer
 	 */
 	public abstract long getStreamBufferSize(Channel channel);
@@ -535,16 +552,18 @@ public abstract class FeatureEPG extends FeatureScheduler
 			_retrievedChannelPrograms = 0;
 			_retrievedChannelLogos = 0;
 
-			new Thread(new Runnable()
+			if (getPrefs().getBool(Param.USE_LOCAL_CACHE))
 			{
-				@Override
-				public void run()
+				new Thread(new Runnable()
 				{
-					cacheEpgData();
-				}
-			}).start();
-
-			getEventMessenger().trigger(ON_EPG_UPDATED);
+					@Override
+					public void run()
+					{
+						cacheEpgData();
+					}
+				}).start();
+				getEventMessenger().trigger(ON_EPG_UPDATED);
+			}
 
 			// _minDate and _maxDate will be null when the EPG
 			if (_minDate != null && _maxDate != null)
