@@ -579,7 +579,6 @@ public class StateManager
 
 							// notify state is shown
 							state.onShow(false);
-							state.getView().requestFocus();
 						}
 					});
 				}
