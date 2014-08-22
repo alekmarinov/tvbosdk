@@ -562,8 +562,8 @@ public abstract class FeatureEPG extends FeatureScheduler
 						cacheEpgData();
 					}
 				}).start();
-				getEventMessenger().trigger(ON_EPG_UPDATED);
 			}
+			getEventMessenger().trigger(ON_EPG_UPDATED);
 
 			// _minDate and _maxDate will be null when the EPG
 			if (_minDate != null && _maxDate != null)
