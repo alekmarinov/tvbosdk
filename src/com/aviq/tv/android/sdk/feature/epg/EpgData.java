@@ -158,7 +158,7 @@ public class EpgData implements IEpgDataProvider, Serializable
 	{
 		if (startTime.compareTo(endTime) > 0)
 		{
-			Log.w(TAG, ".getProgramList: startTime > endTime: " + startTime + " > " + endTime
+			Log.w(TAG, ".getProgramList: startTime > endTime: " + Calendars.makeString(startTime) + " > " + Calendars.makeString(endTime)
 			        + ", ignoring method call");
 			return new ArrayList<Program>();
 		}
@@ -168,7 +168,7 @@ public class EpgData implements IEpgDataProvider, Serializable
 		        .subMap(startTime, true, endTime, false) : null;
 		if (subMap == null)
 		{
-			Log.w(TAG, ".getProgramList: no EPG data for period: startTime = " + startTime + ", endTime " + endTime);
+			Log.w(TAG, ".getProgramList: no EPG data for period: startTime = " + Calendars.makeString(startTime) + ", endTime " + Calendars.makeString(endTime));
 			return new ArrayList<Program>();
 		}
 
