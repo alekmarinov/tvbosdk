@@ -389,9 +389,10 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 								        AppRestartReasonType.APP_KILLED.getSeverity());
 								getEventMessenger().trigger(ON_APP_STARTED, params);
 
-								ACRA.getErrorReporter().handleSilentException(
-								        new RuntimeException(
-								                "Generated exception due to unexpected application restart."));
+								ACRA.getErrorReporter()
+								        .handleSilentException(
+								                new RuntimeException(
+								                        "Generated exception due to unexpected application restart: signal 9 - app killed via shell command."));
 
 								foundMatch = true;
 								break;
@@ -407,9 +408,10 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 								        AppRestartReasonType.APP_KILLED.getSeverity());
 								getEventMessenger().trigger(ON_APP_STARTED, params);
 
-								ACRA.getErrorReporter().handleSilentException(
-								        new RuntimeException(
-								                "Generated exception due to unexpected application restart."));
+								ACRA.getErrorReporter()
+								        .handleSilentException(
+								                new RuntimeException(
+								                        "Generated exception due to unexpected application restart: signal 15 - VM terminated the application."));
 
 								foundMatch = true;
 								break;
@@ -425,9 +427,10 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 								        AppRestartReasonType.SIGNAL_CRASH.getSeverity());
 								getEventMessenger().trigger(ON_APP_STARTED, params);
 
-								ACRA.getErrorReporter().handleSilentException(
-								        new RuntimeException(
-								                "Generated exception due to unexpected application restart."));
+								ACRA.getErrorReporter()
+								        .handleSilentException(
+								                new RuntimeException(
+								                        "Generated exception due to unexpected application restart: signal 7 (data misalignment) or signal 11 (write to inaccessible memory)."));
 
 								foundMatch = true;
 								break;
@@ -442,9 +445,10 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 							        AppRestartReasonType.UNKNOWN.getSeverity());
 							getEventMessenger().trigger(ON_APP_STARTED, params);
 
-							ACRA.getErrorReporter().handleSilentException(
-							        new RuntimeException(
-							                "Generated exception due to unexpected application restart."));
+							ACRA.getErrorReporter()
+							        .handleSilentException(
+							                new RuntimeException(
+							                        "Generated exception due to unexpected application restart: unknown reason."));
 						}
 					}
 				}).start();
