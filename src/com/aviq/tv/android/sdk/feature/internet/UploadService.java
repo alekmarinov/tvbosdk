@@ -78,6 +78,8 @@ public class UploadService extends IntentService
 	@Override
 	protected void onHandleIntent(Intent intent)
 	{
+		Log.i(TAG, ".onHandleIntent");
+
 		_reportUrl = intent.getExtras().getString(EXTRA_REPORT_URL);
 		_reportUrlUser = intent.getExtras().getString(EXTRA_REPORT_URL_USER);
 		_reportUrlPass = intent.getExtras().getString(EXTRA_REPORT_URL_PASS);

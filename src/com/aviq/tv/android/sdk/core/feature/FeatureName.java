@@ -12,12 +12,12 @@ package com.aviq.tv.android.sdk.core.feature;
 
 /**
  * Enumerate all feature names
- *
  */
 public class FeatureName
 {
 	public static enum Component
 	{
+		// FIXME: Redesign special concept by using project specific feature space
 		SPECIAL,
 		RCU,
 		PLAYER,
@@ -43,11 +43,14 @@ public class FeatureName
 
 	public static enum Scheduler
 	{
+		// FIXME: Redesign special concept by using project specific feature space
 		SPECIAL,
 		INTERNET,
 		EPG,
+		// FIXME: Scheduler TICKER is project specific
 		TICKER,
 		UPGRADE,
+		// FIXME: Scheduler MENU is project specific
 		MENU,
 		EVENT_COLLECTOR,
 		VOD
@@ -55,6 +58,7 @@ public class FeatureName
 
 	public static enum State
 	{
+		// FIXME: Redesign special concept by using project specific feature space
 		SPECIAL,
 		MENU,
 		LOADING,
@@ -73,6 +77,7 @@ public class FeatureName
 		PROGRAMS,
 		LANGUAGE,
 		TELETEXT,
+		// FIXME: Duplicate feature name, use VOD instead
 		HOLLYSTAR,
 		HOLLYSTAR_VIDEO,
 		WEBTV,
@@ -83,9 +88,13 @@ public class FeatureName
 		RCU_WIZARD,
 		LANGUAGE_WIZARD,
 		NETWORK_WIZARD,
+		// FIXME: Deprecated
+		@Deprecated
 		BOOT_WIZARD,
 		STANDBY,
 		MEDIA,
-		NOTIFICATION
+		// FIXME: What is this feature?
+		NOTIFICATION,
+		RECORDING_SCHEDULER
 	}
 }

@@ -47,6 +47,9 @@ public class StateManager
 	private BaseState _messageState;
 	private ViewGroup _contentView;
 	private List<Integer> _overlayFragmentIds = new ArrayList<Integer>();
+	private FrameLayout _mainFrame;
+	private FrameLayout _overlayFrame;
+	private FrameLayout _messageFrame;
 	private RelativeLayout _overlayLayout;
 	private int _viewLayerId = 0x00af0001;
 	private boolean _inSetState = false;
@@ -189,30 +192,30 @@ public class StateManager
 		_activity.setContentView(contentView);
 
 		// Create frame layout for main state
-		View mainFrame = new FrameLayout(_activity);
+		_mainFrame = new FrameLayout(_activity);
 
 		// Create layout holder for arbitrary number of overlay states
 		_overlayLayout = new RelativeLayout(_activity);
 
 		// Create frame layout for one overlay state
-		View overlayFrame = new FrameLayout(_activity);
-		overlayFrame.setId(_viewLayerId++);
+		_overlayFrame = new FrameLayout(_activity);
+		_overlayFrame.setId(_viewLayerId++);
 		RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
 		        RelativeLayout.LayoutParams.MATCH_PARENT);
-		_overlayLayout.addView(overlayFrame, lp);
+		_overlayLayout.addView(_overlayFrame, lp);
 
 		// Create frame layout for message state
-		View messageFrame = new FrameLayout(_activity);
+		_messageFrame = new FrameLayout(_activity);
 
 		// add main state frame layout
-		addViewLayer(mainFrame, false);
+		addViewLayer(_mainFrame, false);
 		addViewLayer(_overlayLayout, false);
 		// addViewLayer(overlayFrame, false);
-		addViewLayer(messageFrame, false);
+		addViewLayer(_messageFrame, false);
 
-		_mainFragmentId = mainFrame.getId();
-		_overlayFragmentIds.add(overlayFrame.getId());
-		_messageFragmentId = messageFrame.getId();
+		_mainFragmentId = _mainFrame.getId();
+		_overlayFragmentIds.add(_overlayFrame.getId());
+		_messageFragmentId = _messageFrame.getId();
 
 		Log.i(TAG, "StateManager created");
 	}
@@ -515,9 +518,11 @@ public class StateManager
 					{
 						case MAIN:
 							fragmentId = _mainFragmentId;
+							_mainFrame.requestFocus();
 						break;
 						case OVERLAY:
 							int nOverlays = _activeStates.size() - 1;
+							_overlayFrame.requestFocus();
 							while (nOverlays > _overlayFragmentIds.size())
 							{
 								// add new overlay frame
@@ -527,11 +532,13 @@ public class StateManager
 								        RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
 								_overlayLayout.addView(overlayFrame, lp);
 								_overlayFragmentIds.add(overlayFrame.getId());
+								overlayFrame.requestFocus();
 							}
 							fragmentId = _overlayFragmentIds.get(_overlayFragmentIds.size() - 1);
 						break;
 						case MESSAGE:
 							fragmentId = _messageFragmentId;
+							_messageFrame.requestFocus();
 						break;
 					}
 					if (fragmentId == 0)

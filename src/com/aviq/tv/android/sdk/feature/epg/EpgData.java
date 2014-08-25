@@ -12,9 +12,11 @@ import java.util.NavigableMap;
 import android.graphics.Bitmap;
 import android.util.Log;
 
+import com.aviq.tv.android.sdk.utils.Calendars;
+
 public class EpgData implements IEpgDataProvider, Serializable
 {
-    private static final long serialVersionUID = -1450062885594378941L;
+	private static final long serialVersionUID = -1450062885594378941L;
 
 	private static final String TAG = EpgData.class.getSimpleName();
 
@@ -30,7 +32,8 @@ public class EpgData implements IEpgDataProvider, Serializable
 	private Map<String, List<Program>> _channelToProgramListMap = new LinkedHashMap<String, List<Program>>();
 
 	/**
-	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 * No-arg constructor added for Kryo serialization. Do not use for anything
+	 * else.
 	 */
 	public EpgData()
 	{
@@ -40,11 +43,11 @@ public class EpgData implements IEpgDataProvider, Serializable
 	{
 		// Keep first value far in the past
 		_maxEpgStopTime = Calendar.getInstance();
-		_maxEpgStopTime.set(Calendar.YEAR, _maxEpgStopTime.getMinimum(Calendar.YEAR));
+		_maxEpgStopTime.add(Calendar.YEAR, -1);
 
 		// Keep first value far in the future
 		_minEpgStartTime = Calendar.getInstance();
-		_minEpgStartTime.set(Calendar.YEAR, _minEpgStartTime.getMaximum(Calendar.YEAR));
+		_minEpgStartTime.add(Calendar.YEAR, 1);
 
 		_channelList = newChannelList;
 		_channelLogos = new Bitmap[_channelList.size()];
@@ -67,6 +70,8 @@ public class EpgData implements IEpgDataProvider, Serializable
 	synchronized boolean addProgramData(String channelId, NavigableMap<Calendar, Integer> newProgramNavigableMap,
 	        List<Program> newProgramList)
 	{
+		Log.d(TAG, ".addProgramData: channelId = " + channelId + ", newProgramList:size = " + newProgramList.size());
+
 		if (newProgramNavigableMap == null || newProgramNavigableMap.size() == 0)
 			return false;
 
@@ -89,6 +94,11 @@ public class EpgData implements IEpgDataProvider, Serializable
 
 		if (_maxEpgStopTime.before(lastProgram.getStopTime()))
 			_maxEpgStopTime = lastProgram.getStopTime();
+
+		Log.d(TAG,
+		        "_minEpgStartTime = " + Calendars.makeString(_minEpgStartTime) + ", _maxEpgStopTime = "
+		                + Calendars.makeString(_maxEpgStopTime) + ", firstProgram:getStartTime = "
+		                + Calendars.makeString(firstProgram.getStartTime()));
 
 		return true;
 	}
@@ -148,17 +158,17 @@ public class EpgData implements IEpgDataProvider, Serializable
 	{
 		if (startTime.compareTo(endTime) > 0)
 		{
-			Log.w(TAG, ".getProgramList: startTime > endTime: " + startTime + " > " + endTime
+			Log.w(TAG, ".getProgramList: startTime > endTime: " + Calendars.makeString(startTime) + " > " + Calendars.makeString(endTime)
 			        + ", ignoring method call");
 			return new ArrayList<Program>();
 		}
 
 		NavigableMap<Calendar, Integer> programMap = _channelToProgramNavigableMap.get(channelId);
-		NavigableMap<Calendar, Integer> subMap = programMap != null ? programMap.subMap(startTime, true, endTime, false)
-		        : null;
+		NavigableMap<Calendar, Integer> subMap = programMap != null ? programMap
+		        .subMap(startTime, true, endTime, false) : null;
 		if (subMap == null)
 		{
-			Log.w(TAG, ".getProgramList: no EPG data for period: startTime = " + startTime + ", endTime " + endTime);
+			Log.w(TAG, ".getProgramList: no EPG data for period: startTime = " + Calendars.makeString(startTime) + ", endTime " + Calendars.makeString(endTime));
 			return new ArrayList<Program>();
 		}
 
@@ -211,7 +221,7 @@ public class EpgData implements IEpgDataProvider, Serializable
 		if (programsList == null)
 			return null;
 		// FIXME: optimize this method
-		for (Program program: programsList)
+		for (Program program : programsList)
 		{
 			if (program.getId().equals(programId))
 				return program;

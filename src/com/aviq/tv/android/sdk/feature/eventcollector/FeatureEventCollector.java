@@ -143,7 +143,8 @@ public class FeatureEventCollector extends FeatureScheduler
 
 	public FeatureEventCollector() throws FeatureNotFoundException
 	{
-		require(FeatureName.Component.REGISTER);
+//		require(FeatureName.Component.REGISTER);
+//		require(FeatureName.Component.CRASHLOG);
 	}
 
 	@Override
