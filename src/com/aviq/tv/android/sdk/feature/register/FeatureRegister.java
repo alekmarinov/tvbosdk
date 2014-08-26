@@ -32,6 +32,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
+import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
@@ -110,9 +111,7 @@ public class FeatureRegister extends FeatureComponent
 			_userToken = createUserToken(_boxId);
 			_version = Environment.getInstance().getBuildVersion();
 
-			String registrationUrl = getRegistrationUrl(_brand, _boxId, _version);
-			_feature.Scheduler.INTERNET.startCheckUrl(registrationUrl);
-
+			startInternetChecks();
 			registerConnectivityActionReceiver();
 
 			super.initialize(onFeatureInitialized);
@@ -208,6 +207,23 @@ public class FeatureRegister extends FeatureComponent
 		return registrationUrl;
 	}
 
+	private void startInternetChecks()
+	{
+		String internetCheckUrl = _feature.Scheduler.INTERNET.getPrefs().getString(FeatureInternet.Param.CHECK_URL)
+		        .trim();
+		if (internetCheckUrl.length() == 0)
+		{
+			// Run Internet checks against the registration server
+			String registrationUrl = getRegistrationUrl(_brand, _boxId, _version);
+			_feature.Scheduler.INTERNET.startCheckUrl(registrationUrl);
+		}
+		else
+		{
+			// Run Internet checks against the server in the parameters
+			_feature.Scheduler.INTERNET.startCheckUrl(internetCheckUrl);
+		}
+	}
+
 	private void registerConnectivityActionReceiver()
 	{
 		IntentFilter filter = new IntentFilter();
@@ -223,8 +239,7 @@ public class FeatureRegister extends FeatureComponent
 
 				if (ConnectivityManager.CONNECTIVITY_ACTION.equals(action))
 				{
-					String registrationUrl = getRegistrationUrl(_brand, _boxId, _version);
-					_feature.Scheduler.INTERNET.startCheckUrl(registrationUrl);
+					startInternetChecks();
 				}
 
 				// boolean noConnectivity =
