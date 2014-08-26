@@ -245,6 +245,10 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		bundle.putInt(PARAM_EXTRA, extra);
 		Environment env = (Environment)_surfaceView.getContext();
 		env.getEventMessenger().trigger(ON_INFO, bundle);
+
+		if (getOnInfoListener() != null)
+			getOnInfoListener().onInfo(mp, what, extra);
+
 	    return false;
     }
 
@@ -258,13 +262,13 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 
 		String error;
 		if (what == MediaPlayer.MEDIA_ERROR_UNKNOWN && extra == 404)
-			error = "File not found (404)";
+			error = "File not found (404): what = " + what + ", extra = " + extra;
 		else if (what == MediaPlayer.MEDIA_ERROR_UNKNOWN)
-			error = "Error " + extra;
+			error = "Error: what = " + what + ", extra = " + extra;
 		else if (what == MediaPlayer.MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK)
-			error = "Video not suitable for streaming " + what;
+			error = "Video not suitable for streaming: what = " + what + ", extra = " + extra;
 		else
-			error = "Media player playback error " + what;
+			error = "Media player playback error: what = " + what + ", extra = " + extra;
 		Log.e(TAG, error);
 
 		Bundle bundle = new Bundle();
@@ -273,6 +277,10 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		bundle.putString(PARAM_ERROR, error);
 		Environment env = (Environment)_surfaceView.getContext();
 		env.getEventMessenger().trigger(ON_ERROR, bundle);
+
+		if (getOnErrorListener() != null)
+			getOnErrorListener().onError(mp, what, extra);
+
 	    return true;
     }
 
@@ -325,6 +333,9 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 
 		Environment env = (Environment)_surfaceView.getContext();
 		env.getEventMessenger().trigger(ON_PREPARED);
+
+		if (getOnPreparedListener() != null)
+			getOnPreparedListener().onPrepared(mp);
     }
 
 	@Override
@@ -339,6 +350,9 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 
 		Environment env = (Environment)_surfaceView.getContext();
 		env.getEventMessenger().trigger(ON_COMPLETION);
+
+		if (getOnCompletionListener() != null)
+			getOnCompletionListener().onCompletion(mp);
     }
 
 	@Override
@@ -348,6 +362,9 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		{
 			_currentBufferPercentage = percent;
 		}
+
+		if (getOnBufferingUpdateListener() != null)
+			getOnBufferingUpdateListener().onBufferingUpdate(mp, percent);
     }
 
 	@Override

@@ -59,6 +59,9 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 	public static final int ON_RUNTIME_EXCEPTION = EventMessenger.ID("ON_RUNTIME_EXCEPTION");
 	public static final int ON_APP_STARTED = EventMessenger.ID("ON_APP_STARTED");
 
+	public static final String EXTRA_RUNTIME_EXCEPTION_MESSAGE = "EXTRA_RUNTIME_EXCEPTION_MESSAGE";
+	public static final String EXTRA_RUNTIME_EXCEPTION_IS_SILENT = "EXTRA_RUNTIME_EXCEPTION_IS_SILENT";
+
 	/**
 	 * Add this to any calls to ACRA.handleSilentException when sending logcat
 	 * to the server.
@@ -178,7 +181,26 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		}
 		else if (ON_RUNTIME_EXCEPTION == msgId)
 		{
-			throw new RuntimeException("User-triggered runtime error.");
+			String msg = "User-triggered runtime error.";
+			boolean isSilent = false;
+
+			if (bundle != null)
+			{
+				if (bundle.containsKey(EXTRA_RUNTIME_EXCEPTION_MESSAGE))
+					msg = bundle.getString(EXTRA_RUNTIME_EXCEPTION_MESSAGE);
+
+				if (bundle.containsKey(EXTRA_RUNTIME_EXCEPTION_IS_SILENT))
+					isSilent = bundle.getBoolean(EXTRA_RUNTIME_EXCEPTION_IS_SILENT);
+			}
+
+			if (isSilent)
+			{
+				ACRA.getErrorReporter().handleSilentException(new RuntimeException(msg));
+			}
+			else
+			{
+				throw new RuntimeException(msg);
+			}
 		}
 	}
 
