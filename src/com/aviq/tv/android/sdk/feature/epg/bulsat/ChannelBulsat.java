@@ -26,17 +26,16 @@ public class ChannelBulsat extends Channel implements Serializable
 	private static final long serialVersionUID = -8718850662391176233L;
 	private int _channelNo;
 	private Genre _genre;
-	private int _ndvr;
 	private String _streamUrl;
 	private String _seekUrl;
-
+	
 	public static enum Genre
 	{
 		NATIONAL, SPORT, SCIENCE, MOVIE, MUSIC, KIDS, OTHER, EROTIC, RADIO, VOD
 	}
-
+	
 	private static Map<String, Genre> _genreMap = new HashMap<String, Genre>();
-
+	
 	static
 	{
 		_genreMap.put("Национални", Genre.NATIONAL);
@@ -49,7 +48,7 @@ public class ChannelBulsat extends Channel implements Serializable
 		_genreMap.put("XXX", Genre.EROTIC);
 		_genreMap.put("Радио", Genre.RADIO);
 	}
-
+	
 	/**
 	 * No-arg constructor added for Kryo serialization. Do not use for anything
 	 * else.
@@ -57,12 +56,12 @@ public class ChannelBulsat extends Channel implements Serializable
 	public ChannelBulsat()
 	{
 	}
-
+	
 	public ChannelBulsat(int index)
 	{
 		super(index);
 	}
-
+	
 	public static class MetaData extends Channel.MetaData
 	{
 		public int metaChannelChannelNo;
@@ -71,57 +70,47 @@ public class ChannelBulsat extends Channel implements Serializable
 		public int metaChannelStreamUrl;
 		public int metaChannelSeekUrl;
 	}
-
+	
 	public void setStreamUrl(String streamUrl)
 	{
 		_streamUrl = streamUrl;
 	}
-
+	
 	public String getStreamUrl()
 	{
 		return _streamUrl;
 	}
-
+	
 	public void setSeekUrl(String seekUrl)
 	{
 		_seekUrl = seekUrl;
 	}
-
+	
 	public String getSeekUrl()
 	{
 		return _seekUrl;
 	}
-
+	
 	public void setChannelNo(int channelNo)
 	{
 		_channelNo = channelNo;
 	}
-
+	
 	public int getChannelNo()
 	{
 		return _channelNo;
 	}
-
+	
 	public void setGenre(Genre genre)
 	{
 		_genre = genre;
 	}
-
+	
 	public Genre getGenre()
 	{
 		return _genre;
 	}
-
-	public void setNDVR(int ndvr)
-	{
-		_ndvr = ndvr;
-	}
-
-	public int getNDVR()
-	{
-		return _ndvr;
-	}
-
+	
 	@Override
 	public void setAttributes(Channel.MetaData channelMetaData, String[] attributes)
 	{
@@ -134,7 +123,7 @@ public class ChannelBulsat extends Channel implements Serializable
 		{
 			Log.e("ChannelBulsat", nfe.getMessage(), nfe);
 		}
-
+		
 		String genreTitle = attributes[channelBulsatMetaData.metaChannelGenre];
 		Genre genre = _genreMap.get(genreTitle);
 		if (genre == null)
@@ -143,7 +132,7 @@ public class ChannelBulsat extends Channel implements Serializable
 			genre = Genre.OTHER;
 		}
 		setGenre(genre);
-
+		
 		try
 		{
 			setNDVR(Integer.parseInt(attributes[channelBulsatMetaData.metaChannelNdvr]));
