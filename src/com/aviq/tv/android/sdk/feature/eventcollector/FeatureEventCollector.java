@@ -42,6 +42,7 @@ import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet.ResultExtras;
 import com.aviq.tv.android.sdk.feature.internet.UploadService;
 import com.aviq.tv.android.sdk.feature.network.FeatureEthernet;
+import com.aviq.tv.android.sdk.feature.network.FeatureWireless;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 import com.aviq.tv.android.sdk.feature.upgrade.FeatureUpgrade;
@@ -134,6 +135,7 @@ public class FeatureEventCollector extends FeatureScheduler
 	private FeatureInternet _featureInternet;
 	private FeatureRegister _featureRegister;
 	private FeatureEthernet _featureEthernet;
+	private FeatureWireless _featureWireless;
 	private FeatureCrashLog _featureCrashLog;
 	private List<Bundle> _eventList = Collections.synchronizedList(new ArrayList<Bundle>());
 	private SparseArray<Long> _antiFloodEvents = new SparseArray<Long>();
@@ -160,6 +162,7 @@ public class FeatureEventCollector extends FeatureScheduler
 			_featureInternet = (FeatureInternet) env.getFeatureScheduler(FeatureName.Scheduler.INTERNET);
 			_featureRegister = (FeatureRegister) env.getFeatureComponent(FeatureName.Component.REGISTER);
 			_featureEthernet = (FeatureEthernet) env.getFeatureComponent(FeatureName.Component.ETHERNET);
+			_featureWireless = (FeatureWireless) env.getFeatureComponent(FeatureName.Component.WIRELESS);
 
 			// Internet
 			_featureInternet = (FeatureInternet) env.getFeatureScheduler(FeatureName.Scheduler.INTERNET);
@@ -301,32 +304,96 @@ public class FeatureEventCollector extends FeatureScheduler
 	{
 		Bundle bundle = new Bundle();
 
+		// Add "event"
 		eventBundle.putString(Key.TIMESTAMP, getTimeAsISO(System.currentTimeMillis()));
 		bundle.putBundle(Key.EVENT, eventBundle);
 
+		// Add "device"
 		Bundle deviceBundle = new Bundle();
+		bundle.putBundle(Key.DEVICE, deviceBundle);
 
+		// Add "device.mac"
 		String mac = _featureRegister != null ? _featureRegister.getBoxId() : NO_VALUE;
 		if (mac == null || mac.trim().length() == 0)
 			mac = NO_VALUE;
 		deviceBundle.putString(Key.MAC, mac);
 
-		String localIP = _featureEthernet != null ? _featureEthernet.getNetworkConfig().Addr : NO_VALUE;
-		if (localIP == null || localIP.trim().length() == 0)
-			localIP = NO_VALUE;
-		deviceBundle.putString(Key.IP, localIP);
+		// Add "device.network"
+		Bundle networkBundle = new Bundle();
+		deviceBundle.putBundle(Key.NETWORK, networkBundle);
 
+		// Add "device.lan"
+		Bundle lanBundle = new Bundle();
+		networkBundle.putBundle(Key.LAN, lanBundle);
+
+		// Add "device.wan"
+		Bundle wanBundle = new Bundle();
+		networkBundle.putBundle(Key.WAN, wanBundle);
+
+		String localLanIP = NO_VALUE;
+		String networkInterface = NO_VALUE;
+		try
+		{
+			localLanIP = _featureEthernet != null ? _featureEthernet.getNetworkConfig().Addr : NO_VALUE;
+			if (localLanIP == null || localLanIP.trim().length() == 0)
+				localLanIP = NO_VALUE;
+		}
+		catch (Exception e)
+		{
+			Log.e(TAG,
+			        "Cannot retrieve Ethernet network configuration. Trying to retrieve WiFi network configuration.", e);
+			localLanIP = NO_VALUE;
+		}
+		finally
+		{
+			if (!localLanIP.equals(NO_VALUE))
+				networkInterface = "Ethernet";
+		}
+
+		// No Ethernet, try WiFi
+		if (localLanIP.equals(NO_VALUE))
+		{
+			try
+			{
+				localLanIP = _featureWireless != null ? _featureWireless.getNetworkConfig().Addr : NO_VALUE;
+				if (localLanIP == null || localLanIP.trim().length() == 0)
+					localLanIP = NO_VALUE;
+			}
+			catch (Exception e)
+			{
+				Log.e(TAG, "Cannot retrieve wireless network configuration.", e);
+				localLanIP = NO_VALUE;
+			}
+			finally
+			{
+				if (!localLanIP.equals(NO_VALUE))
+					networkInterface = "WiFi";
+			}
+		}
+
+		// Add "device.lan.ip"
+		lanBundle.putString(Key.IP, localLanIP);
+
+		// Add "device.ip"
+		deviceBundle.putString(Key.IP, localLanIP);
+
+		// Add "device.network.interface"
+		networkBundle.putString(Key.INTERFACE, networkInterface);
+
+		// Add "device.public_ip"
 		String publicIP = _featureInternet != null ? _featureInternet.getPublicIP() : NO_VALUE;
 		if (publicIP == null || publicIP.trim().length() == 0)
 			publicIP = NO_VALUE;
 		deviceBundle.putString(Key.PUBLIC_IP, publicIP);
 
-		bundle.putBundle(Key.DEVICE, deviceBundle);
+		// Add "device.wan.ip"
+		wanBundle.putString(Key.IP, publicIP);
 
 		Environment env = Environment.getInstance();
 		String version = env.getBuildVersion();
 		String build = version.substring(1 + version.lastIndexOf('.'));
 
+		// Add "device.sw"
 		Bundle swBundle = new Bundle();
 		swBundle.putString(Key.VERSION, version);
 		swBundle.putString(Key.KIND, env.getPrefs().getString(Environment.Param.RELEASE));
@@ -694,5 +761,9 @@ public class FeatureEventCollector extends FeatureScheduler
 		String CANCELLED = "cancelled";
 		String APP = "app";
 		String REASON = "reason";
+		String NETWORK = "network";
+		String LAN = "lan";
+		String WAN = "wan";
+		String INTERFACE = "interface";
 	}
 }

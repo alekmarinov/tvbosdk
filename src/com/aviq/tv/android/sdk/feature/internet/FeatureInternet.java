@@ -70,7 +70,10 @@ public class FeatureInternet extends FeatureScheduler
 		CHECK_ATTEMPT_DELAY(4000),
 
 		/** URL to check against for the box's public IP. */
-		PUBLIC_IP_CHECK_URL("http://checkip.dyndns.org");
+		PUBLIC_IP_CHECK_URL("http://checkip.dyndns.org"),
+
+		/** URL to be checked against for Internet connectivity */
+		CHECK_URL("");
 
 		Param(int value)
 		{
@@ -93,6 +96,21 @@ public class FeatureInternet extends FeatureScheduler
 
 	// FIXME: to be removed from this component
 	private double _averageDownloadRateMbPerSec;
+
+	@Override
+	public void initialize(OnFeatureInitialized onFeatureInitialized)
+	{
+		try
+		{
+			_checkUrl = getPrefs().getString(Param.CHECK_URL);
+			super.initialize(onFeatureInitialized);
+		}
+		catch (Exception e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
+		}
+	}
 
 	@Override
 	public void onSchedule(final OnFeatureInitialized onFeatureInitialized)

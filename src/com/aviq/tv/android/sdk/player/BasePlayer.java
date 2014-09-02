@@ -10,6 +10,11 @@
 
 package com.aviq.tv.android.sdk.player;
 
+import android.media.MediaPlayer.OnBufferingUpdateListener;
+import android.media.MediaPlayer.OnCompletionListener;
+import android.media.MediaPlayer.OnErrorListener;
+import android.media.MediaPlayer.OnInfoListener;
+import android.media.MediaPlayer.OnPreparedListener;
 import android.view.SurfaceView;
 import android.widget.MediaController;
 
@@ -29,6 +34,12 @@ public abstract class BasePlayer implements IPlayer
 	public static final String PARAM_WHAT = "what";
 	public static final String PARAM_EXTRA = "extra";
 	public static final String PARAM_ERROR = "error";
+
+	protected OnErrorListener _onErrorListener;
+	protected OnBufferingUpdateListener _onBufferingUpdateListener;
+	protected OnPreparedListener _onPreparedListener;
+	protected OnCompletionListener _onCompletionListener;
+	protected OnInfoListener _onInfoListener;
 
 	private boolean _isPause = false;
 
@@ -113,5 +124,55 @@ public abstract class BasePlayer implements IPlayer
 	public boolean isPaused()
 	{
 		return _isPause;
+	}
+
+	public void setOnErrorListener(OnErrorListener errorListener)
+	{
+		_onErrorListener = errorListener;
+	}
+
+	public OnErrorListener getOnErrorListener()
+	{
+		return _onErrorListener;
+	}
+
+	public void setOnBufferingUpdateListener(OnBufferingUpdateListener bufferingUpdateListener)
+	{
+		_onBufferingUpdateListener = bufferingUpdateListener;
+	}
+
+	public OnBufferingUpdateListener getOnBufferingUpdateListener()
+	{
+		return _onBufferingUpdateListener;
+	}
+
+	public void setOnPreparedListener(OnPreparedListener preparedListener)
+	{
+		_onPreparedListener = preparedListener;
+	}
+
+	public OnPreparedListener getOnPreparedListener()
+	{
+		return _onPreparedListener;
+	}
+
+	public void setOnCompletionListener(OnCompletionListener completionListener)
+	{
+		_onCompletionListener = completionListener;
+	}
+
+	public OnCompletionListener getOnCompletionListener()
+	{
+		return _onCompletionListener;
+	}
+
+	public void setOnInfoListener(OnInfoListener infoListener)
+	{
+		_onInfoListener = infoListener;
+	}
+
+	public OnInfoListener getOnInfoListener()
+	{
+		return _onInfoListener;
 	}
 }
