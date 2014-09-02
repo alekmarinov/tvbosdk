@@ -80,7 +80,7 @@ public class ProgramRayV extends Program implements Serializable
 				{
 					return getAttributeList("category");
 				}
-				case IMAGE_URL:
+				case IMAGE:
 				// not supported
 				break;
 				case SEASON:

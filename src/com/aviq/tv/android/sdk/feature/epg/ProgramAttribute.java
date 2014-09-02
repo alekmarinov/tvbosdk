@@ -19,7 +19,7 @@ public enum ProgramAttribute
 	SUMMARY,
 	DESCRIPTION,
 	GENRE,
-	IMAGE_URL,
+	IMAGE,
 	SEASON,
 	SERIE,
 	DATE,

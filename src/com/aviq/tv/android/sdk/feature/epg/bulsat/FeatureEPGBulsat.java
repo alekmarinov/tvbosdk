@@ -76,7 +76,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 	protected String getProgramsUrl(String channelId)
 	{
 		String url = super.getProgramsUrl(channelId);
-		return url + "?attr=description";
+		return url + "?attr=description,thumbnail";
 	}
 
 	@Override
@@ -115,6 +115,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 			String key = meta[j];
 			if ("description".equals(key))
 				bulsatMetaData.metaDescription = j;
+			else if ("thumbnail".equals(key))
+				bulsatMetaData.metaImage = j;
 		}
 	}
 

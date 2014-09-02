@@ -26,10 +26,12 @@ public class ProgramBulsat extends Program implements Serializable
     private static final long serialVersionUID = 5914858738230945780L;
 
 	private String _description;
+	private String _image;
 
 	public static class MetaData extends Program.MetaData
 	{
 		public int metaDescription;
+		public int metaImage;
 	}
 
 	/**
@@ -60,6 +62,7 @@ public class ProgramBulsat extends Program implements Serializable
     {
 		MetaData programBulsatMetaData = (MetaData)programMetaData;
 		_description = attributes[programBulsatMetaData.metaDescription];
+		_image = attributes[programBulsatMetaData.metaImage];
     }
 
 	@Override
@@ -69,6 +72,8 @@ public class ProgramBulsat extends Program implements Serializable
 		{
 			case DESCRIPTION:
 				return _description;
+			case IMAGE:
+				return _image;
 		}
 		return null;
 	}

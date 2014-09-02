@@ -94,7 +94,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		/**
 		 * EPG channel logo url format
 		 */
-		EPG_CHANNEL_LOGO_URL("${SERVER}/static/${PROVIDER}/${CHANNEL}/${LOGO}"),
+		EPG_CHANNEL_IMAGE_URL("${SERVER}/static/${PROVIDER}/${CHANNEL}/${IMAGE}"),
 
 		/**
 		 * EPG programs url format
@@ -343,6 +343,25 @@ public abstract class FeatureEPG extends FeatureScheduler
 	public abstract long getStreamBufferSize(Channel channel);
 
 	/**
+	 * Return URL to channel logo or program image
+	 *
+	 * @param channelId the channel id
+	 * @param imageName the name of the image
+	 * @return URL to the image
+	 */
+	public String getChannelImageUrl(String channelId, String imageName)
+	{
+		Bundle bundle = new Bundle();
+		bundle.putString("SERVER", _epgServer);
+		bundle.putString("CHANNEL", channelId);
+		bundle.putString("PROVIDER", _epgProvider);
+		bundle.putString("CHANNEL", channelId);
+		bundle.putString("IMAGE", imageName);
+
+		return getPrefs().getString(Param.EPG_CHANNEL_IMAGE_URL, bundle);
+	}
+
+	/**
 	 * @return create channel instance
 	 * @param index
 	 *            is the channel position in the global Channels list
@@ -363,7 +382,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		String channelId = channel.getChannelId();
 		String channelLogo = channel.getThumbnail();
 
-		String channelLogoUrl = getChannelsLogoUrl(channelId, channelLogo);
+		String channelLogoUrl = getChannelImageUrl(channelId, channelLogo);
 		Log.d(TAG, "Retrieving channel logo from " + channelLogoUrl);
 
 		LogoResponseCallback responseCallback = new LogoResponseCallback(channelId, channelIndex);
@@ -717,7 +736,6 @@ public abstract class FeatureEPG extends FeatureScheduler
 		long processEnd = System.nanoTime();
 		double processTime = (processEnd - processStart) / 1000000000.0;
 		Log.d(TAG, "Parsed " + data.length + " program items for channel " + channelId + " for " + processTime + " sec");
-
 	}
 
 	protected String getChannelsUrl()
@@ -728,18 +746,6 @@ public abstract class FeatureEPG extends FeatureScheduler
 		bundle.putString("PROVIDER", _epgProvider);
 
 		return getPrefs().getString(Param.EPG_CHANNELS_URL, bundle);
-	}
-
-	private String getChannelsLogoUrl(String channelId, String channelLogo)
-	{
-		Bundle bundle = new Bundle();
-		bundle.putString("SERVER", _epgServer);
-		bundle.putString("CHANNEL", channelId);
-		bundle.putString("PROVIDER", _epgProvider);
-		bundle.putString("CHANNEL", channelId);
-		bundle.putString("LOGO", channelLogo);
-
-		return getPrefs().getString(Param.EPG_CHANNEL_LOGO_URL, bundle);
 	}
 
 	protected String getProgramsUrl(String channelId)

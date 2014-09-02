@@ -78,7 +78,7 @@ public class ProgramZattoo extends Program
 				{
 					return getAttributeList("categories");
 				}
-				case IMAGE_URL:
+				case IMAGE:
 				// not supported
 				break;
 				case SEASON:
