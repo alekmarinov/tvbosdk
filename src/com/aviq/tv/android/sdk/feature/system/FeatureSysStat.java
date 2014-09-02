@@ -3,8 +3,6 @@ package com.aviq.tv.android.sdk.feature.system;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.concurrent.ExecutorService;
-
 import android.os.Bundle;
 import android.util.Log;
 
@@ -17,7 +15,10 @@ public class FeatureSysStat extends FeatureComponent
 {
 	
 	public static final String TAG = FeatureSysStat.class.getSimpleName();
-	public static final int ON_STATUS = EventMessenger.ID("ON_STATUS");
+	private static final int ON_STATUS = EventMessenger.ID("ON_STATUS");
+	private static final String STAT_CMD = "vmstat -d 1";
+	private static final String PARAM_CPU_IDLE = "cpuidle";
+	private static final String PARAM_FREE_MEM = "freemem";
 	
 	@Override
 	public Component getComponentName()
@@ -38,7 +39,7 @@ public class FeatureSysStat extends FeatureComponent
 				BufferedReader reader = null;
 				try
 				{
-					Process proc = Runtime.getRuntime().exec("vmstat -d 1");
+					Process proc = Runtime.getRuntime().exec(STAT_CMD);
 					reader = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 					String line = reader.readLine();
 					while (line != null)
@@ -48,8 +49,8 @@ public class FeatureSysStat extends FeatureComponent
 						long cpuidle = Long.parseLong(pieces[12]);
 						
 						Bundle bundle = new Bundle();
-						bundle.putLong("cpuidle", cpuidle);
-						bundle.putLong("freemem", freemem);
+						bundle.putLong(PARAM_CPU_IDLE, cpuidle);
+						bundle.putLong(PARAM_FREE_MEM, freemem);
 						getEventMessenger().trigger(ON_STATUS, bundle);
 						line = reader.readLine();
 					}
