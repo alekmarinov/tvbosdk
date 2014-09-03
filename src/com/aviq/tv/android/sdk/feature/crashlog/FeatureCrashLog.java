@@ -149,7 +149,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 	{
 		if (msgId == FeatureInternet.ON_CONNECTED)
 		{
-			String publicIP = _feature.Scheduler.INTERNET.getPublicIP();
+			String publicIP = bundle.getString(FeatureInternet.ResultExtras.PUBLIC_IP.name()); //  _feature.Scheduler.INTERNET.getPublicIP();
 			if (publicIP != null)
 			{
 				// Got the public IP, no need to check for it anymore
