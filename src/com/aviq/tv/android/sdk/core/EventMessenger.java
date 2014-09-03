@@ -30,13 +30,20 @@ public class EventMessenger extends Handler
 	 * Message ID identifying any message id
 	 */
 	public static final int ON_ANY = 0;
+	public static final int ON_ACTION = ID("ON_ACTION");
 
 	private SparseArray<List<EventReceiver>> _listners = new SparseArray<List<EventReceiver>>();
 	private List<RegisterCouple> _registerLater = new ArrayList<RegisterCouple>();
 	private List<RegisterCouple> _unregisterLater = new ArrayList<RegisterCouple>();
 	private boolean _inEventIteration = false;
 	private static List<String> _messageNames = new ArrayList<String>();
+	private static SparseArray<List<Action>> _eventHooks = new SparseArray<List<Action>>();
 	private String _tag;
+
+	public enum ActionExtras
+	{
+		NAME, PARAMS
+	}
 
 	public EventMessenger(String tag)
 	{
@@ -45,6 +52,8 @@ public class EventMessenger extends Handler
 
 	public static synchronized int ID(String msgName)
 	{
+		if (nameId(msgName) > 0)
+			throw new RuntimeException("Message name " + msgName + " is already registered");
 		_messageNames.add(msgName);
 		return _messageNames.size();
 	}
@@ -54,6 +63,12 @@ public class EventMessenger extends Handler
 		if (msgId > 0)
 			return _messageNames.get(msgId - 1);
 		return "ANY";
+	}
+
+	public static synchronized int nameId(String msg)
+	{
+		int index = _messageNames.indexOf(msg);
+		return index + 1;
 	}
 
 	/**
@@ -216,6 +231,20 @@ public class EventMessenger extends Handler
 				eventReceiver.onEvent(msg.what, (Bundle) msg.obj);
 			}
 		}
+
+		// handle event hooks
+		List<Action> actions = _eventHooks.get(msg.what);
+		if (actions != null)
+		{
+			for (Action action: actions)
+			{
+				Bundle bundle = new Bundle();
+				bundle.putString(ActionExtras.NAME.name(), action.getName());
+				bundle.putBundle(ActionExtras.PARAMS.name(), action.getParams());
+				action.getTarget().onEvent(ON_ACTION, bundle);
+			}
+		}
+
 		_inEventIteration = false;
 		for (RegisterCouple registerCouple : _registerLater)
 		{
@@ -227,6 +256,17 @@ public class EventMessenger extends Handler
 		}
 		_registerLater.clear();
 		_unregisterLater.clear();
+	}
+
+	public void addEventHook(int eventId, Action action)
+	{
+		List<Action> actions = _eventHooks.get(eventId);
+		if (actions == null)
+		{
+			actions = new ArrayList<Action>();
+			_eventHooks.put(eventId, actions);
+		}
+		actions.add(action);
 	}
 
 	private static class RegisterCouple

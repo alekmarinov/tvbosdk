@@ -18,7 +18,6 @@ import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
-import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.state.BaseState;
@@ -28,7 +27,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Defines the base class for state feature type
  */
-public abstract class FeatureState extends BaseState implements IFeature, EventReceiver
+public abstract class FeatureState extends BaseState implements IFeature
 {
 	public static final String TAG = FeatureState.class.getSimpleName();
 	public static final int ON_SHOW = EventMessenger.ID("ON_SHOW");

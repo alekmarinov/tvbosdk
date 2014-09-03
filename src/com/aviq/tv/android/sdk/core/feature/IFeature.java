@@ -11,12 +11,13 @@
 package com.aviq.tv.android.sdk.core.feature;
 
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Prefs;
 
 /**
  * Feature interface defining one functional element
  */
-public interface IFeature
+public interface IFeature extends EventReceiver
 {
 	enum Type
 	{
