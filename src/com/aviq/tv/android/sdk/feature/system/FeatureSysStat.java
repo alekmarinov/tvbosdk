@@ -3,10 +3,12 @@ package com.aviq.tv.android.sdk.feature.system;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+
 import android.os.Bundle;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
@@ -39,20 +41,29 @@ public class FeatureSysStat extends FeatureComponent
 				BufferedReader reader = null;
 				try
 				{
+					
 					Process proc = Runtime.getRuntime().exec(STAT_CMD);
 					reader = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 					String line = reader.readLine();
 					while (line != null)
 					{
-						String[] pieces = line.split(" ");
-						long freemem = Long.parseLong(pieces[2]);
-						long cpuidle = Long.parseLong(pieces[12]);
-						
-						Bundle bundle = new Bundle();
-						bundle.putLong(PARAM_CPU_IDLE, cpuidle);
-						bundle.putLong(PARAM_FREE_MEM, freemem);
-						getEventMessenger().trigger(ON_STATUS, bundle);
-						line = reader.readLine();
+						line = reader.readLine().trim();
+						String[] pieces = line.split("\\s+");
+						try					
+						{	
+							
+							long freemem = Long.parseLong(pieces[2]);
+							long cpuidle = Long.parseLong(pieces[12]);
+							Bundle bundle = new Bundle();							
+							bundle.putLong(PARAM_CPU_IDLE, cpuidle);
+							bundle.putLong(PARAM_FREE_MEM, freemem);
+							Log.i(TAG, " PARAM_CPU_IDLE = " + cpuidle + " PARAM_FREE_MEM = " + freemem);							
+							getEventMessenger().trigger(ON_STATUS, bundle);
+						}
+						catch (NumberFormatException exc)
+						{
+							
+						}
 					}
 				}
 				catch (IOException error)
@@ -73,7 +84,7 @@ public class FeatureSysStat extends FeatureComponent
 			}
 		}).start();
 		
-		FeatureSysStat.super.initialize(onFeatureInitialized);
+		super.initialize(onFeatureInitialized);
 		
 	}
 	
