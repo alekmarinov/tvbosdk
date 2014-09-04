@@ -14,9 +14,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import android.os.Bundle;
 import android.util.Log;
 
+import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
@@ -34,6 +34,37 @@ public class FeatureSysStat extends FeatureComponent
 	private static final String PARAM_CPU_IDLE = "cpuidle";
 	private static final String PARAM_FREE_MEM = "freemem";
 
+	// public interface
+
+	public enum Param
+	{
+		VMSTAT_DELAY(1),
+
+		STATUS_INTERVAL(60);
+
+		Param(boolean value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.State.STANDBY).put(name(), value);
+		}
+
+		Param(int value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.State.STANDBY).put(name(), value);
+		}
+
+		Param(String value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.State.STANDBY).put(name(), value);
+		}
+	}
+
+	private long freeMemTotal;
+	private long freeMemSamplesCount;
+	private long cpuIdleTotal;
+	private long cpuIdleSamplesCount;
+	private long cpuIdleMin;
+	private long cpuIdleMax;
+
 	@Override
 	public Component getComponentName()
 	{
@@ -43,6 +74,14 @@ public class FeatureSysStat extends FeatureComponent
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
+//		_features.Component.DEVICE.addStatusFieldGetter("channel", new IStatusFieldGetter
+//		{
+//			public String getStatusField()
+//			{
+//				return "btv";
+//			}
+//		});
+
 		Log.i(TAG, ".initialize");
 		new Thread(new Runnable()
 		{
@@ -68,11 +107,13 @@ public class FeatureSysStat extends FeatureComponent
 								{
 									long freemem = Long.parseLong(pieces[2]);
 									long cpuidle = Long.parseLong(pieces[12]);
-									Bundle bundle = new Bundle();
-									bundle.putLong(PARAM_CPU_IDLE, cpuidle);
-									bundle.putLong(PARAM_FREE_MEM, freemem);
-									Log.i(TAG, " PARAM_CPU_IDLE = " + cpuidle + " PARAM_FREE_MEM = " + freemem);
-									getEventMessenger().trigger(ON_STATUS, bundle);
+									// FIXME: calculate...
+
+//									Bundle bundle = new Bundle();
+//									bundle.putLong(PARAM_CPU_IDLE, cpuidle);
+//									bundle.putLong(PARAM_FREE_MEM, freemem);
+//									Log.i(TAG, " PARAM_CPU_IDLE = " + cpuidle + " PARAM_FREE_MEM = " + freemem);
+//									getEventMessenger().trigger(ON_STATUS, bundle);
 								}
 							}
 							catch (NumberFormatException e)
@@ -98,5 +139,17 @@ public class FeatureSysStat extends FeatureComponent
 		}).start();
 
 		super.initialize(onFeatureInitialized);
+	}
+
+	private void sendStatus()
+	{
+//		Bundle bundle = new Bundle();
+//		bundle.putLong(PARAM_CPU_IDLE_MEAN, cpuidlemean);
+//		bundle.putLong(PARAM_CPU_IDLE_MIN, cpuidlemin);
+//		bundle.putLong(PARAM_CPU_IDLE_MAX, cpuidlemax);
+//		bundle.putLong(PARAM_FREE_MEM, freemem);
+//		Log.i(TAG, " PARAM_CPU_IDLE = " + cpuidle + " PARAM_FREE_MEM = " + freemem);
+//		getEventMessenger().trigger(ON_STATUS, bundle);
+		// reset ...
 	}
 }
