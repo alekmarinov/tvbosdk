@@ -30,20 +30,14 @@ public class EventMessenger extends Handler
 	 * Message ID identifying any message id
 	 */
 	public static final int ON_ANY = 0;
-	public static final int ON_ACTION = ID("ON_ACTION");
 
 	private SparseArray<List<EventReceiver>> _listners = new SparseArray<List<EventReceiver>>();
 	private List<RegisterCouple> _registerLater = new ArrayList<RegisterCouple>();
 	private List<RegisterCouple> _unregisterLater = new ArrayList<RegisterCouple>();
 	private boolean _inEventIteration = false;
 	private static List<String> _messageNames = new ArrayList<String>();
-	private static SparseArray<List<Action>> _eventHooks = new SparseArray<List<Action>>();
+	private static SparseArray<List<TriggerRoute>> _eventHooks = new SparseArray<List<TriggerRoute>>();
 	private String _tag;
-
-	public enum ActionExtras
-	{
-		NAME, PARAMS
-	}
 
 	public EventMessenger(String tag)
 	{
@@ -144,7 +138,8 @@ public class EventMessenger extends Handler
 	}
 
 	/**
-	 * Triggers event message to listeners for this EventReceiver directly bypassing events looper
+	 * Triggers event message to listeners for this EventReceiver directly
+	 * bypassing events looper
 	 *
 	 * @param msgId
 	 *            the id of the message to trigger
@@ -171,7 +166,8 @@ public class EventMessenger extends Handler
 	}
 
 	/**
-	 * Triggers event message to listeners for this EventReceiver directly bypassing events looper
+	 * Triggers event message to listeners for this EventReceiver directly
+	 * bypassing events looper
 	 *
 	 * @param msgId
 	 *            the id of the message to trigger
@@ -211,7 +207,8 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId, Bundle bundle, long delayMs)
 	{
-		Log.v(_tag, ".trigger: " + idName(msgId) + " (" + msgId + ")" + TextUtils.implodeBundle(bundle) + " in " + delayMs + " ms");
+		Log.v(_tag, ".trigger: " + idName(msgId) + " (" + msgId + ")" + TextUtils.implodeBundle(bundle) + " in "
+		        + delayMs + " ms");
 		removeMessages(msgId);
 		sendMessageDelayed(obtainMessage(msgId, bundle), delayMs);
 	}
@@ -224,7 +221,8 @@ public class EventMessenger extends Handler
 		List<EventReceiver> msgListeners = _listners.get(msg.what);
 		if (msgListeners != null)
 		{
-			Log.v(_tag, ".handleMessage: notifying " + msgListeners.size() + " listeners on " + idName(msg.what) + " (" + msg.what + ")");
+			Log.v(_tag, ".handleMessage: notifying " + msgListeners.size() + " listeners on " + idName(msg.what) + " ("
+			        + msg.what + ")");
 			for (EventReceiver eventReceiver : msgListeners)
 			{
 				Log.d(_tag, eventReceiver + ".onEvent " + idName(msg.what));
@@ -233,15 +231,32 @@ public class EventMessenger extends Handler
 		}
 
 		// handle event hooks
-		List<Action> actions = _eventHooks.get(msg.what);
-		if (actions != null)
+		List<TriggerRoute> triggerRoutes = _eventHooks.get(msg.what);
+		if (triggerRoutes != null)
 		{
-			for (Action action: actions)
+			Bundle eventParams = (Bundle) msg.obj;
+			for (TriggerRoute triggerRoute : triggerRoutes)
 			{
+				// copy routed bundle and apply value substitution from source
+				// event bundle
 				Bundle bundle = new Bundle();
-				bundle.putString(ActionExtras.NAME.name(), action.getName());
-				bundle.putBundle(ActionExtras.PARAMS.name(), action.getParams());
-				action.getTarget().onEvent(ON_ACTION, bundle);
+				Bundle routedEventParams = triggerRoute.getParams();
+				if (routedEventParams != null)
+				{
+					for (String key : routedEventParams.keySet())
+					{
+						String value = routedEventParams.getString(key);
+						if (value.indexOf(0) == '{' && value.indexOf(value.length() - 1) == '}')
+						{
+							// fetch value from event params
+							String eventParamKey = value.substring(1, value.length() - 2);
+							value = eventParams.getString(eventParamKey);
+							// substitute value to the new bundle
+							bundle.putString(key, value);
+						}
+					}
+				}
+				triggerRoute.getTarget().getEventMessenger().trigger(triggerRoute.getEventId(), bundle);
 			}
 		}
 
@@ -258,12 +273,12 @@ public class EventMessenger extends Handler
 		_unregisterLater.clear();
 	}
 
-	public void addEventHook(int eventId, Action action)
+	public void addEventHook(int eventId, TriggerRoute action)
 	{
-		List<Action> actions = _eventHooks.get(eventId);
+		List<TriggerRoute> actions = _eventHooks.get(eventId);
 		if (actions == null)
 		{
-			actions = new ArrayList<Action>();
+			actions = new ArrayList<TriggerRoute>();
 			_eventHooks.put(eventId, actions);
 		}
 		actions.add(action);
@@ -288,7 +303,8 @@ public class EventMessenger extends Handler
 		private List<RegisterTouple> _registrations = new ArrayList<RegisterTouple>();
 
 		/**
-		 * Register EventReceiver to listen for messages on arbitrary EventMessenger with id msgId
+		 * Register EventReceiver to listen for messages on arbitrary
+		 * EventMessenger with id msgId
 		 *
 		 * @param EventReceiver
 		 *            to be registered
@@ -307,7 +323,7 @@ public class EventMessenger extends Handler
 		 */
 		public void cleanupRegistrations()
 		{
-			for (RegisterTouple registerTouple: _registrations)
+			for (RegisterTouple registerTouple : _registrations)
 			{
 				registerTouple.EventMessenger.unregister(registerTouple.Receiver, registerTouple.MsgId);
 			}
@@ -320,10 +336,10 @@ public class EventMessenger extends Handler
 			EventMessenger EventMessenger;
 
 			RegisterTouple(EventReceiver receiver, EventMessenger eventMessenger, int msgId)
-            {
-	            super(receiver, msgId);
-	            EventMessenger = eventMessenger;
-            }
+			{
+				super(receiver, msgId);
+				EventMessenger = eventMessenger;
+			}
 		}
 	}
 }
