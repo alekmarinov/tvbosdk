@@ -44,9 +44,9 @@ public class FeatureDevice extends FeatureComponent
 	private long _cpuIdleMin;
 	private long _cpuIdleMax;
 	private long _currentTimeInMs;
-	private final String _vmCmd;
+	private String _vmCmd;
 
-	private final HashMap<String, IStatusFieldGetter> _fieldGetters;
+	private final HashMap<String, IStatusFieldGetter> _fieldGetters = new HashMap<String, IStatusFieldGetter>();
 
 	public enum Param
 	{
@@ -96,15 +96,9 @@ public class FeatureDevice extends FeatureComponent
 		CUSTOMER, BRAND, BUILD, VERSION, MAC
 	}
 
-	FeatureDevice() throws FeatureNotFoundException
+	public FeatureDevice() throws FeatureNotFoundException
 	{
-		super();
 		require(Component.TIMEZONE);
-		_currentTimeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
-		_fieldGetters = new HashMap<String, IStatusFieldGetter>();
-		long vmStatDelay = getPrefs().getInt(Param.VMSTAT_DELAY);
-		_vmCmd = String.format(STAT_CMD, vmStatDelay);
-		Log.w(TAG, "VMCmd = " + _vmCmd);
 	}
 
 	@Override
@@ -116,8 +110,12 @@ public class FeatureDevice extends FeatureComponent
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-
 		Log.i(TAG, ".initialize");
+		_currentTimeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
+		long vmStatDelay = getPrefs().getInt(Param.VMSTAT_DELAY);
+		_vmCmd = String.format(STAT_CMD, vmStatDelay);
+		Log.w(TAG, "VMCmd = " + _vmCmd);
+
 		new Thread(new Runnable()
 		{
 			@Override

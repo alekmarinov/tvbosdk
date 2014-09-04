@@ -1,9 +1,16 @@
+/**
+ * Copyright (c) 2007-2014, AVIQ Bulgaria Ltd
+ *
+ * Project:     AVIQTVSDK
+ * Filename:    UploadService.java
+ * Author:      zheliazko
+ * Date:        3 Dec 2013
+ * Description: IntentService performing file upload
+ */
 package com.aviq.tv.android.sdk.feature.internet;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -18,7 +25,6 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.zip.GZIPOutputStream;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -41,73 +47,85 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.HttpParams;
 
-import android.app.IntentService;
-import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
+import android.os.ResultReceiver;
 import android.text.TextUtils;
 import android.util.Log;
 
-public class UploadService extends IntentService
+import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.service.BaseService;
+
+public class UploadService extends BaseService
 {
 	public static final String TAG = UploadService.class.getSimpleName();
 
-	public static final String EXTRA_REPORT_URL = "REPORT_URL";
-	public static final String EXTRA_REPORT_URL_USER = "REPORT_URL_USER";
-	public static final String EXTRA_REPORT_URL_PASS = "REPORT_URL_PASS";
-	public static final String EXTRA_REPORT_NAME = "REPORT_NAME";
-	public static final String EXTRA_REPORT_DATA = "REPORT_DATA";
-	public static final String EXTRA_CA_CERT_PATH = "CA_CERT_PATH";
+	/**
+	 * Service extras
+	 */
+	public enum Extras
+	{
+		URL, LOCAL_FILE, BUFFER, CA_CERT_PATH, USERNAME, PASSWORD
+	}
 
-	private String _reportUrl;
-	private String _reportUrlUser;
-	private String _reportUrlPass;
-	private String _reportName;
-	private String _reportData;
-	private String _caCertPath;
+	/**
+	 * Service result extras
+	 */
+	public enum ResultExtras
+	{
+		EXCEPTION
+	}
 
 	public UploadService()
 	{
 		super(TAG);
 	}
 
-	public UploadService(String name)
-	{
-		super(name);
-	}
-
 	@Override
-	protected void onHandleIntent(Intent intent)
+	protected void onHandleIntent(Intent intent, ResultReceiver resultReceiver)
 	{
-		Log.i(TAG, ".onHandleIntent");
+		String url = intent.getExtras().getString(Extras.URL.name());
+		String username = intent.getExtras().getString(Extras.USERNAME.name());
+		String password = intent.getExtras().getString(Extras.PASSWORD.name());
+		String localFile = intent.getExtras().getString(Extras.LOCAL_FILE.name());
+		String buffer = intent.getExtras().getString(Extras.BUFFER.name());
+		String caCertPath = intent.getExtras().getString(Extras.CA_CERT_PATH.name());
 
-		_reportUrl = intent.getExtras().getString(EXTRA_REPORT_URL);
-		_reportUrlUser = intent.getExtras().getString(EXTRA_REPORT_URL_USER);
-		_reportUrlPass = intent.getExtras().getString(EXTRA_REPORT_URL_PASS);
-		_reportName = intent.getExtras().getString(EXTRA_REPORT_NAME);
-		_reportData = intent.getExtras().getString(EXTRA_REPORT_DATA);
-		_caCertPath = intent.getExtras().getString(EXTRA_CA_CERT_PATH);
+		Log.i(TAG, ".onHandleIntent: url = " + url + ", caCertPath = " + caCertPath + ", username = " + username
+		        + ", password = " + password + ", localFile = " + localFile + ", buffer size = " + buffer.length());
 
-		sendData(_reportData, _reportName);
+		if (localFile != null)
+		{
+			if (!TextUtils.isEmpty(buffer))
+			{
+				Log.w(TAG, "Sending buffer with size " + buffer.length() + " ignored when uploading local file");
+			}
+			sendFile(resultReceiver, new File(localFile), url, caCertPath, username, password);
+		}
+		else
+		{
+			sendString(resultReceiver, buffer, url, caCertPath, username, password);
+		}
 	}
 
-	private HttpClient getHttpClient(HttpParams httpParams) throws CertificateException, IOException,
-	        KeyStoreException, NoSuchAlgorithmException, KeyManagementException, UnrecoverableKeyException
+	private HttpClient getHttpClient(HttpParams httpParams, String caCertPath) throws CertificateException,
+	        IOException, KeyStoreException, NoSuchAlgorithmException, KeyManagementException, UnrecoverableKeyException
 	{
 
-		if (TextUtils.isEmpty(_caCertPath))
+		if (TextUtils.isEmpty(caCertPath))
 		{
 			return new DefaultHttpClient(httpParams);
 		}
 
 		// Load CAs from an InputStream
 		CertificateFactory cf = CertificateFactory.getInstance("X.509");
-		InputStream is = getAssets().open(_caCertPath);
+		InputStream is = getAssets().open(caCertPath);
 		InputStream caInput = new BufferedInputStream(is);
 		Certificate ca;
 		try
 		{
 			ca = cf.generateCertificate(caInput);
-			System.out.println("ca=" + ((X509Certificate) ca).getSubjectDN());
+			Log.d(TAG, ".getHttpClient: ca = " + ((X509Certificate) ca).getSubjectDN());
 		}
 		finally
 		{
@@ -154,98 +172,59 @@ public class UploadService extends IntentService
 		return httpClient;
 	}
 
-	private void sendData(HttpEntity entity, String remoteFileName)
+	protected void sendData(ResultReceiver resultReceiver, HttpEntity entity, String url, String caCertPath,
+	        String username, String password)
 	{
+		Bundle resultData = new Bundle();
+		int statusCode = ResultCode.GENERAL_FAILURE;
 		try
 		{
-			HttpPut httpPut = new HttpPut(_reportUrl + remoteFileName);
+			HttpPut httpPut = new HttpPut(url);
 			httpPut.setEntity(entity);
 
-			HttpClient httpClient = getHttpClient(httpPut.getParams());
+			HttpClient httpClient = getHttpClient(httpPut.getParams(), caCertPath);
 
-			Credentials creds = new UsernamePasswordCredentials(_reportUrlUser, _reportUrlPass);
+			Credentials creds = new UsernamePasswordCredentials(username, password);
 			((AbstractHttpClient) httpClient).getCredentialsProvider().setCredentials(new AuthScope(null, -1), creds);
 
-			Log.i(TAG, ".sendData: _reportUrl = " + _reportUrl + remoteFileName + ", _reportUrlUser = "
-			        + _reportUrlUser + ", _reportUrlPass = " + _reportUrlPass);
 			HttpResponse response = httpClient.execute(httpPut);
+			statusCode = response.getStatusLine().getStatusCode();
+			if (statusCode == 200)
+				statusCode = ResultCode.OK;
 		}
 		catch (Exception e)
 		{
 			Log.e(TAG, "Cannot send event report.", e);
+			resultData.putSerializable(ResultExtras.EXCEPTION.name(), e);
 		}
+		if (resultReceiver != null)
+			resultReceiver.send(statusCode, resultData);
 	}
 
-	protected void sendData(File file)
+	protected void sendFile(ResultReceiver resultReceiver, File file, String url, String caCertPath, String username,
+	        String password)
 	{
 		HttpEntity entity = new FileEntity(file, "application/octet-stream");
-		sendData(entity, file.getName());
+
+		// append trailing slash if needed
+		if (url.charAt(url.length() - 1) != '/')
+			url = url + '/';
+		url += file.getName();
+		sendData(resultReceiver, entity, url, caCertPath, username, password);
 	}
 
-	protected void sendData(File file, String remoteFileName)
-	{
-		HttpEntity entity = new FileEntity(file, "application/octet-stream");
-		sendData(entity, remoteFileName);
-	}
-
-	protected void sendData(String data, String remoteFileName)
+	protected void sendString(ResultReceiver resultReceiver, String data, String url, String caCertPath,
+	        String username, String password)
 	{
 		HttpEntity entity;
 		try
 		{
 			entity = new StringEntity(data);
-			sendData(entity, remoteFileName);
+			sendData(resultReceiver, entity, url, caCertPath, username, password);
 		}
 		catch (UnsupportedEncodingException e)
 		{
 			Log.e(TAG, e.getMessage(), e);
 		}
-	}
-
-	protected boolean zip(String srcFileName, String destFileName)
-	{
-		FileInputStream in = null;
-		GZIPOutputStream gzipOut = null;
-		try
-		{
-			in = new FileInputStream(srcFileName);
-			gzipOut = new GZIPOutputStream(openFileOutput(destFileName, Context.MODE_PRIVATE));
-
-			byte[] buffer = new byte[8192];
-
-			int nread = in.read(buffer);
-			while (nread > 0)
-			{
-				gzipOut.write(buffer, 0, nread);
-				if (nread != buffer.length)
-					break;
-				nread = in.read(buffer);
-			}
-		}
-		catch (FileNotFoundException e)
-		{
-			Log.e(TAG, "Source file not found", e);
-			return false;
-		}
-		catch (IOException e)
-		{
-			Log.e(TAG, "IO error", e);
-			return false;
-		}
-		finally
-		{
-			try
-			{
-				if (in != null)
-					in.close();
-
-				if (gzipOut != null)
-					gzipOut.close();
-			}
-			catch (IOException e2)
-			{
-			}
-		}
-		return true;
 	}
 }

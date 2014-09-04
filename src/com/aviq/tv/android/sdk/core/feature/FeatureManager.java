@@ -1026,6 +1026,7 @@ public class FeatureManager
 				String className = attributes.getValue(ATTR_FEATURE_CLASS);
 				try
 				{
+					Log.d(TAG, "New feature instance of " + className);
 					_feature = (IFeature) Class.forName(className).newInstance();
 				}
 				catch (InstantiationException e)
