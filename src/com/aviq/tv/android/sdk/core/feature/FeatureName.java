@@ -32,7 +32,6 @@ public class FeatureName
 		WEBTV,
 		RPC,
 		SYSTEM,
-		SYSTEM_STAT,
 		EASTER_EGG,
 		CRASHLOG,
 		TIMEZONE,

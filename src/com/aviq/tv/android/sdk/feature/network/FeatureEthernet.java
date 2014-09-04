@@ -31,6 +31,8 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice.IStatusFieldGetter;
 import com.aviq.tv.android.sdk.utils.Files;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -80,21 +82,35 @@ public class FeatureEthernet extends FeatureNetwork
 		DNS2
 	}
 
-	private EthernetManagerWrapper _ethernetManagerWrapper;
+	private final EthernetManagerWrapper _ethernetManagerWrapper;
 
-	public FeatureEthernet()
+	public FeatureEthernet() throws FeatureNotFoundException
 	{
+		require(FeatureName.Component.DEVICE);
 		_ethernetManagerWrapper = new EthernetManagerWrapper();
+
 	}
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
+
+		_feature.Component.DEVICE.addStatusFieldGetter("network", new IStatusFieldGetter()
+		{
+			@Override
+			public String getStatusField()
+			{
+
+				return getNetwork();
+
+			}
+		});
 		if (!_ethernetManagerWrapper.isSupported())
 		{
 			// FIXME: Should this be fatal error?
-			// onFeatureInitialized.onInitialized(this, ResultCode.NOT_SUPPORTED);
+			// onFeatureInitialized.onInitialized(this,
+			// ResultCode.NOT_SUPPORTED);
 			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 		}
 		else
@@ -172,7 +188,7 @@ public class FeatureEthernet extends FeatureNetwork
 		private boolean _isSupported = false;
 
 		// EthernetManager references
-		private Object _ethernetManager;
+		private final Object _ethernetManager;
 		private Method _getDeviceNameList;
 		private Method _setEthEnabled;
 		private Method _getEthState;
@@ -467,5 +483,11 @@ public class FeatureEthernet extends FeatureNetwork
 			Log.e(TAG, e.getMessage(), e);
 		}
 		return dnsAddresses;
+	}
+
+	private String getNetwork()
+	{
+
+		return "ethernet";
 	}
 }
