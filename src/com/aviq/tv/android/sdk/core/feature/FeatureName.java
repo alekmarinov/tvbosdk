@@ -39,7 +39,8 @@ public class FeatureName
 		NETHOGS,
 		STANDBY,
 		DEBUG,
-		RECORDING_SCHEDULER
+		RECORDING_SCHEDULER,
+		DEVICE
 	}
 
 	public static enum Scheduler

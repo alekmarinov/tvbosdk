@@ -45,6 +45,7 @@ import com.aviq.tv.android.sdk.feature.network.FeatureEthernet;
 import com.aviq.tv.android.sdk.feature.network.FeatureWireless;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice;
 import com.aviq.tv.android.sdk.feature.upgrade.FeatureUpgrade;
 import com.aviq.tv.android.sdk.player.BasePlayer;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -64,6 +65,8 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 	
 	protected static final String REPORT_PREFIX = "aviqv2-";
 	protected static final String NO_VALUE = "n/a";
+	
+	protected FeatureDevice _featureDevice;
 	
 	public enum Param
 	{
@@ -86,7 +89,7 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 		EVENT_COLLECTOR_REPORT_NAME_TEMPLATE("${BUILD}-${CUSTOMER}-${BRAND}-${MAC}-${DATETIME}-${RANDOM}.eventlog"),
 		
 		/** Path to the CA certificate relative to the assets folder */
-		EVENT_COLLECTOR_CA_CERT_PATH(""),
+		EVENT_COLLECTOR_CA_CERT_PATH("");
 		
 		/**
 		 * Some events may come too fast, e.g. events from some progress
@@ -96,9 +99,7 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 		 * from the current or less, then ignore the current event.
 		 * Note: events must be explicitly marked in order for this value
 		 * to matter.
-		 */		
-		
-		EVENT_COLLECTOR_CUSTOMER(""), EVENT_COLLECTOR_BRAND("");
+		 */	
 		
 		Param(int value)
 		{
@@ -126,13 +127,20 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 	}
 	
 	private List<Bundle> _eventList = Collections.synchronizedList(new ArrayList<Bundle>());
-	protected SparseArray<Long> _antiFloodEvents = new SparseArray<Long>();
-	protected int _antiFloodInterval;
+	
+	public FeatureEventCollectorBase() throws FeatureNotFoundException
+	{
+		require(FeatureName.Component.DEVICE);
+	
+	}
 	
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		// Load required preferences		
+		Environment env = Environment.getInstance();
+		
+		_featureDevice = (FeatureDevice) env.getFeatureComponent(FeatureName.Component.DEVICE);
+		// Load required preferences
 		onSchedule(onFeatureInitialized);
 		super.initialize(onFeatureInitialized);
 		
@@ -175,9 +183,9 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 				Random rnd = new Random();
 				int randomNum = rnd.nextInt(1000);
 				
-				String customer = getPrefs().getString(Param.EVENT_COLLECTOR_CUSTOMER);
-				String release = env.getPrefs().getString(Environment.Param.RELEASE);
-				String brand = getPrefs().getString(Param.EVENT_COLLECTOR_BRAND);
+				String customer = _featureDevice.getCustomer();
+				String release = _featureDevice.getKind();
+				String brand = _featureDevice.getBrand();
 				String mac = _feature.Component.REGISTER != null ? _feature.Component.REGISTER.getBoxId() : "null";
 				
 				String reportName = REPORT_PREFIX + getPrefs().getString(Param.EVENT_COLLECTOR_REPORT_NAME_TEMPLATE);
@@ -208,26 +216,10 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 		}
 	}
 	
-	protected Bundle prepareEventObject(Bundle eventBundle)
-	{
-		return null;
-	}
-	
 	protected void addEvent(Bundle eventParams)
 	{
-		Bundle event = prepareEventObject(eventParams);
-		_eventList.add(event);
-	}
-
-	
-	protected String getCustomer()
-	{
-		return getPrefs().getString(Param.EVENT_COLLECTOR_CUSTOMER);
-	}
-	
-	protected String getBrand()
-	{
-		return getPrefs().getString(Param.EVENT_COLLECTOR_BRAND);
+		
+		_eventList.add(eventParams);
 	}
 	
 	public static String getTimeAsISO(long timestampMillis)
