@@ -12,9 +12,6 @@ package com.aviq.tv.android.sdk.feature.eventcollector;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,87 +25,51 @@ import android.util.JsonWriter;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
 import com.aviq.tv.android.sdk.feature.internet.UploadService;
-import com.aviq.tv.android.sdk.feature.system.FeatureDevice;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
 
 /**
  * Scheduler feature collecting events and sending them to a remote location.
- * Requirements to use it:
- * 1. Project has to include the relative path to the root certificate on the
- * server if it is a self-generated certificate.
- * 2. Project's AndroidManifest.xml has to reference FeatureInternet's
- * UploadService class.
  */
 @PriorityFeature
 public class FeatureEventCollectorBase extends FeatureScheduler
 {
 	public static final String TAG = FeatureEventCollectorBase.class.getSimpleName();
 
-	protected static final String REPORT_PREFIX = "aviqv2-";
-	protected static final String NO_VALUE = "n/a";
-
-	protected FeatureDevice _featureDevice;
-
 	public enum Param
 	{
-		/** Initial delay */
-		EVENT_COLLECTOR_INITIAL_DELAY(1 * 1000),
-
 		/** Schedule interval. */
-		EVENT_COLLECTOR_SCHEDULE_INTERVAL(4 * 1000),
+		SEND_EVENTS_INTERVAL(60 * 1000),
 
 		/** Report URL */
-		EVENT_COLLECTOR_REPORT_URL("https://services.aviq.com:30227/upload/logs/"),
+		EVENTS_SERVER_URL("https://services.aviq.com:30227/upload/logs/"),
 
 		/** Username for report URL */
-		EVENT_COLLECTOR_REPORT_URL_USERNAME(""),
+		EVENTS_SERVER_USERNAME(""),
 
 		/** Password for report URL */
-		EVENT_COLLECTOR_REPORT_URL_PASSWORD(""),
+		EVENTS_SERVER_PASSWORD(""),
 
-		/** Report name template based on String.format parameters */
-		EVENT_COLLECTOR_REPORT_NAME_TEMPLATE("${BUILD}-${CUSTOMER}-${BRAND}-${MAC}-${DATETIME}-${RANDOM}.eventlog"),
+		/** Report name template */
+		REPORT_FILENAME_TEMPLATE("${BUILD}-${CUSTOMER}-${BRAND}-${MAC}-${DATETIME}-${RANDOM}.eventlog"),
 
 		/** Path to the CA certificate relative to the assets folder */
-		EVENT_COLLECTOR_CA_CERT_PATH("");
-
-		/**
-		 * Some events may come too fast, e.g. events from some progress
-		 * tracking like a download. Such events are marked in the code.
-		 * Setting this value will effectively ignore events of the same
-		 * type that come too often, i.e. if the last event was X milliseconds
-		 * from the current or less, then ignore the current event.
-		 * Note: events must be explicitly marked in order for this value
-		 * to matter.
-		 */
+		EVENTS_SERVER_CA_CERT_PATH("");
 
 		Param(int value)
 		{
-			try
-			{
-				Environment.getInstance().getFeatureManager().getFeature(FeatureEventCollectorBase.class).getPrefs()
-				        .put(name(), value);
-			}
-			catch (FeatureNotFoundException e)
-			{
-			}
+			Environment.getInstance().getFeature(FeatureEventCollectorBase.class).getPrefs().put(name(), value);
 		}
 
 		Param(String value)
 		{
-			try
-			{
-				Environment.getInstance().getFeatureManager().getFeature(FeatureEventCollectorBase.class).getPrefs()
-				        .put(name(), value);
-			}
-			catch (FeatureNotFoundException e)
-			{
-			}
+			Environment.getInstance().getFeature(FeatureEventCollectorBase.class).getPrefs().put(name(), value);
 		}
 	}
 
@@ -117,36 +78,23 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 	public FeatureEventCollectorBase() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.DEVICE);
-
 	}
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		Environment env = Environment.getInstance();
-
-		_featureDevice = (FeatureDevice) env.getFeatureComponent(FeatureName.Component.DEVICE);
-		// Load required preferences
 		onSchedule(onFeatureInitialized);
-		super.initialize(onFeatureInitialized);
-
 	}
 
 	@Override
 	protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
 	{
+		// process events
 		Log.i(TAG, "Processing collected events.");
+		processCollectedEvents();
 
-		// FIXME Consider converting this Scheduler to a Component. Currently
-		// events are send when FeatureInternet sends "ON_CONNECTED" events.
-		// However, if converted to a Component, it won't be possible to control
-		// the sending of events.
-		// processCollectedEvents();
-
-		// Schedule another pass
-		int delay = getPrefs().has(Param.EVENT_COLLECTOR_SCHEDULE_INTERVAL) ? getPrefs().getInt(
-		        Param.EVENT_COLLECTOR_SCHEDULE_INTERVAL) : 0;
-		scheduleDelayed(delay);
+		scheduleDelayed(getPrefs().getInt(Param.SEND_EVENTS_INTERVAL));
+		onFeatureInitialized.onInitialized(this, ResultCode.OK);
 	}
 
 	protected void processCollectedEvents()
@@ -154,7 +102,6 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 		try
 		{
 			Log.v(TAG, "Process " + _eventList.size() + " events.");
-
 			String data = parseEventListToString(_eventList);
 			_eventList.clear();
 
@@ -162,35 +109,16 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 			{
 				Environment env = Environment.getInstance();
 
-				Time time = new Time();
-				time.set(System.currentTimeMillis());
-				String eventDateTime = time.format("%Y.%m.%d_%H.%M.%S");
-
-				Random rnd = new Random();
-				int randomNum = rnd.nextInt(1000);
-
-				String customer = _featureDevice.getCustomer();
-				String release = _featureDevice.getBuildKind();
-				String brand = _featureDevice.getBrand();
-				String mac = _feature.Component.REGISTER != null ? _feature.Component.REGISTER.getBoxId() : "null";
-
-				String reportName = REPORT_PREFIX + getPrefs().getString(Param.EVENT_COLLECTOR_REPORT_NAME_TEMPLATE);
-				reportName = reportName.replace("${BUILD}", release);
-				reportName = reportName.replace("${CUSTOMER}", customer);
-				reportName = reportName.replace("${BRAND}", brand);
-				reportName = reportName.replace("${MAC}", mac);
-				reportName = reportName.replace("${DATETIME}", eventDateTime);
-				reportName = reportName.replace("${RANDOM}", "" + randomNum);
-
+				String reportName = getReportName();
 				Intent uploadService = new Intent(env, UploadService.class);
 				uploadService.putExtra(UploadService.EXTRA_CA_CERT_PATH,
-				        getPrefs().getString(Param.EVENT_COLLECTOR_CA_CERT_PATH));
+				        getPrefs().getString(Param.EVENTS_SERVER_CA_CERT_PATH));
 				uploadService.putExtra(UploadService.EXTRA_REPORT_URL,
-				        getPrefs().getString(Param.EVENT_COLLECTOR_REPORT_URL));
+				        getPrefs().getString(Param.EVENTS_SERVER_URL));
 				uploadService.putExtra(UploadService.EXTRA_REPORT_URL_USER,
-				        getPrefs().getString(Param.EVENT_COLLECTOR_REPORT_URL_USERNAME));
+				        getPrefs().getString(Param.EVENTS_SERVER_USERNAME));
 				uploadService.putExtra(UploadService.EXTRA_REPORT_URL_PASS,
-				        getPrefs().getString(Param.EVENT_COLLECTOR_REPORT_URL_PASSWORD));
+				        getPrefs().getString(Param.EVENTS_SERVER_PASSWORD));
 				uploadService.putExtra(UploadService.EXTRA_REPORT_NAME, reportName);
 				uploadService.putExtra(UploadService.EXTRA_REPORT_DATA, data);
 				env.startService(uploadService);
@@ -202,26 +130,29 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 		}
 	}
 
+	protected String getReportName()
+	{
+		Time time = new Time();
+		time.set(System.currentTimeMillis());
+		String eventDateTime = time.format("%Y.%m.%d_%H.%M.%S");
+
+		Random rnd = new Random();
+		int randomNum = rnd.nextInt(1000);
+
+		Bundle substitute = new Bundle();
+
+		substitute.putString("BUILD", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.BUILD));
+		substitute.putString("CUSTOMER", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.CUSTOMER));
+		substitute.putString("BRAND", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.BRAND));
+		substitute.putString("MAC", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC));
+		substitute.putString("DATETIME", eventDateTime);
+		substitute.putString("RANDOM", String.valueOf(randomNum));
+		return getPrefs().getString(Param.REPORT_FILENAME_TEMPLATE, substitute);
+	}
+
 	protected void addEvent(Bundle eventParams)
 	{
-
 		_eventList.add(eventParams);
-	}
-
-	public static String getTimeAsISO(long timestampMillis)
-	{
-		// TimeZone tz = TimeZone.getTimeZone("UTC");
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ");
-		// df.setTimeZone(tz);
-		String timeAsISO = df.format(timestampMillis);
-		return timeAsISO;
-	}
-
-	public static long getTimeAsMillis(String isoDateTime) throws ParseException
-	{
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ");
-		long millis = df.parse(isoDateTime).getTime();
-		return millis;
 	}
 
 	protected void writeEvent(JsonWriter writer, Bundle event) throws IOException
@@ -286,7 +217,6 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 				Log.w(TAG, "Unknown: " + o + " for type: " + o.getClass() + ", toString() = " + o.toString());
 			}
 		}
-
 		writer.endObject();
 	}
 
@@ -310,68 +240,9 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 		return data.toString();
 	}
 
-	public static interface Key
-	{
-		String DEVICE = "device";
-		String MAC = "mac";
-		String IP = "ip";
-		String PUBLIC_IP = "public_ip";
-		String SW = "sw";
-		String VERSION = "version";
-		String BUILD = "build";
-		String PREV_VERSION = "prev_version";
-		String KIND = "kind";
-		String CUSTOMER = "customer";
-		String BRAND = "brand";
-		String EVENT = "event";
-		String TIMESTAMP = "timestamp";
-		String SOURCE = "source";
-		String ITEM = "item";
-		String NAME = "name";
-		String URL = "url";
-		String CODE = "code";
-		String MESSAGE = "message";
-		String ERROR = "error";
-		String UPGRADE = "upgrade";
-		String BITRATE = "bitrate";
-		String DURATION = "duration";
-		String CONTEXT = "context";
-		String SEVERITY = "severity";
-		String FROM_CHANNEL = "from_channel";
-		String TO_CHANNEL = "to_channel";
-		String CONNECTION = "connection";
-		String INTERVAL = "interval";
-		String AVG = "avg";
-		String MIN = "min";
-		String MAX = "max";
-		String DOWNLINK = "downlink";
-		String UPLINK = "uplink";
-		String PROGRESS = "progress";
-		String SIZE = "size";
-		String RECEIVED = "received";
-		String HOST = "host";
-		String DOWNLOAD = "download";
-		String TEXT = "text";
-		String MODE = "mode";
-		String BACKEND = "backend";
-		String FREE_SPACE = "free_space";
-		String REQUIRED_SPACE = "required_space";
-		String CANCELLED = "cancelled";
-		String APP = "app";
-		String REASON = "reason";
-		String NETWORK = "network";
-		String LAN = "lan";
-		String WAN = "wan";
-		String INTERFACE = "interface";
-		String ISP = "isp";
-		String COUNTRY = "country";
-		String CITY = "city";
-	}
-
 	@Override
 	public Scheduler getSchedulerName()
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return FeatureName.Scheduler.EVENT_COLLECTOR;
 	}
 }

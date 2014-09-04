@@ -30,6 +30,7 @@ import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.feature.recording.FeatureRecordingScheduler;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 import com.aviq.tv.android.sdk.feature.rpc.FeatureRPC;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice;
 import com.aviq.tv.android.sdk.feature.system.FeatureNethogs;
 import com.aviq.tv.android.sdk.feature.system.FeatureStandBy;
 import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
@@ -71,6 +72,7 @@ public class Features
 		public FeatureNethogs NETHOGS;
 		public FeatureStandBy STANDBY;
 		public FeatureRecordingScheduler RECORDING_SCHEDULER;
+		public FeatureDevice DEVICE;
 	}
 
 	public class Schedulers

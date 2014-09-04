@@ -30,6 +30,7 @@ import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG.OnStreamURLReceived;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice.IStatusFieldGetter;
 
 /**
  * Component feature managing favorite channels
@@ -107,6 +108,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		require(FeatureName.Scheduler.EPG);
 		require(FeatureName.Component.LANGUAGE);
 		require(FeatureName.Component.PLAYER);
+		require(FeatureName.Component.DEVICE);
 	}
 
 	@Override
@@ -148,6 +150,17 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		{
 			playLast();
 		}
+
+		_feature.Component.DEVICE.addStatusFieldGetter("channel", new IStatusFieldGetter()
+		{
+			@Override
+            public String getStatusField()
+			{
+				//FIX ME. This value is not always currently playing channel
+				return getLastChannelId();
+
+			}
+		});
 		onFeatureInitialized.onInitialized(this, ResultCode.OK);
 	}
 

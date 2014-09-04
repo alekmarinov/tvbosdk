@@ -491,8 +491,7 @@ public class Environment extends Activity
 	/**
 	 * Parses the version string from the manifest.
 	 *
-	 * @return
-	 * @throws NameNotFoundException
+	 * @return application version
 	 */
 	public String getBuildVersion()
 	{

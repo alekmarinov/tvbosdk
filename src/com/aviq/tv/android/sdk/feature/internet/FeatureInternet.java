@@ -292,6 +292,21 @@ public class FeatureInternet extends FeatureScheduler
 		serviceController.startService(DownloadService.class, params).then(onResultReceived);
 	}
 
+	/**
+	 * Upload file
+	 *
+	 * @param params
+	 *            Bundle with various upload options. See
+	 *            UploadService.Extras
+	 * @param onResultReceived
+	 */
+	public void uploadFile(Bundle params, final OnResultReceived onResultReceived)
+	{
+		Log.i(TAG, ".uploadFile: " + TextUtils.implodeBundle(params));
+		ServiceController serviceController = Environment.getInstance().getServiceController();
+		serviceController.startService(UploadService.class, params).then(onResultReceived);
+	}
+
 	public void stopFileDownload()
 	{
 		Log.i(TAG, ".stopFileDownload");
