@@ -9,7 +9,8 @@
  */
 package com.aviq.tv.android.sdk.feature.system;
 
-import android.content.pm.PackageManager.NameNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
@@ -25,9 +26,25 @@ public class FeatureDevice extends FeatureComponent
 
 	public enum Param
 	{
+		/**
+		 * Box customer
+		 */
 		CUSTOMER(""),
-		BRAND(""),
-		RELEASE("devel");
+
+		/**
+		 * Application brand name
+		 */
+		BRAND("generic"),
+
+		/**
+		 * Release or development build kind
+		 */
+		BUILD("devel"),
+
+		/**
+		 * Box mac address
+		 */
+		MAC("00:00:00:00:00:00");
 
 		Param(int value)
 		{
@@ -40,6 +57,13 @@ public class FeatureDevice extends FeatureComponent
 		}
 	}
 
+	public enum DeviceAttribute
+	{
+		CUSTOMER, BRAND, BUILD, MAC
+	}
+
+	private List<String> _deviceAttributeNames = new ArrayList<String>();
+
 	@Override
 	public Component getComponentName()
 	{
@@ -49,8 +73,7 @@ public class FeatureDevice extends FeatureComponent
 	/**
 	 * Parses the version string from the manifest.
 	 *
-	 * @return build version
-	 * @throws NameNotFoundException
+	 * @return application version
 	 */
 	public String getBuildVersion()
 	{
@@ -84,6 +107,6 @@ public class FeatureDevice extends FeatureComponent
 	 */
 	public String getBuildKind()
 	{
-		return getPrefs().getString(Param.RELEASE);
+		return getPrefs().getString(Param.BUILD);
 	}
 }
