@@ -15,8 +15,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.TrafficStats;
 import android.os.Bundle;
+import android.os.StatFs;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
@@ -35,15 +39,21 @@ public class FeatureDevice extends FeatureComponent
 	public static final String TAG = FeatureDevice.class.getSimpleName();
 	private static final int ON_STATUS = EventMessenger.ID("ON_STATUS");
 	private static String STAT_CMD = "vmstat -d %d";
+	private static int KB = 1024;
 
 	public enum OnStatusExtra
 	{
-		cpuidle, uplink, downlink, memfree
+		cpuidle, uplink, downlink, memfree, hddintfree, hddextfree, network
 	}
 
 	public enum DeviceAttribute
 	{
 		CUSTOMER, BRAND, BUILD, VERSION, MAC
+	}
+
+	public enum HDD_MEM_TYPE
+	{
+		hdd_int, hdd_ext
 	}
 
 	public enum Param
@@ -76,7 +86,7 @@ public class FeatureDevice extends FeatureComponent
 		/**
 		 * The interval to trigger ON_STATUS event
 		 */
-		STATUS_INTERVAL(60),
+		STATUS_INTERVAL(4),
 
 		/**
 		 * HDD Memory units 0 - bytes 1 - KB 2 - MB 3 - GB
@@ -211,6 +221,11 @@ public class FeatureDevice extends FeatureComponent
 		bundle.putString(OnStatusExtra.uplink.name(), String.valueOf(sntBytesPerSec));
 		bundle.putString(OnStatusExtra.downlink.name(), String.valueOf(rcvdBytesPerSec));
 
+		bundle.putString(OnStatusExtra.hddextfree.name(), String.valueOf(getHddFreeMemory(HDD_MEM_TYPE.hdd_int)));
+		bundle.putString(OnStatusExtra.hddintfree.name(), String.valueOf(getHddFreeMemory(HDD_MEM_TYPE.hdd_ext)));
+
+		bundle.putString(OnStatusExtra.network.name(), getNetwork());
+
 		for (String paramName : _fieldGetters.keySet())
 		{
 			IStatusFieldGetter getter = _fieldGetters.get(paramName);
@@ -261,6 +276,39 @@ public class FeatureDevice extends FeatureComponent
 			break;
 		}
 		return null;
+	}
+
+	private long getHddFreeMemory(HDD_MEM_TYPE hddType)
+	{
+
+		StatFs statFs = null;
+		if (HDD_MEM_TYPE.hdd_int == hddType)
+		{
+			statFs = new StatFs(android.os.Environment.getDataDirectory().getPath());
+		}
+		else
+		{
+			statFs = new StatFs(android.os.Environment.getExternalStorageDirectory().getPath());
+		}
+
+		long availableBlocks = statFs.getAvailableBlocks();
+		long blockSize = statFs.getBlockSize();
+		long freeBytes = ((availableBlocks * blockSize) / (long) Math.pow(KB, getPrefs().getInt(Param.HDD_UNIT)));
+
+		return freeBytes;
+
+	}
+
+	private String getNetwork()
+	{
+		String type = "";
+		ConnectivityManager connMgr = (ConnectivityManager) Environment.getInstance().getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+		if ((networkInfo != null) && networkInfo.isConnected())
+		{
+			type = networkInfo.getTypeName();
+		}
+		return type;
 	}
 
 	/**
