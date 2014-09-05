@@ -102,6 +102,7 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
+		getEventMessenger().register(this, ON_TRACK);
 		onSchedule(onFeatureInitialized);
 	}
 

@@ -43,7 +43,7 @@ public class FeatureDevice extends FeatureComponent
 	private long _cpuIdleSamplesCount;
 	private long _cpuIdleMin;
 	private long _cpuIdleMax;
-	private long _currentTimeInMs;
+	private long _lastSendTime;
 	private String _vmCmd;
 
 	private final HashMap<String, IStatusFieldGetter> _fieldGetters = new HashMap<String, IStatusFieldGetter>();
@@ -78,7 +78,7 @@ public class FeatureDevice extends FeatureComponent
 		/**
 		 * The interval to trigger ON_STATUS event
 		 */
-		STATUS_INTERVAL(60);
+		STATUS_INTERVAL(4);
 
 		Param(int value)
 		{
@@ -111,7 +111,7 @@ public class FeatureDevice extends FeatureComponent
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		_currentTimeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
+		_lastSendTime = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
 		long vmStatDelay = getPrefs().getInt(Param.VMSTAT_DELAY);
 		_vmCmd = String.format(STAT_CMD, vmStatDelay);
 		Log.w(TAG, "VMCmd = " + _vmCmd);
@@ -131,21 +131,22 @@ public class FeatureDevice extends FeatureComponent
 					while (line != null)
 					{
 						line = reader.readLine().trim();
-						String[] pieces = line.split("\\s+");
-						if (pieces.length == 15)
+						String[] parts = line.split("\\s+");
+						Log.d(TAG, line + ", " + parts.length + " parts" + ", procs[0] = " + parts[0] + ", parts[2] = " + parts[2]);
+						if (parts.length == 15)
 						{
 							try
 							{
-								if (!"free".equals(pieces[2]))
+								if (!("free".equals(parts[2]) || "procs".equals(parts[0])))
 								{
-									long freemem = Long.parseLong(pieces[2]);
-									long cpuidle = Long.parseLong(pieces[12]);
+									long freemem = Long.parseLong(parts[2]);
+									long cpuidle = Long.parseLong(parts[12]);
 									_freeMemTotal += freemem;
 									_freeMemSamplesCount += 1;
 									_cpuIdleTotal += cpuidle;
 									_cpuIdleSamplesCount += 1;
-									long timeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
-									long deltaInSeconds = (timeInMs - _currentTimeInMs) / 1000;
+									long currentTime = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
+									long deltaInSeconds = (currentTime - _lastSendTime) / 1000;
 									long statusInterval = getPrefs().getInt(Param.STATUS_INTERVAL);
 									if (cpuidle < _cpuIdleMin)
 									{
@@ -158,11 +159,8 @@ public class FeatureDevice extends FeatureComponent
 									if (deltaInSeconds > statusInterval)
 									{
 										sendStatus();
-
 									}
-
 								}
-
 							}
 							catch (NumberFormatException e)
 							{
@@ -171,9 +169,9 @@ public class FeatureDevice extends FeatureComponent
 						}
 						else
 						{
-							if (pieces.length != 4)
+							if (parts.length != 4)
 							{
-								Log.e(TAG, "Expected number of columns 4 or 15 got " + pieces.length);
+								Log.e(TAG, "Expected number of columns 4 or 15 got " + parts.length);
 							}
 						}
 					}
@@ -202,8 +200,6 @@ public class FeatureDevice extends FeatureComponent
 			bundle.putString(paramName, getter.getStatusField());
 			Log.i(TAG, paramName + " = " + getter.getStatusField());
 		}
-		Log.i(TAG, "Send status PARAM_CPU_IDLE = " + cpuMean + " PARAM_FREE_MEM = " + memMean);
-
 		getEventMessenger().trigger(ON_STATUS, bundle);
 
 		reset();
@@ -217,7 +213,7 @@ public class FeatureDevice extends FeatureComponent
 		_freeMemSamplesCount = 0;
 		_cpuIdleTotal = 0;
 		_cpuIdleSamplesCount = 0;
-		_currentTimeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
+		_lastSendTime = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
 	}
 
 	/**
