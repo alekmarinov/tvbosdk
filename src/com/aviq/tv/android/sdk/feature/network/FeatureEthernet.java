@@ -101,9 +101,7 @@ public class FeatureEthernet extends FeatureNetwork
 			@Override
 			public String getStatusField()
 			{
-
 				return getNetwork();
-
 			}
 		});
 		if (!_ethernetManagerWrapper.isSupported())

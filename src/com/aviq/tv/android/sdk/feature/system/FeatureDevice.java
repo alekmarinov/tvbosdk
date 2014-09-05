@@ -35,10 +35,10 @@ public class FeatureDevice extends FeatureComponent
 	private static final int ON_STATUS = EventMessenger.ID("ON_STATUS");
 	private static String STAT_CMD = "vmstat -d %d";
 	private static final String PARAM_CPU_IDLE = "cpuidle";
-	private static final String PARAM_FREE_MEM = "freemem";
+	private static final String PARAM_MEM_FREE = "memfree";
 
-	private long _freeMemTotal;
-	private long _freeMemSamplesCount;
+	private long _memFreeTotal;
+	private long _memFreeSamplesCount;
 	private long _cpuIdleTotal;
 	private long _cpuIdleSamplesCount;
 	private long _cpuIdleMin;
@@ -139,10 +139,10 @@ public class FeatureDevice extends FeatureComponent
 							{
 								if (!("free".equals(parts[2]) || "procs".equals(parts[0])))
 								{
-									long freemem = Long.parseLong(parts[2]);
+									long memfree = Long.parseLong(parts[2]);
 									long cpuidle = Long.parseLong(parts[12]);
-									_freeMemTotal += freemem;
-									_freeMemSamplesCount += 1;
+									_memFreeTotal += memfree;
+									_memFreeSamplesCount += 1;
 									_cpuIdleTotal += cpuidle;
 									_cpuIdleSamplesCount += 1;
 									long currentTime = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
@@ -191,9 +191,9 @@ public class FeatureDevice extends FeatureComponent
 	{
 		Bundle bundle = new Bundle();
 		long cpuMean = _cpuIdleTotal / _cpuIdleSamplesCount;
-		long memMean = _freeMemTotal / _freeMemSamplesCount;
-		bundle.putLong(PARAM_CPU_IDLE, cpuMean);
-		bundle.putLong(PARAM_FREE_MEM, memMean);
+		long memMean = _memFreeTotal / _memFreeSamplesCount;
+		bundle.putString(PARAM_CPU_IDLE, String.valueOf(cpuMean));
+		bundle.putString(PARAM_MEM_FREE, String.valueOf(memMean));
 		for (String paramName : _fieldGetters.keySet())
 		{
 			IStatusFieldGetter getter = _fieldGetters.get(paramName);
@@ -209,8 +209,8 @@ public class FeatureDevice extends FeatureComponent
 	{
 		_cpuIdleMin = Long.MIN_VALUE;
 		_cpuIdleMax = Long.MAX_VALUE;
-		_freeMemTotal = 0;
-		_freeMemSamplesCount = 0;
+		_memFreeTotal = 0;
+		_memFreeSamplesCount = 0;
 		_cpuIdleTotal = 0;
 		_cpuIdleSamplesCount = 0;
 		_lastSendTime = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();

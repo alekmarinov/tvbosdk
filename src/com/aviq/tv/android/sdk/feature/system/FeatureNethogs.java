@@ -85,9 +85,7 @@ public class FeatureNethogs extends FeatureComponent
 			@Override
             public String getStatusField()
 			{
-
 				return String.valueOf(_bytesRcvd);
-
 			}
 		});
 
@@ -96,9 +94,7 @@ public class FeatureNethogs extends FeatureComponent
 			@Override
             public String getStatusField()
 			{
-
 				return String.valueOf(_bytesSent);
-
 			}
 		});
 
