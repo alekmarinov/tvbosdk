@@ -46,17 +46,12 @@ public class FeatureDevice extends FeatureComponent
 
 	public enum OnStatusExtra
 	{
-		cpuidle, uplink, downlink, memfree, hddintfree, hddextfree, network
+		cpuidle, uplink, downlink, memfree, hddfree, network
 	}
 
 	public enum DeviceAttribute
 	{
 		CUSTOMER, BRAND, BUILD, VERSION, MAC
-	}
-
-	public enum HDD_MEM_TYPE
-	{
-		hdd_int, hdd_ext
 	}
 
 	public enum Param
@@ -99,7 +94,7 @@ public class FeatureDevice extends FeatureComponent
 		/**
 		 * HDD Memory units: 0 - B, 1 - KB, 2 - MB, 3 - GB
 		 */
-		HDD_UNIT(0);
+		HDD_UNIT(1);
 
 		Param(int value)
 		{
@@ -219,7 +214,6 @@ public class FeatureDevice extends FeatureComponent
 
 	private void sendStatus()
 	{
-		Bundle bundle = new Bundle();
 		long cpuMean = _cpuIdleTotal / _vmstatSamplesCount;
 		long memMean = _memFreeTotal / _vmstatSamplesCount;
 
@@ -228,21 +222,22 @@ public class FeatureDevice extends FeatureComponent
 		double rcvdBytesPerSec = (TrafficStats.getTotalRxBytes() - _bytesRcvd) / (double) sendPeriod;
 		double sntBytesPerSec = (TrafficStats.getTotalTxBytes() - _bytesSent) / (double) sendPeriod;
 
-		bundle.putString(OnStatusExtra.cpuidle.name(), String.valueOf(cpuMean));
-		bundle.putString(OnStatusExtra.memfree.name(), String.valueOf(memMean));
-		bundle.putString(OnStatusExtra.uplink.name(), String.valueOf(sntBytesPerSec));
-		bundle.putString(OnStatusExtra.downlink.name(), String.valueOf(rcvdBytesPerSec));
-
-		bundle.putString(OnStatusExtra.hddextfree.name(), String.valueOf(getHddFreeMemory(HDD_MEM_TYPE.hdd_int)));
-		bundle.putString(OnStatusExtra.hddintfree.name(), String.valueOf(getHddFreeMemory(HDD_MEM_TYPE.hdd_ext)));
-
+		Bundle bundle = new Bundle();
+		bundle.putLong(OnStatusExtra.cpuidle.name(), cpuMean);
+		bundle.putLong(OnStatusExtra.memfree.name(), memMean);
+		bundle.putDouble(OnStatusExtra.uplink.name(), sntBytesPerSec);
+		bundle.putDouble(OnStatusExtra.downlink.name(), rcvdBytesPerSec);
+		bundle.putLong(OnStatusExtra.hddfree.name(), getHddFreeMemory());
 		bundle.putString(OnStatusExtra.network.name(), getNetwork());
 
 		for (String paramName : _fieldGetters.keySet())
 		{
 			IStatusFieldGetter getter = _fieldGetters.get(paramName);
-			bundle.putString(paramName, getter.getStatusField());
-			Log.i(TAG, paramName + " = " + getter.getStatusField());
+			Object fieldValue = getter.getStatusField();
+			if (fieldValue != null)
+				TextUtils.putBundleObject(bundle, paramName, fieldValue);
+			else
+				Log.w(TAG, "Param " + paramName + " has null value!");
 		}
 		getEventMessenger().trigger(ON_STATUS, bundle);
 
@@ -300,25 +295,14 @@ public class FeatureDevice extends FeatureComponent
 		return null;
 	}
 
-	private long getHddFreeMemory(HDD_MEM_TYPE hddType)
+	private long getHddFreeMemory()
 	{
-
-		StatFs statFs = null;
-		if (HDD_MEM_TYPE.hdd_int == hddType)
-		{
-			statFs = new StatFs(android.os.Environment.getDataDirectory().getPath());
-		}
-		else
-		{
-			statFs = new StatFs(android.os.Environment.getExternalStorageDirectory().getPath());
-		}
-
+		String drive = android.os.Environment.getDataDirectory().getPath();
+		StatFs statFs = new StatFs(drive);
 		long availableBlocks = statFs.getAvailableBlocks();
 		long blockSize = statFs.getBlockSize();
 		long freeBytes = ((availableBlocks * blockSize) / (long) Math.pow(KB, getPrefs().getInt(Param.HDD_UNIT)));
-
 		return freeBytes;
-
 	}
 
 	private String getNetwork()
@@ -347,7 +331,7 @@ public class FeatureDevice extends FeatureComponent
 
 	public static interface IStatusFieldGetter
 	{
-		String getStatusField();
+		Object getStatusField();
 	}
 
 	private String readMacAddress() throws FileNotFoundException

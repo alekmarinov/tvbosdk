@@ -189,7 +189,7 @@ public class UploadService extends BaseService
 
 			HttpResponse response = httpClient.execute(httpPut);
 			statusCode = response.getStatusLine().getStatusCode();
-			if (statusCode == 200)
+			if (statusCode == 201)
 				statusCode = ResultCode.OK;
 		}
 		catch (Exception e)

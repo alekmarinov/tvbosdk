@@ -250,9 +250,16 @@ public class EventMessenger extends Handler
 						{
 							// fetch value from event params
 							String eventParamKey = value.substring(1, value.length() - 1);
-							value = eventParams.getString(eventParamKey);
-							// substitute value to the new bundle
-							bundle.putString(key, value);
+							Object substVal = eventParams.get(eventParamKey);
+							if (substVal != null)
+							{
+								// substitute value to the new bundle
+								TextUtils.putBundleObject(bundle, key, substVal);
+							}
+							else
+							{
+								Log.w(_tag, "Event key `" + eventParamKey + "' has null value!");
+							}
 						}
 						else
 						{

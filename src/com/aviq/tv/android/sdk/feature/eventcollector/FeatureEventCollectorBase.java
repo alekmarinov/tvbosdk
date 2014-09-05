@@ -160,8 +160,8 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 
 				if (!skipParam)
 				{
-					String value = bundle.getString(key);
-					customAttributes.putString(key, value);
+					Object value = bundle.get(key);
+					TextUtils.putBundleObject(customAttributes, key, value);
 				}
 			}
 			eventParams.putBundle(customTag, customAttributes);
