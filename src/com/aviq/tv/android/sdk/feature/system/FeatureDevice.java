@@ -10,6 +10,8 @@
 package com.aviq.tv.android.sdk.feature.system;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -30,6 +32,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.utils.Files;
+import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Defines device parameters
@@ -76,7 +79,12 @@ public class FeatureDevice extends FeatureComponent
 		/**
 		 * Box mac address
 		 */
-		MAC("00:00:00:00:00:00"),
+		MAC(""),
+
+		/**
+		 * File with MAC address
+		 */
+		MAC_ADDRESS_FILE("/sys/class/net/eth0/address"),
 
 		/**
 		 * vmstat -d delay
@@ -113,6 +121,7 @@ public class FeatureDevice extends FeatureComponent
 	private String _vmCmd;
 	private long _bytesRcvd;
 	private long _bytesSent;
+	private String _deviceMac;
 
 	private final HashMap<String, IStatusFieldGetter> _fieldGetters = new HashMap<String, IStatusFieldGetter>();
 
@@ -276,7 +285,17 @@ public class FeatureDevice extends FeatureComponent
 				return getPrefs().getString(Param.BUILD);
 
 			case MAC:
-			break;
+				_deviceMac = getPrefs().getString(Param.MAC);
+				if (_deviceMac.length() == 0)
+	                try
+                    {
+	                    _deviceMac = readMacAddress();
+                    }
+                    catch (FileNotFoundException e)
+                    {
+                    	Log.e(TAG, e.getMessage(), e);
+                    }
+				return _deviceMac;
 		}
 		return null;
 	}
@@ -329,5 +348,13 @@ public class FeatureDevice extends FeatureComponent
 	public static interface IStatusFieldGetter
 	{
 		String getStatusField();
+	}
+
+	private String readMacAddress() throws FileNotFoundException
+	{
+		FileInputStream fis = new FileInputStream(getPrefs().getString(Param.MAC_ADDRESS_FILE));
+		String macAddress = TextUtils.inputStreamToString(fis);
+		macAddress = macAddress.substring(0, 17);
+		return macAddress.replace(":", "").toUpperCase();
 	}
 }
