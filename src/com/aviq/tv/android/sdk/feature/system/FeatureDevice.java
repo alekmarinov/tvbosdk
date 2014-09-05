@@ -35,22 +35,16 @@ public class FeatureDevice extends FeatureComponent
 	public static final String TAG = FeatureDevice.class.getSimpleName();
 	private static final int ON_STATUS = EventMessenger.ID("ON_STATUS");
 	private static String STAT_CMD = "vmstat -d %d";
-	private static final String PARAM_CPU_IDLE = "cpuidle";
-	private static final String PARAM_UPLINK = "uplink";
-	private static final String PARAM_DOWNLINK = "downlink";
-	private static final String PARAM_MEM_FREE = "memfree";
 
-	private long _memFreeTotal;
-	private long _cpuIdleTotal;
-	private long _vmstatSamplesCount;
-	private long _cpuIdleMin;
-	private long _cpuIdleMax;
-	private long _lastSendTime;
-	private String _vmCmd;
-	private long _bytesRcvd;
-	private long _bytesSent;
+	public enum OnStatusExtra
+	{
+		cpuidle, uplink, downlink, memfree
+	}
 
-	private final HashMap<String, IStatusFieldGetter> _fieldGetters = new HashMap<String, IStatusFieldGetter>();
+	public enum DeviceAttribute
+	{
+		CUSTOMER, BRAND, BUILD, VERSION, MAC
+	}
 
 	public enum Param
 	{
@@ -100,10 +94,17 @@ public class FeatureDevice extends FeatureComponent
 		}
 	}
 
-	public enum DeviceAttribute
-	{
-		CUSTOMER, BRAND, BUILD, VERSION, MAC
-	}
+	private long _memFreeTotal;
+	private long _cpuIdleTotal;
+	private long _vmstatSamplesCount;
+	private long _cpuIdleMin;
+	private long _cpuIdleMax;
+	private long _lastSendTime;
+	private String _vmCmd;
+	private long _bytesRcvd;
+	private long _bytesSent;
+
+	private final HashMap<String, IStatusFieldGetter> _fieldGetters = new HashMap<String, IStatusFieldGetter>();
 
 	public FeatureDevice() throws FeatureNotFoundException
 	{
@@ -205,10 +206,10 @@ public class FeatureDevice extends FeatureComponent
 		double rcvdBytesPerSec = (TrafficStats.getTotalRxBytes() - _bytesRcvd) / (double) sendPeriod;
 		double sntBytesPerSec = (TrafficStats.getTotalTxBytes() - _bytesSent) / (double) sendPeriod;
 
-		bundle.putString(PARAM_CPU_IDLE, String.valueOf(cpuMean));
-		bundle.putString(PARAM_MEM_FREE, String.valueOf(memMean));
-		bundle.putString(PARAM_UPLINK, String.valueOf(sntBytesPerSec));
-		bundle.putString(PARAM_DOWNLINK, String.valueOf(rcvdBytesPerSec));
+		bundle.putString(OnStatusExtra.cpuidle.name(), String.valueOf(cpuMean));
+		bundle.putString(OnStatusExtra.memfree.name(), String.valueOf(memMean));
+		bundle.putString(OnStatusExtra.uplink.name(), String.valueOf(sntBytesPerSec));
+		bundle.putString(OnStatusExtra.downlink.name(), String.valueOf(rcvdBytesPerSec));
 
 		for (String paramName : _fieldGetters.keySet())
 		{
