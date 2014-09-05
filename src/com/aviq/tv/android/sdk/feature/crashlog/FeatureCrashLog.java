@@ -116,7 +116,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 	{
 		require(FeatureName.Scheduler.INTERNET);
 		require(FeatureName.Component.EASTER_EGG);
-		require(FeatureEventCollector.class);
+		require(FeatureName.Scheduler.EVENT_COLLECTOR);
 	}
 
 	@Override
