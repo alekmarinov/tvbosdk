@@ -1404,10 +1404,10 @@ public class FeatureManager
 				if (triggerEventId == 0)
 					throw new SAXParseException("Event " + _eventHook.triggerEventName + " is not defined", _locator);
 
-				TriggerRoute action = new TriggerRoute(triggerEventId, targetFeature);
-				action.setParams(_eventHook.eventParams);
+				TriggerRoute triggerRoute = new TriggerRoute(triggerEventId, targetFeature);
+				triggerRoute.setParams(_eventHook.eventParams);
 
-				_feature.getEventMessenger().addEventHook(eventId, action);
+				_feature.getEventMessenger().addEventHook(eventId, triggerRoute);
 
 				_eventHook.triggerEventName = null;
 				_eventHook.triggerTarget = null;

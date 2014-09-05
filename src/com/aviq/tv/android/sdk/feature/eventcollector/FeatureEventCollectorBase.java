@@ -39,6 +39,7 @@ import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.internet.UploadService;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
+import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Scheduler feature collecting events and sending them to a remote location.
@@ -102,6 +103,7 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
+		getEventMessenger().register(this, ON_TRACK);
 		onSchedule(onFeatureInitialized);
 	}
 
@@ -118,7 +120,26 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 		if (ON_TRACK == msgId)
 		{
 			String eventName = bundle.getString(OnTrackExtras.EVENT.name().toLowerCase());
+			if (eventName == null)
+			{
+				Log.e(TAG, "attribute `" + OnTrackExtras.EVENT.name().toLowerCase()
+				        + "' is required but missing in event " + TextUtils.implodeBundle(bundle));
+				return;
+			}
 			String eventSource = bundle.getString(OnTrackExtras.SOURCE.name().toLowerCase());
+			if (eventSource == null)
+			{
+				Log.e(TAG, "attribute `" + OnTrackExtras.SOURCE.name().toLowerCase()
+				        + "' is required but missing in event " + TextUtils.implodeBundle(bundle));
+				return;
+			}
+			String customTag = bundle.getString(OnTrackExtras.TAG.name().toLowerCase());
+			if (customTag == null)
+			{
+				Log.e(TAG, "attribute `" + OnTrackExtras.TAG.name().toLowerCase()
+				        + "' is required but missing in event " + TextUtils.implodeBundle(bundle));
+				return;
+			}
 			Bundle eventParams = new Bundle();
 			eventParams.putBundle("device", createDeviceAttributes());
 			eventParams.putBundle("event", createEventAttributes(eventName, eventSource));
@@ -132,7 +153,8 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 					customAttributes.putString(key, value);
 				}
 			}
-			eventParams.putBundle(bundle.getString(OnTrackExtras.TAG.name().toLowerCase()), customAttributes);
+
+			eventParams.putBundle(customTag, customAttributes);
 			addEvent(eventParams);
 		}
 	}

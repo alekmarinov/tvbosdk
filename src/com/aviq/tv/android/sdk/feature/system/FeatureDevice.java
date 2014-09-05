@@ -36,18 +36,16 @@ public class FeatureDevice extends FeatureComponent
 	private static final int ON_STATUS = EventMessenger.ID("ON_STATUS");
 	private static String STAT_CMD = "vmstat -d %d";
 	private static final String PARAM_CPU_IDLE = "cpuidle";
-	private static final String PARAM_FREE_MEM = "freemem";
 	private static final String PARAM_UPLINK = "uplink";
 	private static final String PARAM_DOWNLINK = "downlink";
+	private static final String PARAM_MEM_FREE = "memfree";
 
-	private long _freeMemTotal;
-	private long _freeMemSamplesCount;
+	private long _memFreeTotal;
 	private long _cpuIdleTotal;
-	private long _cpuIdleSamplesCount;
+	private long _vmstatSamplesCount;
 	private long _cpuIdleMin;
 	private long _cpuIdleMax;
-	private long _lastTimeInMs;
-	private long _lastSendTimeInMs;
+	private long _lastSendTime;
 	private String _vmCmd;
 	private long _bytesRcvd;
 	private long _bytesSent;
@@ -109,7 +107,6 @@ public class FeatureDevice extends FeatureComponent
 
 	public FeatureDevice() throws FeatureNotFoundException
 	{
-		require(Component.TIMEZONE);
 	}
 
 	@Override
@@ -127,7 +124,6 @@ public class FeatureDevice extends FeatureComponent
 		_vmCmd = String.format(STAT_CMD, vmStatDelay);
 		Log.w(TAG, "VMCmd = " + _vmCmd);
 
-
 		new Thread(new Runnable()
 		{
 			@Override
@@ -143,22 +139,21 @@ public class FeatureDevice extends FeatureComponent
 					while (line != null)
 					{
 						line = reader.readLine().trim();
-						String[] pieces = line.split("\\s+");
-						if (pieces.length == 15)
+						String[] parts = line.split("\\s+");
+						Log.d(TAG, line + ", " + parts.length + " parts" + ", procs[0] = " + parts[0] + ", parts[2] = "
+						        + parts[2]);
+						if (parts.length == 15)
 						{
 							try
 							{
-								if (!"free".equals(pieces[2]))
+								if (!("free".equals(parts[2]) || "procs".equals(parts[0])))
 								{
-									long freemem = Long.parseLong(pieces[2]);
-									long cpuidle = Long.parseLong(pieces[12]);
-									_freeMemTotal += freemem;
-									_freeMemSamplesCount += 1;
+									long memfree = Long.parseLong(parts[2]);
+									long cpuidle = Long.parseLong(parts[12]);
+									_memFreeTotal += memfree;
 									_cpuIdleTotal += cpuidle;
-									_cpuIdleSamplesCount += 1;
-									long timeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
-									long deltaInSeconds = (timeInMs - _lastTimeInMs) / 1000;
-									long statusInterval = getPrefs().getInt(Param.STATUS_INTERVAL);
+									_vmstatSamplesCount++;
+
 									if (cpuidle < _cpuIdleMin)
 									{
 										_cpuIdleMin = cpuidle;
@@ -167,14 +162,12 @@ public class FeatureDevice extends FeatureComponent
 									{
 										_cpuIdleMax = cpuidle;
 									}
-									if (deltaInSeconds > statusInterval)
+									long deltaInSeconds = (System.currentTimeMillis() - _lastSendTime) / 1000;
+									if (deltaInSeconds > getPrefs().getInt(Param.STATUS_INTERVAL))
 									{
 										sendStatus();
-
 									}
-
 								}
-
 							}
 							catch (NumberFormatException e)
 							{
@@ -183,9 +176,9 @@ public class FeatureDevice extends FeatureComponent
 						}
 						else
 						{
-							if (pieces.length != 4)
+							if (parts.length != 4)
 							{
-								Log.e(TAG, "Expected number of columns 4 or 15 got " + pieces.length);
+								Log.e(TAG, "Expected number of columns 4 or 15 got " + parts.length);
 							}
 						}
 					}
@@ -204,25 +197,18 @@ public class FeatureDevice extends FeatureComponent
 	private void sendStatus()
 	{
 		Bundle bundle = new Bundle();
-		long cpuMean = _cpuIdleTotal / _cpuIdleSamplesCount;
-		long memMean = _freeMemTotal / _freeMemSamplesCount;
-		bundle.putLong(PARAM_CPU_IDLE, cpuMean);
-		bundle.putLong(PARAM_FREE_MEM, memMean);
+		long cpuMean = _cpuIdleTotal / _vmstatSamplesCount;
+		long memMean = _memFreeTotal / _vmstatSamplesCount;
 
-		long curBytesRcvd = TrafficStats.getTotalRxBytes();
-		long curBytesSent = TrafficStats.getTotalTxBytes();
-
-		long timeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
-		long sendPeriod = (timeInMs - _lastSendTimeInMs) / 1000;
-
+		long sendPeriod = (System.currentTimeMillis() - _lastSendTime) / 1000;
 		Log.i(TAG, "Send period = " + sendPeriod);
-		_lastSendTimeInMs = timeInMs;
-		double rcvdBytesPerSec = (curBytesRcvd-_bytesRcvd) /(double)sendPeriod;
-		double sntBytesPerSec = (curBytesSent-_bytesSent) /(double)sendPeriod;
+		double rcvdBytesPerSec = (TrafficStats.getTotalRxBytes() - _bytesRcvd) / (double) sendPeriod;
+		double sntBytesPerSec = (TrafficStats.getTotalTxBytes() - _bytesSent) / (double) sendPeriod;
 
-		bundle.putDouble(PARAM_UPLINK, sntBytesPerSec);
-		bundle.putDouble(PARAM_DOWNLINK, rcvdBytesPerSec);
-
+		bundle.putString(PARAM_CPU_IDLE, String.valueOf(cpuMean));
+		bundle.putString(PARAM_MEM_FREE, String.valueOf(memMean));
+		bundle.putString(PARAM_UPLINK, String.valueOf(sntBytesPerSec));
+		bundle.putString(PARAM_DOWNLINK, String.valueOf(rcvdBytesPerSec));
 
 		for (String paramName : _fieldGetters.keySet())
 		{
@@ -230,8 +216,6 @@ public class FeatureDevice extends FeatureComponent
 			bundle.putString(paramName, getter.getStatusField());
 			Log.i(TAG, paramName + " = " + getter.getStatusField());
 		}
-		Log.i(TAG, "Send status PARAM_CPU_IDLE = " + cpuMean + " PARAM_FREE_MEM = " + memMean);
-
 		getEventMessenger().trigger(ON_STATUS, bundle);
 
 		reset();
@@ -239,23 +223,21 @@ public class FeatureDevice extends FeatureComponent
 
 	private void reset()
 	{
-		_cpuIdleMin = Long.MIN_VALUE;
-		_cpuIdleMax = Long.MAX_VALUE;
-		_freeMemTotal = 0;
-		_freeMemSamplesCount = 0;
+		_cpuIdleMin = Long.MAX_VALUE;
+		_cpuIdleMax = Long.MIN_VALUE;
+		_memFreeTotal = 0;
 		_cpuIdleTotal = 0;
-		_cpuIdleSamplesCount = 0;
-		_lastTimeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
-		_lastSendTimeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
+		_vmstatSamplesCount = 0;
+		_lastSendTime = System.currentTimeMillis();
 		_bytesRcvd = TrafficStats.getTotalRxBytes();
 		_bytesSent = TrafficStats.getTotalTxBytes();
-
 	}
 
 	/**
 	 * Gets device attribute
 	 *
-	 * @param deviceAttribute the name of the device attribute
+	 * @param deviceAttribute
+	 *            the name of the device attribute
 	 * @return device attribute value
 	 */
 	public String getDeviceAttribute(DeviceAttribute deviceAttribute)

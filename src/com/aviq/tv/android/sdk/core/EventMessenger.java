@@ -246,16 +246,24 @@ public class EventMessenger extends Handler
 					for (String key : routedEventParams.keySet())
 					{
 						String value = routedEventParams.getString(key);
-						if (value.indexOf(0) == '{' && value.indexOf(value.length() - 1) == '}')
+						if (value.charAt(0) == '{' && value.charAt(value.length() - 1) == '}')
 						{
 							// fetch value from event params
-							String eventParamKey = value.substring(1, value.length() - 2);
+							String eventParamKey = value.substring(1, value.length() - 1);
 							value = eventParams.getString(eventParamKey);
 							// substitute value to the new bundle
 							bundle.putString(key, value);
 						}
+						else
+						{
+							bundle.putString(key, value);
+						}
 					}
 				}
+				Log.d(_tag,
+				        "Redirect event " + idName(msg.what) + TextUtils.implodeBundle(eventParams) + " to "
+				                + triggerRoute.getTarget().getName() + ":" + idName(triggerRoute.getEventId())
+				                + TextUtils.implodeBundle(bundle));
 				triggerRoute.getTarget().getEventMessenger().trigger(triggerRoute.getEventId(), bundle);
 			}
 		}
