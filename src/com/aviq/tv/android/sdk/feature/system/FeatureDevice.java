@@ -31,6 +31,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.FeatureState;
 import com.aviq.tv.android.sdk.utils.Files;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -46,7 +47,7 @@ public class FeatureDevice extends FeatureComponent
 
 	public enum OnStatusExtra
 	{
-		cpuidle, uplink, downlink, memfree, hddintfree, hddextfree, network
+		cpuidle, uplink, downlink, memfree, hddintfree, hddextfree, network, section
 	}
 
 	public enum DeviceAttribute
@@ -237,6 +238,8 @@ public class FeatureDevice extends FeatureComponent
 		bundle.putString(OnStatusExtra.hddintfree.name(), String.valueOf(getHddFreeMemory(HDD_MEM_TYPE.hdd_ext)));
 
 		bundle.putString(OnStatusExtra.network.name(), getNetwork());
+
+		bundle.putString(OnStatusExtra.section.name(), ((FeatureState)Environment.getInstance().getStateManager().getMainState()).getStateName().name());
 
 		for (String paramName : _fieldGetters.keySet())
 		{
