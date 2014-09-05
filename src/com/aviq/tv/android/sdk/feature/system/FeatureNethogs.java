@@ -19,7 +19,6 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.feature.system.FeatureDevice.IStatusFieldGetter;
 
 /**
  * Client to the nethogs service collecting incomming traffic from networm
@@ -31,10 +30,6 @@ public class FeatureNethogs extends FeatureComponent
 	public static final int ON_DATA_RECEIVED = EventMessenger.ID("ON_DATA_RECEIVED");
 	public static final String EXTRA_BITRATE_UP = "EXTRA_BITRATE_UP";
 	public static final String EXTRA_BITRATE_DOWN = "EXTRA_BITRATE_DOWN";
-
-	private long _bytesRcvd;
-	private long _bytesSent;
-
 
 	private NetworkClient _networkClient;
 
@@ -69,7 +64,7 @@ public class FeatureNethogs extends FeatureComponent
 	public FeatureNethogs() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.SYSTEM);
-		require(FeatureName.Component.DEVICE);
+
 	}
 
 	@Override
@@ -79,28 +74,6 @@ public class FeatureNethogs extends FeatureComponent
 		final String host = getPrefs().getString(Param.HOST);
 		final int port = getPrefs().getInt(Param.PORT);
 		final String netInterface = getPrefs().getString(Param.NETWORK_INTERFACE);
-
-		_feature.Component.DEVICE.addStatusFieldGetter("downlink", new IStatusFieldGetter()
-		{
-			@Override
-            public String getStatusField()
-			{
-
-				return String.valueOf(_bytesRcvd);
-
-			}
-		});
-
-		_feature.Component.DEVICE.addStatusFieldGetter("uplink", new IStatusFieldGetter()
-		{
-			@Override
-            public String getStatusField()
-			{
-
-				return String.valueOf(_bytesSent);
-
-			}
-		});
 
 		_networkClient = new NetworkClient(host, port, new NetworkClient.OnNetworkEvent()
 		{
@@ -137,8 +110,6 @@ public class FeatureNethogs extends FeatureComponent
 								Bundle bundle = new Bundle();
 								bundle.putLong(EXTRA_BITRATE_DOWN, bytesRcvd);
 								bundle.putLong(EXTRA_BITRATE_UP, bytesSent);
-								_bytesRcvd = bytesRcvd;
-								_bytesSent = bytesSent;
 								getEventMessenger().trigger(ON_DATA_RECEIVED, bundle);
 							}
 							catch (NumberFormatException nfe)

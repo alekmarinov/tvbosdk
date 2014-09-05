@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 
+import android.net.TrafficStats;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -36,6 +37,8 @@ public class FeatureDevice extends FeatureComponent
 	private static String STAT_CMD = "vmstat -d %d";
 	private static final String PARAM_CPU_IDLE = "cpuidle";
 	private static final String PARAM_FREE_MEM = "freemem";
+	private static final String PARAM_UPLINK = "uplink";
+	private static final String PARAM_DOWNLINK = "downlink";
 
 	private long _freeMemTotal;
 	private long _freeMemSamplesCount;
@@ -43,8 +46,11 @@ public class FeatureDevice extends FeatureComponent
 	private long _cpuIdleSamplesCount;
 	private long _cpuIdleMin;
 	private long _cpuIdleMax;
-	private long _currentTimeInMs;
+	private long _lastTimeInMs;
+	private long _lastSendTimeInMs;
 	private String _vmCmd;
+	private long _bytesRcvd;
+	private long _bytesSent;
 
 	private final HashMap<String, IStatusFieldGetter> _fieldGetters = new HashMap<String, IStatusFieldGetter>();
 
@@ -111,10 +117,11 @@ public class FeatureDevice extends FeatureComponent
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		_currentTimeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
+		reset();
 		long vmStatDelay = getPrefs().getInt(Param.VMSTAT_DELAY);
 		_vmCmd = String.format(STAT_CMD, vmStatDelay);
 		Log.w(TAG, "VMCmd = " + _vmCmd);
+
 
 		new Thread(new Runnable()
 		{
@@ -145,7 +152,7 @@ public class FeatureDevice extends FeatureComponent
 									_cpuIdleTotal += cpuidle;
 									_cpuIdleSamplesCount += 1;
 									long timeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
-									long deltaInSeconds = (timeInMs - _currentTimeInMs) / 1000;
+									long deltaInSeconds = (timeInMs - _lastTimeInMs) / 1000;
 									long statusInterval = getPrefs().getInt(Param.STATUS_INTERVAL);
 									if (cpuidle < _cpuIdleMin)
 									{
@@ -196,6 +203,22 @@ public class FeatureDevice extends FeatureComponent
 		long memMean = _freeMemTotal / _freeMemSamplesCount;
 		bundle.putLong(PARAM_CPU_IDLE, cpuMean);
 		bundle.putLong(PARAM_FREE_MEM, memMean);
+
+		long curBytesRcvd = TrafficStats.getTotalRxBytes();
+		long curBytesSent = TrafficStats.getTotalTxBytes();
+
+		long timeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
+		long sendPeriod = (timeInMs - _lastSendTimeInMs) / 1000;
+
+		Log.i(TAG, "Send period = " + sendPeriod);
+		_lastSendTimeInMs = timeInMs;
+		double rcvdBytesPerSec = (curBytesRcvd-_bytesRcvd) /(double)sendPeriod;
+		double sntBytesPerSec = (curBytesSent-_bytesSent) /(double)sendPeriod;
+
+		bundle.putDouble(PARAM_UPLINK, sntBytesPerSec);
+		bundle.putDouble(PARAM_DOWNLINK, rcvdBytesPerSec);
+
+
 		for (String paramName : _fieldGetters.keySet())
 		{
 			IStatusFieldGetter getter = _fieldGetters.get(paramName);
@@ -217,7 +240,11 @@ public class FeatureDevice extends FeatureComponent
 		_freeMemSamplesCount = 0;
 		_cpuIdleTotal = 0;
 		_cpuIdleSamplesCount = 0;
-		_currentTimeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
+		_lastTimeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
+		_lastSendTimeInMs = _feature.Component.TIMEZONE.getCurrentTime().getTimeInMillis();
+		_bytesRcvd = TrafficStats.getTotalRxBytes();
+		_bytesSent = TrafficStats.getTotalTxBytes();
+
 	}
 
 	/**
