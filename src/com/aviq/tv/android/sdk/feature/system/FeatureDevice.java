@@ -38,8 +38,8 @@ public class FeatureDevice extends FeatureComponent
 {
 	public static final String TAG = FeatureDevice.class.getSimpleName();
 	private static final int ON_STATUS = EventMessenger.ID("ON_STATUS");
-	private static String STAT_CMD = "vmstat -d %d";
 	private static int KB = 1024;
+	private static String STAT_CMD = "vmstat -n 1 -d %d";
 
 	public enum OnStatusExtra
 	{
@@ -89,7 +89,7 @@ public class FeatureDevice extends FeatureComponent
 		STATUS_INTERVAL(4),
 
 		/**
-		 * HDD Memory units 0 - bytes 1 - KB 2 - MB 3 - GB
+		 * HDD Memory units: 0 - B, 1 - KB, 2 - MB, 3 - GB
 		 */
 		HDD_UNIT(0);
 
@@ -143,55 +143,58 @@ public class FeatureDevice extends FeatureComponent
 				InputStream is = null;
 				try
 				{
-					Process proc = Runtime.getRuntime().exec(_vmCmd);
-					is = proc.getInputStream();
-					BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-					String line = reader.readLine();
-					while (line != null)
+					while (true)
 					{
-						line = reader.readLine().trim();
-						String[] parts = line.split("\\s+");
-						Log.d(TAG, line + ", " + parts.length + " parts" + ", procs[0] = " + parts[0] + ", parts[2] = "
-						        + parts[2]);
-						if (parts.length == 15)
+						Process proc = Runtime.getRuntime().exec(_vmCmd);
+						is = proc.getInputStream();
+						BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+						String line = reader.readLine();
+						while (line != null)
 						{
-							try
+							line = line.trim();
+							String[] parts = line.split("\\s+");
+							if (parts.length == 15)
 							{
-								if (!("free".equals(parts[2]) || "procs".equals(parts[0])))
+								try
 								{
-									long memfree = Long.parseLong(parts[2]);
-									long cpuidle = Long.parseLong(parts[12]);
-									_memFreeTotal += memfree;
-									_cpuIdleTotal += cpuidle;
-									_vmstatSamplesCount++;
+									if (!("free".equals(parts[2]) || "procs".equals(parts[0])))
+									{
+										long memfree = Long.parseLong(parts[2]);
+										long cpuidle = Long.parseLong(parts[12]);
+										_memFreeTotal += memfree;
+										_cpuIdleTotal += cpuidle;
+										_vmstatSamplesCount++;
 
-									if (cpuidle < _cpuIdleMin)
-									{
-										_cpuIdleMin = cpuidle;
-									}
-									if (cpuidle > _cpuIdleMax)
-									{
-										_cpuIdleMax = cpuidle;
-									}
-									long deltaInSeconds = (System.currentTimeMillis() - _lastSendTime) / 1000;
-									if (deltaInSeconds > getPrefs().getInt(Param.STATUS_INTERVAL))
-									{
-										sendStatus();
+										if (cpuidle < _cpuIdleMin)
+										{
+											_cpuIdleMin = cpuidle;
+										}
+										if (cpuidle > _cpuIdleMax)
+										{
+											_cpuIdleMax = cpuidle;
+										}
+										long deltaInSeconds = (System.currentTimeMillis() - _lastSendTime) / 1000;
+										if (deltaInSeconds > getPrefs().getInt(Param.STATUS_INTERVAL))
+										{
+											sendStatus();
+										}
 									}
 								}
+								catch (NumberFormatException e)
+								{
+									Log.w(TAG, e.getMessage());
+								}
 							}
-							catch (NumberFormatException e)
+							else
 							{
-								Log.w(TAG, e.getMessage());
+								if (parts.length != 4)
+								{
+									Log.e(TAG, "Expected number of columns 4 or 15 got " + parts.length);
+								}
 							}
+							line = reader.readLine();
 						}
-						else
-						{
-							if (parts.length != 4)
-							{
-								Log.e(TAG, "Expected number of columns 4 or 15 got " + parts.length);
-							}
-						}
+						Files.closeQuietly(is, TAG);
 					}
 				}
 				catch (IOException e)

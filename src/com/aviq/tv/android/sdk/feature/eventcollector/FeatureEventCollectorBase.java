@@ -53,7 +53,7 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 	public enum Param
 	{
 		/** Schedule interval. */
-		SEND_EVENTS_INTERVAL(60 * 1000),
+		SEND_EVENTS_INTERVAL(16 * 1000),
 
 		/** Report URL */
 		EVENTS_SERVER_URL("https://services.aviq.com:30227/upload/logs/"),
@@ -84,7 +84,7 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 	/**
 	 * Extra params associated with ON_TRACK event
 	 */
-	public enum OnTrackExtras
+	public enum OnTrackExtra
 	{
 		EVENT, SOURCE, TAG
 	}
@@ -119,24 +119,24 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 		super.onEvent(msgId, bundle);
 		if (ON_TRACK == msgId)
 		{
-			String eventName = bundle.getString(OnTrackExtras.EVENT.name().toLowerCase());
+			String eventName = bundle.getString(OnTrackExtra.EVENT.name().toLowerCase());
 			if (eventName == null)
 			{
-				Log.e(TAG, "attribute `" + OnTrackExtras.EVENT.name().toLowerCase()
+				Log.e(TAG, "attribute `" + OnTrackExtra.EVENT.name().toLowerCase()
 				        + "' is required but missing in event " + TextUtils.implodeBundle(bundle));
 				return;
 			}
-			String eventSource = bundle.getString(OnTrackExtras.SOURCE.name().toLowerCase());
+			String eventSource = bundle.getString(OnTrackExtra.SOURCE.name().toLowerCase());
 			if (eventSource == null)
 			{
-				Log.e(TAG, "attribute `" + OnTrackExtras.SOURCE.name().toLowerCase()
+				Log.e(TAG, "attribute `" + OnTrackExtra.SOURCE.name().toLowerCase()
 				        + "' is required but missing in event " + TextUtils.implodeBundle(bundle));
 				return;
 			}
-			String customTag = bundle.getString(OnTrackExtras.TAG.name().toLowerCase());
+			String customTag = bundle.getString(OnTrackExtra.TAG.name().toLowerCase());
 			if (customTag == null)
 			{
-				Log.e(TAG, "attribute `" + OnTrackExtras.TAG.name().toLowerCase()
+				Log.e(TAG, "attribute `" + OnTrackExtra.TAG.name().toLowerCase()
 				        + "' is required but missing in event " + TextUtils.implodeBundle(bundle));
 				return;
 			}
@@ -147,13 +147,23 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 			Bundle customAttributes = new Bundle();
 			for (String key : bundle.keySet())
 			{
-				if (OnTrackExtras.valueOf(key.toUpperCase()) == null)
+				// verify if the custom param is not one of the OnTrackExtra
+				boolean skipParam = false;
+				for (OnTrackExtra extra: OnTrackExtra.values())
+				{
+					if (extra.name().equals(key.toUpperCase()))
+					{
+						skipParam = true;
+						break;
+					}
+				}
+
+				if (!skipParam)
 				{
 					String value = bundle.getString(key);
 					customAttributes.putString(key, value);
 				}
 			}
-
 			eventParams.putBundle(customTag, customAttributes);
 			addEvent(eventParams);
 		}
