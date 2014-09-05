@@ -84,7 +84,12 @@ public class FeatureDevice extends FeatureComponent
 		/**
 		 * The interval to trigger ON_STATUS event
 		 */
-		STATUS_INTERVAL(60);
+		STATUS_INTERVAL(60),
+
+		/**
+		 * HDD Memory units 0 - bytes 1 - KB 2 - MB 3 - GB
+		 */
+		HDD_UNIT(0);
 
 		Param(int value)
 		{
