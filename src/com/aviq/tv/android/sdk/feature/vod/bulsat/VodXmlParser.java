@@ -38,6 +38,7 @@ class VodXmlParser
 
 	private static final String TAG_VODGROUP = "vodgroup";
 	private static final String TAG_VOD = "vod";
+	private static final String TAG_ID = "id";
 	private static final String TAG_TITLE = "title";
 	private static final String TAG_POSTER = "poster";
 	private static final String TAG_SOURCE = "source";
@@ -114,6 +115,13 @@ class VodXmlParser
 			else if (TAG_VOD.equals(localName))
 			{
 				_inVod = false;
+			}
+			else if (TAG_ID.equals(localName))
+			{
+				if (_inVod)
+					_currentVod.setId(_currentValue.toString());
+				else if (_inVodGroup)
+					_currentVodGroup.setId(_currentValue.toString());
 			}
 			else if (TAG_TITLE.equals(localName))
 			{

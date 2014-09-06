@@ -3,7 +3,10 @@ package com.aviq.tv.android.sdk.feature.vod.bulsat;
 import java.util.ArrayList;
 import java.util.List;
 
-public class VodTree<T>
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class VodTree<T extends Parcelable> implements Parcelable
 {
 	private Node<T> _root;
 
@@ -19,12 +22,47 @@ public class VodTree<T>
 		return _root;
 	}
 
-	public static class Node<T>
+	public ArrayList<Node<T>> findPath(T data)
+	{
+		ArrayList<Node<T>> path = new ArrayList<Node<T>>();
+		findNode(getRoot(), data, path);
+		return path;
+	}
+	
+	private Node<T> findNode(Node<T> nodeToExplore, T data, ArrayList<Node<T>> path)
+	{
+		if (nodeToExplore == null)
+			return null;
+
+		if (nodeToExplore.getData().equals(data))
+		{
+			while (!nodeToExplore.equals(getRoot()))
+			{
+				path.add(0, nodeToExplore);
+				nodeToExplore = nodeToExplore.getParent();
+			}
+			return nodeToExplore;
+		}
+
+		for (VodTree.Node<T> child : nodeToExplore.getChildren())
+		{
+			Node<T> foundNode = findNode(child, data, path);
+			if (foundNode != null)
+				return foundNode;
+		}
+
+		return null;
+	}
+
+	public static class Node<T extends Parcelable> implements Parcelable
 	{
 		private T _data;
 		private Node<T> _parent;
 		private List<Node<T>> _children;
 
+		public Node()
+		{}
+		
 		public Node<T> add(T data)
 		{
 			Node<T> node = new Node<T>();
@@ -65,5 +103,74 @@ public class VodTree<T>
 		{
 			return _data;
 		}
+		
+		// Parcelable contract
+		
+		public Node(Parcel in)
+		{
+			_data = in.readParcelable(_data.getClass().getClassLoader());
+			_parent = in.readParcelable(_parent.getClass().getClassLoader());
+			_children = new ArrayList<Node<T>>();
+			in.readList(_children, null);
+		}
+		
+		@Override
+	    public int describeContents()
+		{
+	        return 0;
+	    }
+		
+		@Override
+	    public void writeToParcel(Parcel dest, int flags) 
+	    {
+			dest.writeParcelable((Parcelable) _data, flags);
+			dest.writeParcelable(_parent, flags);
+			dest.writeList(_children);
+	    }
+	    
+	    public static final Parcelable.Creator CREATOR = new Parcelable.Creator() 
+	    {
+	        public Node createFromParcel(Parcel in) 
+	        {
+	            return new Node(in); 
+	        }
+
+	        public Node[] newArray(int size) 
+	        {
+	            return new Node[size];
+	        }
+	    };
 	}
+	
+	// Parcelable contract
+	
+	public VodTree(Parcel in)
+	{
+		_root = in.readParcelable(_root.getClass().getClassLoader());
+	}
+	
+	@Override
+    public int describeContents()
+	{
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) 
+    {
+    	dest.writeParcelable(_root, flags);
+    }
+    
+    public static final Parcelable.Creator CREATOR = new Parcelable.Creator() 
+    {
+        public VodTree createFromParcel(Parcel in) 
+        {
+            return new VodTree(in); 
+        }
+
+        public VodTree[] newArray(int size) 
+        {
+            return new VodTree[size];
+        }
+    };
 }

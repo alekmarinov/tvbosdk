@@ -21,7 +21,6 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
-import com.aviq.tv.android.sdk.core.feature.IFeature.OnFeatureInitialized;
 import com.aviq.tv.android.sdk.feature.vod.FeatureVOD;
 import com.google.gson.JsonSyntaxException;
 
