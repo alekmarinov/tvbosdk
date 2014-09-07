@@ -87,6 +87,11 @@ public class FeatureVODBulsat extends FeatureVOD
 		return _vodData;
 	}
 
+	public Vod loadVod(String id)
+	{
+		return null;
+	}
+	
 	private class VodRequest<T> extends Request<T>
 	{
 		private final Class<T> mClazz;
