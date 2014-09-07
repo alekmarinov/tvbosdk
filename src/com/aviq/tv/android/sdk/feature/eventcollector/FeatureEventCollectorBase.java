@@ -36,6 +36,8 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
+import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
+import com.aviq.tv.android.sdk.feature.internet.FeatureInternet.GeoIpExtras;
 import com.aviq.tv.android.sdk.feature.internet.UploadService;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
@@ -86,13 +88,14 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 	 */
 	public enum OnTrackExtra
 	{
-		EVENT, SOURCE, TAG
+		EVENT, SOURCE
 	}
 
 	/**
 	 * keep all collected events until uploading to the tracking server
 	 */
 	private List<Bundle> _eventList = Collections.synchronizedList(new ArrayList<Bundle>());
+	private Bundle _geoIp = new Bundle();
 
 	public FeatureEventCollectorBase() throws FeatureNotFoundException
 	{
@@ -104,6 +107,7 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
 		getEventMessenger().register(this, ON_TRACK);
+		_feature.Scheduler.INTERNET.getEventMessenger().register(this, FeatureInternet.ON_CONNECTED);
 		onSchedule(onFeatureInitialized);
 	}
 
@@ -133,15 +137,9 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 				        + "' is required but missing in event " + TextUtils.implodeBundle(bundle));
 				return;
 			}
-			String customTag = bundle.getString(OnTrackExtra.TAG.name().toLowerCase());
-			if (customTag == null)
-			{
-				Log.e(TAG, "attribute `" + OnTrackExtra.TAG.name().toLowerCase()
-				        + "' is required but missing in event " + TextUtils.implodeBundle(bundle));
-				return;
-			}
 			Bundle eventParams = new Bundle();
 			eventParams.putBundle("device", createDeviceAttributes());
+			eventParams.putBundle("geoip", createGeoIPAttributes());
 			eventParams.putBundle("event", createEventAttributes(eventName, eventSource));
 
 			Bundle customAttributes = new Bundle();
@@ -164,8 +162,15 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 					TextUtils.putBundleObject(customAttributes, key, value);
 				}
 			}
-			eventParams.putBundle(customTag, customAttributes);
+			eventParams.putBundle(eventName, customAttributes);
 			addEvent(eventParams);
+		}
+		else if (FeatureInternet.ON_CONNECTED == msgId)
+		{
+			for (GeoIpExtras geoip: FeatureInternet.GeoIpExtras.values())
+			{
+				TextUtils.putBundleObject(_geoIp, geoip.name().toLowerCase(), bundle.get(geoip.name()));
+			}
 		}
 	}
 
@@ -186,6 +191,15 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 	}
 
 	/**
+	 * Create geoip attributes to attach to each event
+	 *
+	 * @return Bundle
+	 */
+	protected Bundle createGeoIPAttributes()
+	{
+		return _geoIp;
+	}
+	/**
 	 * Create event attributes to attach to each event
 	 *
 	 * @return Bundle
@@ -193,7 +207,7 @@ public class FeatureEventCollectorBase extends FeatureScheduler
 	protected Bundle createEventAttributes(String name, String source)
 	{
 		TimeZone tzUTC = TimeZone.getTimeZone("UTC");
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ", Locale.US);
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
 		df.setTimeZone(tzUTC);
 		String timestamp = df.format(System.currentTimeMillis());
 		Bundle eventParams = new Bundle();

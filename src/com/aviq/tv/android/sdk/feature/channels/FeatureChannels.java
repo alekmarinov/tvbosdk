@@ -18,6 +18,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
@@ -29,8 +30,10 @@ import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG.OnStreamURLReceived;
+import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice.IStatusFieldGetter;
+import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Component feature managing favorite channels
@@ -38,6 +41,13 @@ import com.aviq.tv.android.sdk.feature.system.FeatureDevice.IStatusFieldGetter;
 public class FeatureChannels extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureChannels.class.getSimpleName();
+
+	public static final int ON_SWITCH_CHANNEL = EventMessenger.ID("ON_SWITCH_CHANNEL");
+
+	public enum OnSwitchChannelExtras
+	{
+		FROM_CHANNEL, TO_CHANNEL, SWITCH_DURATION
+	}
 
 	public enum Param
 	{
@@ -102,6 +112,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 
 	// List of favorite channels
 	private List<Channel> _channels;
+	private String _channelId;
 
 	public FeatureChannels() throws FeatureNotFoundException
 	{
@@ -116,6 +127,8 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 		_userPrefs = Environment.getInstance().getUserPrefs();
+
+		// FIXME: remove the logic bellow to project specific feature
 		if (!_userPrefs.has(UserParam.LAST_CHANNEL_ID) && getPrefs().has(Param.DEFAULT_CHANNEL_EN))
 		{
 			String lastChannelId = getPrefs().getString(Param.DEFAULT_CHANNEL_EN);
@@ -151,12 +164,12 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 			playLast();
 		}
 
-		_feature.Component.DEVICE.addStatusFieldGetter("channel", new IStatusFieldGetter()
+		_feature.Component.DEVICE.addStatusField("channel", new IStatusFieldGetter()
 		{
 			@Override
-            public String getStatusField()
+			public String getStatusField()
 			{
-				//FIX ME. This value is not always currently playing channel
+				// FIXME: This value is not always currently playing channel
 				return getLastChannelId();
 
 			}
@@ -325,7 +338,8 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		// set timeshift buffer size
 		if (_featureTimeshift != null)
 		{
-			// will not modify timeshift parameters unless the channel is changed
+			// will not modify timeshift parameters unless the channel is
+			// changed
 			if (index != lastChannelIndex)
 			{
 				long bufferSize = _feature.Scheduler.EPG.getStreamBufferSize(channel);
@@ -357,6 +371,31 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				{
 					// play stream
 					_feature.Component.PLAYER.play(streamUrl);
+
+					_feature.Component.PLAYER.getEventMessenger().register(new EventReceiver()
+					{
+						@Override
+						public void onEvent(int msgId, Bundle bundle)
+						{
+							Log.i(TAG, ".PLAYER:onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
+
+							if (_channelId == null || !_channelId.equals(channel.getChannelId()))
+							{
+								// switching to new channel
+								Bundle switchBundle = new Bundle();
+								if (_channelId != null)
+									switchBundle.putString(OnSwitchChannelExtras.FROM_CHANNEL.name(), _channelId);
+								switchBundle.putString(OnSwitchChannelExtras.TO_CHANNEL.name(), channel.getChannelId());
+								switchBundle.putLong(OnSwitchChannelExtras.SWITCH_DURATION.name(),
+								        bundle.getLong(FeaturePlayer.Extras.TIME_ELAPSED.name()));
+								getEventMessenger().trigger(ON_SWITCH_CHANNEL, switchBundle);
+							}
+							_channelId = channel.getChannelId();
+
+							_feature.Component.PLAYER.getEventMessenger().unregister(this,
+							        FeaturePlayer.ON_PLAY_STARTED);
+						}
+					}, FeaturePlayer.ON_PLAY_STARTED);
 				}
 			}
 		});

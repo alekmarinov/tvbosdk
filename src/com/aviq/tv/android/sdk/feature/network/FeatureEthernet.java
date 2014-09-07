@@ -96,7 +96,7 @@ public class FeatureEthernet extends FeatureNetwork
 	{
 		Log.i(TAG, ".initialize");
 
-		_feature.Component.DEVICE.addStatusFieldGetter("network", new IStatusFieldGetter()
+		_feature.Component.DEVICE.addStatusField("network", new IStatusFieldGetter()
 		{
 			@Override
 			public String getStatusField()

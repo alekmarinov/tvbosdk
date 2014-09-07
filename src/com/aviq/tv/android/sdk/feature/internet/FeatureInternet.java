@@ -87,6 +87,11 @@ public class FeatureInternet extends FeatureScheduler
 		URL, CONTENT, ERROR_MESSAGE, ERROR_CODE, PUBLIC_IP, LATITUDE, LONGITUDE, CITY, COUNTRY, REGION, ISP
 	}
 
+	public enum GeoIpExtras
+	{
+		PUBLIC_IP, LATITUDE, LONGITUDE, CITY, COUNTRY, REGION, ISP
+	}
+
 	// FIXME: the public ip must be obtained by ON_CONNECTED event
 	@Deprecated
 	private String _publicIP;

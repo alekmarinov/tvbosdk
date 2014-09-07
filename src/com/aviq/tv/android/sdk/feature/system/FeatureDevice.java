@@ -220,14 +220,14 @@ public class FeatureDevice extends FeatureComponent
 
 		long sendPeriod = (System.currentTimeMillis() - _lastSendTime) / 1000;
 		Log.i(TAG, "Send period = " + sendPeriod);
-		double rcvdBytesPerSec = (TrafficStats.getTotalRxBytes() - _bytesRcvd) / (double) sendPeriod;
-		double sntBytesPerSec = (TrafficStats.getTotalTxBytes() - _bytesSent) / (double) sendPeriod;
+		long rcvdBytesPerSec = (TrafficStats.getTotalRxBytes() - _bytesRcvd) / sendPeriod;
+		long sntBytesPerSec = (TrafficStats.getTotalTxBytes() - _bytesSent) / sendPeriod;
 
 		Bundle bundle = new Bundle();
 		bundle.putLong(OnStatusExtra.cpuidle.name(), cpuMean);
 		bundle.putLong(OnStatusExtra.memfree.name(), memMean);
-		bundle.putDouble(OnStatusExtra.uplink.name(), sntBytesPerSec);
-		bundle.putDouble(OnStatusExtra.downlink.name(), rcvdBytesPerSec);
+		bundle.putLong(OnStatusExtra.uplink.name(), sntBytesPerSec);
+		bundle.putLong(OnStatusExtra.downlink.name(), rcvdBytesPerSec);
 		bundle.putLong(OnStatusExtra.hddfree.name(), getHddFreeMemory());
 		bundle.putString(OnStatusExtra.network.name(), getNetwork());
 
@@ -323,11 +323,10 @@ public class FeatureDevice extends FeatureComponent
 	/**
 	 * Provide field status accessing interface
 	 *
-	 * @param fieldName
-	 *            - field name
-	 * @IStatusFieldGetter - field value providing interface
+	 * @param fieldName the name of the field
+	 * @param getter IStatusFieldGetter callback interface
 	 */
-	public void addStatusFieldGetter(String fieldName, IStatusFieldGetter getter)
+	public void addStatusField(String fieldName, IStatusFieldGetter getter)
 	{
 		_fieldGetters.put(fieldName, getter);
 	}

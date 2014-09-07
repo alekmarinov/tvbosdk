@@ -29,11 +29,15 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
+import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Opens the Settings app when detected special key sequence by the RCU
  */
+@PriorityFeature
 public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureEasterEgg.class.getSimpleName();
@@ -94,15 +98,16 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 		}
 	}
 
-	public FeatureEasterEgg()
+	public FeatureEasterEgg() throws FeatureNotFoundException
 	{
-		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
+		require(FeatureName.Component.RCU);
 	}
 
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
+		_feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
 
 		// A list of the application-specific key sequences
 
@@ -156,7 +161,7 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 	public void onEvent(int msgId, Bundle bundle)
 	{
 		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
-		if (Environment.ON_KEY_PRESSED == msgId)
+		if (FeatureRCU.ON_KEY_PRESSED == msgId)
 		{
 			long delay = System.currentTimeMillis() - lastKeyPress;
 			if (delay > _minKeyDelay)
