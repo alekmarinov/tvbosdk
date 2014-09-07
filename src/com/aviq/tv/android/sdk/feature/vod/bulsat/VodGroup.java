@@ -133,7 +133,7 @@ public class VodGroup implements Parcelable
 		return true;
 	}
 	
-	// Parcellable contract
+	// Parcelable contract
 	
 	public VodGroup(Parcel in)
 	{

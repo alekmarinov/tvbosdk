@@ -128,7 +128,7 @@ public class VodTree<T extends Parcelable> implements Parcelable
 			dest.writeList(_children);
 	    }
 	    
-	    public static final Parcelable.Creator CREATOR = new Parcelable.Creator() 
+	    public static final Parcelable.Creator<Node> CREATOR = new Parcelable.Creator<Node>() 
 	    {
 	        public Node createFromParcel(Parcel in) 
 	        {
@@ -161,7 +161,7 @@ public class VodTree<T extends Parcelable> implements Parcelable
     	dest.writeParcelable(_root, flags);
     }
     
-    public static final Parcelable.Creator CREATOR = new Parcelable.Creator() 
+    public static final Parcelable.Creator<VodTree> CREATOR = new Parcelable.Creator<VodTree>() 
     {
         public VodTree createFromParcel(Parcel in) 
         {

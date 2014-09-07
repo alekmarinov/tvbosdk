@@ -22,8 +22,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import android.net.Uri;
-
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader.ImageContainer;
 import com.android.volley.toolbox.ImageLoader.ImageListener;
@@ -40,8 +38,9 @@ class VodXmlParser
 	private static final String TAG_VOD = "vod";
 	private static final String TAG_ID = "id";
 	private static final String TAG_TITLE = "title";
+	private static final String TAG_TITLE_ORG = "title_org";
+	private static final String TAG_SHORT_NAME = "short_name";
 	private static final String TAG_POSTER = "poster";
-	private static final String TAG_SOURCE = "source";
 
 	private SAXParser _saxParser;
 	private XmlVodHandler _handler;
@@ -138,11 +137,15 @@ class VodXmlParser
 
 				// Fetch the image and cache it
 				// FIXME: Alek, this causes NullPtrException
-				// fetchVodPoster(_currentVod.getTitle(), _currentVod.getPoster());
+				fetchVodPoster(_currentVod.getTitle(), _currentVod.getPoster());
 			}
-			else if (TAG_SOURCE.equals(localName))
+			else if (TAG_TITLE_ORG.equals(localName))
 			{
-				_currentVod.setSources(Uri.decode(_currentValue.toString()));
+				_currentVod.setTitleOrg(_currentValue.toString());
+			}
+			else if (TAG_SHORT_NAME.equals(localName))
+			{
+				_currentVod.setShortName(_currentValue.toString());
 			}
 		}
 
@@ -170,7 +173,7 @@ class VodXmlParser
 			public void run()
 			{
 				// ImageLoader must be invoked from the main thread
-				Environment.getInstance().getImageLoader().get(_currentVod.getPoster(), new ImageListener()
+				Environment.getInstance().getImageLoader().get(posterUrl, new ImageListener()
 				{
 					@Override
 					public void onErrorResponse(VolleyError error)

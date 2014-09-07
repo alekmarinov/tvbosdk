@@ -5,6 +5,7 @@ import android.util.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
+import com.aviq.tv.android.sdk.feature.vod.bulsat.Vod;
 
 public abstract class FeatureVOD extends FeatureScheduler
 {
@@ -30,4 +31,11 @@ public abstract class FeatureVOD extends FeatureScheduler
 	}
 	
 	public abstract <T> T getVodData();
+	public abstract void loadVod(String id, OnVodLoaded onVodLoadedListener);
+	
+	public static interface OnVodLoaded 
+	{
+		public void onVodLoaded(Vod vod);
+		public void onVodError(Exception error);
+	}
 }

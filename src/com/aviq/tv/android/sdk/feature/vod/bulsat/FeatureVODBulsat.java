@@ -17,6 +17,7 @@ import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.HttpHeaderParser;
+import com.android.volley.toolbox.StringRequest;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
@@ -34,7 +35,7 @@ public class FeatureVODBulsat extends FeatureVOD
 	public enum Param
 	{
 		VOD_XML_URL("http://185.4.83.193/?xml&vod"),
-
+		
 		/**
 		 * Schedule interval
 		 */
@@ -87,9 +88,15 @@ public class FeatureVODBulsat extends FeatureVOD
 		return _vodData;
 	}
 
-	public Vod loadVod(String id)
+	public void loadVod(String id, OnVodLoaded onVodLoadedListener)
 	{
-		return null;
+		String vodServerURL = getPrefs().getString(Param.VOD_XML_URL) + "=" + id;
+		Log.i(TAG, "Retrieving VOD data from: " + vodServerURL);
+		
+		VodResponseCallback callback = new VodResponseCallback(onVodLoadedListener);
+		
+		StringRequest request = new StringRequest(Request.Method.GET, vodServerURL, callback, callback);
+		Environment.getInstance().getRequestQueue().add(request);
 	}
 	
 	private class VodRequest<T> extends Request<T>
@@ -180,6 +187,58 @@ public class FeatureVODBulsat extends FeatureVOD
 
 	}
 
+	private class VodResponseCallback implements Response.Listener<String>, Response.ErrorListener
+	{
+		private OnVodLoaded _callback;
+		
+		public VodResponseCallback(OnVodLoaded callback)
+		{
+			_callback = callback;
+		}
+		
+		@Override
+		public void onResponse(String response)
+		{
+			try
+			{
+				VodDetailsXmlParser xmlParser = new VodDetailsXmlParser();
+				xmlParser.initialize();
+				
+				Vod vod = xmlParser.fromXML(response);
+				
+				if (_callback != null)
+					_callback.onVodLoaded(vod);
+			}
+			catch (ParserConfigurationException e)
+			{
+				Log.e(TAG, "Cannot configure SAX parser.", e);
+				if (_callback != null)
+					_callback.onVodError(e);
+			}
+			catch (SAXException e)
+			{
+				Log.e(TAG, "SAX parser error.", e);
+				if (_callback != null)
+					_callback.onVodError(e);
+			} 
+			catch (IOException e) 
+			{
+				Log.e(TAG, "Error parsing XML.", e);
+				if (_callback != null)
+					_callback.onVodError(e);
+			}
+		}
+
+		@Override
+		public void onErrorResponse(VolleyError error)
+		{
+			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
+			        : ResultCode.GENERAL_FAILURE;
+			Log.e(TAG, "Error retrieving VOD data: code " + statusCode + ": " + error);
+			_onFeatureInitialized.onInitialized(FeatureVODBulsat.this, statusCode);
+		}
+	}
+	
 	//---------------------------------------------------
 	// DEBUGGING CODE TO DUMP THE VOD TREE RECURSIVELY
 	//---------------------------------------------------
