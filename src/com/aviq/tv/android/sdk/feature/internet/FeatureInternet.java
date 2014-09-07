@@ -69,7 +69,10 @@ public class FeatureInternet extends FeatureScheduler
 		CHECK_ATTEMPT_DELAY(4000),
 
 		/** URL to check against for the box's geoip information */
-		GEOIP_URL("http://www.telize.com/geoip");
+		GEOIP_URL("http://freegeoip.net/json"),
+
+		/** Backup URL to check against for the box's geoip information */
+		GEOIP_URL_BACKUP("http://www.telize.com/geoip");
 
 		Param(int value)
 		{
@@ -148,12 +151,16 @@ public class FeatureInternet extends FeatureScheduler
 		class InternetCheckResponse implements OnResultReceived, Runnable
 		{
 			private int _attemptsCounter = 0;
+			private int _checkAttempts = getPrefs().getInt(Param.CHECK_ATTEMPTS);
 			private long _checkStart = System.currentTimeMillis();
 
 			@Override
 			public void run()
 			{
-				getUrlContent(getPrefs().getString(Param.GEOIP_URL), this);
+				if (_attemptsCounter == 0)
+					getUrlContent(getPrefs().getString(Param.GEOIP_URL), this);
+				else
+					getUrlContent(getPrefs().getString(Param.GEOIP_URL_BACKUP), this);
 			}
 
 			@Override
@@ -161,13 +168,12 @@ public class FeatureInternet extends FeatureScheduler
 			{
 				if (resultCode != ResultCode.OK)
 				{
-					int checkAttempts = getPrefs().getInt(Param.CHECK_ATTEMPTS);
 					long timeElapsed = System.currentTimeMillis() - _checkStart;
-					if (_attemptsCounter < checkAttempts
+					if (_attemptsCounter < _checkAttempts
 					        || (timeElapsed < getPrefs().getInt(Param.CHECK_ATTEMPTS_TIMEOUT)))
 					{
 						_attemptsCounter++;
-						Log.w(TAG, "Check internet failed. Trying " + (checkAttempts - _attemptsCounter + 1)
+						Log.w(TAG, "Check internet failed. Trying " + (_checkAttempts - _attemptsCounter + 1)
 						        + " more times");
 						getEventMessenger().postDelayed(this, getPrefs().getInt(Param.CHECK_ATTEMPT_DELAY));
 						return;
@@ -192,8 +198,12 @@ public class FeatureInternet extends FeatureScheduler
 							resultData.putString(ResultExtras.CITY.name(), obj.getString("city"));
 						if (!obj.isNull("country"))
 							resultData.putString(ResultExtras.COUNTRY.name(), obj.getString("country"));
+						else if (!obj.isNull("country_name"))
+							resultData.putString(ResultExtras.COUNTRY.name(), obj.getString("country_name"));
 						if (!obj.isNull("region"))
 							resultData.putString(ResultExtras.REGION.name(), obj.getString("region"));
+						else if (!obj.isNull("region_name"))
+							resultData.putString(ResultExtras.REGION.name(), obj.getString("region_name"));
 						if (!obj.isNull("isp"))
 							resultData.putString(ResultExtras.ISP.name(), obj.getString("isp"));
 					}

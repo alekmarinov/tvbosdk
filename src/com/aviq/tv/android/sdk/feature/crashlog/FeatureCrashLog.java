@@ -43,7 +43,6 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
-import com.aviq.tv.android.sdk.feature.eventcollector.FeatureEventCollector;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.network.FeatureNetwork;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
@@ -68,6 +67,30 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 	 */
 	public static final String EXCEPTION_TAG = "[SILENT-EXCEPTION-ID]";
 	public static final String NO_VALUE = "n/a";
+
+	public static enum Severity
+	{
+		INFO, ALERT, ERROR, FATAL;
+	}
+
+	public static interface Key
+	{
+		String SEVERITY = "severity";
+		String REASON = "reason";
+		String DEVICE = "device";
+		String EVENT = "event";
+		String MAC = "mac";
+		String IP = "ip";
+		String SW = "sw";
+		String VERSION = "version";
+		String PUBLIC_IP = "public_ip";
+		String KIND = "kind";
+		String CUSTOMER = "customer";
+		String BRAND = "brand";
+		String TIMESTAMP = "timestamp";
+		String SOURCE = "source";
+		String ITEM = "item";
+	}
 
 	public enum Param
 	{
@@ -370,8 +393,8 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 			f.delete();
 
 			Bundle params = new Bundle();
-			params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.COLDBOOT.getName());
-			params.putString(FeatureEventCollector.Key.SEVERITY, AppRestartReasonType.COLDBOOT.getSeverity());
+			params.putString(Key.REASON, AppRestartReasonType.COLDBOOT.getName());
+			params.putString(Key.SEVERITY, AppRestartReasonType.COLDBOOT.getSeverity());
 			getEventMessenger().trigger(ON_APP_STARTED, params);
 		}
 		else
@@ -419,9 +442,9 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 							if (matcher.find())
 							{
 								Bundle params = new Bundle();
-								params.putString(FeatureEventCollector.Key.REASON,
+								params.putString(Key.REASON,
 								        AppRestartReasonType.APP_KILLED.getName());
-								params.putString(FeatureEventCollector.Key.SEVERITY,
+								params.putString(Key.SEVERITY,
 								        AppRestartReasonType.APP_KILLED.getSeverity());
 								getEventMessenger().trigger(ON_APP_STARTED, params);
 
@@ -438,9 +461,9 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 							if (matcher.find())
 							{
 								Bundle params = new Bundle();
-								params.putString(FeatureEventCollector.Key.REASON,
+								params.putString(Key.REASON,
 								        AppRestartReasonType.APP_KILLED.getName());
-								params.putString(FeatureEventCollector.Key.SEVERITY,
+								params.putString(Key.SEVERITY,
 								        AppRestartReasonType.APP_KILLED.getSeverity());
 								getEventMessenger().trigger(ON_APP_STARTED, params);
 
@@ -457,9 +480,9 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 							if (matcher.find())
 							{
 								Bundle params = new Bundle();
-								params.putString(FeatureEventCollector.Key.REASON,
+								params.putString(Key.REASON,
 								        AppRestartReasonType.SIGNAL_CRASH.getName());
-								params.putString(FeatureEventCollector.Key.SEVERITY,
+								params.putString(Key.SEVERITY,
 								        AppRestartReasonType.SIGNAL_CRASH.getSeverity());
 								getEventMessenger().trigger(ON_APP_STARTED, params);
 
@@ -476,8 +499,8 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 						if (!foundMatch)
 						{
 							Bundle params = new Bundle();
-							params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.UNKNOWN.getName());
-							params.putString(FeatureEventCollector.Key.SEVERITY,
+							params.putString(Key.REASON, AppRestartReasonType.UNKNOWN.getName());
+							params.putString(Key.SEVERITY,
 							        AppRestartReasonType.UNKNOWN.getSeverity());
 							getEventMessenger().trigger(ON_APP_STARTED, params);
 
@@ -495,24 +518,24 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 				if (AppRestartReasonType.STANDBY_WAKEUP.getReason() == reason)
 				{
 					Bundle params = new Bundle();
-					params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.STANDBY_WAKEUP.getName());
-					params.putString(FeatureEventCollector.Key.SEVERITY,
+					params.putString(Key.REASON, AppRestartReasonType.STANDBY_WAKEUP.getName());
+					params.putString(Key.SEVERITY,
 					        AppRestartReasonType.STANDBY_WAKEUP.getSeverity());
 					getEventMessenger().trigger(ON_APP_STARTED, params);
 				}
 				else if (AppRestartReasonType.UNHANDLED_CRASH.getReason() == reason)
 				{
 					Bundle params = new Bundle();
-					params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.UNHANDLED_CRASH.getName());
-					params.putString(FeatureEventCollector.Key.SEVERITY,
+					params.putString(Key.REASON, AppRestartReasonType.UNHANDLED_CRASH.getName());
+					params.putString(Key.SEVERITY,
 					        AppRestartReasonType.UNHANDLED_CRASH.getSeverity());
 					getEventMessenger().trigger(ON_APP_STARTED, params);
 				}
 				else
 				{
 					Bundle params = new Bundle();
-					params.putString(FeatureEventCollector.Key.REASON, AppRestartReasonType.UNKNOWN.getName());
-					params.putString(FeatureEventCollector.Key.SEVERITY, AppRestartReasonType.UNKNOWN.getSeverity());
+					params.putString(Key.REASON, AppRestartReasonType.UNKNOWN.getName());
+					params.putString(Key.SEVERITY, AppRestartReasonType.UNKNOWN.getSeverity());
 					getEventMessenger().trigger(ON_APP_STARTED, params);
 
 					ACRA.getErrorReporter().handleSilentException(
@@ -541,12 +564,12 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 
 	public static enum AppRestartReasonType
 	{
-		COLDBOOT(-1, "system_start", FeatureEventCollector.Severity.INFO.name()),
-		STANDBY_WAKEUP(1, "standby_wakeup", FeatureEventCollector.Severity.INFO.name()),
-		UNHANDLED_CRASH(2, "app_crash", FeatureEventCollector.Severity.ERROR.name()),
-		SIGNAL_CRASH(3, "system_crash", FeatureEventCollector.Severity.FATAL.name()),
-		APP_KILLED(4, "app_killed", FeatureEventCollector.Severity.FATAL.name()),
-		UNKNOWN(5, "unknown", FeatureEventCollector.Severity.FATAL.name());
+		COLDBOOT(-1, "system_start", Severity.INFO.name()),
+		STANDBY_WAKEUP(1, "standby_wakeup", Severity.INFO.name()),
+		UNHANDLED_CRASH(2, "app_crash", Severity.ERROR.name()),
+		SIGNAL_CRASH(3, "system_crash", Severity.FATAL.name()),
+		APP_KILLED(4, "app_killed", Severity.FATAL.name()),
+		UNKNOWN(5, "unknown", Severity.FATAL.name());
 
 		private int _reason;
 		private String _name;
@@ -657,23 +680,5 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		}
 
 		return log;
-	}
-
-	private static interface Key
-	{
-		String DEVICE = "device";
-		String MAC = "mac";
-		String IP = "ip";
-		String PUBLIC_IP = "public_ip";
-		String SW = "sw";
-		String VERSION = "version";
-		String KIND = "kind";
-		String CUSTOMER = "customer";
-		String BRAND = "brand";
-		String EVENT = "event";
-		String TIMESTAMP = "timestamp";
-		String SOURCE = "source";
-		String ITEM = "item";
-		String NAME = "name";
 	}
 }

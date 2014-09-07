@@ -231,7 +231,9 @@ public class FeatureDevice extends FeatureComponent
 		bundle.putLong(OnStatusExtra.hddfree.name(), getHddFreeMemory());
 		bundle.putString(OnStatusExtra.network.name(), getNetwork());
 
-		bundle.putString(OnStatusExtra.section.name(), ((FeatureState)Environment.getInstance().getStateManager().getMainState()).getStateName().name());
+		FeatureState mainState = (FeatureState)Environment.getInstance().getStateManager().getMainState();
+		if (mainState != null)
+			bundle.putString(OnStatusExtra.section.name(), mainState.getStateName().name());
 
 		for (String paramName : _fieldGetters.keySet())
 		{

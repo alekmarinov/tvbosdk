@@ -18,7 +18,6 @@ import com.aviq.tv.android.sdk.feature.channels.FeatureChannels;
 import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
-import com.aviq.tv.android.sdk.feature.eventcollector.FeatureEventCollectorBase;
 import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.language.FeatureLanguage;
@@ -80,7 +79,7 @@ public class Features
 		public FeatureInternet INTERNET;
 		public FeatureEPG EPG;
 		public FeatureUpgrade UPGRADE;
-		public FeatureEventCollectorBase EVENT_COLLECTOR;
+		public FeatureScheduler EVENT_COLLECTOR;
 		public FeatureVOD VOD;
 	}
 

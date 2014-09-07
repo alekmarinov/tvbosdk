@@ -1,11 +1,11 @@
 /**
- * Copyright (c) 2007-2013, AVIQ Bulgaria Ltd
+ * Copyright (c) 2007-2014, AVIQ Bulgaria Ltd
  *
  * Project:     AVIQTVSDK
  * Filename:    FeatureEventCollector.java
  * Author:      zhelyazko
  * Date:        19 Mar 2014
- * Description: Scheduler feature collecting events and sending them to a remote location.
+ * Description: Scheduler feature sending collected events periodically to remote event tracking system
  */
 
 package com.aviq.tv.android.sdk.feature.eventcollector;
@@ -13,190 +13,102 @@ package com.aviq.tv.android.sdk.feature.eventcollector;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
+import java.util.TimeZone;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.text.format.Time;
 import android.util.JsonWriter;
 import android.util.Log;
-import android.util.SparseArray;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
-import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
-import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
+import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
-import com.aviq.tv.android.sdk.feature.internet.FeatureInternet.ResultExtras;
+import com.aviq.tv.android.sdk.feature.internet.FeatureInternet.GeoIpExtras;
 import com.aviq.tv.android.sdk.feature.internet.UploadService;
-import com.aviq.tv.android.sdk.feature.network.FeatureEthernet;
-import com.aviq.tv.android.sdk.feature.network.FeatureWireless;
-import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
-import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
-import com.aviq.tv.android.sdk.feature.upgrade.FeatureUpgrade;
-import com.aviq.tv.android.sdk.player.BasePlayer;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
- * Scheduler feature collecting events and sending them to a remote location.
- * Requirements to use it:
- * 1. Project has to include the relative path to the root certificate on the
- * server if it is a self-generated certificate.
- * 2. Project's AndroidManifest.xml has to reference FeatureInternet's
- * UploadService class.
+ * Scheduler feature sending collected events periodically to remote event tracking system
  */
 @PriorityFeature
 public class FeatureEventCollector extends FeatureScheduler
 {
 	public static final String TAG = FeatureEventCollector.class.getSimpleName();
-
-	protected static final String REPORT_PREFIX = "aviqv2-";
-	protected static final String NO_VALUE = "n/a";
+	public static final int ON_TRACK = EventMessenger.ID("ON_TRACK");
 
 	public enum Param
 	{
-		/** Initial delay */
-		EVENT_COLLECTOR_INITIAL_DELAY(1 * 1000),
-
 		/** Schedule interval. */
-		EVENT_COLLECTOR_SCHEDULE_INTERVAL(4 * 1000),
+		SEND_EVENTS_INTERVAL(16 * 1000),
 
 		/** Report URL */
-		EVENT_COLLECTOR_REPORT_URL("https://services.aviq.com:30227/upload/logs/"),
+		EVENTS_SERVER_URL("https://services.aviq.com:30227/upload/logs/"),
 
 		/** Username for report URL */
-		EVENT_COLLECTOR_REPORT_URL_USERNAME(""),
+		EVENTS_SERVER_USERNAME(""),
 
 		/** Password for report URL */
-		EVENT_COLLECTOR_REPORT_URL_PASSWORD(""),
+		EVENTS_SERVER_PASSWORD(""),
 
-		/** Report name template based on String.format parameters */
-		EVENT_COLLECTOR_REPORT_NAME_TEMPLATE("${BUILD}-${CUSTOMER}-${BRAND}-${MAC}-${DATETIME}-${RANDOM}.eventlog"),
+		/** Report name template */
+		REPORT_FILENAME_TEMPLATE("${BUILD}-${CUSTOMER}-${BRAND}-${MAC}-${DATETIME}-${RANDOM}.eventlog"),
 
 		/** Path to the CA certificate relative to the assets folder */
-		EVENT_COLLECTOR_CA_CERT_PATH(""),
-
-		/**
-		 * Some events may come too fast, e.g. events from some progress
-		 * tracking like a download. Such events are marked in the code.
-		 * Setting this value will effectively ignore events of the same
-		 * type that come too often, i.e. if the last event was X milliseconds
-		 * from the current or less, then ignore the current event.
-		 * Note: events must be explicitly marked in order for this value
-		 * to matter.
-		 */
-		EVENT_COLLECTOR_ANTI_FLOOD_INTERVAL(4000),
-
-		EVENT_COLLECTOR_CUSTOMER(""),
-		EVENT_COLLECTOR_BRAND("");
+		EVENTS_SERVER_CA_CERT_PATH("");
 
 		Param(int value)
 		{
-			try
-			{
-				Environment.getInstance().getFeatureManager().getFeature(FeatureEventCollector.class).getPrefs()
-				        .put(name(), value);
-			}
-			catch (FeatureNotFoundException e)
-			{
-			}
+			Environment.getInstance().getFeature(FeatureEventCollector.class).getPrefs().put(name(), value);
 		}
 
 		Param(String value)
 		{
-			try
-			{
-				Environment.getInstance().getFeatureManager().getFeature(FeatureEventCollector.class).getPrefs()
-				        .put(name(), value);
-			}
-			catch (FeatureNotFoundException e)
-			{
-			}
+			Environment.getInstance().getFeature(FeatureEventCollector.class).getPrefs().put(name(), value);
 		}
 	}
 
-	public static enum Severity
+	/**
+	 * Extra params associated with ON_TRACK event
+	 */
+	public enum OnTrackExtra
 	{
-		INFO, ALERT, ERROR, FATAL;
+		EVENT, SOURCE
 	}
 
-	private FeatureInternet _featureInternet;
-	private FeatureRegister _featureRegister;
-	private FeatureEthernet _featureEthernet;
-	private FeatureWireless _featureWireless;
-	private FeatureCrashLog _featureCrashLog;
+	/**
+	 * keep all collected events until uploading to the tracking server
+	 */
 	private List<Bundle> _eventList = Collections.synchronizedList(new ArrayList<Bundle>());
-	private SparseArray<Long> _antiFloodEvents = new SparseArray<Long>();
-	private int _antiFloodInterval;
+	private Bundle _geoIp = new Bundle();
 
 	public FeatureEventCollector() throws FeatureNotFoundException
 	{
-//		require(FeatureName.Component.REGISTER);
-//		require(FeatureName.Component.CRASHLOG);
+		require(FeatureName.Component.DEVICE);
+		require(FeatureName.Scheduler.INTERNET);
 	}
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		Log.i(TAG, ".initialize");
-		try
-		{
-			Environment env = Environment.getInstance();
-
-			// Load required preferences
-			_antiFloodInterval = getPrefs().getInt(Param.EVENT_COLLECTOR_ANTI_FLOOD_INTERVAL);
-
-			// Load required features
-			_featureInternet = (FeatureInternet) env.getFeatureScheduler(FeatureName.Scheduler.INTERNET);
-			_featureRegister = (FeatureRegister) env.getFeatureComponent(FeatureName.Component.REGISTER);
-			_featureEthernet = (FeatureEthernet) env.getFeatureComponent(FeatureName.Component.ETHERNET);
-			_featureWireless = (FeatureWireless) env.getFeatureComponent(FeatureName.Component.WIRELESS);
-
-			// Internet
-			_featureInternet = (FeatureInternet) env.getFeatureScheduler(FeatureName.Scheduler.INTERNET);
-			_featureInternet.getEventMessenger().register(this, FeatureInternet.ON_CONNECTED);
-
-			// Crash Log
-			_featureCrashLog = (FeatureCrashLog) env.getFeatureComponent(FeatureName.Component.CRASHLOG);
-			_featureCrashLog.getEventMessenger().register(this, FeatureCrashLog.ON_APP_STARTED);
-
-			onSchedule(onFeatureInitialized);
-			super.initialize(onFeatureInitialized);
-		}
-		catch (Exception /*FeatureNotFoundException*/ e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-		}
-	}
-
-	@Override
-	protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
-	{
-		Log.i(TAG, "Processing collected events.");
-
-		// FIXME Consider converting this Scheduler to a Component. Currently
-		// events are send when FeatureInternet sends "ON_CONNECTED" events.
-		// However, if converted to a Component, it won't be possible to control
-		// the sending of events.
-		// processCollectedEvents();
-
-		// Schedule another pass
-		int delay = getPrefs().has(Param.EVENT_COLLECTOR_SCHEDULE_INTERVAL) ? getPrefs().getInt(
-		        Param.EVENT_COLLECTOR_SCHEDULE_INTERVAL) : 0;
-		scheduleDelayed(delay);
+		getEventMessenger().register(this, ON_TRACK);
+		_feature.Scheduler.INTERNET.getEventMessenger().register(this, FeatureInternet.ON_CONNECTED);
+		onSchedule(onFeatureInitialized);
 	}
 
 	@Override
@@ -209,247 +121,200 @@ public class FeatureEventCollector extends FeatureScheduler
 	public void onEvent(int msgId, Bundle bundle)
 	{
 		super.onEvent(msgId, bundle);
-		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
-
-		Long lastEventTime = _antiFloodEvents.get(msgId);
-		if (lastEventTime != null)
+		if (ON_TRACK == msgId)
 		{
-			long now = System.currentTimeMillis();
-			if (lastEventTime > 0)
+			String eventName = bundle.getString(OnTrackExtra.EVENT.name().toLowerCase());
+			if (eventName == null)
 			{
-				long delta = now - lastEventTime;
-				if (delta <= _antiFloodInterval)
+				Log.e(TAG, "attribute `" + OnTrackExtra.EVENT.name().toLowerCase()
+				        + "' is required but missing in event " + TextUtils.implodeBundle(bundle));
+				return;
+			}
+			String eventSource = bundle.getString(OnTrackExtra.SOURCE.name().toLowerCase());
+			if (eventSource == null)
+			{
+				Log.e(TAG, "attribute `" + OnTrackExtra.SOURCE.name().toLowerCase()
+				        + "' is required but missing in event " + TextUtils.implodeBundle(bundle));
+				return;
+			}
+			Bundle eventParams = new Bundle();
+			eventParams.putBundle("device", createDeviceAttributes());
+			eventParams.putBundle("geoip", createGeoIPAttributes());
+			eventParams.putBundle("event", createEventAttributes(eventName, eventSource));
+
+			Bundle customAttributes = new Bundle();
+			for (String key : bundle.keySet())
+			{
+				// verify if the custom param is not one of the OnTrackExtra
+				boolean skipParam = false;
+				for (OnTrackExtra extra: OnTrackExtra.values())
 				{
-					Log.i(TAG, "Anti-flood protection for event " + msgId + ". Event dropped; time delta = " + delta);
-					return;
+					if (extra.name().equals(key.toUpperCase()))
+					{
+						skipParam = true;
+						break;
+					}
+				}
+
+				if (!skipParam)
+				{
+					Object value = bundle.get(key);
+					TextUtils.putBundleObject(customAttributes, key, value);
 				}
 			}
-
-			// Set the time for the last received event
-			_antiFloodEvents.put(msgId, now);
+			eventParams.putBundle(eventName, customAttributes);
+			addEvent(eventParams);
 		}
-
-		if (FeatureInternet.ON_CONNECTED == msgId)
+		else if (FeatureInternet.ON_CONNECTED == msgId)
 		{
-			processCollectedEvents();
-		}
-		else if (FeatureCrashLog.ON_APP_STARTED == msgId)
-		{
-			String reason = bundle != null ? bundle.getString(Key.REASON) : "n/a";
-			String severity = bundle != null ? bundle.getString(Key.SEVERITY) : "n/a";
-
-			Bundle params = prepareParams("system", Key.APP, "started",
-			        FeatureCrashLog.class.getSimpleName(), Severity.valueOf(severity));
-
-			params.putString(Key.REASON, reason);
-
-			addEvent(params);
+			for (GeoIpExtras geoip: FeatureInternet.GeoIpExtras.values())
+			{
+				if ( bundle.containsKey(geoip.name()))
+					TextUtils.putBundleObject(_geoIp, geoip.name().toLowerCase(), bundle.get(geoip.name()));
+			}
 		}
 	}
 
+	/**
+	 * Create device attributes to attach to each event
+	 *
+	 * @return Bundle
+	 */
+	protected Bundle createDeviceAttributes()
+	{
+		Bundle deviceParams = new Bundle();
+		for (DeviceAttribute deviceAttribute : FeatureDevice.DeviceAttribute.values())
+		{
+			String attrValue = _feature.Component.DEVICE.getDeviceAttribute(deviceAttribute);
+			deviceParams.putString(deviceAttribute.name().toLowerCase(), attrValue);
+		}
+		return deviceParams;
+	}
+
+	/**
+	 * Create geoip attributes to attach to each event
+	 *
+	 * @return Bundle
+	 */
+	protected Bundle createGeoIPAttributes()
+	{
+		return _geoIp;
+	}
+	/**
+	 * Create event attributes to attach to each event
+	 *
+	 * @return Bundle
+	 */
+	protected Bundle createEventAttributes(String name, String source)
+	{
+		TimeZone tzUTC = TimeZone.getTimeZone("UTC");
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+		df.setTimeZone(tzUTC);
+		String timestamp = df.format(System.currentTimeMillis());
+		Bundle eventParams = new Bundle();
+		eventParams.putString("name", name);
+		eventParams.putString("source", source);
+		eventParams.putString("timestamp", timestamp);
+		return eventParams;
+	}
+
+	@Override
+	protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
+	{
+		// process events
+		processCollectedEvents();
+		scheduleDelayed(getPrefs().getInt(Param.SEND_EVENTS_INTERVAL));
+		onFeatureInitialized.onInitialized(this, ResultCode.OK);
+	}
+
+	/**
+	 * Upload all collected events to the tracking server
+	 */
 	protected void processCollectedEvents()
 	{
-		try
+		Log.v(TAG, "Process " + _eventList.size() + " collected events");
+		String data = parseEventListToString(_eventList);
+		_eventList.clear();
+
+		if (data != null && data.length() > 0)
 		{
-			Log.v(TAG, "Process " + _eventList.size() + " events.");
+			String reportName = getReportName();
+			String url = getPrefs().getString(Param.EVENTS_SERVER_URL);
+			if (url.indexOf(url.length() - 1) != '/')
+				url += '/';
+			url += reportName;
+			Bundle uploadParams = new Bundle();
+			uploadParams.putString(UploadService.Extras.URL.name(), url);
+			uploadParams.putString(UploadService.Extras.CA_CERT_PATH.name(),
+			        getPrefs().getString(Param.EVENTS_SERVER_CA_CERT_PATH));
+			uploadParams.putString(UploadService.Extras.USERNAME.name(),
+			        getPrefs().getString(Param.EVENTS_SERVER_USERNAME));
+			uploadParams.putString(UploadService.Extras.PASSWORD.name(),
+			        getPrefs().getString(Param.EVENTS_SERVER_PASSWORD));
+			uploadParams.putString(UploadService.Extras.BUFFER.name(), data);
 
-			String data = parseEventListToString(_eventList);
-			_eventList.clear();
-
-			if (data != null && data.length() > 0)
+			_feature.Scheduler.INTERNET.uploadFile(uploadParams, new OnResultReceived()
 			{
-				Environment env = Environment.getInstance();
-
-				Time time = new Time();
-				time.set(System.currentTimeMillis());
-				String eventDateTime = time.format("%Y.%m.%d_%H.%M.%S");
-
-				Random rnd = new Random();
-				int randomNum = rnd.nextInt(1000);
-
-				String customer = getPrefs().getString(Param.EVENT_COLLECTOR_CUSTOMER);
-				String release = env.getPrefs().getString(Environment.Param.RELEASE);
-				String brand = getPrefs().getString(Param.EVENT_COLLECTOR_BRAND);
-				String mac = _feature.Component.REGISTER != null ? _feature.Component.REGISTER.getBoxId() : "null";
-
-				String reportName = REPORT_PREFIX + getPrefs().getString(Param.EVENT_COLLECTOR_REPORT_NAME_TEMPLATE);
-				reportName = reportName.replace("${BUILD}", release);
-				reportName = reportName.replace("${CUSTOMER}", customer);
-				reportName = reportName.replace("${BRAND}", brand);
-				reportName = reportName.replace("${MAC}", mac);
-				reportName = reportName.replace("${DATETIME}", eventDateTime);
-				reportName = reportName.replace("${RANDOM}", "" + randomNum);
-
-				Intent uploadService = new Intent(env, UploadService.class);
-				uploadService.putExtra(UploadService.Extras.CA_CERT_PATH.name(),
-				        getPrefs().getString(Param.EVENT_COLLECTOR_CA_CERT_PATH));
-				uploadService.putExtra(UploadService.Extras.URL.name(),
-				        getPrefs().getString(Param.EVENT_COLLECTOR_REPORT_URL) + reportName);
-				uploadService.putExtra(UploadService.Extras.USERNAME.name(),
-				        getPrefs().getString(Param.EVENT_COLLECTOR_REPORT_URL_USERNAME));
-				uploadService.putExtra(UploadService.Extras.PASSWORD.name(),
-				        getPrefs().getString(Param.EVENT_COLLECTOR_REPORT_URL_PASSWORD));
-				uploadService.putExtra(UploadService.Extras.BUFFER.name(), data);
-				env.startService(uploadService);
-			}
-		}
-		catch (IOException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
+				@Override
+				public void onReceiveResult(int resultCode, Bundle resultData)
+				{
+					Log.i(TAG, ".uploadFile:onReceiveResult: resultCode = " + resultCode);
+				}
+			});
 		}
 	}
 
-	private Bundle prepareEventObject(Bundle eventBundle)
+	/**
+	 * Gets tracking report file name
+	 *
+	 * @return file name to upload on the server
+	 */
+	protected String getReportName()
 	{
-		Bundle bundle = new Bundle();
+		Time time = new Time();
+		time.set(System.currentTimeMillis());
+		String eventDateTime = time.format("%Y.%m.%d_%H.%M.%S");
 
-		// Add "event"
-		eventBundle.putString(Key.TIMESTAMP, getTimeAsISO(System.currentTimeMillis()));
-		bundle.putBundle(Key.EVENT, eventBundle);
+		Random rnd = new Random();
+		int randomNum = rnd.nextInt(1000);
 
-		// Add "device"
-		Bundle deviceBundle = new Bundle();
-		bundle.putBundle(Key.DEVICE, deviceBundle);
+		Bundle substitute = new Bundle();
 
-		// Add "device.mac"
-		String mac = _featureRegister != null ? _featureRegister.getBoxId() : NO_VALUE;
-		if (mac == null || mac.trim().length() == 0)
-			mac = NO_VALUE;
-		deviceBundle.putString(Key.MAC, mac);
-
-		// Add "device.network"
-		Bundle networkBundle = new Bundle();
-		deviceBundle.putBundle(Key.NETWORK, networkBundle);
-
-		// Add "device.lan"
-		Bundle lanBundle = new Bundle();
-		networkBundle.putBundle(Key.LAN, lanBundle);
-
-		// Add "device.wan"
-		Bundle wanBundle = new Bundle();
-		networkBundle.putBundle(Key.WAN, wanBundle);
-
-		String localLanIP = NO_VALUE;
-		String networkInterface = NO_VALUE;
-		try
-		{
-			localLanIP = _featureEthernet != null ? _featureEthernet.getNetworkConfig().Addr : NO_VALUE;
-			if (localLanIP == null || localLanIP.trim().length() == 0)
-				localLanIP = NO_VALUE;
-		}
-		catch (Exception e)
-		{
-			Log.e(TAG,
-			        "Cannot retrieve Ethernet network configuration. Trying to retrieve WiFi network configuration.", e);
-			localLanIP = NO_VALUE;
-		}
-		finally
-		{
-			if (!localLanIP.equals(NO_VALUE))
-				networkInterface = "Ethernet";
-		}
-
-		// No Ethernet, try WiFi
-		if (localLanIP.equals(NO_VALUE))
-		{
-			try
-			{
-				localLanIP = _featureWireless != null ? _featureWireless.getNetworkConfig().Addr : NO_VALUE;
-				if (localLanIP == null || localLanIP.trim().length() == 0)
-					localLanIP = NO_VALUE;
-			}
-			catch (Exception e)
-			{
-				Log.e(TAG, "Cannot retrieve wireless network configuration.", e);
-				localLanIP = NO_VALUE;
-			}
-			finally
-			{
-				if (!localLanIP.equals(NO_VALUE))
-					networkInterface = "WiFi";
-			}
-		}
-
-		// Add "device.lan.ip"
-		lanBundle.putString(Key.IP, localLanIP);
-
-		// Add "device.ip"
-		deviceBundle.putString(Key.IP, localLanIP);
-
-		// Add "device.network.interface"
-		networkBundle.putString(Key.INTERFACE, networkInterface);
-
-		// Add "device.public_ip"
-		String publicIP = _featureInternet != null ? _featureInternet.getPublicIP() : NO_VALUE;
-		if (publicIP == null || publicIP.trim().length() == 0)
-			publicIP = NO_VALUE;
-		deviceBundle.putString(Key.PUBLIC_IP, publicIP);
-
-		// Add "device.wan.ip"
-		wanBundle.putString(Key.IP, publicIP);
-
-		Environment env = Environment.getInstance();
-		String version = env.getBuildVersion();
-		String build = version.substring(1 + version.lastIndexOf('.'));
-
-		// Add "device.sw"
-		Bundle swBundle = new Bundle();
-		swBundle.putString(Key.VERSION, version);
-		swBundle.putString(Key.KIND, env.getPrefs().getString(Environment.Param.RELEASE));
-		swBundle.putString(Key.CUSTOMER, getCustomer()); // _featureRegister.getBrand()
-		swBundle.putString(Key.BRAND, getBrand()); // _featureRegister.getBrand()
-		swBundle.putString(Key.BUILD, build);
-		deviceBundle.putBundle(Key.SW, swBundle);
-
-		return bundle;
+		substitute.putString("BUILD", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.BUILD));
+		substitute.putString("CUSTOMER", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.CUSTOMER));
+		substitute.putString("BRAND", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.BRAND));
+		substitute.putString("MAC", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC));
+		substitute.putString("DATETIME", eventDateTime);
+		substitute.putString("RANDOM", String.valueOf(randomNum));
+		return getPrefs().getString(Param.REPORT_FILENAME_TEMPLATE, substitute);
 	}
 
+	/**
+	 * Adds event to collection
+	 */
 	protected void addEvent(Bundle eventParams)
 	{
-		Bundle event = prepareEventObject(eventParams);
-		_eventList.add(event);
+		_eventList.add(eventParams);
 	}
 
-	protected void setAntiFloodProtectionForEvent(int eventId)
-	{
-		_antiFloodEvents.put(eventId, 0L);
-	}
-
-	private String getCustomer()
-	{
-		return getPrefs().getString(Param.EVENT_COLLECTOR_CUSTOMER);
-	}
-
-	private String getBrand()
-	{
-		return getPrefs().getString(Param.EVENT_COLLECTOR_BRAND);
-	}
-
-	public static String getTimeAsISO(long timestampMillis)
-	{
-		// TimeZone tz = TimeZone.getTimeZone("UTC");
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ");
-		// df.setTimeZone(tz);
-		String timeAsISO = df.format(timestampMillis);
-		return timeAsISO;
-	}
-
-	public static long getTimeAsMillis(String isoDateTime) throws ParseException
-	{
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ");
-		long millis = df.parse(isoDateTime).getTime();
-		return millis;
-	}
-
-	private void writeEvent(JsonWriter writer, Bundle event) throws IOException
+	/**
+	 * Writes bundle to JsonWriter
+	 *
+	 * @param writer
+	 *            a JsonWriter
+	 * @param bundle
+	 *            bundle to write
+	 * @throws IOException
+	 */
+	private void writeBundle(JsonWriter writer, Bundle bundle) throws IOException
 	{
 		writer.beginObject();
 
 		// Iterate over the elements of each event
-		Set<String> keys = event.keySet();
+		Set<String> keys = bundle.keySet();
 		for (String key : keys)
 		{
-			Object o = event.get(key);
+			Object o = bundle.get(key);
 
 			if (o == null)
 			{
@@ -495,7 +360,7 @@ public class FeatureEventCollector extends FeatureScheduler
 			{
 				// A complex object encountered, recurse through it
 				writer.name(key);
-				writeEvent(writer, (Bundle) o);
+				writeBundle(writer, (Bundle) o);
 			}
 			else
 			{
@@ -503,266 +368,41 @@ public class FeatureEventCollector extends FeatureScheduler
 				Log.w(TAG, "Unknown: " + o + " for type: " + o.getClass() + ", toString() = " + o.toString());
 			}
 		}
-
 		writer.endObject();
 	}
 
-	private String parseEventListToString(List<Bundle> eventList) throws IOException
+	/**
+	 * Creates string buffer from events list
+	 * Concatenate all events represented as JSON strings and separated with new
+	 * line
+	 *
+	 * @param eventList
+	 * @return String with all events
+	 */
+	private String parseEventListToString(List<Bundle> eventList)
 	{
 		StringBuffer data = new StringBuffer();
-
-		for (Bundle event : eventList)
+		try
 		{
-			StringWriter out = new StringWriter();
-			JsonWriter writer = new JsonWriter(out);
+			for (Bundle event : eventList)
+			{
+				StringWriter out = new StringWriter();
+				JsonWriter writer = new JsonWriter(out);
 
-			writeEvent(writer, event);
+				writeBundle(writer, event);
 
-			StringBuffer line = out.getBuffer();
-			data.append(line).append('\n');
+				StringBuffer line = out.getBuffer();
+				data.append(line).append('\n');
 
-			writer.close();
-			out.close();
+				writer.close();
+				out.close();
+			}
 		}
+		catch (IOException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+
 		return data.toString();
-	}
-
-	protected Bundle prepareParams(String source, String item, String name, String context, Severity severity)
-	{
-		Bundle params = new Bundle();
-
-		params.putString(Key.SOURCE, source);
-
-		if (item.length() > 0)
-			params.putString(Key.ITEM, item);
-
-		params.putString(Key.NAME, name);
-		params.putString(Key.CONTEXT, context);
-		params.putString(Key.SEVERITY, severity.name().toLowerCase());
-
-		return params;
-	}
-
-	public void registerForOnFeatureInitErrorEvent()
-	{
-		Environment.getInstance().getEventMessenger().register(new EventReceiver()
-		{
-			@Override
-	        public void onEvent(int msgId, Bundle bundle)
-	        {
-				String context = Environment.class.getSimpleName() + "::" + bundle.getString(Environment.EXTRA_FEATURE_NAME)
-		                + ": error code = " + bundle.getInt(Environment.EXTRA_ERROR_CODE);
-
-				Bundle params = prepareParams("system", "environment", Key.ERROR, context, Severity.FATAL);
-
-				Bundle errorBundle = new Bundle();
-				errorBundle.putString(Key.CODE, "n/a");
-				errorBundle.putString(Key.MESSAGE, "Cannot complete feature initialization due to an error.");
-				params.putBundle(Key.ERROR, errorBundle);
-
-				addEvent(params);
-	        }
-		}, Environment.ON_FEATURE_INIT_ERROR);
-	}
-
-	public void registerForOnPlayerErrorEvent()
-	{
-		Environment.getInstance().getEventMessenger().register(new EventReceiver()
-		{
-			@Override
-	        public void onEvent(int msgId, Bundle bundle)
-	        {
-				String context = BasePlayer.class.getSimpleName() + ": "
-				        + (bundle != null ? bundle.getString(BasePlayer.PARAM_ERROR) : "");
-
-				Bundle params = prepareParams("player", "", Key.ERROR, context, Severity.ERROR);
-
-				String url = Environment.getInstance().getUserPrefs().getString(FeaturePlayer.UserParam.LAST_URL);
-				params.putString(Key.URL, url);
-
-				Bundle errorBundle = new Bundle();
-				errorBundle.putString(Key.CODE, bundle != null ? "" + bundle.getInt(BasePlayer.PARAM_WHAT) : "n/a");
-				errorBundle.putString(Key.MESSAGE, bundle != null ? "" + bundle.getString(BasePlayer.PARAM_ERROR) : "n/a");
-				params.putBundle(Key.ERROR, errorBundle);
-
-				addEvent(params);
-	        }
-		}, BasePlayer.ON_ERROR);
-	}
-
-	public void registerForOnPlayerCompletionEvent()
-	{
-		Environment.getInstance().getEventMessenger().register(new EventReceiver()
-		{
-			@Override
-	        public void onEvent(int msgId, Bundle bundle)
-	        {
-				Bundle params = prepareParams("player", "", "completed", BasePlayer.class.getSimpleName(),
-				        Severity.INFO);
-				addEvent(params);
-	        }
-		}, BasePlayer.ON_COMPLETION);
-	}
-
-	public void registerForOnPlayTimeoutEvent()
-	{
-		Environment.getInstance().getFeatureComponent(FeatureName.Component.PLAYER).getEventMessenger()
-		        .register(new EventReceiver()
-		        {
-			        @Override
-			        public void onEvent(int msgId, Bundle bundle)
-			        {
-				        Bundle params = prepareParams("system", Key.CONNECTION, Key.ERROR,
-				                FeatureInternet.class.getSimpleName(), Severity.ERROR);
-				        addEvent(params);
-			        }
-		        }, FeaturePlayer.ON_PLAY_TIMEOUT);
-	}
-
-	public void registerForOnPlayStartedEvent()
-	{
-		Environment.getInstance().getFeatureComponent(FeatureName.Component.PLAYER).getEventMessenger()
-		        .register(new EventReceiver()
-		{
-			@Override
-	        public void onEvent(int msgId, Bundle bundle)
-	        {
-				Bundle params = prepareParams("player", "", "started", FeaturePlayer.class.getSimpleName(),
-				        Severity.INFO);
-
-				String url = Environment.getInstance().getUserPrefs().getString(FeaturePlayer.UserParam.LAST_URL);
-				params.putString(Key.URL, url);
-
-				addEvent(params);
-	        }
-		}, FeaturePlayer.ON_PLAY_STARTED);
-	}
-
-	public void registerForOnStartFromUpdateEvent()
-	{
-		Environment.getInstance().getFeatureScheduler(FeatureName.Scheduler.UPGRADE).getEventMessenger()
-		        .register(new EventReceiver()
-		{
-			@Override
-	        public void onEvent(int msgId, Bundle bundle)
-	        {
-				Bundle params = prepareParams("system", Key.UPGRADE, "completed", FeatureUpgrade.class.getSimpleName(),
-				        Severity.INFO);
-
-				Bundle swBundle = new Bundle();
-				swBundle.putString(Key.PREV_VERSION, bundle.getString(FeatureUpgrade.EXTRA_VERSION_PREV));
-				swBundle.putLong(Key.DURATION, bundle.getLong(FeatureUpgrade.EXTRA_UPGRADE_DURATION));
-
-				Bundle upgradeBundle = new Bundle();
-				upgradeBundle.putBundle(Key.SW, swBundle);
-
-				params.putBundle(Key.UPGRADE, upgradeBundle);
-
-				addEvent(params);
-	        }
-		}, FeatureUpgrade.ON_START_FROM_UPDATE);
-	}
-
-	public void registerForOnStartUpdateEvent()
-	{
-		Environment.getInstance().getFeatureScheduler(FeatureName.Scheduler.UPGRADE).getEventMessenger()
-		        .register(new EventReceiver()
-		{
-			@Override
-	        public void onEvent(int msgId, Bundle bundle)
-	        {
-				Bundle params = prepareParams("system", Key.UPGRADE, "started", FeatureUpgrade.class.getSimpleName(),
-				        Severity.INFO);
-
-				Bundle swBundle = new Bundle();
-				swBundle.putString(Key.VERSION, bundle.getString(FeatureUpgrade.EXTRA_VERSION));
-
-				Bundle upgradeBundle = new Bundle();
-				upgradeBundle.putBundle(Key.SW, swBundle);
-
-				params.putBundle(Key.UPGRADE, upgradeBundle);
-
-				addEvent(params);
-	        }
-		        }, FeatureUpgrade.ON_START_UPDATE);
-	}
-
-	public void registerForOnDisconnectedEvent()
-	{
-		Environment.getInstance().getFeatureScheduler(FeatureName.Scheduler.INTERNET).getEventMessenger()
-		        .register(new EventReceiver()
-		{
-			@Override
-	        public void onEvent(int msgId, Bundle bundle)
-	        {
-				Bundle params = prepareParams("system", Key.CONNECTION, Key.ERROR, FeatureInternet.class.getSimpleName(),
-				        Severity.ERROR);
-
-				String errorMsg = "Disconnected from Internet. Reported reason: "
-				        + bundle.getString(ResultExtras.ERROR_MESSAGE.name());
-
-				Bundle errorBundle = new Bundle();
-				errorBundle.putInt(Key.CODE, bundle.getInt(ResultExtras.ERROR_CODE.name()));
-				errorBundle.putString(Key.MESSAGE, errorMsg);
-				params.putBundle(Key.ERROR, errorBundle);
-
-				addEvent(params);
-	        }
-		}, FeatureInternet.ON_DISCONNECTED);
-	}
-
-	public static interface Key
-	{
-		String DEVICE = "device";
-		String MAC = "mac";
-		String IP = "ip";
-		String PUBLIC_IP = "public_ip";
-		String SW = "sw";
-		String VERSION = "version";
-		String BUILD = "build";
-		String PREV_VERSION = "prev_version";
-		String KIND = "kind";
-		String CUSTOMER = "customer";
-		String BRAND = "brand";
-		String EVENT = "event";
-		String TIMESTAMP = "timestamp";
-		String SOURCE = "source";
-		String ITEM = "item";
-		String NAME = "name";
-		String URL = "url";
-		String CODE = "code";
-		String MESSAGE = "message";
-		String ERROR = "error";
-		String UPGRADE = "upgrade";
-		String BITRATE = "bitrate";
-		String DURATION = "duration";
-		String CONTEXT = "context";
-		String SEVERITY = "severity";
-		String FROM_CHANNEL = "from_channel";
-		String TO_CHANNEL = "to_channel";
-		String CONNECTION = "connection";
-		String INTERVAL = "interval";
-		String AVG = "avg";
-		String MIN = "min";
-		String MAX = "max";
-		String DOWNLINK = "downlink";
-		String UPLINK = "uplink";
-		String PROGRESS = "progress";
-		String SIZE = "size";
-		String RECEIVED = "received";
-		String HOST = "host";
-		String DOWNLOAD = "download";
-		String TEXT = "text";
-		String MODE = "mode";
-		String BACKEND = "backend";
-		String FREE_SPACE = "free_space";
-		String REQUIRED_SPACE = "required_space";
-		String CANCELLED = "cancelled";
-		String APP = "app";
-		String REASON = "reason";
-		String NETWORK = "network";
-		String LAN = "lan";
-		String WAN = "wan";
-		String INTERFACE = "interface";
 	}
 }
