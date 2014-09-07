@@ -117,8 +117,6 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 
-		// Environment.getInstance().getEventMessenger().register(this,
-		// Environment.ON_KEY_PRESSED);
 		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
 
 		// RcuIMEService will broadcast BROADCAST_ACTION_SLEEP in response to
@@ -266,12 +264,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	public void onEvent(int msgId, Bundle bundle)
 	{
 		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
-		if (Environment.ON_KEY_PRESSED == msgId)
-		{
-			// Postpone auto standby on user activity
-			postponeAutoStandBy(_autoStandbyTimeout);
-		}
-		else if (FeatureEasterEgg.ON_KEY_SEQUENCE == msgId)
+		if (FeatureEasterEgg.ON_KEY_SEQUENCE == msgId)
 		{
 			String keySeq = bundle.getString(FeatureEasterEgg.EXTRA_KEY_SEQUENCE);
 			// FIXME: declare key sequences as constants

@@ -11,12 +11,15 @@ package com.aviq.tv.android.sdk.utils;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.util.zip.GZIPOutputStream;
 
 import android.content.Context;
 
@@ -24,6 +27,8 @@ import com.aviq.tv.android.sdk.core.Log;
 
 public class Files
 {
+	public static final String TAG = Files.class.getSimpleName();
+
 	/**
 	 * Return file name with path stripped
 	 */
@@ -218,5 +223,51 @@ public class Files
 		}
 		return (path.delete());
 
+	}
+
+	/**
+	 * GZip file
+	 *
+	 * @param context an application context
+	 * @param srcFileName the file to be zipped
+	 * @param destFileName the destination zip file
+	 * @return
+	 */
+	protected boolean gzip(Context context, String srcFileName, String destFileName)
+	{
+		FileInputStream in = null;
+		GZIPOutputStream gzipOut = null;
+		try
+		{
+			in = new FileInputStream(srcFileName);
+			gzipOut = new GZIPOutputStream(context.openFileOutput(destFileName, Context.MODE_PRIVATE));
+
+			byte[] buffer = new byte[8192];
+
+			int nread = in.read(buffer);
+			while (nread > 0)
+			{
+				gzipOut.write(buffer, 0, nread);
+				if (nread != buffer.length)
+					break;
+				nread = in.read(buffer);
+			}
+		}
+		catch (FileNotFoundException e)
+		{
+			Log.e(TAG, "Source file not found", e);
+			return false;
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, "IO error", e);
+			return false;
+		}
+		finally
+		{
+			Files.closeQuietly(in, TAG);
+			Files.closeQuietly(gzipOut, TAG);
+		}
+		return true;
 	}
 }

@@ -64,6 +64,7 @@ public class FeatureNethogs extends FeatureComponent
 	public FeatureNethogs() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.SYSTEM);
+
 	}
 
 	@Override

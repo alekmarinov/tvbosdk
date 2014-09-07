@@ -62,8 +62,6 @@ public class Environment extends Activity
 	public static final int ON_INITIALIZE = EventMessenger.ID("ON_INITIALIZE");
 	public static final int ON_LOADING = EventMessenger.ID("ON_LOADING");
 	public static final int ON_LOADED = EventMessenger.ID("ON_LOADED");
-	public static final int ON_KEY_PRESSED = EventMessenger.ID("ON_KEY_PRESSED");
-	public static final int ON_KEY_RELEASED = EventMessenger.ID("ON_KEY_RELEASED");
 	public static final int ON_FEATURE_INIT_ERROR = EventMessenger.ID("ON_FEATURE_INIT_ERROR");
 	public static final int ON_RESUME = EventMessenger.ID("ON_RESUME");
 	public static final int ON_PAUSE = EventMessenger.ID("ON_PAUSE");
@@ -491,8 +489,7 @@ public class Environment extends Activity
 	/**
 	 * Parses the version string from the manifest.
 	 *
-	 * @return
-	 * @throws NameNotFoundException
+	 * @return application version
 	 */
 	public String getBuildVersion()
 	{
@@ -682,7 +679,7 @@ public class Environment extends Activity
 		if (_keyEventsEnabled || _exceptKeys.contains(keyEvent.Code))
 		{
 			bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
-			_eventMessenger.trigger(ON_KEY_PRESSED, bundle);
+			_featureRCU.getEventMessenger().trigger(FeatureRCU.ON_KEY_PRESSED, bundle);
 		}
 
 		return consumed;
@@ -702,7 +699,7 @@ public class Environment extends Activity
 		if (_keyEventsEnabled || _exceptKeys.contains(keyEvent.Code))
 		{
 			bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
-			_eventMessenger.trigger(ON_KEY_RELEASED, bundle);
+			_featureRCU.getEventMessenger().trigger(FeatureRCU.ON_KEY_RELEASED, bundle);
 		}
 
 		return consumed;

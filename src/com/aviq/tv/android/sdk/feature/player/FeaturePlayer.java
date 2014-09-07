@@ -23,6 +23,8 @@ import com.aviq.tv.android.sdk.core.Key;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.player.AndroidPlayer;
 import com.aviq.tv.android.sdk.player.BasePlayer;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -99,10 +101,15 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	protected BasePlayer _player;
 	protected VideoView _videoView;
 
+	public FeaturePlayer() throws FeatureNotFoundException
+	{
+		require(FeatureName.Component.RCU);
+	}
+
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		Environment.getInstance().getEventMessenger().register(this, Environment.ON_KEY_PRESSED);
+		_feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
 		_player = createPlayer();
 
 		_playPauseEnabled = getPrefs().has(Param.PLAY_PAUSE_ENABLED) ? getPrefs().getBool(Param.PLAY_PAUSE_ENABLED) : true;
@@ -490,7 +497,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	public void onEvent(int msgId, Bundle bundle)
 	{
 		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
-		if (Environment.ON_KEY_PRESSED == msgId)
+		if (FeatureRCU.ON_KEY_PRESSED == msgId)
 		{
 			Key key = Key.valueOf(bundle.getString(Environment.EXTRA_KEY));
 			if (Key.PLAY_PAUSE.equals(key) && _playPauseEnabled)

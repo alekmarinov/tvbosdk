@@ -10,6 +10,8 @@
 
 package com.aviq.tv.android.sdk.core.feature;
 
+import android.os.Bundle;
+
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Prefs;
@@ -121,6 +123,11 @@ public abstract class FeatureComponent implements IFeature
 	public final EventMessenger getEventMessenger()
 	{
 		return _eventMessenger;
+	}
+
+	@Override
+	public void onEvent(int msgId, Bundle bundle)
+	{
 	}
 
 	public abstract FeatureName.Component getComponentName();

@@ -281,16 +281,15 @@ public class FeatureEventCollector extends FeatureScheduler
 				reportName = reportName.replace("${RANDOM}", "" + randomNum);
 
 				Intent uploadService = new Intent(env, UploadService.class);
-				uploadService.putExtra(UploadService.EXTRA_CA_CERT_PATH,
+				uploadService.putExtra(UploadService.Extras.CA_CERT_PATH.name(),
 				        getPrefs().getString(Param.EVENT_COLLECTOR_CA_CERT_PATH));
-				uploadService.putExtra(UploadService.EXTRA_REPORT_URL,
-				        getPrefs().getString(Param.EVENT_COLLECTOR_REPORT_URL));
-				uploadService.putExtra(UploadService.EXTRA_REPORT_URL_USER,
+				uploadService.putExtra(UploadService.Extras.URL.name(),
+				        getPrefs().getString(Param.EVENT_COLLECTOR_REPORT_URL) + reportName);
+				uploadService.putExtra(UploadService.Extras.USERNAME.name(),
 				        getPrefs().getString(Param.EVENT_COLLECTOR_REPORT_URL_USERNAME));
-				uploadService.putExtra(UploadService.EXTRA_REPORT_URL_PASS,
+				uploadService.putExtra(UploadService.Extras.PASSWORD.name(),
 				        getPrefs().getString(Param.EVENT_COLLECTOR_REPORT_URL_PASSWORD));
-				uploadService.putExtra(UploadService.EXTRA_REPORT_NAME, reportName);
-				uploadService.putExtra(UploadService.EXTRA_REPORT_DATA, data);
+				uploadService.putExtra(UploadService.Extras.BUFFER.name(), data);
 				env.startService(uploadService);
 			}
 		}

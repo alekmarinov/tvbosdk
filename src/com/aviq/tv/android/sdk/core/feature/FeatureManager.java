@@ -27,7 +27,9 @@ import javax.xml.parsers.SAXParserFactory;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
+import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -36,8 +38,10 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.TriggerRoute;
 import com.aviq.tv.android.sdk.core.feature.IFeature.OnFeatureInitialized;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -941,7 +945,7 @@ public class FeatureManager
 	private class AVIQTVXmlHandler extends DefaultHandler
 	{
 		private static final String TAG_INCLUDE = "include";
-		private static final String ATTR_SRC = "src";
+		private static final String ATTR_INCLUDE_SRC = "src";
 		private static final String TAG_FEATURES = "features";
 		private static final String TAG_FEATURE = "feature";
 		private static final String TAG_COMPNENT = "component";
@@ -951,9 +955,20 @@ public class FeatureManager
 		private static final String TAG_STRING = "string";
 		private static final String TAG_INT = "int";
 		private static final String TAG_BOOLEAN = "boolean";
-		private static final String ATTR_NAME = "name";
-		private static final String ATTR_CLASS = "class";
-		private static final String ATTR_VALUE = "value";
+		private static final String ATTR_FEATURE_PARAM_NAME = "name";
+		private static final String ATTR_FEATURE_CLASS = "class";
+		private static final String ATTR_FEATURE_PARAM_VALUE = "value";
+		private static final String TAG_HOOKS = "hooks";
+		private static final String TAG_ON = "on";
+		private static final String ATTR_ON_EVENT = "event";
+		private static final String TAG_TRIGGER = "trigger";
+		private static final String ATTR_TRIGGER_EVENT_NAME = "name";
+		private static final String ATTR_TRIGGER_TARGET = "target";
+		private static final String TAG_TRIGGER_PARAM = "param";
+		private static final String ATTR_TRIGGER_PARAM_NAME = "name";
+		private static final String ATTR_TRIGGER_PARAM_VALUE = "value";
+
+		private Locator _locator;
 		private IFeature _feature;
 		private boolean _inFactory;
 		private boolean _inUse;
@@ -961,6 +976,15 @@ public class FeatureManager
 		private StringBuffer _stringValue = new StringBuffer();
 		private String _paramName;
 		private List<URL> _includeUrls = new ArrayList<URL>();
+		private EventHook _eventHook;
+
+		private class EventHook
+		{
+			String eventName;
+			String triggerEventName;
+			String triggerTarget;
+			Bundle eventParams;
+		}
 
 		public List<URL> getIncludeUrls()
 		{
@@ -968,47 +992,54 @@ public class FeatureManager
 		}
 
 		@Override
-		public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
+		public void setDocumentLocator(Locator locator)
+		{
+			_locator = locator;
+		}
+
+		@Override
+		public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXParseException
 		{
 			if (TAG_INCLUDE.equalsIgnoreCase(localName))
 			{
 				try
 				{
-					URL url = new URL(attributes.getValue(ATTR_SRC));
+					URL url = new URL(attributes.getValue(ATTR_INCLUDE_SRC));
 					_includeUrls.add(url);
 				}
 				catch (MalformedURLException e)
 				{
-					throw new SAXException(e);
+					throw new SAXParseException(e.getMessage(), _locator);
 				}
 			}
 			else if (TAG_FEATURES.equalsIgnoreCase(localName))
 			{
 				if (_inFactory)
-					throw new SAXException("Nested tags " + TAG_FEATURE + " is not allowed");
+					throw new SAXParseException("Nested tags " + TAG_FEATURE + " is not allowed", _locator);
 				_inFactory = true;
 			}
 			else if (TAG_FEATURE.equalsIgnoreCase(localName))
 			{
 				if (!_inFactory)
-					throw new SAXException("Tag " + TAG_FEATURE + " must be inside tag " + TAG_FEATURES);
+					throw new SAXParseException("Tag " + TAG_FEATURE + " must be inside tag " + TAG_FEATURES, _locator);
 
-				String className = attributes.getValue(ATTR_CLASS);
+				String className = attributes.getValue(ATTR_FEATURE_CLASS);
 				try
 				{
+					Log.d(TAG, "New feature instance of " + className);
 					_feature = (IFeature) Class.forName(className).newInstance();
 				}
 				catch (InstantiationException e)
 				{
-					throw new SAXException(e);
+					throw new SAXParseException(e.getMessage(), _locator);
 				}
 				catch (IllegalAccessException e)
 				{
-					throw new SAXException(e);
+					throw new SAXParseException(e.getMessage(), _locator);
 				}
 				catch (ClassNotFoundException e)
 				{
-					throw new SAXException(e);
+					throw new SAXParseException(e.getMessage(), _locator);
 				}
 
 				_featureFactory.registerFeature(_feature);
@@ -1016,16 +1047,16 @@ public class FeatureManager
 			else if (TAG_STRING.equalsIgnoreCase(localName))
 			{
 				if (_feature == null && !_inUse)
-					throw new SAXException("Tag '" + TAG_STRING + "' must be inside tag '" + TAG_FEATURE + "'");
-				_paramName = attributes.getValue(ATTR_NAME);
+					throw new SAXParseException("Tag '" + TAG_STRING + "' must be inside tag '" + TAG_FEATURE + "'", _locator);
+				_paramName = attributes.getValue(ATTR_FEATURE_PARAM_NAME);
 				_stringValue.setLength(0);
 				_inString = true;
 			}
 			else if (TAG_INT.equalsIgnoreCase(localName))
 			{
 				if (_feature == null && !_inUse)
-					throw new SAXException("Tag " + TAG_INT + " must be inside tag " + TAG_FEATURE);
-				_paramName = attributes.getValue(ATTR_NAME);
+					throw new SAXParseException("Tag " + TAG_INT + " must be inside tag " + TAG_FEATURE, _locator);
+				_paramName = attributes.getValue(ATTR_FEATURE_PARAM_NAME);
 
 				String featureName;
 				Prefs prefs;
@@ -1039,7 +1070,7 @@ public class FeatureManager
 					prefs = Environment.getInstance().getPrefs();
 					featureName = getClass().getSimpleName();
 				}
-				String sValue = attributes.getValue(ATTR_VALUE);
+				String sValue = attributes.getValue(ATTR_FEATURE_PARAM_VALUE);
 				long value = 0;
 
 				try
@@ -1048,7 +1079,7 @@ public class FeatureManager
 				}
 				catch (NumberFormatException e)
 				{
-					throw new SAXException(e);
+					throw new SAXParseException(e.getMessage(), _locator);
 				}
 
 				if (prefs.has(_paramName))
@@ -1075,8 +1106,8 @@ public class FeatureManager
 			else if (TAG_BOOLEAN.equalsIgnoreCase(localName))
 			{
 				if (_feature == null && !_inUse)
-					throw new SAXException("Tag " + TAG_BOOLEAN + " must be inside tag " + TAG_FEATURE);
-				_paramName = attributes.getValue(ATTR_NAME);
+					throw new SAXParseException("Tag " + TAG_BOOLEAN + " must be inside tag " + TAG_FEATURE, _locator);
+				_paramName = attributes.getValue(ATTR_FEATURE_PARAM_NAME);
 
 				String featureName;
 				Prefs prefs;
@@ -1091,7 +1122,7 @@ public class FeatureManager
 					featureName = getClass().getSimpleName();
 				}
 
-				String sValue = attributes.getValue(ATTR_VALUE);
+				String sValue = attributes.getValue(ATTR_FEATURE_PARAM_VALUE);
 				boolean value = Boolean.parseBoolean(sValue);
 
 				if (prefs.has(_paramName))
@@ -1122,10 +1153,10 @@ public class FeatureManager
 			else if (TAG_COMPNENT.equalsIgnoreCase(localName))
 			{
 				if (!_inUse)
-					throw new SAXException("Tag " + TAG_COMPNENT + " must be inside tag " + TAG_USE);
+					throw new SAXParseException("Tag " + TAG_COMPNENT + " must be inside tag " + TAG_USE, _locator);
 
-				String name = attributes.getValue(ATTR_NAME);
-				String className = attributes.getValue(ATTR_CLASS);
+				String name = attributes.getValue(ATTR_FEATURE_PARAM_NAME);
+				String className = attributes.getValue(ATTR_FEATURE_CLASS);
 
 				try
 				{
@@ -1141,20 +1172,20 @@ public class FeatureManager
 				}
 				catch (FeatureNotFoundException e)
 				{
-					throw new SAXException(e);
+					throw new SAXParseException(e.getMessage(), _locator);
 				}
 				catch (ClassNotFoundException e)
 				{
-					throw new SAXException(e);
+					throw new SAXParseException(e.getMessage(), _locator);
 				}
 			}
 			else if (TAG_SCHEDULER.equalsIgnoreCase(localName))
 			{
 				if (!_inUse)
-					throw new SAXException("Tag " + TAG_SCHEDULER + " must be inside tag " + TAG_USE);
+					throw new SAXParseException("Tag " + TAG_SCHEDULER + " must be inside tag " + TAG_USE, _locator);
 
-				String name = attributes.getValue(ATTR_NAME);
-				String className = attributes.getValue(ATTR_CLASS);
+				String name = attributes.getValue(ATTR_FEATURE_PARAM_NAME);
+				String className = attributes.getValue(ATTR_FEATURE_CLASS);
 				try
 				{
 					if (name != null)
@@ -1169,20 +1200,20 @@ public class FeatureManager
 				}
 				catch (FeatureNotFoundException e)
 				{
-					throw new SAXException(e);
+					throw new SAXParseException(e.getMessage(), _locator);
 				}
 				catch (ClassNotFoundException e)
 				{
-					throw new SAXException(e);
+					throw new SAXParseException(e.getMessage(), _locator);
 				}
 			}
 			else if (TAG_STATE.equalsIgnoreCase(localName))
 			{
 				if (!_inUse)
-					throw new SAXException("Tag " + TAG_STATE + " must be inside tag " + TAG_USE);
+					throw new SAXParseException("Tag " + TAG_STATE + " must be inside tag " + TAG_USE, _locator);
 
-				String name = attributes.getValue(ATTR_NAME);
-				String className = attributes.getValue(ATTR_CLASS);
+				String name = attributes.getValue(ATTR_FEATURE_PARAM_NAME);
+				String className = attributes.getValue(ATTR_FEATURE_CLASS);
 				try
 				{
 					if (name != null)
@@ -1197,17 +1228,46 @@ public class FeatureManager
 				}
 				catch (FeatureNotFoundException e)
 				{
-					throw new SAXException(e);
+					throw new SAXParseException(e.getMessage(), _locator);
 				}
 				catch (ClassNotFoundException e)
 				{
-					throw new SAXException(e);
+					throw new SAXParseException(e.getMessage(), _locator);
 				}
+			}
+			else if (TAG_HOOKS.equalsIgnoreCase(localName))
+			{
+				if (_feature == null)
+					throw new SAXParseException(TAG_HOOKS + " must be declared inside tag " + TAG_COMPNENT + ", "
+					        + TAG_SCHEDULER + " or " + TAG_STATE, _locator);
+				_eventHook = new EventHook();
+			}
+			else if (TAG_ON.equalsIgnoreCase(localName))
+			{
+				if (_eventHook == null)
+					throw new SAXParseException(TAG_ON + " must be declared inside tag " + TAG_HOOKS, _locator);
+				_eventHook.eventName = attributes.getValue(ATTR_ON_EVENT);
+			}
+			else if (TAG_TRIGGER.equalsIgnoreCase(localName))
+			{
+				if (_eventHook.eventName == null)
+					throw new SAXParseException(TAG_TRIGGER + " must be declared inside tag " + TAG_ON, _locator);
+
+				_eventHook.triggerEventName = attributes.getValue(ATTR_TRIGGER_EVENT_NAME);
+				_eventHook.triggerTarget = attributes.getValue(ATTR_TRIGGER_TARGET);
+				_eventHook.eventParams = new Bundle();
+			}
+			else if (TAG_TRIGGER_PARAM.equalsIgnoreCase(localName))
+			{
+				if (_eventHook.triggerEventName == null)
+					throw new SAXParseException(TAG_TRIGGER_PARAM + " must be declared inside tag " + TAG_TRIGGER, _locator);
+				_eventHook.eventParams.putString(attributes.getValue(ATTR_TRIGGER_PARAM_NAME),
+				        attributes.getValue(ATTR_TRIGGER_PARAM_VALUE));
 			}
 		}
 
-		@Override
-		public void endElement(String uri, String localName, String qName) throws SAXException
+        @Override
+		public void endElement(String uri, String localName, String qName) throws SAXParseException
 		{
 			if (TAG_FEATURES.equalsIgnoreCase(localName))
 			{
@@ -1259,6 +1319,102 @@ public class FeatureManager
 			else if (TAG_USE.equalsIgnoreCase(localName))
 			{
 				_inUse = false;
+			}
+			else if (TAG_HOOKS.equalsIgnoreCase(localName))
+			{
+				_eventHook = null;
+			}
+			else if (TAG_ON.equalsIgnoreCase(localName))
+			{
+				_eventHook.eventName = null;
+			}
+			else if (TAG_TRIGGER.equalsIgnoreCase(localName))
+			{
+				// hook TriggerRoute on event
+				String[] featureNameParts = _eventHook.triggerTarget.split(" ");
+				IFeature targetFeature = null;
+				if (featureNameParts.length == 1)
+				{
+					// get feature by class
+					try
+					{
+						targetFeature = use(Class.forName(_eventHook.triggerTarget));
+					}
+					catch (FeatureNotFoundException e)
+					{
+						throw new SAXParseException(e.getMessage(), _locator);
+					}
+					catch (ClassNotFoundException e)
+					{
+						throw new SAXParseException(e.getMessage(), _locator);
+					}
+				}
+				else if (featureNameParts.length == 2)
+				{
+					// get feature by type and name
+					IFeature.Type featureType = IFeature.Type.valueOf(featureNameParts[0].toUpperCase());
+					if (featureType == null)
+						throw new SAXParseException("Invalid feature type `" + featureNameParts[0] + "'", _locator);
+					try
+					{
+						switch (featureType)
+						{
+							case COMPONENT:
+							{
+								FeatureName.Component component = FeatureName.Component.valueOf(featureNameParts[1]);
+								if (component == null)
+									throw new SAXParseException("Unknown component feature `" + featureNameParts[1] + "'", _locator);
+								targetFeature = use(component);
+							}
+							break;
+							case SCHEDULER:
+							{
+								FeatureName.Scheduler scheduler = FeatureName.Scheduler.valueOf(featureNameParts[1]);
+								if (scheduler == null)
+									throw new SAXParseException("Unknown scheduler feature `" + featureNameParts[1] + "'", _locator);
+								targetFeature = use(scheduler);
+							}
+							break;
+							case STATE:
+							{
+								FeatureName.State state = FeatureName.State.valueOf(featureNameParts[1]);
+								if (state == null)
+									throw new SAXParseException("Unknown scheduler feature `" + featureNameParts[1] + "'", _locator);
+								targetFeature = use(state);
+							}
+							break;
+						}
+					}
+					catch (FeatureNotFoundException e)
+					{
+						throw new SAXParseException(e.getMessage(), _locator);
+					}
+				}
+				else
+				{
+					throw new SAXParseException("Invalid feature reference " + _eventHook.triggerTarget + " as action target", _locator);
+				}
+
+				int eventId = EventMessenger.nameId(_eventHook.eventName);
+				if (eventId == 0)
+					throw new SAXParseException("Event " + _eventHook.eventName + " is not defined", _locator);
+
+
+				int triggerEventId = EventMessenger.nameId(_eventHook.triggerEventName);
+				if (triggerEventId == 0)
+					throw new SAXParseException("Event " + _eventHook.triggerEventName + " is not defined", _locator);
+
+				TriggerRoute triggerRoute = new TriggerRoute(triggerEventId, targetFeature);
+				triggerRoute.setParams(_eventHook.eventParams);
+
+				_feature.getEventMessenger().addEventHook(eventId, triggerRoute);
+
+				_eventHook.triggerEventName = null;
+				_eventHook.triggerTarget = null;
+				_eventHook.eventParams = null;
+			}
+			else if (TAG_TRIGGER_PARAM.equalsIgnoreCase(localName))
+			{
 			}
 		}
 

@@ -16,22 +16,21 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import android.annotation.SuppressLint;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Base64;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
+import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -104,15 +103,28 @@ public class FeatureRegister extends FeatureComponent
 		try
 		{
 			_brand = getPrefs().getString(Param.BRAND);
-
 			_boxId = getPrefs().getString(Param.BOX_ID);
 			if (_boxId.length() == 0)
 				_boxId = readMacAddress();
 			_userToken = createUserToken(_boxId);
 			_version = Environment.getInstance().getBuildVersion();
 
-			startInternetChecks();
-			registerConnectivityActionReceiver();
+			_feature.Scheduler.INTERNET.getEventMessenger().register(new EventReceiver()
+			{
+				@Override
+				public void onEvent(int msgId, Bundle bundle)
+				{
+					String registrationUrl = getRegistrationUrl(_brand, _boxId, _version);
+					_feature.Scheduler.INTERNET.getUrlContent(registrationUrl, new OnResultReceived()
+					{
+						@Override
+						public void onReceiveResult(int resultCode, Bundle resultData)
+						{
+							Log.d(TAG, ".initialize:onReceiveResult: resultCode = " + resultCode);
+						}
+					});
+				}
+			}, FeatureInternet.ON_CONNECTED);
 
 			super.initialize(onFeatureInitialized);
 		}
@@ -138,14 +150,6 @@ public class FeatureRegister extends FeatureComponent
 	}
 
 	/**
-	 * @return the url to ABMP
-	 */
-	public String getRegistrationUrl()
-	{
-		return getRegistrationUrl(_brand, _boxId, _version);
-	}
-
-	/**
 	 * @return the user token for this box
 	 */
 	public String getUserToken()
@@ -153,6 +157,9 @@ public class FeatureRegister extends FeatureComponent
 		return _userToken;
 	}
 
+	/**
+	 * @return the brand name of this box
+	 */
 	public String getBrand()
 	{
 		return _brand;
@@ -205,58 +212,5 @@ public class FeatureRegister extends FeatureComponent
 
 		String registrationUrl = getPrefs().getString(Param.ABMP_REGISTER_URL, bundle);
 		return registrationUrl;
-	}
-
-	private void startInternetChecks()
-	{
-		String internetCheckUrl = _feature.Scheduler.INTERNET.getPrefs().getString(FeatureInternet.Param.CHECK_URL)
-		        .trim();
-		if (internetCheckUrl.length() == 0)
-		{
-			// Run Internet checks against the registration server
-			String registrationUrl = getRegistrationUrl(_brand, _boxId, _version);
-			_feature.Scheduler.INTERNET.startCheckUrl(registrationUrl);
-		}
-		else
-		{
-			// Run Internet checks against the server in the parameters
-			_feature.Scheduler.INTERNET.startCheckUrl(internetCheckUrl);
-		}
-	}
-
-	private void registerConnectivityActionReceiver()
-	{
-		IntentFilter filter = new IntentFilter();
-		filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
-
-		BroadcastReceiver receiver = new BroadcastReceiver()
-		{
-			@Override
-			public void onReceive(Context context, Intent intent)
-			{
-				String action = intent.getAction();
-				Log.i(TAG, "BroadcastReceiver.onReceive: action = " + action);
-
-				if (ConnectivityManager.CONNECTIVITY_ACTION.equals(action))
-				{
-					startInternetChecks();
-				}
-
-				// boolean noConnectivity =
-				// intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY,
-				// false);
-				// String reason =
-				// intent.getStringExtra(ConnectivityManager.EXTRA_REASON);
-				// boolean isFailover =
-				// intent.getBooleanExtra(ConnectivityManager.EXTRA_IS_FAILOVER,
-				// false);
-
-				// NetworkInfo currentNetworkInfo = (NetworkInfo)
-				// intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK_INFO);
-				// NetworkInfo otherNetworkInfo = (NetworkInfo)
-				// intent.getParcelableExtra(ConnectivityManager.EXTRA_OTHER_NETWORK_INFO);
-			}
-		};
-		Environment.getInstance().registerReceiver(receiver, filter);
 	}
 }

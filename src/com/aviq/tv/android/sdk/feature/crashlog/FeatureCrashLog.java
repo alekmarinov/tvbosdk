@@ -116,7 +116,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 	{
 		require(FeatureName.Scheduler.INTERNET);
 		require(FeatureName.Component.EASTER_EGG);
-		require(FeatureEventCollector.class);
+		require(FeatureName.Scheduler.EVENT_COLLECTOR);
 	}
 
 	@Override
@@ -149,7 +149,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 	{
 		if (msgId == FeatureInternet.ON_CONNECTED)
 		{
-			String publicIP = _feature.Scheduler.INTERNET.getPublicIP();
+			String publicIP = bundle.getString(FeatureInternet.ResultExtras.PUBLIC_IP.name()); //  _feature.Scheduler.INTERNET.getPublicIP();
 			if (publicIP != null)
 			{
 				// Got the public IP, no need to check for it anymore

@@ -36,6 +36,7 @@ public class EventMessenger extends Handler
 	private List<RegisterCouple> _unregisterLater = new ArrayList<RegisterCouple>();
 	private boolean _inEventIteration = false;
 	private static List<String> _messageNames = new ArrayList<String>();
+	private static SparseArray<List<TriggerRoute>> _eventHooks = new SparseArray<List<TriggerRoute>>();
 	private String _tag;
 
 	public EventMessenger(String tag)
@@ -45,6 +46,8 @@ public class EventMessenger extends Handler
 
 	public static synchronized int ID(String msgName)
 	{
+		if (nameId(msgName) > 0)
+			throw new RuntimeException("Message name " + msgName + " is already registered");
 		_messageNames.add(msgName);
 		return _messageNames.size();
 	}
@@ -54,6 +57,12 @@ public class EventMessenger extends Handler
 		if (msgId > 0)
 			return _messageNames.get(msgId - 1);
 		return "ANY";
+	}
+
+	public static synchronized int nameId(String msg)
+	{
+		int index = _messageNames.indexOf(msg);
+		return index + 1;
 	}
 
 	/**
@@ -129,7 +138,8 @@ public class EventMessenger extends Handler
 	}
 
 	/**
-	 * Triggers event message to listeners for this EventReceiver directly bypassing events looper
+	 * Triggers event message to listeners for this EventReceiver directly
+	 * bypassing events looper
 	 *
 	 * @param msgId
 	 *            the id of the message to trigger
@@ -156,7 +166,8 @@ public class EventMessenger extends Handler
 	}
 
 	/**
-	 * Triggers event message to listeners for this EventReceiver directly bypassing events looper
+	 * Triggers event message to listeners for this EventReceiver directly
+	 * bypassing events looper
 	 *
 	 * @param msgId
 	 *            the id of the message to trigger
@@ -196,7 +207,8 @@ public class EventMessenger extends Handler
 	 */
 	public void trigger(int msgId, Bundle bundle, long delayMs)
 	{
-		Log.v(_tag, ".trigger: " + idName(msgId) + " (" + msgId + ")" + TextUtils.implodeBundle(bundle) + " in " + delayMs + " ms");
+		Log.v(_tag, ".trigger: " + idName(msgId) + " (" + msgId + ")" + TextUtils.implodeBundle(bundle) + " in "
+		        + delayMs + " ms");
 		removeMessages(msgId);
 		sendMessageDelayed(obtainMessage(msgId, bundle), delayMs);
 	}
@@ -209,13 +221,60 @@ public class EventMessenger extends Handler
 		List<EventReceiver> msgListeners = _listners.get(msg.what);
 		if (msgListeners != null)
 		{
-			Log.v(_tag, ".handleMessage: notifying " + msgListeners.size() + " listeners on " + idName(msg.what) + " (" + msg.what + ")");
+			Log.v(_tag, ".handleMessage: notifying " + msgListeners.size() + " listeners on " + idName(msg.what) + " ("
+			        + msg.what + ")");
 			for (EventReceiver eventReceiver : msgListeners)
 			{
 				Log.d(_tag, eventReceiver + ".onEvent " + idName(msg.what));
 				eventReceiver.onEvent(msg.what, (Bundle) msg.obj);
 			}
 		}
+
+		// handle event hooks
+		List<TriggerRoute> triggerRoutes = _eventHooks.get(msg.what);
+		if (triggerRoutes != null)
+		{
+			Bundle eventParams = (Bundle) msg.obj;
+			for (TriggerRoute triggerRoute : triggerRoutes)
+			{
+				// copy routed bundle and apply value substitution from source
+				// event bundle
+				Bundle bundle = new Bundle();
+				Bundle routedEventParams = triggerRoute.getParams();
+				if (routedEventParams != null)
+				{
+					for (String key : routedEventParams.keySet())
+					{
+						String value = routedEventParams.getString(key);
+						if (value.charAt(0) == '{' && value.charAt(value.length() - 1) == '}')
+						{
+							// fetch value from event params
+							String eventParamKey = value.substring(1, value.length() - 1);
+							Object substVal = eventParams.get(eventParamKey);
+							if (substVal != null)
+							{
+								// substitute value to the new bundle
+								TextUtils.putBundleObject(bundle, key, substVal);
+							}
+							else
+							{
+								Log.w(_tag, "Event key `" + eventParamKey + "' has null value!");
+							}
+						}
+						else
+						{
+							bundle.putString(key, value);
+						}
+					}
+				}
+				Log.d(_tag,
+				        "Redirect event " + idName(msg.what) + TextUtils.implodeBundle(eventParams) + " to "
+				                + triggerRoute.getTarget().getName() + ":" + idName(triggerRoute.getEventId())
+				                + TextUtils.implodeBundle(bundle));
+				triggerRoute.getTarget().getEventMessenger().trigger(triggerRoute.getEventId(), bundle);
+			}
+		}
+
 		_inEventIteration = false;
 		for (RegisterCouple registerCouple : _registerLater)
 		{
@@ -227,6 +286,17 @@ public class EventMessenger extends Handler
 		}
 		_registerLater.clear();
 		_unregisterLater.clear();
+	}
+
+	public void addEventHook(int eventId, TriggerRoute action)
+	{
+		List<TriggerRoute> actions = _eventHooks.get(eventId);
+		if (actions == null)
+		{
+			actions = new ArrayList<TriggerRoute>();
+			_eventHooks.put(eventId, actions);
+		}
+		actions.add(action);
 	}
 
 	private static class RegisterCouple
@@ -248,7 +318,8 @@ public class EventMessenger extends Handler
 		private List<RegisterTouple> _registrations = new ArrayList<RegisterTouple>();
 
 		/**
-		 * Register EventReceiver to listen for messages on arbitrary EventMessenger with id msgId
+		 * Register EventReceiver to listen for messages on arbitrary
+		 * EventMessenger with id msgId
 		 *
 		 * @param EventReceiver
 		 *            to be registered
@@ -267,7 +338,7 @@ public class EventMessenger extends Handler
 		 */
 		public void cleanupRegistrations()
 		{
-			for (RegisterTouple registerTouple: _registrations)
+			for (RegisterTouple registerTouple : _registrations)
 			{
 				registerTouple.EventMessenger.unregister(registerTouple.Receiver, registerTouple.MsgId);
 			}
@@ -280,10 +351,10 @@ public class EventMessenger extends Handler
 			EventMessenger EventMessenger;
 
 			RegisterTouple(EventReceiver receiver, EventMessenger eventMessenger, int msgId)
-            {
-	            super(receiver, msgId);
-	            EventMessenger = eventMessenger;
-            }
+			{
+				super(receiver, msgId);
+				EventMessenger = eventMessenger;
+			}
 		}
 	}
 }

@@ -367,4 +367,52 @@ public class TextUtils
 		}
 		return buffer.toString();
 	}
+
+	public static void putBundleObject(Bundle bundle, String key, Object o)
+	{
+		if (o.getClass().getName().contentEquals("java.lang.Byte"))
+		{
+			bundle.putByte(key, (Byte)o);
+		}
+		else if (o.getClass().getName().contentEquals("java.lang.Short"))
+		{
+			bundle.putShort(key, (Short)o);
+		}
+		else if (o.getClass().getName().contentEquals("java.lang.Integer"))
+		{
+			bundle.putInt(key, (Integer)o);
+		}
+		else if (o.getClass().getName().contentEquals("java.lang.Long"))
+		{
+			bundle.putLong(key, (Long)o);
+		}
+		else if (o.getClass().getName().contentEquals("java.lang.Boolean"))
+		{
+			bundle.putBoolean(key, (Boolean)o);
+		}
+		else if (o.getClass().getName().contentEquals("java.lang.Double"))
+		{
+			bundle.putDouble(key, (Double)o);
+		}
+		else if (o.getClass().getName().contentEquals("java.lang.Float"))
+		{
+			bundle.putFloat(key, (Float)o);
+		}
+		else if (o.getClass().getName().contentEquals("java.lang.String"))
+		{
+			bundle.putString(key, (String)o);
+		}
+		else if (o.getClass().getName().contentEquals("java.lang.Character"))
+		{
+			bundle.putChar(key, (Character)o);
+		}
+		else if (o.getClass().getName().contentEquals("android.os.Bundle"))
+		{
+			bundle.putBundle(key, (Bundle)o);
+		}
+		else
+		{
+			Log.w(TAG, "Can't put object class `" + o.getClass().getName() + "' to Bundle");
+		}
+	}
 }

@@ -32,14 +32,14 @@ public class FeatureName
 		WEBTV,
 		RPC,
 		SYSTEM,
-		SYSTEM_STAT,
 		EASTER_EGG,
 		CRASHLOG,
 		TIMEZONE,
 		NETHOGS,
 		STANDBY,
 		DEBUG,
-		RECORDING_SCHEDULER
+		RECORDING_SCHEDULER,
+		DEVICE
 	}
 
 	public static enum Scheduler

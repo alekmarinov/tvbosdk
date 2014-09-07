@@ -18,7 +18,7 @@ import com.aviq.tv.android.sdk.feature.channels.FeatureChannels;
 import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
-import com.aviq.tv.android.sdk.feature.eventcollector.FeatureEventCollector;
+import com.aviq.tv.android.sdk.feature.eventcollector.FeatureEventCollectorBase;
 import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.language.FeatureLanguage;
@@ -30,6 +30,7 @@ import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.feature.recording.FeatureRecordingScheduler;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 import com.aviq.tv.android.sdk.feature.rpc.FeatureRPC;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice;
 import com.aviq.tv.android.sdk.feature.system.FeatureNethogs;
 import com.aviq.tv.android.sdk.feature.system.FeatureStandBy;
 import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
@@ -71,6 +72,7 @@ public class Features
 		public FeatureNethogs NETHOGS;
 		public FeatureStandBy STANDBY;
 		public FeatureRecordingScheduler RECORDING_SCHEDULER;
+		public FeatureDevice DEVICE;
 	}
 
 	public class Schedulers
@@ -78,7 +80,7 @@ public class Features
 		public FeatureInternet INTERNET;
 		public FeatureEPG EPG;
 		public FeatureUpgrade UPGRADE;
-		public FeatureEventCollector EVENT_COLLECTOR;
+		public FeatureEventCollectorBase EVENT_COLLECTOR;
 		public FeatureVOD VOD;
 	}
 

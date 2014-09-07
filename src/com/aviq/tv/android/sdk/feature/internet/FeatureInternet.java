@@ -10,19 +10,18 @@
 
 package com.aviq.tv.android.sdk.feature.internet;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import android.os.AsyncTask;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.os.Bundle;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.NetworkResponse;
+import com.android.volley.Request;
+import com.android.volley.Response;
 import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
@@ -69,11 +68,8 @@ public class FeatureInternet extends FeatureScheduler
 		 */
 		CHECK_ATTEMPT_DELAY(4000),
 
-		/** URL to check against for the box's public IP. */
-		PUBLIC_IP_CHECK_URL("http://checkip.dyndns.org"),
-
-		/** URL to be checked against for Internet connectivity */
-		CHECK_URL("");
+		/** URL to check against for the box's geoip information */
+		GEOIP_URL("http://www.telize.com/geoip");
 
 		Param(int value)
 		{
@@ -88,50 +84,49 @@ public class FeatureInternet extends FeatureScheduler
 
 	public enum ResultExtras
 	{
-		URL, CONTENT, ERROR_MESSAGE, ERROR_CODE, HOST
+		URL, CONTENT, ERROR_MESSAGE, ERROR_CODE, PUBLIC_IP, LATITUDE, LONGITUDE, CITY, COUNTRY, REGION, ISP
 	}
 
-	private String _checkUrl;
+	public enum GeoIpExtras
+	{
+		PUBLIC_IP, LATITUDE, LONGITUDE, CITY, COUNTRY, REGION, ISP
+	}
+
+	// FIXME: the public ip must be obtained by ON_CONNECTED event
+	@Deprecated
 	private String _publicIP;
 
-	// FIXME: to be removed from this component
-	private double _averageDownloadRateMbPerSec;
-
 	@Override
-	public void initialize(OnFeatureInitialized onFeatureInitialized)
+	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-		try
+		checkInternet(new OnResultReceived()
 		{
-			_checkUrl = getPrefs().getString(Param.CHECK_URL);
-			super.initialize(onFeatureInitialized);
-		}
-		catch (Exception e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-		}
+			@Override
+			public void onReceiveResult(int resultCode, Bundle resultData)
+			{
+				Log.i(TAG,
+				        ".initialize:onReceiveResult: resultCode = " + resultCode + " ("
+				                + TextUtils.implodeBundle(resultData) + ")");
+				onFeatureInitialized.onInitialized(FeatureInternet.this, resultCode);
+				getEventMessenger().trigger(ON_SCHEDULE);
+			}
+		});
 	}
 
 	@Override
 	public void onSchedule(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".onSchedule");
-		getUrlContent(_checkUrl, new OnResultReceived()
+		checkInternet(new OnResultReceived()
 		{
 			@Override
 			public void onReceiveResult(int resultCode, Bundle resultData)
 			{
-				Log.i(TAG, ".onReceiveResult: resultCode = " + resultCode + " (" + TextUtils.implodeBundle(resultData)
-				        + ")");
-				onFeatureInitialized.onInitialized(FeatureInternet.this, resultCode);
+				Log.i(TAG,
+				        ".onSchedule:onReceiveResult: resultCode = " + resultCode + " ("
+				                + TextUtils.implodeBundle(resultData) + ")");
 				getEventMessenger().trigger(resultCode == ResultCode.OK ? ON_CONNECTED : ON_DISCONNECTED, resultData);
 				scheduleDelayed(getPrefs().getInt(Param.CHECK_INTERVAL) * 1000);
-
-				// Get public IP the first time
-				if (_publicIP == null)
-				{
-					retrievePublicIPAsync();
-				}
 			}
 		});
 	}
@@ -143,21 +138,7 @@ public class FeatureInternet extends FeatureScheduler
 	}
 
 	/**
-	 * Start checking periodically this url
-	 *
-	 * @param url
-	 *            to be checked periodically
-	 */
-	public void startCheckUrl(String url)
-	{
-		Log.i(TAG, ".startCheckUrl: " + url);
-		_checkUrl = url;
-		getEventMessenger().removeMessages(ON_SCHEDULE);
-		getEventMessenger().trigger(ON_SCHEDULE);
-	}
-
-	/**
-	 * Checks internet access
+	 * Checks Internet access by attempt to retrieve the GeoIP information
 	 *
 	 * @param onResultReceived
 	 *            result callback interface
@@ -172,7 +153,7 @@ public class FeatureInternet extends FeatureScheduler
 			@Override
 			public void run()
 			{
-				getUrlContent(_checkUrl, this);
+				getUrlContent(getPrefs().getString(Param.GEOIP_URL), this);
 			}
 
 			@Override
@@ -192,6 +173,35 @@ public class FeatureInternet extends FeatureScheduler
 						return;
 					}
 				}
+				else
+				{
+					String content = resultData.getString(ResultExtras.CONTENT.name());
+					try
+					{
+						JSONObject obj = new JSONObject(content);
+						if (!obj.isNull("ip"))
+						{
+							_publicIP = obj.getString("ip");
+							resultData.putString(ResultExtras.PUBLIC_IP.name(), _publicIP);
+						}
+						if (!obj.isNull("latitude"))
+							resultData.putDouble(ResultExtras.LATITUDE.name(), obj.getDouble("latitude"));
+						if (!obj.isNull("longitude"))
+							resultData.putDouble(ResultExtras.LONGITUDE.name(), obj.getDouble("longitude"));
+						if (!obj.isNull("city"))
+							resultData.putString(ResultExtras.CITY.name(), obj.getString("city"));
+						if (!obj.isNull("country"))
+							resultData.putString(ResultExtras.COUNTRY.name(), obj.getString("country"));
+						if (!obj.isNull("region"))
+							resultData.putString(ResultExtras.REGION.name(), obj.getString("region"));
+						if (!obj.isNull("isp"))
+							resultData.putString(ResultExtras.ISP.name(), obj.getString("isp"));
+					}
+					catch (JSONException e)
+					{
+						Log.e(TAG, e.getMessage(), e);
+					}
+				}
 				onResultReceived.onReceiveResult(resultCode, resultData);
 			}
 		}
@@ -203,7 +213,8 @@ public class FeatureInternet extends FeatureScheduler
 	 *
 	 * @param url
 	 *            the url to get content from
-	 * @param headers a hashmap with custom headers
+	 * @param headers
+	 *            a hashmap with custom headers
 	 * @param onResultReceived
 	 *            result callback interface
 	 */
@@ -214,10 +225,17 @@ public class FeatureInternet extends FeatureScheduler
 		CheckResponse responseError = new CheckResponse(url, onResultReceived);
 		StringRequest stringRequest = new StringRequest(url, responseSuccess, responseError)
 		{
-			  @Override
-		        public Map<String, String> getHeaders() throws AuthFailureError {
-		                return headers;
-		        }
+			@Override
+			public Map<String, String> getHeaders() throws AuthFailureError
+			{
+				return headers;
+			}
+
+			@Override
+			protected Response<String> parseNetworkResponse(NetworkResponse response)
+			{
+				return super.parseNetworkResponse(response);
+			}
 		};
 		Environment.getInstance().getRequestQueue().add(stringRequest);
 	}
@@ -241,65 +259,27 @@ public class FeatureInternet extends FeatureScheduler
 	 * @param url
 	 *            the url to get headers from
 	 * @param onResultReceived
-	 *            result callback interface
+	 *            result callback interface receiving bundle with all response
+	 *            header fields
 	 */
 	public void getUrlHeaders(final String url, final OnResultReceived onResultReceived)
 	{
 		Log.i(TAG, ".getUrlHeaders: " + url);
-		new AsyncTask<Void, Void, Map<String, List<String>>>()
+		StringRequest stringRequest = new StringRequest(Request.Method.HEAD, url, null, null)
 		{
 			@Override
-			protected Map<String, List<String>> doInBackground(Void... params)
-			{
-				Map<String, List<String>> headers = null;
-
-				HttpURLConnection connection = null;
-				try
-				{
-					URL urlAddress = new URL(url);
-					connection = (HttpURLConnection) urlAddress.openConnection();
-					connection.setUseCaches(false);
-
-					headers = connection.getHeaderFields();
-				}
-				catch (IOException e)
-				{
-					Log.e(TAG, e.getMessage(), e);
-				}
-				finally
-				{
-					if (connection != null)
-						connection.disconnect();
-				}
-
-				return headers;
-			}
-
-			@Override
-			protected void onPostExecute(Map<String, List<String>> result)
+			protected Response<String> parseNetworkResponse(NetworkResponse response)
 			{
 				Bundle resultData = new Bundle();
-				resultData.putString(ResultExtras.URL.name(), url);
-
-				if (result != null)
+				for (String key : response.headers.keySet())
 				{
-					for (Map.Entry<String, List<String>> entry : result.entrySet())
-					{
-						List<String> values = entry.getValue();
-						if (values.size() > 0)
-							resultData.putString(entry.getKey(), values.get(0));
-					}
-					onResultReceived.onReceiveResult(ResultCode.OK, resultData);
+					resultData.putString(key, response.headers.get(key));
 				}
-				else
-				{
-					resultData.putString(ResultExtras.ERROR_MESSAGE.name(), "Cannot obtain headers from url = " + url);
-					resultData.putInt(ResultExtras.ERROR_CODE.name(), ResultCode.GENERAL_FAILURE);
-
-					onResultReceived.onReceiveResult(ResultCode.GENERAL_FAILURE, resultData);
-				}
+				onResultReceived.onReceiveResult(response.statusCode, resultData);
+				return super.parseNetworkResponse(response);
 			}
-		}.execute();
+		};
+		Environment.getInstance().getRequestQueue().add(stringRequest);
 	}
 
 	/**
@@ -314,77 +294,28 @@ public class FeatureInternet extends FeatureScheduler
 	{
 		Log.i(TAG, ".downloadFile: " + TextUtils.implodeBundle(params));
 		ServiceController serviceController = Environment.getInstance().getServiceController();
-		serviceController.startService(DownloadService.class, params).then(new OnResultReceived()
-		{
-			@Override
-			public void onReceiveResult(int resultCode, Bundle resultData)
-			{
-				if (resultData != null)
-				{
-					_averageDownloadRateMbPerSec = resultData
-					        .getDouble(DownloadService.ResultExtras.DOWNLOAD_RATE_MB_PER_SEC.name());
-				}
+		serviceController.startService(DownloadService.class, params).then(onResultReceived);
+	}
 
-				onResultReceived.onReceiveResult(resultCode, resultData);
-			}
-		});
+	/**
+	 * Upload file
+	 *
+	 * @param params
+	 *            Bundle with various upload options. See
+	 *            UploadService.Extras
+	 * @param onResultReceived
+	 */
+	public void uploadFile(Bundle params, final OnResultReceived onResultReceived)
+	{
+		Log.i(TAG, ".uploadFile: " + TextUtils.implodeBundle(params));
+		ServiceController serviceController = Environment.getInstance().getServiceController();
+		serviceController.startService(UploadService.class, params).then(onResultReceived);
 	}
 
 	public void stopFileDownload()
 	{
 		Log.i(TAG, ".stopFileDownload");
 		DownloadService.stopIfRunning();
-	}
-
-	/**
-	 * Return the download speed measured in MB/sec.
-	 * FIXME: download rate must be obtained dynamically during download
-	 * progress calls
-	 */
-	@Deprecated
-	public double getAverageDownloadRate()
-	{
-		return _averageDownloadRateMbPerSec;
-	}
-
-	private void retrievePublicIPAsync()
-	{
-		Log.i(TAG, ".retrievePublicIPAsync");
-		String url = getPrefs().getString(Param.PUBLIC_IP_CHECK_URL);
-
-		getUrlContent(url, new OnResultReceived()
-		{
-			@Override
-			public void onReceiveResult(int resultCode, Bundle resultData)
-			{
-				if (resultCode == ResultCode.OK)
-				{
-					String content = resultData.getString(ResultExtras.CONTENT.name());
-
-					String ip = null;
-
-					// <html><head><title>Current IP
-					// Check</title></head><body>Current IP Address:
-					// 78.90.178.220</body></html>
-					Pattern pattern = Pattern
-					        .compile("\\<body\\>Current IP Address\\:\\s.*?(\\w+\\.\\w+.\\w+.\\w+)\\s*?\\<\\/body\\>");
-					Matcher matcher = pattern.matcher(content);
-					if (matcher.find())
-					{
-						ip = matcher.group(1).trim();
-					}
-					if (ip != null && !"".equals(ip))
-						_publicIP = ip;
-
-					Log.i(TAG, ".retrievePublicIPAsync: public IP = " + _publicIP);
-				}
-			}
-		});
-	}
-
-	public String getPublicIP()
-	{
-		return _publicIP;
 	}
 
 	/**
@@ -425,7 +356,7 @@ public class FeatureInternet extends FeatureScheduler
 			if (error.networkResponse != null)
 			{
 				statusCode = error.networkResponse.statusCode;
-				for (String key: error.networkResponse.headers.keySet())
+				for (String key : error.networkResponse.headers.keySet())
 				{
 					String value = error.networkResponse.headers.get(key);
 					headerInfo.append(key).append('=').append(value).append('\n');
@@ -438,5 +369,12 @@ public class FeatureInternet extends FeatureScheduler
 			resultData.putInt(ResultExtras.ERROR_CODE.name(), statusCode);
 			_onResultReceived.onReceiveResult(statusCode, resultData);
 		}
+	}
+
+	// FIXME: the public ip must be obtained by ON_CONNECTED event
+	@Deprecated
+	public String getPublicIP()
+	{
+		return _publicIP;
 	}
 }
