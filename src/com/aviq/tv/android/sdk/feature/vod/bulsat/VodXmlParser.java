@@ -141,11 +141,13 @@ class VodXmlParser
 			}
 			else if (TAG_TITLE_ORG.equals(localName))
 			{
-				_currentVod.setTitleOrg(_currentValue.toString());
+				if (_inVod)
+					_currentVod.setTitleOrg(_currentValue.toString());
 			}
 			else if (TAG_SHORT_NAME.equals(localName))
 			{
-				_currentVod.setShortName(_currentValue.toString());
+				if (_inVod)
+					_currentVod.setShortName(_currentValue.toString());
 			}
 		}
 
