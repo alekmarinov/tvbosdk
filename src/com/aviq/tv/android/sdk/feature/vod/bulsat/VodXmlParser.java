@@ -46,6 +46,7 @@ class VodXmlParser
 	private static final String TAG_RATING = "rating";
 	private static final String TAG_COUNTRY = "country";
 	private static final String TAG_COUNTRY_ID = "country_id";
+	private static final String TAG_DURATION = "duration";
 
 	private SAXParser _saxParser;
 	private XmlVodHandler _handler;
@@ -178,6 +179,11 @@ class VodXmlParser
 			{
 				if (_inVod)
 					_currentVod.setCountryId(_currentValue.toString());
+			}
+			else if (TAG_DURATION.equals(localName))
+			{
+				if (_inVod)
+					_currentVod.setDuration(_currentValue.toString());
 			}
 		}
 
