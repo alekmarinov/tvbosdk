@@ -41,6 +41,11 @@ class VodXmlParser
 	private static final String TAG_TITLE_ORG = "title_org";
 	private static final String TAG_SHORT_NAME = "short_name";
 	private static final String TAG_POSTER = "poster";
+	private static final String TAG_SHORT_DESCRIPTION = "short_description";
+	private static final String TAG_RELEASE = "release";
+	private static final String TAG_RATING = "rating";
+	private static final String TAG_COUNTRY = "country";
+	private static final String TAG_COUNTRY_ID = "country_id";
 
 	private SAXParser _saxParser;
 	private XmlVodHandler _handler;
@@ -148,6 +153,31 @@ class VodXmlParser
 			{
 				if (_inVod)
 					_currentVod.setShortName(_currentValue.toString());
+			}
+			else if (TAG_SHORT_DESCRIPTION.equals(localName))
+			{
+				if (_inVod)
+					_currentVod.setShortDescription(_currentValue.toString());
+			}
+			else if (TAG_RELEASE.equals(localName))
+			{
+				if (_inVod)
+					_currentVod.setRelease(_currentValue.toString());
+			}
+			else if (TAG_RATING.equals(localName))
+			{
+				if (_inVod)
+					_currentVod.setRating(_currentValue.toString());
+			}
+			else if (TAG_COUNTRY.equals(localName))
+			{
+				if (_inVod)
+					_currentVod.setCountry(_currentValue.toString());
+			}
+			else if (TAG_COUNTRY_ID.equals(localName))
+			{
+				if (_inVod)
+					_currentVod.setCountryId(_currentValue.toString());
 			}
 		}
 
