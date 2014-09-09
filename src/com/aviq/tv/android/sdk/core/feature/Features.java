@@ -115,6 +115,9 @@ public class Features
 		public FeatureState BOOT_WIZARD;
 		public FeatureState STANDBY;
 		public FeatureState MEDIA;
+		public FeatureState RECORDINGS;
+		public FeatureState RECORDING_ITEMS;
+		public FeatureState RECORDING_DETAILS;
 	}
 
 	public Features(FeatureSet featureSet) throws FeatureNotFoundException

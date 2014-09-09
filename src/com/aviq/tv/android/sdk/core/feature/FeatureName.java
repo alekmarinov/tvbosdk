@@ -96,6 +96,8 @@ public class FeatureName
 		MEDIA,
 		// FIXME: What is this feature?
 		NOTIFICATION,
-		RECORDING_SCHEDULER
+		RECORDINGS,
+		RECORDING_ITEMS,
+		RECORDING_DETAILS
 	}
 }
