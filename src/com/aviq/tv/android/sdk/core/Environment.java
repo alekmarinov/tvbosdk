@@ -133,10 +133,12 @@ public class Environment extends Activity
 				// Log target device parameters
 				DisplayMetrics metrics = new DisplayMetrics();
 				getWindowManager().getDefaultDisplay().getMetrics(metrics);
+				int memClass = ((ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE))
+				        .getMemoryClass();
 				Log.i(TAG, "Initializing environment: version (app = " + getBuildVersion() + ", sdk = " + Version.NAME
 				        + "), " + metrics.widthPixels + "x" + metrics.heightPixels + ", density = " + metrics.density
 				        + ", densityDpi = " + metrics.densityDpi + ", scaledDensity = " + metrics.scaledDensity
-				        + ", xdpi = " + metrics.xdpi + ", ydpi = " + metrics.ydpi);
+				        + ", xdpi = " + metrics.xdpi + ", ydpi = " + metrics.ydpi + ", memClass = " + memClass + " mb");
 
 				// initializes environment context
 				_stateManager = new StateManager(Environment.this);
@@ -149,8 +151,6 @@ public class Environment extends Activity
 				_requestQueue.getCache().clear();
 
 				// Use 1/8th of the available memory for this memory cache.
-				int memClass = ((ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE))
-				        .getMemoryClass();
 				int cacheSize = 1024 * 1024 * memClass / 8;
 				_imageLoader = new ImageLoader(_requestQueue, new BitmapLruCache(cacheSize));
 
@@ -253,6 +253,8 @@ public class Environment extends Activity
 		_isCreated = true;
 
 		Log.i(TAG, ".onCreate");
+		Thread.currentThread().setUncaughtExceptionHandler(new AppUncaughtExceptionHandler());
+
 		try
 		{
 			// initialize preferences
@@ -739,7 +741,18 @@ public class Environment extends Activity
 		@Override
 		public void putBitmap(String url, Bitmap bitmap)
 		{
-			put(url, bitmap);
+			// put(url, bitmap);
 		}
 	}
+
+	public static class AppUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler
+	{
+		@Override
+		public void uncaughtException(Thread thread, Throwable ex)
+		{
+			Log.e(TAG, "Got an uncaught exception: " + ex.toString());
+			Log.e(TAG, ex.getMessage(), ex);
+		}
+	}
+
 }

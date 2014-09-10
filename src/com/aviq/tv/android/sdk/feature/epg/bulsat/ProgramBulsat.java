@@ -23,7 +23,7 @@ import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
  */
 public class ProgramBulsat extends Program implements Serializable
 {
-    private static final long serialVersionUID = 5914858738230945780L;
+	private static final long serialVersionUID = 5914858738230945780L;
 
 	private String _description;
 	private String _image;
@@ -35,7 +35,8 @@ public class ProgramBulsat extends Program implements Serializable
 	}
 
 	/**
-	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 * No-arg constructor added for Kryo serialization. Do not use for anything
+	 * else.
 	 */
 	public ProgramBulsat()
 	{
@@ -58,12 +59,14 @@ public class ProgramBulsat extends Program implements Serializable
 	}
 
 	@Override
-    public void setDetailAttributes(Program.MetaData programMetaData, String[] attributes)
-    {
-		MetaData programBulsatMetaData = (MetaData)programMetaData;
-		_description = attributes[programBulsatMetaData.metaDescription];
-		_image = attributes[programBulsatMetaData.metaImage];
-    }
+	public void setDetailAttributes(Program.MetaData programMetaData, String[] attributes)
+	{
+		MetaData programBulsatMetaData = (MetaData) programMetaData;
+		if (attributes[programBulsatMetaData.metaDescription] != null)
+			_description = new String(attributes[programBulsatMetaData.metaDescription]);
+		if (attributes[programBulsatMetaData.metaImage] != null)
+			_image = new String(attributes[programBulsatMetaData.metaImage]);
+	}
 
 	@Override
 	public String getDetailAttribute(ProgramAttribute programAttribute)

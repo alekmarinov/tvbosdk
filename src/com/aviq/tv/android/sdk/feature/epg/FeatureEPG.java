@@ -646,9 +646,9 @@ public abstract class FeatureEPG extends FeatureScheduler
 		for (int i = 0; i < _maxChannels; i++)
 		{
 			Channel channel = createChannel(i);
-			channel.setChannelId(data[i][metaData.metaChannelId]);
-			channel.setTitle(data[i][metaData.metaChannelTitle]);
-			channel.setThumbnail(data[i][metaData.metaChannelThumbnail]);
+			channel.setChannelId(new String(data[i][metaData.metaChannelId]));
+			channel.setTitle(new String(data[i][metaData.metaChannelTitle]));
+			channel.setThumbnail(new String(data[i][metaData.metaChannelThumbnail]));
 			channel.setAttributes(metaData, data[i]);
 			newChannelList.add(channel);
 		}
@@ -714,9 +714,9 @@ public abstract class FeatureEPG extends FeatureScheduler
 				Calendar stopTime = Calendar.getInstance();
 				stopTime.setTime(sdf.parse(data[i][metaData.metaStop]));
 
-				String id = data[i][metaData.metaStart];
+				String id = new String(data[i][metaData.metaStart]);
 				Program program = createProgram(id, channel);
-				program.setTitle(data[i][metaData.metaTitle]);
+				program.setTitle(new String(data[i][metaData.metaTitle]));
 				program.setStartTime(startTime);
 				program.setStopTime(stopTime);
 
