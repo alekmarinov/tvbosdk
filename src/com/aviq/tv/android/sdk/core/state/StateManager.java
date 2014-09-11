@@ -54,6 +54,18 @@ public class StateManager
 	private int _viewLayerId = 0x00af0001;
 	private boolean _inSetState = false;
 	private boolean _inCreateState = false;
+	private Stack<StateHistoryEntry> _stateHistory = new Stack<StateHistoryEntry>();
+	private class StateHistoryEntry
+	{
+		BaseState state;
+		Bundle params;
+
+		StateHistoryEntry(BaseState state, Bundle params)
+		{
+			this.state = state;
+			this.params = params;
+		}
+	}
 
 	public enum StateLayer
 	{
@@ -284,6 +296,10 @@ public class StateManager
 			TextUtils.implodeBundle(logMsg, params, '=', ',').append("), overlay=").append(isOverlay);
 			Log.i(TAG, logMsg.toString());
 
+			// FIXME: just for debugging
+			if ("FeatureStateVODDetails".equals(stateName) && params.getParcelableArrayList("VODGROUP_PATH") == null)
+				throw new RuntimeException("Who are you?");
+
 			switch (_activeStates.size())
 			{
 				case 0:
@@ -423,6 +439,55 @@ public class StateManager
 	public void setStateMain(BaseState state, Bundle params) throws StateException
 	{
 		setState(state, params, false, false, false);
+	}
+
+	/**
+	 * Adds State to history stack
+	 *
+	 * @param state
+	 *            State to add in the history stack
+	 * @param params
+	 *            Bundle holding params to be sent to the State when activated
+	 */
+	public void pushStateHistory(BaseState state, Bundle params)
+	{
+		StringBuffer logMsg = new StringBuffer();
+		logMsg.append(".pushStateHistory: ").append(state.getClass().getSimpleName()).append('(');
+		TextUtils.implodeBundle(logMsg, params, '=', ',').append(")");
+		Log.i(TAG, logMsg.toString());
+		_stateHistory.add(new StateHistoryEntry(state, params));
+	}
+
+	/**
+	 * Sets new main state as active pop'ed from the top of history stack if not empty
+	 */
+	public void popStateHistory() throws StateException
+	{
+		if (_stateHistory.size() > 0)
+		{
+			StateHistoryEntry entry = _stateHistory.pop();
+			StringBuffer logMsg = new StringBuffer();
+			logMsg.append(".popStateHistory: ").append(entry.state.getClass().getSimpleName()).append('(');
+			TextUtils.implodeBundle(logMsg, entry.params, '=', ',').append(")");
+			Log.i(TAG, logMsg.toString());
+			setStateMain(entry.state, entry.params);
+		}
+	}
+
+	/**
+	 * @return size of history with pushed main states
+	 */
+	public int getStateHistorySize()
+	{
+		return _stateHistory.size();
+	}
+
+	/**
+	 * Clears the history of pushed Main states
+	 */
+	public void clearStateHistory()
+	{
+		_stateHistory.clear();
 	}
 
 	/**
