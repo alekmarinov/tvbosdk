@@ -210,6 +210,11 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 */
 	public boolean addRecord(Program program)
 	{
+		if (program == null)
+		{
+			Log.e(TAG, ".addRecord(null) is not allowed");
+			return false;
+		}
 		int duration = program.getLengthMin() * 60;
 		return addRecord(program.getChannel().getChannelId(), program.getStartTime(), duration);
 	}
@@ -281,6 +286,11 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 */
 	public boolean isProgramRecorded(Program program)
 	{
+		if (program == null)
+		{
+			Log.e(TAG, ".isProgramRecorded(null) is not allowed!");
+			return false;
+		}
 		NavigableMap<String, RecordingScheduler> navMap = _channelToRecordsNavigableMap.get(program.getChannel()
 		        .getChannelId());
 		if (navMap == null)
