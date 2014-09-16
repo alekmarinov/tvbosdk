@@ -36,6 +36,7 @@ import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
 import com.aviq.tv.android.sdk.feature.system.FeatureTimeZone;
 import com.aviq.tv.android.sdk.feature.upgrade.FeatureUpgrade;
 import com.aviq.tv.android.sdk.feature.vod.FeatureVOD;
+import com.aviq.tv.android.sdk.feature.volume.FeatureVolume;
 import com.aviq.tv.android.sdk.feature.watchlist.FeatureWatchlist;
 import com.aviq.tv.android.sdk.feature.webtv.FeatureWebTV;
 
@@ -72,6 +73,7 @@ public class Features
 		public FeatureStandBy STANDBY;
 		public FeatureRecordingScheduler RECORDING_SCHEDULER;
 		public FeatureDevice DEVICE;
+		public FeatureVolume VOLUME;
 	}
 
 	public class Schedulers

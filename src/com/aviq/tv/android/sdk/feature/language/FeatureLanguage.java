@@ -33,13 +33,37 @@ public class FeatureLanguage extends FeatureComponent
 		BG, EN, FR, DE
 	}
 
+	public enum Param
+	{
+		/**
+		 * language parameter
+		 */
+		CODE(null);
+
+		Param(String value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.State.TV).put(name(), value);
+		}
+	}
+
+	private Code _langCode;
+
+	@Override
+	public void initialize(final OnFeatureInitialized onFeatureInitialized)
+	{
+		Log.i(TAG, ".initialize");
+		if (getPrefs().has(Param.CODE))
+		{
+			setLanguage(Code.valueOf(getPrefs().getString(Param.CODE)));
+		}
+		super.initialize(onFeatureInitialized);
+	}
+
 	@Override
 	public Component getComponentName()
 	{
 		return FeatureName.Component.LANGUAGE;
 	}
-
-	private Code _langCode;
 
 	/**
 	 * Set system language
@@ -70,7 +94,7 @@ public class FeatureLanguage extends FeatureComponent
 		return Code.valueOf(langCode);
 	}
 
-	public Locale getLocale(Code code)
+	private Locale getLocale(Code code)
 	{
 		Locale locale = Locale.getDefault();
 
@@ -98,7 +122,7 @@ public class FeatureLanguage extends FeatureComponent
 
 	public Locale getLocale()
 	{
-		return getLocale(null);
+		return getLocale(_langCode);
 	}
 
 	private void setSystemLanguage(Locale locale)
