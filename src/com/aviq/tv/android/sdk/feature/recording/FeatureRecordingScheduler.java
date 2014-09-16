@@ -246,6 +246,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		{
 			String startTime = _sdf.format(start.getTime());
 			navMap.remove(startTime);
+			_dayOffsets.remove(Calendars.getDayOffsetByDate(start));
 			return saveRecords();
 		}
 		return true;
