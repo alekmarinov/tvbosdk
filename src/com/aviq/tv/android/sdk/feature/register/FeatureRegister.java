@@ -178,7 +178,7 @@ public class FeatureRegister extends FeatureComponent
 		final ConnectivityManager connectivityManager = (ConnectivityManager) Environment.getInstance()
 		        .getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo netInfo = connectivityManager.getActiveNetworkInfo();
-		return (netInfo != null) ? netInfo.getTypeName().toLowerCase() : "";
+		return (netInfo != null) ? netInfo.getTypeName().toLowerCase() : "unknown";
 	}
 
 	private String base64(byte[] bytes)
