@@ -113,6 +113,50 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	// List of favorite channels
 	private List<Channel> _channels;
 	private String _channelId;
+	private PlayEventsReceiver _playEventsReceiver = new PlayEventsReceiver();
+
+	private class PlayEventsReceiver implements EventReceiver
+	{
+		private Channel _channel;
+
+		@Override
+		public void onEvent(int msgId, Bundle bundle)
+		{
+			Log.i(TAG, ".PLAYER:onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
+
+			if (msgId == FeaturePlayer.ON_PLAY_STARTED)
+			{
+				if (_channelId == null || !_channelId.equals(_channel.getChannelId()))
+				{
+					// switching to new channel
+					Bundle switchBundle = new Bundle();
+					if (_channelId != null)
+						switchBundle.putString(OnSwitchChannelExtras.FROM_CHANNEL.name(), _channelId);
+					switchBundle.putString(OnSwitchChannelExtras.TO_CHANNEL.name(), _channel.getChannelId());
+					switchBundle.putLong(OnSwitchChannelExtras.SWITCH_DURATION.name(),
+					        bundle.getLong(FeaturePlayer.Extras.TIME_ELAPSED.name()));
+					getEventMessenger().trigger(ON_SWITCH_CHANNEL, switchBundle);
+				}
+				_channelId = _channel.getChannelId();
+			}
+			else if (msgId == FeaturePlayer.ON_PLAY_PAUSE)
+			{
+				if (_feature.Component.PLAYER.isPaused())
+					_featureTimeshift.pause();
+				else
+					_featureTimeshift.resume();
+			}
+			else if (msgId == FeaturePlayer.ON_PLAY_STOP)
+			{
+				_featureTimeshift.seekLive();
+			}
+			else if (msgId == FeaturePlayer.ON_PLAY_ERROR || msgId == FeaturePlayer.ON_PLAY_STOP
+			        || msgId == FeaturePlayer.ON_PLAY_TIMEOUT)
+			{
+				_feature.Component.PLAYER.getEventMessenger().unregister(this, EventMessenger.ON_ANY);
+			}
+		}
+	}
 
 	public FeatureChannels() throws FeatureNotFoundException
 	{
@@ -325,7 +369,10 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		if (channels.size() == 0)
 			return;
 		if (index < 0 || index >= channels.size())
+		{
+			Log.w(TAG, ".play: channel index exceeds limits [0:" + channels.size() + ")");
 			index = 0;
+		}
 		int lastChannelIndex = -1;
 		final Channel channel = channels.get(index);
 		if (hasLastChannel())
@@ -372,30 +419,11 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 					// play stream
 					_feature.Component.PLAYER.play(streamUrl);
 
-					_feature.Component.PLAYER.getEventMessenger().register(new EventReceiver()
-					{
-						@Override
-						public void onEvent(int msgId, Bundle bundle)
-						{
-							Log.i(TAG, ".PLAYER:onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
-
-							if (_channelId == null || !_channelId.equals(channel.getChannelId()))
-							{
-								// switching to new channel
-								Bundle switchBundle = new Bundle();
-								if (_channelId != null)
-									switchBundle.putString(OnSwitchChannelExtras.FROM_CHANNEL.name(), _channelId);
-								switchBundle.putString(OnSwitchChannelExtras.TO_CHANNEL.name(), channel.getChannelId());
-								switchBundle.putLong(OnSwitchChannelExtras.SWITCH_DURATION.name(),
-								        bundle.getLong(FeaturePlayer.Extras.TIME_ELAPSED.name()));
-								getEventMessenger().trigger(ON_SWITCH_CHANNEL, switchBundle);
-							}
-							_channelId = channel.getChannelId();
-
-							_feature.Component.PLAYER.getEventMessenger().unregister(this,
-							        FeaturePlayer.ON_PLAY_STARTED);
-						}
-					}, FeaturePlayer.ON_PLAY_STARTED);
+					// avoid register leaks
+					_playEventsReceiver._channel = channel;
+					_feature.Component.PLAYER.getEventMessenger()
+					        .unregister(_playEventsReceiver, EventMessenger.ON_ANY);
+					_feature.Component.PLAYER.getEventMessenger().register(_playEventsReceiver, EventMessenger.ON_ANY);
 				}
 			}
 		});

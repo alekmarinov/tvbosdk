@@ -20,7 +20,6 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Timeshift logic component
@@ -40,6 +39,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	private long _pauseTimeStart;
 	private long _playTimeDelta;
 	private long _timeshiftDuration;
+	private boolean _isPaused = false;
 	private AutoResumer _autoResumer = new AutoResumer();
 
 	public enum Param
@@ -60,14 +60,6 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	public FeatureTimeshift() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.PLAYER);
-	}
-
-	@Override
-	public void initialize(final OnFeatureInitialized onFeatureInitialized)
-	{
-		Log.i(TAG, ".initialize");
-		_feature.Component.PLAYER.getEventMessenger().register(this, FeaturePlayer.ON_PLAY_PAUSE);
-		super.initialize(onFeatureInitialized);
 	}
 
 	/**
@@ -92,7 +84,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	/**
 	 * Seek at live position
 	 *
-	 * @return current time
+	 * @return playing time equal to current time
 	 */
 	public long seekLive()
 	{
@@ -136,28 +128,28 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	public long seekAt(long timestamp)
 	{
 		Log.i(TAG, ".seekAt: " + (currentTime() - timestamp) + " secs from current time");
+		if (_isPaused)
+		{
+			Log.i(TAG, ".seekAt: resuming on seek");
+			resume();
+		}
 		long adjustedTime = adjustInTimeshift(timestamp);
 		setPlayTimeDelta(currentTime() - adjustedTime);
 		return adjustedTime;
 	}
 
 	/**
+	 * In case of pause returns constant position from the moment of pause
+	 * subtracted with the current delay from live, otherwise returns moving
+	 * position from current time subtracted with the current delay from live
+	 *
 	 * @return the current playing absolute time
 	 */
 	public long getPlayingTime()
 	{
-		if (_feature.Component.PLAYER.isPaused())
-		{
-			// returns constant position from the moment of pause subtracted
-			// with the current delay from live
-			return _pauseTimeStart - _playTimeDelta;
-		}
-		else
-		{
-			// returns moving position from current time subtracted with the
-			// current delay from live
-			return currentTime() - _playTimeDelta;
-		}
+		long playingTime = _isPaused ? _pauseTimeStart : currentTime();
+		playingTime -= _playTimeDelta;
+		return playingTime;
 	}
 
 	/**
@@ -185,37 +177,38 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		return System.currentTimeMillis() / 1000;
 	}
 
-	@Override
-	public void onEvent(int msgId, Bundle bundle)
-	{
-		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
-		if (FeaturePlayer.ON_PLAY_PAUSE == msgId)
-		{
-			if (_feature.Component.PLAYER.isPaused())
-				onPause();
-			else
-				onResume();
-		}
-	}
-
 	/**
 	 * Pause cursor
 	 */
-	private void onPause()
+	public void pause()
 	{
 		Log.i(TAG, ".pause");
+		if (_isPaused)
+		{
+			Log.w(TAG, "Attempt to call pause() more than once");
+			return ;
+		}
 		_pauseTimeStart = currentTime();
+		_isPaused = true;
 		_autoResumer.start();
 	}
 
 	/**
 	 * Resume from pause
 	 */
-	private void onResume()
+	public void resume()
 	{
 		Log.i(TAG, ".resume");
+		if (!_isPaused)
+		{
+			Log.w(TAG, "Attempt to call resume() more than once");
+			return ;
+		}
 		_autoResumer.stop();
-		setPlayTimeDelta(_playTimeDelta + currentTime() - _pauseTimeStart);
+		// setPlayTimeDelta(_playTimeDelta + currentTime() - _pauseTimeStart);
+		_isPaused = false;
+		seekDelta(_playTimeDelta + currentTime() - _pauseTimeStart);
+		_pauseTimeStart = 0;
 	}
 
 	/**
@@ -258,6 +251,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 				_feature.Component.PLAYER.resume();
 				// seekAt(currentTime() - getTimeshiftDuration());
 				getEventMessenger().trigger(ON_AUTO_RESUME);
+				return ;
 			}
 
 			getEventMessenger().postDelayed(this, 1000);
