@@ -2,6 +2,9 @@ package com.aviq.tv.android.sdk.feature.vod.bulsat;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -23,6 +26,7 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.feature.vod.FeatureVOD;
+import com.aviq.tv.android.sdk.feature.vod.FeatureVOD.OnVodSearchResult;
 import com.google.gson.JsonSyntaxException;
 
 public class FeatureVODBulsat extends FeatureVOD
@@ -83,6 +87,7 @@ public class FeatureVODBulsat extends FeatureVOD
 		scheduleDelayed(getPrefs().getInt(Param.VOD_UPDATE_INTERVAL));
 	}
 
+	@SuppressWarnings("unchecked")
 	public VodTree<VodGroup> getVodData()
 	{
 		return _vodData;
@@ -97,6 +102,44 @@ public class FeatureVODBulsat extends FeatureVOD
 		
 		StringRequest request = new StringRequest(Request.Method.GET, vodServerURL, callback, callback);
 		Environment.getInstance().getRequestQueue().add(request);
+	}
+	
+	public void search(String[] keywords, OnVodSearchResult onVodSearchResult)
+	{
+Log.e(TAG, "keywords = " + Arrays.toString(keywords));
+		
+		List<Vod> resultList = new ArrayList<Vod>();
+		searchVodTree(_vodData.getRoot(), keywords, resultList);
+		onVodSearchResult.onVodSearchResult(resultList);
+	}
+	
+	public void searchVodTree(VodTree.Node<VodGroup> node, String[] keywords, List<Vod> resultList)
+	{
+		// searching: title, shortDescription, description
+		
+		boolean hasKeywords = true;
+		
+		List<Vod> vodList = node.getData().getVodList();
+		for (Vod vod : vodList)
+		{
+Log.e(TAG, "title = " + vod.getTitle()); // + ", num VODs = " + node.getData().getVodList().size());
+
+			for (String keyword : keywords)
+			{
+				hasKeywords = hasKeywords && vod.getTitle().indexOf(keyword) > -1;
+//				hasKeywords = hasKeywords && vod.getShortDescription().indexOf(keyword) > -1;
+//				hasKeywords = hasKeywords && vod.getDescription().indexOf(keyword) > -1;
+			}
+			
+			if (hasKeywords)
+				resultList.add(vod);
+		}
+		
+		if (node.hasChildren())
+		{
+			for (VodTree.Node<VodGroup> child : node.getChildren())
+				searchVodTree(child, keywords, resultList);
+		}
 	}
 	
 	private class VodRequest<T> extends Request<T>
