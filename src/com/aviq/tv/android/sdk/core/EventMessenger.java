@@ -219,11 +219,18 @@ public class EventMessenger extends Handler
 		super.handleMessage(msg);
 		_inEventIteration = true;
 		List<EventReceiver> msgListeners = _listners.get(msg.what);
+		List<EventReceiver> anyMsgListeners = _listners.get(ON_ANY);
+		List<EventReceiver> listeners = new ArrayList<EventReceiver>();
+
 		if (msgListeners != null)
+			listeners.addAll(msgListeners);
+		if (anyMsgListeners != null)
+			listeners.addAll(anyMsgListeners);
+		if (listeners.size() > 0)
 		{
-			Log.v(_tag, ".handleMessage: notifying " + msgListeners.size() + " listeners on " + idName(msg.what) + " ("
+			Log.v(_tag, ".handleMessage: notifying " + listeners.size() + " listeners on " + idName(msg.what) + " ("
 			        + msg.what + ")");
-			for (EventReceiver eventReceiver : msgListeners)
+			for (EventReceiver eventReceiver : listeners)
 			{
 				Log.d(_tag, eventReceiver + ".onEvent " + idName(msg.what));
 				eventReceiver.onEvent(msg.what, (Bundle) msg.obj);
@@ -232,10 +239,17 @@ public class EventMessenger extends Handler
 
 		// handle event hooks
 		List<TriggerRoute> triggerRoutes = _eventHooks.get(msg.what);
+		List<TriggerRoute> anyTriggerRoutes = _eventHooks.get(ON_ANY);
+		List<TriggerRoute> routes = new ArrayList<TriggerRoute>();
 		if (triggerRoutes != null)
+			routes.addAll(triggerRoutes);
+		if (anyTriggerRoutes != null)
+			routes.addAll(anyTriggerRoutes);
+
+		if (routes.size() > 0)
 		{
 			Bundle eventParams = (Bundle) msg.obj;
-			for (TriggerRoute triggerRoute : triggerRoutes)
+			for (TriggerRoute triggerRoute : routes)
 			{
 				// copy routed bundle and apply value substitution from source
 				// event bundle
