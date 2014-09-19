@@ -55,6 +55,11 @@ public class FeatureDevice extends FeatureComponent
 		CUSTOMER, BRAND, BUILD, VERSION, MAC
 	}
 
+	public static interface IStatusFieldGetter
+	{
+		Object getStatusField();
+	}
+
 	public enum Param
 	{
 		/**
@@ -118,7 +123,7 @@ public class FeatureDevice extends FeatureComponent
 	private long _bytesRcvd;
 	private long _bytesSent;
 	private String _deviceMac;
-
+	protected long _statusInterval;
 	private final HashMap<String, IStatusFieldGetter> _fieldGetters = new HashMap<String, IStatusFieldGetter>();
 
 	public FeatureDevice() throws FeatureNotFoundException
@@ -137,8 +142,8 @@ public class FeatureDevice extends FeatureComponent
 		Log.i(TAG, ".initialize");
 		reset();
 		long vmStatDelay = getPrefs().getInt(Param.VMSTAT_DELAY);
+		_statusInterval = getPrefs().getInt(Param.STATUS_INTERVAL);
 		_vmCmd = String.format(STAT_CMD, vmStatDelay);
-		Log.w(TAG, "VMCmd = " + _vmCmd);
 
 		new Thread(new Runnable()
 		{
@@ -179,7 +184,7 @@ public class FeatureDevice extends FeatureComponent
 											_cpuIdleMax = cpuidle;
 										}
 										long deltaInSeconds = (System.currentTimeMillis() - _lastSendTime) / 1000;
-										if (deltaInSeconds > getPrefs().getInt(Param.STATUS_INTERVAL))
+										if (deltaInSeconds > _statusInterval)
 										{
 											sendStatus();
 										}
@@ -209,8 +214,57 @@ public class FeatureDevice extends FeatureComponent
 				}
 			}
 		}).start();
-
 		super.initialize(onFeatureInitialized);
+	}
+
+	/**
+	 * Gets device attribute
+	 *
+	 * @param deviceAttribute
+	 *            the name of the device attribute
+	 * @return device attribute value
+	 */
+	public String getDeviceAttribute(DeviceAttribute deviceAttribute)
+	{
+		switch (deviceAttribute)
+		{
+			case CUSTOMER:
+				return getPrefs().getString(Param.CUSTOMER);
+
+			case BRAND:
+				return getPrefs().getString(Param.BRAND);
+
+			case VERSION:
+				return Environment.getInstance().getBuildVersion();
+
+			case BUILD:
+				return getPrefs().getString(Param.BUILD);
+
+			case MAC:
+				_deviceMac = getPrefs().getString(Param.MAC);
+				if (_deviceMac.length() == 0)
+	                try
+                    {
+	                    _deviceMac = readMacAddress();
+                    }
+                    catch (FileNotFoundException e)
+                    {
+                    	Log.e(TAG, e.getMessage(), e);
+                    }
+				return _deviceMac;
+		}
+		return null;
+	}
+
+	/**
+	 * Provide field status accessing interface
+	 *
+	 * @param fieldName the name of the field
+	 * @param getter IStatusFieldGetter callback interface
+	 */
+	public void addStatusField(String fieldName, IStatusFieldGetter getter)
+	{
+		_fieldGetters.put(fieldName, getter);
 	}
 
 	private void sendStatus()
@@ -261,45 +315,6 @@ public class FeatureDevice extends FeatureComponent
 		_bytesSent = TrafficStats.getTotalTxBytes();
 	}
 
-	/**
-	 * Gets device attribute
-	 *
-	 * @param deviceAttribute
-	 *            the name of the device attribute
-	 * @return device attribute value
-	 */
-	public String getDeviceAttribute(DeviceAttribute deviceAttribute)
-	{
-		switch (deviceAttribute)
-		{
-			case CUSTOMER:
-				return getPrefs().getString(Param.CUSTOMER);
-
-			case BRAND:
-				return getPrefs().getString(Param.BRAND);
-
-			case VERSION:
-				return Environment.getInstance().getBuildVersion();
-
-			case BUILD:
-				return getPrefs().getString(Param.BUILD);
-
-			case MAC:
-				_deviceMac = getPrefs().getString(Param.MAC);
-				if (_deviceMac.length() == 0)
-	                try
-                    {
-	                    _deviceMac = readMacAddress();
-                    }
-                    catch (FileNotFoundException e)
-                    {
-                    	Log.e(TAG, e.getMessage(), e);
-                    }
-				return _deviceMac;
-		}
-		return null;
-	}
-
 	private long getHddFreeMemory()
 	{
 		String drive = android.os.Environment.getDataDirectory().getPath();
@@ -320,22 +335,6 @@ public class FeatureDevice extends FeatureComponent
 			type = networkInfo.getTypeName();
 		}
 		return type;
-	}
-
-	/**
-	 * Provide field status accessing interface
-	 *
-	 * @param fieldName the name of the field
-	 * @param getter IStatusFieldGetter callback interface
-	 */
-	public void addStatusField(String fieldName, IStatusFieldGetter getter)
-	{
-		_fieldGetters.put(fieldName, getter);
-	}
-
-	public static interface IStatusFieldGetter
-	{
-		Object getStatusField();
 	}
 
 	private String readMacAddress() throws FileNotFoundException

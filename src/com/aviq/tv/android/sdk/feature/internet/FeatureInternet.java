@@ -69,10 +69,10 @@ public class FeatureInternet extends FeatureScheduler
 		CHECK_ATTEMPT_DELAY(4000),
 
 		/** URL to check against for the box's geoip information */
-		GEOIP_URL("http://freegeoip.net/json"),
+		GEOIP_URL("http://www.telize.com/geoip"),
 
 		/** Backup URL to check against for the box's geoip information */
-		GEOIP_URL_BACKUP("http://www.telize.com/geoip");
+		GEOIP_URL_BACKUP("http://freegeoip.net/json");
 
 		Param(int value)
 		{

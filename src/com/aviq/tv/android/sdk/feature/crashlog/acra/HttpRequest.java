@@ -1,4 +1,4 @@
-package com.aviq.tv.android.sdk.feature.crashlog;
+package com.aviq.tv.android.sdk.feature.crashlog.acra;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;

@@ -43,6 +43,7 @@ import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.TriggerRoute;
 import com.aviq.tv.android.sdk.core.feature.IFeature.OnFeatureInitialized;
+import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -447,12 +448,27 @@ public class FeatureManager
 	 */
 	public IFeature getFeature(Class<?> featureClass) throws FeatureNotFoundException
 	{
-		for (IFeature feature : _features)
+		if (isFeature(featureClass))
 		{
-			if (featureClass.isInstance(feature))
-				return feature;
+			for (IFeature feature : _features)
+			{
+				if (featureClass.isInstance(feature))
+					return feature;
+			}
 		}
 		throw new FeatureNotFoundException(featureClass.getName());
+	}
+
+	/**
+	 * Returns true if specified class implements IFeature interface
+	 *
+	 * @param clazz
+	 *            The class to check if is a feature
+	 * @return true if the specified class implements IFeature interface or false otherwise
+	 */
+	public boolean isFeature(Class<?> clazz)
+	{
+		return IFeature.class.isAssignableFrom(clazz);
 	}
 
 	/**
@@ -784,7 +800,7 @@ public class FeatureManager
 
 				if (sorted.indexOf(feature) < 0)
 				{
-					if (feature.getClass().getAnnotation(PriorityFeature.class) != null)
+					if (feature.getClass().getAnnotation(Priority.class) != null)
 					{
 						resolvedPosition++;
 						if (resolvedPosition < sorted.size())
@@ -998,7 +1014,8 @@ public class FeatureManager
 		}
 
 		@Override
-		public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXParseException
+		public void startElement(String uri, String localName, String qName, Attributes attributes)
+		        throws SAXParseException
 		{
 			if (TAG_INCLUDE.equalsIgnoreCase(localName))
 			{
@@ -1047,7 +1064,8 @@ public class FeatureManager
 			else if (TAG_STRING.equalsIgnoreCase(localName))
 			{
 				if (_feature == null && !_inUse)
-					throw new SAXParseException("Tag '" + TAG_STRING + "' must be inside tag '" + TAG_FEATURE + "'", _locator);
+					throw new SAXParseException("Tag '" + TAG_STRING + "' must be inside tag '" + TAG_FEATURE + "'",
+					        _locator);
 				_paramName = attributes.getValue(ATTR_FEATURE_PARAM_NAME);
 				_stringValue.setLength(0);
 				_inString = true;
@@ -1260,13 +1278,14 @@ public class FeatureManager
 			else if (TAG_TRIGGER_PARAM.equalsIgnoreCase(localName))
 			{
 				if (_eventHook.triggerEventName == null)
-					throw new SAXParseException(TAG_TRIGGER_PARAM + " must be declared inside tag " + TAG_TRIGGER, _locator);
+					throw new SAXParseException(TAG_TRIGGER_PARAM + " must be declared inside tag " + TAG_TRIGGER,
+					        _locator);
 				_eventHook.eventParams.putString(attributes.getValue(ATTR_TRIGGER_PARAM_NAME),
 				        attributes.getValue(ATTR_TRIGGER_PARAM_VALUE));
 			}
 		}
 
-        @Override
+		@Override
 		public void endElement(String uri, String localName, String qName) throws SAXParseException
 		{
 			if (TAG_FEATURES.equalsIgnoreCase(localName))
@@ -1363,7 +1382,8 @@ public class FeatureManager
 							{
 								FeatureName.Component component = FeatureName.Component.valueOf(featureNameParts[1]);
 								if (component == null)
-									throw new SAXParseException("Unknown component feature `" + featureNameParts[1] + "'", _locator);
+									throw new SAXParseException("Unknown component feature `" + featureNameParts[1]
+									        + "'", _locator);
 								targetFeature = use(component);
 							}
 							break;
@@ -1371,7 +1391,8 @@ public class FeatureManager
 							{
 								FeatureName.Scheduler scheduler = FeatureName.Scheduler.valueOf(featureNameParts[1]);
 								if (scheduler == null)
-									throw new SAXParseException("Unknown scheduler feature `" + featureNameParts[1] + "'", _locator);
+									throw new SAXParseException("Unknown scheduler feature `" + featureNameParts[1]
+									        + "'", _locator);
 								targetFeature = use(scheduler);
 							}
 							break;
@@ -1379,7 +1400,8 @@ public class FeatureManager
 							{
 								FeatureName.State state = FeatureName.State.valueOf(featureNameParts[1]);
 								if (state == null)
-									throw new SAXParseException("Unknown scheduler feature `" + featureNameParts[1] + "'", _locator);
+									throw new SAXParseException("Unknown scheduler feature `" + featureNameParts[1]
+									        + "'", _locator);
 								targetFeature = use(state);
 							}
 							break;
@@ -1392,13 +1414,13 @@ public class FeatureManager
 				}
 				else
 				{
-					throw new SAXParseException("Invalid feature reference " + _eventHook.triggerTarget + " as action target", _locator);
+					throw new SAXParseException("Invalid feature reference " + _eventHook.triggerTarget
+					        + " as action target", _locator);
 				}
 
 				int eventId = EventMessenger.nameId(_eventHook.eventName);
 				if (eventId == 0)
 					throw new SAXParseException("Event " + _eventHook.eventName + " is not defined", _locator);
-
 
 				int triggerEventId = EventMessenger.nameId(_eventHook.triggerEventName);
 				if (triggerEventId == 0)

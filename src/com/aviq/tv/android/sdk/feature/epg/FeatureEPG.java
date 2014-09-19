@@ -64,6 +64,7 @@ import com.google.gson.JsonSyntaxException;
 /**
  * Component feature providing EPG data
  */
+@Author("alek")
 public abstract class FeatureEPG extends FeatureScheduler
 {
 	public static final String TAG = FeatureEPG.class.getSimpleName();

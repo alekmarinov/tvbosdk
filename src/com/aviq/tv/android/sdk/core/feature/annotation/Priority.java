@@ -8,16 +8,19 @@
  * Description:
  */
 
-package com.aviq.tv.android.sdk.core.feature;
+package com.aviq.tv.android.sdk.core.feature.annotation;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Attach to feature class to mark it as prioritized in initialization order
  *
  */
 @Retention(RetentionPolicy.RUNTIME)
-public @interface PriorityFeature
+@Target({ElementType.TYPE})
+public @interface Priority
 {
 }

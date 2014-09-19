@@ -29,15 +29,15 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Opens the Settings app when detected special key sequence by the RCU
  */
-@PriorityFeature
+@Priority
 public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureEasterEgg.class.getSimpleName();

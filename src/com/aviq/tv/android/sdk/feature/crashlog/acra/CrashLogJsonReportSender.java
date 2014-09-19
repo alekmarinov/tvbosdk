@@ -1,4 +1,4 @@
-package com.aviq.tv.android.sdk.feature.crashlog;
+package com.aviq.tv.android.sdk.feature.crashlog.acra;
 
 import java.io.IOException;
 import java.net.URL;
@@ -29,7 +29,7 @@ import com.aviq.tv.android.sdk.core.Environment.Param;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog.AppRestartReasonType;
+import com.aviq.tv.android.sdk.feature.crashlog.acra.FeatureCrashLogACRA.AppRestartReasonType;
 
 public class CrashLogJsonReportSender implements ReportSender
 {
@@ -58,7 +58,7 @@ public class CrashLogJsonReportSender implements ReportSender
 		// save app restart reason
         try
         {
-        	FeatureCrashLog featureCrashLog = (FeatureCrashLog) Environment.getInstance().getFeatureManager()
+        	FeatureCrashLogACRA featureCrashLog = (FeatureCrashLogACRA) Environment.getInstance().getFeatureManager()
 	                .getFeatureComponent(FeatureName.Component.CRASHLOG);
 	        featureCrashLog.setAppRestartReason(AppRestartReasonType.UNHANDLED_CRASH);
         }
@@ -158,7 +158,7 @@ public class CrashLogJsonReportSender implements ReportSender
 			sendData(_logcatFileName, _logcat, "text/plain");
 
 			// Send the report to the server
-			if (false == report.get(ReportField.STACK_TRACE).contains(FeatureCrashLog.EXCEPTION_TAG))
+			if (false == report.get(ReportField.STACK_TRACE).contains(FeatureCrashLogACRA.EXCEPTION_TAG))
 			{
 				String contentType = ACRA.getConfig().reportType().getContentType();
 				sendData(reportFileName, data, contentType);

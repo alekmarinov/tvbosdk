@@ -50,7 +50,7 @@ import com.aviq.tv.android.sdk.core.feature.IFeature.OnFeatureInitialized;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.core.state.StateManager;
-import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
+import com.aviq.tv.android.sdk.feature.crashlog.acra.FeatureCrashLogACRA;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 
 /**
@@ -169,7 +169,7 @@ public class Environment extends Activity
 							bundle.putString(EXTRA_FEATURE_NAME, feature.getName());
 							_eventMessenger.trigger(ON_FEATURE_INIT_ERROR, bundle);
 
-							Exception exception = new Exception(FeatureCrashLog.EXCEPTION_TAG
+							Exception exception = new Exception(FeatureCrashLogACRA.EXCEPTION_TAG
 							        + " Error during initializating feature: [" + feature.getName()
 							        + "]. Result code: [" + resultCode + "]");
 							Log.e(TAG, exception.getMessage());
@@ -253,7 +253,6 @@ public class Environment extends Activity
 		_isCreated = true;
 
 		Log.i(TAG, ".onCreate");
-		Thread.currentThread().setUncaughtExceptionHandler(new AppUncaughtExceptionHandler());
 
 		try
 		{
@@ -744,15 +743,4 @@ public class Environment extends Activity
 			// put(url, bitmap);
 		}
 	}
-
-	public static class AppUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler
-	{
-		@Override
-		public void uncaughtException(Thread thread, Throwable ex)
-		{
-			Log.e(TAG, "Got an uncaught exception: " + ex.toString());
-			Log.e(TAG, ex.getMessage(), ex);
-		}
-	}
-
 }

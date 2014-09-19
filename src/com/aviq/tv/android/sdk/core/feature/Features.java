@@ -15,7 +15,7 @@ import java.lang.reflect.Field;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.channels.FeatureChannels;
-import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
+import com.aviq.tv.android.sdk.feature.crashlog.acra.FeatureCrashLogACRA;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
@@ -67,7 +67,7 @@ public class Features
 		public FeatureRPC RPC;
 		public FeatureSystem SYSTEM;
 		public FeatureEasterEgg EASTER_EGG;
-		public FeatureCrashLog CRASHLOG;
+		public FeatureCrashLogACRA CRASHLOG;
 		public FeatureTimeZone TIMEZONE;
 		public FeatureNethogs NETHOGS;
 		public FeatureStandBy STANDBY;

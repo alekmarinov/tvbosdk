@@ -32,9 +32,9 @@ import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
+import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
-import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet.GeoIpExtras;
@@ -46,7 +46,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Scheduler feature sending collected events periodically to remote event tracking system
  */
-@PriorityFeature
+@Priority
 public class FeatureEventCollector extends FeatureScheduler
 {
 	public static final String TAG = FeatureEventCollector.class.getSimpleName();
