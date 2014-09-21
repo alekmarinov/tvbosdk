@@ -19,6 +19,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
 import com.rayv.StreamingAgent.Loader;
 
 /**
@@ -80,13 +81,19 @@ public class FeatureEPGRayV extends FeatureEPG
 		}
 	}
 
+	public FeatureEPGRayV() throws FeatureNotFoundException
+	{
+		require(FeatureName.Component.DEVICE);
+	}
+
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
+		String boxId = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
 		if (!getPrefs().has(Param.RAYV_USER))
-			getPrefs().put(Param.RAYV_USER, _feature.Component.REGISTER.getBoxId());
+			getPrefs().put(Param.RAYV_USER, boxId);
 		if (!getPrefs().has(Param.RAYV_PASS))
-			getPrefs().put(Param.RAYV_PASS, _feature.Component.REGISTER.getBoxId());
+			getPrefs().put(Param.RAYV_PASS, boxId);
 
 		_streamPort = getPrefs().getInt(Param.RAYV_STREAM_PORT);
 
@@ -101,11 +108,6 @@ public class FeatureEPGRayV extends FeatureEPG
 			}
 		}).start();
 		super.initialize(onFeatureInitialized);
-	}
-
-	public FeatureEPGRayV() throws FeatureNotFoundException
-	{
-		require(FeatureName.Component.REGISTER);
 	}
 
 	public void setStreamPort(int streamPort)
@@ -158,7 +160,7 @@ public class FeatureEPGRayV extends FeatureEPG
 	}
 
 	@Override
-    public long getStreamBufferSize(Channel channel)
+	public long getStreamBufferSize(Channel channel)
 	{
 		// RayV channels have no buffer, but recorded on client
 		return 0;

@@ -10,8 +10,6 @@
 
 package com.aviq.tv.android.sdk.feature.register;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -25,14 +23,13 @@ import android.util.Base64;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
-import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
-import com.aviq.tv.android.sdk.utils.TextUtils;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
 
 /**
  * Feature registering box to ABMP
@@ -82,11 +79,8 @@ public class FeatureRegister extends FeatureComponent
 		}
 	}
 
-	private static final String MAC_ADDRESS_FILE = "/sys/class/net/eth0/address";
-	private String _boxId;
 	private String _userToken;
 	private String _version;
-	private String _brand;
 
 	/**
 	 * @param environment
@@ -95,44 +89,35 @@ public class FeatureRegister extends FeatureComponent
 	public FeatureRegister() throws FeatureNotFoundException
 	{
 		require(FeatureName.Scheduler.INTERNET);
+		require(FeatureName.Component.DEVICE);
 	}
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
-		try
-		{
-			_brand = getPrefs().getString(Param.BRAND);
-			_boxId = getPrefs().getString(Param.BOX_ID);
-			if (_boxId.length() == 0)
-				_boxId = readMacAddress();
-			_userToken = createUserToken(_boxId);
-			_version = Environment.getInstance().getBuildVersion();
+		final String brand = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.BRAND);
+		final String boxId = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
+		_userToken = createUserToken(boxId);
+		_version = Environment.getInstance().getBuildVersion();
 
-			_feature.Scheduler.INTERNET.getEventMessenger().register(new EventReceiver()
+		_feature.Scheduler.INTERNET.getEventMessenger().register(new EventReceiver()
+		{
+			@Override
+			public void onEvent(int msgId, Bundle bundle)
 			{
-				@Override
-				public void onEvent(int msgId, Bundle bundle)
+				String registrationUrl = getRegistrationUrl(brand, boxId, _version);
+				_feature.Scheduler.INTERNET.getUrlContent(registrationUrl, new OnResultReceived()
 				{
-					String registrationUrl = getRegistrationUrl(_brand, _boxId, _version);
-					_feature.Scheduler.INTERNET.getUrlContent(registrationUrl, new OnResultReceived()
+					@Override
+					public void onReceiveResult(int resultCode, Bundle resultData)
 					{
-						@Override
-						public void onReceiveResult(int resultCode, Bundle resultData)
-						{
-							Log.d(TAG, ".initialize:onReceiveResult: resultCode = " + resultCode);
-						}
-					});
-				}
-			}, FeatureInternet.ON_CONNECTED);
+						Log.d(TAG, ".initialize:onReceiveResult: resultCode = " + resultCode);
+					}
+				});
+			}
+		}, FeatureInternet.ON_CONNECTED);
 
-			super.initialize(onFeatureInitialized);
-		}
-		catch (FileNotFoundException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
-		}
+		super.initialize(onFeatureInitialized);
 	}
 
 	@Override
@@ -142,35 +127,11 @@ public class FeatureRegister extends FeatureComponent
 	}
 
 	/**
-	 * @return the box ID (MAC address)
-	 */
-	public String getBoxId()
-	{
-		return _boxId;
-	}
-
-	/**
 	 * @return the user token for this box
 	 */
 	public String getUserToken()
 	{
 		return _userToken;
-	}
-
-	/**
-	 * @return the brand name of this box
-	 */
-	public String getBrand()
-	{
-		return _brand;
-	}
-
-	private String readMacAddress() throws FileNotFoundException
-	{
-		FileInputStream fis = new FileInputStream(MAC_ADDRESS_FILE);
-		String macAddress = TextUtils.inputStreamToString(fis);
-		macAddress = macAddress.substring(0, 17);
-		return macAddress.replace(":", "").toUpperCase();
 	}
 
 	private String getActiveNetworkType()
