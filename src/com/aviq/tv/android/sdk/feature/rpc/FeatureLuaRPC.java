@@ -42,7 +42,7 @@ public class FeatureLuaRPC extends FeatureRPC
 	private static final int BUF_SIZE = 1024 * 100;
 	private static final String EOL = "-- End of Lua";
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * RPC host listen

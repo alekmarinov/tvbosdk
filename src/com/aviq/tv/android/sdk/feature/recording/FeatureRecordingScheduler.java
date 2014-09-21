@@ -24,7 +24,7 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Prefs;
@@ -32,6 +32,7 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.utils.Calendars;
@@ -39,6 +40,7 @@ import com.aviq.tv.android.sdk.utils.Calendars;
 /**
  * Feature managing scheduled recordings
  */
+@Author("elmira")
 public class FeatureRecordingScheduler extends FeatureComponent
 {
 	private static final String TAG = FeatureRecordingScheduler.class.getSimpleName();
@@ -57,7 +59,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	private SimpleDateFormat _sdf = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
 	private Prefs _userPrefs;
 
-	public enum UserParam
+	public static enum UserParam
 	{
 		/**
 		 * Store all scheduled recordings
@@ -65,7 +67,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		RECORDINGS
 	}
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * Program expiration period in hours

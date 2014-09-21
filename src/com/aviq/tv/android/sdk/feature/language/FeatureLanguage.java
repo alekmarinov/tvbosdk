@@ -20,10 +20,12 @@ import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 
 /**
  * Component feature language
  */
+@Author("alek")
 public class FeatureLanguage extends FeatureComponent
 {
 	public static final String TAG = FeatureLanguage.class.getSimpleName();
@@ -33,7 +35,7 @@ public class FeatureLanguage extends FeatureComponent
 		BG, EN, FR, DE
 	}
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * language parameter

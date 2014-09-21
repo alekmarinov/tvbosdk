@@ -22,12 +22,14 @@ import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Feature for debugging
  */
+@Author("zheliazko")
 public class FeatureDebug extends FeatureComponent implements EventReceiver
 {
 	private static final String TAG = FeatureDebug.class.getSimpleName();

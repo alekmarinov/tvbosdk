@@ -51,7 +51,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.text.TextUtils;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.service.BaseService;
@@ -92,7 +92,7 @@ public class UploadService extends BaseService
 		String caCertPath = intent.getExtras().getString(Extras.CA_CERT_PATH.name());
 
 		Log.i(TAG, ".onHandleIntent: url = " + url + ", caCertPath = " + caCertPath + ", username = " + username
-		        + ", password = " + password + ", localFile = " + localFile + ", buffer size = " + buffer.length());
+		        + ", password = " + password + ", localFile = " + localFile + ", buffer size = " + (buffer != null?buffer.length():-1));
 
 		if (localFile != null)
 		{

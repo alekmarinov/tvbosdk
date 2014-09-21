@@ -32,28 +32,31 @@ import org.xml.sax.SAXException;
 import android.os.Bundle;
 import android.os.RecoverySystem;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.internet.DownloadService;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet.ResultExtras;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
 import com.aviq.tv.android.sdk.feature.system.FeatureStandBy;
 import com.aviq.tv.android.sdk.utils.Files;
 
 /**
  * Software upgrade scheduler feature
  */
+@Author("zhelyazko")
 public class FeatureUpgrade extends FeatureScheduler
 {
 	public static final String TAG = FeatureUpgrade.class.getSimpleName();
@@ -68,7 +71,7 @@ public class FeatureUpgrade extends FeatureScheduler
 	public static final String EXTRA_VERSION_PREV = "VERSION_PREV";
 	public static final String EXTRA_UPGRADE_DURATION = "UPGRADE_DURATION";
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * Schedule interval
@@ -191,6 +194,7 @@ public class FeatureUpgrade extends FeatureScheduler
 
 	public FeatureUpgrade() throws FeatureNotFoundException
 	{
+		require(FeatureName.Component.DEVICE);
 		require(FeatureName.Component.REGISTER);
 		require(FeatureName.Scheduler.INTERNET);
 	}
@@ -429,7 +433,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		Bundle updateCheckUrlParams = new Bundle();
 		updateCheckUrlParams.putString("SERVER",
 		        _feature.Component.REGISTER.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
-		updateCheckUrlParams.putString("BOX_ID", _feature.Component.REGISTER.getBoxId());
+		updateCheckUrlParams.putString("BOX_ID", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC));
 		updateCheckUrlParams.putString("VERSION", Environment.getInstance().getBuildVersion());
 
 		String abmpUpdateCheckUrl = getPrefs().getString(Param.ABMP_UPDATE_CHECK_URL, updateCheckUrlParams);
@@ -591,7 +595,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		Bundle updateUrlParams = new Bundle();
 		updateUrlParams.putString("SERVER",
 		        _feature.Component.REGISTER.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
-		updateUrlParams.putString("BOX_ID", _feature.Component.REGISTER.getBoxId());
+		updateUrlParams.putString("BOX_ID", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC));
 		updateUrlParams.putString("FILE_NAME", _updateInfo.FileName);
 		final String updateUrl = getPrefs().getString(Param.ABMP_UPDATE_DOWNLOAD_URL, updateUrlParams);
 

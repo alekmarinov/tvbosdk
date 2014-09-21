@@ -29,7 +29,7 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
@@ -37,12 +37,14 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.system.SystemProperties;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Wireless Settings component
  */
+@Author("alek")
 public class FeatureWireless extends FeatureNetwork
 {
 	public static final String TAG = FeatureWireless.class.getSimpleName();

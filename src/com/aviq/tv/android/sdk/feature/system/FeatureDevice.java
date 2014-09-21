@@ -17,33 +17,41 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.TrafficStats;
 import android.os.Bundle;
 import android.os.StatFs;
-import android.util.Log;
+import android.os.SystemClock;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureState;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.utils.Files;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
  * Defines device parameters
  */
+@Author("elmira")
 public class FeatureDevice extends FeatureComponent
 {
 	public static final String TAG = FeatureDevice.class.getSimpleName();
 	private static final int ON_STATUS = EventMessenger.ID("ON_STATUS");
 	private static int KB = 1024;
-	private static String STAT_CMD = "vmstat -n 1 -d %d";
+	private static String CMD_STAT = "vmstat -n 1 -d %d";
+	private static String CMD_LOGCAT = "logcat -v time -t 6000 -d";
 
 	public enum OnStatusExtra
 	{
@@ -52,7 +60,12 @@ public class FeatureDevice extends FeatureComponent
 
 	public enum DeviceAttribute
 	{
-		CUSTOMER, BRAND, BUILD, VERSION, MAC
+		PACKAGE, CUSTOMER, BRAND, BUILD, VERSION, MAC, UPTIME, REALTIME
+	}
+
+	public enum StartReason
+	{
+		NORMAL, SUICIDE, UNKONWN
 	}
 
 	public static interface IStatusFieldGetter
@@ -60,8 +73,18 @@ public class FeatureDevice extends FeatureComponent
 		Object getStatusField();
 	}
 
-	public enum Param
+	public static enum UserParam
 	{
+		SUICIDE_REASON
+	}
+
+	public static enum Param
+	{
+		/**
+		 * Application package
+		 */
+		PACKAGE(""),
+
 		/**
 		 * Box customer
 		 */
@@ -124,10 +147,22 @@ public class FeatureDevice extends FeatureComponent
 	private long _bytesSent;
 	private String _deviceMac;
 	protected long _statusInterval;
+	private StartReason _startReason = StartReason.UNKONWN;
+	private String _suicideReason;
 	private final HashMap<String, IStatusFieldGetter> _fieldGetters = new HashMap<String, IStatusFieldGetter>();
 
 	public FeatureDevice() throws FeatureNotFoundException
 	{
+		Environment.getInstance().registerReceiver(new BroadcastReceiver()
+		{
+			@Override
+			public void onReceive(Context context, Intent intent)
+			{
+				Log.i(TAG, ".onReceive: action: " + intent.getAction());
+				_startReason = StartReason.NORMAL;
+				Environment.getInstance().unregisterReceiver(this);
+			}
+		}, new IntentFilter(Intent.ACTION_BOOT_COMPLETED));
 	}
 
 	@Override
@@ -140,10 +175,19 @@ public class FeatureDevice extends FeatureComponent
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		reset();
+
+		Prefs userPrefs = Environment.getInstance().getUserPrefs();
+		if (userPrefs.has(UserParam.SUICIDE_REASON))
+		{
+			_startReason = StartReason.SUICIDE;
+			_suicideReason = userPrefs.getString(UserParam.SUICIDE_REASON);
+			userPrefs.remove(UserParam.SUICIDE_REASON);
+		}
+
+		resetStats();
 		long vmStatDelay = getPrefs().getInt(Param.VMSTAT_DELAY);
 		_statusInterval = getPrefs().getInt(Param.STATUS_INTERVAL);
-		_vmCmd = String.format(STAT_CMD, vmStatDelay);
+		_vmCmd = String.format(CMD_STAT, vmStatDelay);
 
 		new Thread(new Runnable()
 		{
@@ -228,6 +272,9 @@ public class FeatureDevice extends FeatureComponent
 	{
 		switch (deviceAttribute)
 		{
+			case PACKAGE:
+				return Environment.getInstance().getPackageName();
+
 			case CUSTOMER:
 				return getPrefs().getString(Param.CUSTOMER);
 
@@ -243,15 +290,21 @@ public class FeatureDevice extends FeatureComponent
 			case MAC:
 				_deviceMac = getPrefs().getString(Param.MAC);
 				if (_deviceMac.length() == 0)
-	                try
-                    {
-	                    _deviceMac = readMacAddress();
-                    }
-                    catch (FileNotFoundException e)
-                    {
-                    	Log.e(TAG, e.getMessage(), e);
-                    }
+					try
+					{
+						_deviceMac = readMacAddress();
+					}
+					catch (FileNotFoundException e)
+					{
+						Log.e(TAG, e.getMessage(), e);
+					}
 				return _deviceMac;
+
+			case REALTIME:
+				return String.valueOf(SystemClock.elapsedRealtime() / 1000);
+
+			case UPTIME:
+				return String.valueOf(SystemClock.uptimeMillis() / 1000);
 		}
 		return null;
 	}
@@ -259,12 +312,50 @@ public class FeatureDevice extends FeatureComponent
 	/**
 	 * Provide field status accessing interface
 	 *
-	 * @param fieldName the name of the field
-	 * @param getter IStatusFieldGetter callback interface
+	 * @param fieldName
+	 *            the name of the field
+	 * @param getter
+	 *            IStatusFieldGetter callback interface
 	 */
 	public void addStatusField(String fieldName, IStatusFieldGetter getter)
 	{
 		_fieldGetters.put(fieldName, getter);
+	}
+
+	/**
+	 * Kills this process eventually causing auto-restart
+	 */
+	public void suicide(String reason)
+	{
+		Log.i(TAG, ".suicide: reason = " + reason);
+		Environment.getInstance().getUserPrefs().put(UserParam.SUICIDE_REASON, reason);
+		Environment.getInstance().finish();
+	}
+
+	/**
+	 * @return the reason for device start
+	 * @see StartReason
+	 */
+	public StartReason getStartReason()
+	{
+		return _startReason;
+	}
+
+	/**
+	 * @return the reason for application being suicide
+	 */
+	public String getSuicideReason()
+	{
+		return _suicideReason;
+	}
+
+	/**
+	 * @return logcat InputStream
+	 */
+	public InputStream getLogcatInputStream() throws IOException
+	{
+		Process process = Runtime.getRuntime().exec(CMD_LOGCAT);
+		return process.getInputStream();
 	}
 
 	private void sendStatus()
@@ -285,7 +376,7 @@ public class FeatureDevice extends FeatureComponent
 		bundle.putLong(OnStatusExtra.hddfree.name(), getHddFreeMemory());
 		bundle.putString(OnStatusExtra.network.name(), getNetwork());
 
-		FeatureState mainState = (FeatureState)Environment.getInstance().getStateManager().getMainState();
+		FeatureState mainState = (FeatureState) Environment.getInstance().getStateManager().getMainState();
 		if (mainState != null)
 			bundle.putString(OnStatusExtra.section.name(), mainState.getStateName().name());
 
@@ -300,10 +391,10 @@ public class FeatureDevice extends FeatureComponent
 		}
 		getEventMessenger().trigger(ON_STATUS, bundle);
 
-		reset();
+		resetStats();
 	}
 
-	private void reset()
+	private void resetStats()
 	{
 		_cpuIdleMin = Long.MAX_VALUE;
 		_cpuIdleMax = Long.MIN_VALUE;
@@ -327,12 +418,13 @@ public class FeatureDevice extends FeatureComponent
 
 	private String getNetwork()
 	{
-		String type = "";
-		ConnectivityManager connMgr = (ConnectivityManager) Environment.getInstance().getSystemService(Context.CONNECTIVITY_SERVICE);
+		String type = "UNKNOWN";
+		ConnectivityManager connMgr = (ConnectivityManager) Environment.getInstance().getSystemService(
+		        Context.CONNECTIVITY_SERVICE);
 		NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-		if ((networkInfo != null) && networkInfo.isConnected())
+		if (networkInfo != null)
 		{
-			type = networkInfo.getTypeName();
+			type = networkInfo.getTypeName().toUpperCase();
 		}
 		return type;
 	}

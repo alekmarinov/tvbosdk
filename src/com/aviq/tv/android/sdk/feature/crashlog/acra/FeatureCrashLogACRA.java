@@ -40,17 +40,19 @@ import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
-import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
+import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.network.FeatureNetwork;
-import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
 
 /**
  * Handle unhandled exceptions.
  */
 @Priority
+@Author("zheliazko")
 public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureCrashLogACRA.class.getSimpleName();
@@ -92,7 +94,7 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 		String ITEM = "item";
 	}
 
-	public enum Param
+	public static enum Param
 	{
 		/** Server location where crashlogs are uploaded. */
 		REMOTE_SERVER("https://services.aviq.com:30227/upload/logs/"),
@@ -139,6 +141,7 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 	{
 		require(FeatureName.Scheduler.INTERNET);
 		require(FeatureName.Component.EASTER_EGG);
+		require(FeatureName.Component.DEVICE);
 		require(FeatureName.Scheduler.EVENT_COLLECTOR);
 	}
 
@@ -284,12 +287,7 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 			errorReporter.putCustomData(Key.EVENT, prepareEventObject());
 		}
 
-		String boxId = "00:00:00:00:00:00";
-		FeatureRegister featureRegister = (FeatureRegister) Environment.getInstance().getFeatureComponent(FeatureName.Component.REGISTER);
-		if (featureRegister != null)
-		{
-			boxId = featureRegister.getBoxId();
-		}
+		String boxId = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
 		errorReporter.putCustomData("BOX_ID", boxId);
 		errorReporter.putCustomData("BRAND", getBrand());
 		errorReporter.putCustomData("CUSTOMER", getCustomer());
@@ -318,14 +316,7 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 		JSONObject device = new JSONObject();
 		try
 		{
-
-			String boxId = "00:00:00:00:00:00";
-			FeatureRegister featureRegister = (FeatureRegister) Environment.getInstance().getFeatureComponent(FeatureName.Component.REGISTER);
-			if (featureRegister != null)
-			{
-				boxId = featureRegister.getBoxId();
-			}
-
+			String boxId = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
 			device.accumulate(Key.MAC, boxId);
 
 			String localIP = FeatureNetwork.getLocalIP();
@@ -341,8 +332,8 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 			JSONObject sw = new JSONObject();
 			sw.accumulate(Key.VERSION, Environment.getInstance().getBuildVersion());
 			sw.accumulate(Key.KIND, Environment.getInstance().getPrefs().getString(Environment.Param.RELEASE));
-			sw.accumulate(Key.CUSTOMER, getCustomer()); // _featureRegister.getBrand()
-			sw.accumulate(Key.BRAND, getBrand()); // _featureRegister.getBrand()
+			sw.accumulate(Key.CUSTOMER, getCustomer());
+			sw.accumulate(Key.BRAND, getBrand());
 
 			device.accumulate(Key.SW, sw);
 		}

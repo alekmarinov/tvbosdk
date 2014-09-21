@@ -25,13 +25,14 @@ import java.util.List;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.DhcpInfo;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice.IStatusFieldGetter;
 import com.aviq.tv.android.sdk.utils.Files;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -39,6 +40,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Ethernet Settings component
  */
+@Author("alek")
 public class FeatureEthernet extends FeatureNetwork
 {
 	public static final String TAG = FeatureEthernet.class.getSimpleName();

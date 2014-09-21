@@ -19,7 +19,7 @@ import android.app.FragmentTransaction;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;

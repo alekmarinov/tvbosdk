@@ -20,10 +20,12 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 
 /**
  * Timeshift logic component
  */
+@Author("alek")
 public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureTimeshift.class.getSimpleName();
@@ -42,7 +44,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	private boolean _isPaused = false;
 	private AutoResumer _autoResumer = new AutoResumer();
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * Timeshift max buffer size in seconds. If > 0 then the buffer

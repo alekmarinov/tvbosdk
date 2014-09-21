@@ -39,6 +39,8 @@ public interface IFeature extends EventReceiver
 
 	/**
 	 * Method to be invoked to initialize this feature
+	 *
+	 * FIXME: Make this method throwing FeatureException
 	 */
 	void initialize(OnFeatureInitialized onFeatureInitialized);
 

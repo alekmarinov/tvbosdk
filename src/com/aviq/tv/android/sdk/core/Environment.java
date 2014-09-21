@@ -18,7 +18,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.acra.ACRA;
 import org.xml.sax.SAXException;
 
 import android.app.Activity;
@@ -31,7 +30,6 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v4.util.LruCache;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.KeyEvent;
 
 import com.android.volley.RequestQueue;
@@ -50,7 +48,7 @@ import com.aviq.tv.android.sdk.core.feature.IFeature.OnFeatureInitialized;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.core.state.StateManager;
-import com.aviq.tv.android.sdk.feature.crashlog.acra.FeatureCrashLogACRA;
+import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 
 /**
@@ -75,7 +73,7 @@ public class Environment extends Activity
 	private static final String ECLIPSE_XML_RESOURCE = "eclipse";
 	private static final String RELEASE_XML_RESOURCE = "release";
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * whether we are in release build
@@ -118,6 +116,7 @@ public class Environment extends Activity
 	private boolean _isInitialized = false;
 	private static boolean _isCreated = false;
 	private FeatureRCU _featureRCU;
+	private FeatureCrashLog _featureCrashLog;
 	private boolean _keyEventsEnabled = true;
 	private ExceptKeysList _exceptKeys = new ExceptKeysList();
 	private Context _context;
@@ -145,6 +144,7 @@ public class Environment extends Activity
 				_stateManager.setMessageState(_featureManager.use(FeatureName.State.MESSAGE_BOX));
 				_stateManager.setOverlayBackgroundColor(getPrefs().getInt(Param.OVERLAY_BACKGROUND_COLOR));
 				_featureRCU = (FeatureRCU) _featureManager.use(FeatureName.Component.RCU);
+				_featureCrashLog = (FeatureCrashLog) _featureManager.use(FeatureName.Component.CRASHLOG);
 
 				_serviceController = new ServiceController(Environment.this);
 				_requestQueue = Volley.newRequestQueue(Environment.this);
@@ -168,19 +168,7 @@ public class Environment extends Activity
 							bundle.putInt(EXTRA_ERROR_CODE, resultCode);
 							bundle.putString(EXTRA_FEATURE_NAME, feature.getName());
 							_eventMessenger.trigger(ON_FEATURE_INIT_ERROR, bundle);
-
-							Exception exception = new Exception(FeatureCrashLogACRA.EXCEPTION_TAG
-							        + " Error during initializating feature: [" + feature.getName()
-							        + "]. Result code: [" + resultCode + "]");
-							Log.e(TAG, exception.getMessage());
-							try
-							{
-								ACRA.getErrorReporter().handleSilentException(exception);
-							}
-							catch (Exception e)
-							{
-								Log.e(TAG, e.getMessage(), e);
-							}
+							_featureCrashLog.fatal(feature.getName(), "feature init failed with code " + resultCode, null);
 						}
 						else
 						{
@@ -247,7 +235,7 @@ public class Environment extends Activity
 		super.onCreate(savedInstanceState);
 		if (_isCreated)
 		{
-			suicide();
+			finish();
 			throw new RuntimeException("This process has already started!");
 		}
 		_isCreated = true;
@@ -262,10 +250,10 @@ public class Environment extends Activity
 			int appDebugXmlId = getResources().getIdentifier(ECLIPSE_XML_RESOURCE, "raw", getPackageName());
 			if (appDebugXmlId != 0)
 			{
-				String warnMsg = "Using debug xml definition - " + ECLIPSE_XML_RESOURCE;
-				Log.w(TAG, String.format(String.format("%%0%dd", warnMsg.length()), 0).replace("0", "-"));
-				Log.w(TAG, warnMsg);
-				Log.w(TAG, String.format(String.format("%%0%dd", warnMsg.length()), 0).replace("0", "-"));
+				String infoMsg = "Using debug xml definition - " + ECLIPSE_XML_RESOURCE;
+				Log.i(TAG, String.format(String.format("%%0%dd", infoMsg.length()), 0).replace("0", "-"));
+				Log.i(TAG, infoMsg);
+				Log.i(TAG, String.format(String.format("%%0%dd", infoMsg.length()), 0).replace("0", "-"));
 
 				// initialize environment by debug app's raw/eclipse.xml
 				Log.i(TAG, "Parsing " + ECLIPSE_XML_RESOURCE + " xml definition");
@@ -348,12 +336,6 @@ public class Environment extends Activity
 	public boolean isPause()
 	{
 		return _isPause;
-	}
-
-	public void suicide()
-	{
-		Log.i(TAG, ".suicide: Comitting suicide...");
-		finish();
 	}
 
 	@Override

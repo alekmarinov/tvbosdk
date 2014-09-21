@@ -15,21 +15,23 @@ import java.util.TimeZone;
 
 import android.app.AlarmManager;
 import android.content.Context;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 
 /**
  * Manage system timezone
  */
+@Author("alek")
 public class FeatureTimeZone extends FeatureComponent
 {
 	public static final String TAG = FeatureTimeZone.class.getSimpleName();
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * Current timezone

@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.List;
 
 import android.os.Bundle;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
@@ -26,6 +26,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
@@ -38,6 +39,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Component feature managing favorite channels
  */
+@Author("alek")
 public class FeatureChannels extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureChannels.class.getSimpleName();
@@ -49,7 +51,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		FROM_CHANNEL, TO_CHANNEL, SWITCH_DURATION
 	}
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * Automatically start playing last played channel

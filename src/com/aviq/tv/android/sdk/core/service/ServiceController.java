@@ -17,7 +17,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ResultReceiver;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 /**
  * Controls service starting and result handling

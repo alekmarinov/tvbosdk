@@ -31,7 +31,7 @@ public class FeatureEPGZattoo extends FeatureEPG
 
 	private ClientZAPI _clientZAPI;
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * Registered Zattoo user account name

@@ -33,7 +33,7 @@ import org.json.JSONObject;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.os.Bundle;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
@@ -54,6 +54,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.system.FeatureTimeZone;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
@@ -76,7 +77,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		rayv, wilmaa, bulsat, zattoo
 	}
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * The main url to the EPG server

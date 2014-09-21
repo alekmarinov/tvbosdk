@@ -32,6 +32,7 @@ import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -39,6 +40,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Feature managing Internet access
  */
+@Author("alek")
 public class FeatureInternet extends FeatureScheduler
 {
 	private static final String TAG = FeatureInternet.class.getSimpleName();
@@ -46,7 +48,7 @@ public class FeatureInternet extends FeatureScheduler
 	public static final int ON_CONNECTED = EventMessenger.ID("ON_CONNECTED");
 	public static final int ON_DISCONNECTED = EventMessenger.ID("ON_DISCONNECTED");
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * Check URL interval in seconds

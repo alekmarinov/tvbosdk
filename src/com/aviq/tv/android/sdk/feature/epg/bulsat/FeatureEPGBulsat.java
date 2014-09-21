@@ -17,6 +17,7 @@ import java.util.TimeZone;
 
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
@@ -24,6 +25,7 @@ import com.aviq.tv.android.sdk.feature.epg.Program;
 /**
  * RayV specific extension of EPG feature
  */
+@Author("alek")
 public class FeatureEPGBulsat extends FeatureEPG
 {
 	private static final int DEFAULT_STREAM_PLAY_DURATION = 3600;

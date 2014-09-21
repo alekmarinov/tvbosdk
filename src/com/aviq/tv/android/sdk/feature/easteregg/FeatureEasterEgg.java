@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import android.os.Bundle;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
@@ -29,8 +29,9 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
-import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
+import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -38,6 +39,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
  * Opens the Settings app when detected special key sequence by the RCU
  */
 @Priority
+@Author("zheliazko")
 public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureEasterEgg.class.getSimpleName();
@@ -64,7 +66,7 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 	private boolean _inEasterEggMode = false;
 	private int _minKeyDelay;
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * The minimum delay between key presses

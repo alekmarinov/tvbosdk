@@ -285,7 +285,7 @@ public class EventMessenger extends Handler
 				        "Redirect event " + idName(msg.what) + TextUtils.implodeBundle(eventParams) + " to "
 				                + triggerRoute.getTarget().getName() + ":" + idName(triggerRoute.getEventId())
 				                + TextUtils.implodeBundle(bundle));
-				triggerRoute.getTarget().getEventMessenger().trigger(triggerRoute.getEventId(), bundle);
+				triggerRoute.getTarget().getEventMessenger().triggerDirect(triggerRoute.getEventId(), bundle);
 			}
 		}
 

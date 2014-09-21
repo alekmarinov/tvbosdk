@@ -17,7 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import android.os.Bundle;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
@@ -27,6 +27,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -34,6 +35,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Component feature managing programs watchlist
  */
+@Author("alek")
 public class FeatureWatchlist extends FeatureComponent
 {
 	public static final String TAG = FeatureWatchlist.class.getSimpleName();
@@ -41,7 +43,7 @@ public class FeatureWatchlist extends FeatureComponent
 	public static final int ON_PROGRAM_REMOVED = EventMessenger.ID("ON_PROGRAM_REMOVED");
 	public static final int ON_PROGRAM_NOTIFY = EventMessenger.ID("ON_PROGRAM_NOTIFY");
 
-	public enum UserParam
+	public static enum UserParam
 	{
 		/**
 		 * List of program identifier keys formatted as
@@ -50,7 +52,7 @@ public class FeatureWatchlist extends FeatureComponent
 		WATCHLIST
 	}
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * The time in seconds to notify before the program starts

@@ -11,6 +11,7 @@
 package com.aviq.tv.android.sdk.core.feature.annotation;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -21,7 +22,8 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface Author
+@Inherited
+public @interface  Author
 {
 	 String value();
 }

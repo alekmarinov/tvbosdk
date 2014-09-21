@@ -1,3 +1,12 @@
+/**
+ * Copyright (c) 2007-2013, AVIQ Bulgaria Ltd
+ *
+ * Project:     AVIQTVSDK
+ * Filename:    FeatureVODBulsat.java
+ * Author:      zhelyazko
+ * Date:        3 Feb 2014
+ * Description: Feature providing VOD data from Bulsatcom
+ */
 package com.aviq.tv.android.sdk.feature.vod.bulsat;
 
 import java.io.IOException;
@@ -10,7 +19,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
@@ -26,9 +35,11 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.feature.vod.FeatureVOD;
-import com.aviq.tv.android.sdk.feature.vod.FeatureVOD.OnVodSearchResult;
 import com.google.gson.JsonSyntaxException;
 
+/**
+ * Feature providing VOD data from Bulsatcom
+ */
 public class FeatureVODBulsat extends FeatureVOD
 {
 	public static final String TAG = FeatureVODBulsat.class.getSimpleName();
@@ -36,10 +47,10 @@ public class FeatureVODBulsat extends FeatureVOD
 	private OnFeatureInitialized _onFeatureInitialized;
 	private VodTree<VodGroup> _vodData;
 
-	public enum Param
+	public static enum Param
 	{
 		VOD_XML_URL("http://185.4.83.193/?xml&vod"),
-		
+
 		/**
 		 * Schedule interval
 		 */
@@ -87,38 +98,41 @@ public class FeatureVODBulsat extends FeatureVOD
 		scheduleDelayed(getPrefs().getInt(Param.VOD_UPDATE_INTERVAL));
 	}
 
-	@SuppressWarnings("unchecked")
+	@Override
+    @SuppressWarnings("unchecked")
 	public VodTree<VodGroup> getVodData()
 	{
 		return _vodData;
 	}
 
-	public void loadVod(String id, OnVodLoaded onVodLoadedListener)
+	@Override
+    public void loadVod(String id, OnVodLoaded onVodLoadedListener)
 	{
 		String vodServerURL = getPrefs().getString(Param.VOD_XML_URL) + "=" + id;
 		Log.i(TAG, "Retrieving VOD data from: " + vodServerURL);
-		
+
 		VodResponseCallback callback = new VodResponseCallback(onVodLoadedListener);
-		
+
 		StringRequest request = new StringRequest(Request.Method.GET, vodServerURL, callback, callback);
 		Environment.getInstance().getRequestQueue().add(request);
 	}
-	
-	public void search(String[] keywords, OnVodSearchResult onVodSearchResult)
+
+	@Override
+    public void search(String[] keywords, OnVodSearchResult onVodSearchResult)
 	{
 Log.e(TAG, "keywords = " + Arrays.toString(keywords));
-		
+
 		List<Vod> resultList = new ArrayList<Vod>();
 		searchVodTree(_vodData.getRoot(), keywords, resultList);
 		onVodSearchResult.onVodSearchResult(resultList);
 	}
-	
+
 	public void searchVodTree(VodTree.Node<VodGroup> node, String[] keywords, List<Vod> resultList)
 	{
 		// searching: title, shortDescription, description
-		
+
 		boolean hasKeywords = true;
-		
+
 		List<Vod> vodList = node.getData().getVodList();
 		for (Vod vod : vodList)
 		{
@@ -130,18 +144,18 @@ Log.e(TAG, "title = " + vod.getTitle()); // + ", num VODs = " + node.getData().g
 //				hasKeywords = hasKeywords && vod.getShortDescription().indexOf(keyword) > -1;
 //				hasKeywords = hasKeywords && vod.getDescription().indexOf(keyword) > -1;
 			}
-			
+
 			if (hasKeywords)
 				resultList.add(vod);
 		}
-		
+
 		if (node.hasChildren())
 		{
 			for (VodTree.Node<VodGroup> child : node.getChildren())
 				searchVodTree(child, keywords, resultList);
 		}
 	}
-	
+
 	private class VodRequest<T> extends Request<T>
 	{
 		private final Class<T> mClazz;
@@ -233,12 +247,12 @@ Log.e(TAG, "title = " + vod.getTitle()); // + ", num VODs = " + node.getData().g
 	private class VodResponseCallback implements Response.Listener<String>, Response.ErrorListener
 	{
 		private OnVodLoaded _callback;
-		
+
 		public VodResponseCallback(OnVodLoaded callback)
 		{
 			_callback = callback;
 		}
-		
+
 		@Override
 		public void onResponse(String response)
 		{
@@ -246,9 +260,9 @@ Log.e(TAG, "title = " + vod.getTitle()); // + ", num VODs = " + node.getData().g
 			{
 				VodDetailsXmlParser xmlParser = new VodDetailsXmlParser();
 				xmlParser.initialize();
-				
+
 				Vod vod = xmlParser.fromXML(response);
-				
+
 				if (_callback != null)
 					_callback.onVodLoaded(vod);
 			}
@@ -263,8 +277,8 @@ Log.e(TAG, "title = " + vod.getTitle()); // + ", num VODs = " + node.getData().g
 				Log.e(TAG, "SAX parser error.", e);
 				if (_callback != null)
 					_callback.onVodError(e);
-			} 
-			catch (IOException e) 
+			}
+			catch (IOException e)
 			{
 				Log.e(TAG, "Error parsing XML.", e);
 				if (_callback != null)
@@ -281,7 +295,7 @@ Log.e(TAG, "title = " + vod.getTitle()); // + ", num VODs = " + node.getData().g
 			_onFeatureInitialized.onInitialized(FeatureVODBulsat.this, statusCode);
 		}
 	}
-	
+
 	//---------------------------------------------------
 	// DEBUGGING CODE TO DUMP THE VOD TREE RECURSIVELY
 	//---------------------------------------------------

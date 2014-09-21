@@ -3,7 +3,7 @@
  *
  * Project:     AVIQTVSDK
  * Filename:    Log.java
- * Author:      Zheliazko
+ * Author:      zhelyazko
  * Date:        16 Jul 2013
  *
  * Description: Logging wrapper
@@ -11,8 +11,12 @@
 
 package com.aviq.tv.android.sdk.core;
 
+import com.aviq.tv.android.sdk.core.feature.FeatureName;
+import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
+
 public class Log
 {
+	private static final String TAG = Log.class.getSimpleName();
 	public static final int NONE = -1;
 	public static final int VERBOSE = 2;
 	public static final int DEBUG = 3;
@@ -64,26 +68,31 @@ public class Log
 
 	public static int w(String tag, String msg)
 	{
+		handleWarnsAndErrors(WARN, tag, msg, null);
 		return WARN >= logLevel ? android.util.Log.w(tag, msg) : 0;
 	}
 
 	public static int w(String tag, String msg, Throwable tr)
 	{
+		handleWarnsAndErrors(WARN, tag, msg, tr);
 		return WARN >= logLevel ? android.util.Log.w(tag, msg, tr) : 0;
 	}
 
 	public static int w(String tag, Throwable tr)
 	{
+		handleWarnsAndErrors(WARN, tag, tr.getMessage(), tr);
 		return WARN >= logLevel ? android.util.Log.w(tag, tr) : 0;
 	}
 
 	public static int e(String tag, String msg)
 	{
+		handleWarnsAndErrors(ERROR, tag, msg, null);
 		return ERROR >= logLevel ? android.util.Log.e(tag, msg) : 0;
 	}
 
 	public static int e(String tag, String msg, Throwable tr)
 	{
+		handleWarnsAndErrors(ERROR, tag, msg, tr);
 		return ERROR >= logLevel ? android.util.Log.e(tag, msg, tr) : 0;
 	}
 
@@ -95,5 +104,41 @@ public class Log
 	public static int println(int priority, String tag, String msg)
 	{
 		return logLevel >= priority ? android.util.Log.println(priority, tag, msg) : 0;
+	}
+
+	private static void handleWarnsAndErrors(final int level, final String tag, final String msg, final Throwable ex)
+	{
+		EventMessenger messenger = Environment.getInstance().getEventMessenger();
+		if (messenger != null)
+		{
+			messenger.post(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					FeatureCrashLog crashLog = (FeatureCrashLog) Environment.getInstance().getFeatureComponent(
+					        FeatureName.Component.CRASHLOG);
+					if (crashLog != null)
+					{
+						if (level == WARN)
+							crashLog.alert(tag, msg, ex);
+						else if (level == ERROR)
+							crashLog.error(tag, msg, ex);
+						else
+						{
+							android.util.Log.w(TAG, "Only warn and errors will handle the crash log");
+						}
+					}
+					else
+					{
+						android.util.Log.w(TAG, "CRASHLOG is not ready yet");
+					}
+				}
+			});
+		}
+		else
+		{
+			android.util.Log.w(TAG, "Environment is not ready yet");
+		}
 	}
 }

@@ -11,7 +11,7 @@
 package com.aviq.tv.android.sdk.feature.system;
 
 import android.os.Bundle;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
@@ -19,11 +19,13 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 
 /**
  * Client to the nethogs service collecting incomming traffic from networm
  * interface
  */
+@Author("alek")
 public class FeatureNethogs extends FeatureComponent
 {
 	public static final String TAG = FeatureNethogs.class.getSimpleName();
@@ -33,7 +35,7 @@ public class FeatureNethogs extends FeatureComponent
 
 	private NetworkClient _networkClient;
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * Nethogs port number
