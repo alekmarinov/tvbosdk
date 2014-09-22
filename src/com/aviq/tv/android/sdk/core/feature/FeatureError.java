@@ -11,9 +11,11 @@
 package com.aviq.tv.android.sdk.core.feature;
 
 import java.io.IOException;
+import java.net.UnknownHostException;
 
 import android.os.Bundle;
 
+import com.android.volley.NoConnectionError;
 import com.android.volley.VolleyError;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -29,9 +31,10 @@ public class FeatureError extends Exception
 	protected Bundle _errData;
 
 	public static FeatureError OK = OK(null);
+
 	public static FeatureError OK(IFeature feature)
 	{
-		return  new FeatureError(feature, ResultCode.OK);
+		return new FeatureError(feature, ResultCode.OK);
 	}
 
 	/**
@@ -51,7 +54,7 @@ public class FeatureError extends Exception
 	 */
 	public FeatureError(IFeature feature, Throwable e)
 	{
-		this(null, ResultCode.GENERAL_FAILURE, e);
+		this(feature, ResultCode.GENERAL_FAILURE, e);
 
 		// attempt to detect error code
 		if (FeatureNotFoundException.class.isInstance(e))
@@ -62,23 +65,22 @@ public class FeatureError extends Exception
 		{
 			_errCode = ResultCode.IO_ERROR;
 		}
+		else if (UnknownHostException.class.isInstance(e) || NoConnectionError.class.isInstance(e))
+		{
+			_errCode = ResultCode.CONNECTION_ERROR;
+		}
 		else if (VolleyError.class.isInstance(e))
 		{
 			VolleyError ve = (VolleyError) e;
-			if (ve.getMessage().startsWith("java.net.UnknownHostException"))
-				_errCode = ResultCode.UNKNOWN_HOST;
-			else
+			if (ve.networkResponse != null)
 			{
-				if (ve.networkResponse != null)
-				{
-					_errCode = ve.networkResponse.statusCode;
-					_errData = new Bundle();
+				_errCode = ve.networkResponse.statusCode;
+				_errData = new Bundle();
 
-					for (String key : ve.networkResponse.headers.keySet())
-					{
-						String value = ve.networkResponse.headers.get(key);
-						_errData.putString(key, value);
-					}
+				for (String key : ve.networkResponse.headers.keySet())
+				{
+					String value = ve.networkResponse.headers.get(key);
+					_errData.putString(key, value);
 				}
 			}
 		}

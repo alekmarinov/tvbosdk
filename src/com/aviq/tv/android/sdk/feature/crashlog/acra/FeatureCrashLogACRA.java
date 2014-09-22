@@ -108,8 +108,7 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 		/** Socket timeout in milliseconds */
 		SOCKET_TIMEOUT_MILLIS(20000),
 
-		CRASHLOG_CUSTOMER(""),
-		CRASHLOG_BRAND(""),
+		CRASHLOG_CUSTOMER(""), CRASHLOG_BRAND(""),
 
 		COLD_BOOT_FILE("/cache/update/coldboot.txt"),
 
@@ -175,7 +174,7 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 	{
 		if (msgId == FeatureInternet.ON_CONNECTED)
 		{
-			String publicIP = bundle.getString(FeatureInternet.ResultExtras.PUBLIC_IP.name()); //  _feature.Scheduler.INTERNET.getPublicIP();
+			String publicIP = bundle.getString(FeatureInternet.ResultExtras.PUBLIC_IP.name()); // _feature.Scheduler.INTERNET.getPublicIP();
 			if (publicIP != null)
 			{
 				// Got the public IP, no need to check for it anymore
@@ -412,14 +411,13 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 						// Sample: Process 5035 terminated by signal (15)
 
 						Pattern patternSignal15 = Pattern.compile(
-								".*?Process\\s.*?\\sterminated by signal \\(15\\).*?", Pattern.MULTILINE
+						        ".*?Process\\s.*?\\sterminated by signal \\(15\\).*?", Pattern.MULTILINE
 						                | Pattern.CASE_INSENSITIVE);
 
 						// Pattern for Signal 9 = App kill
 						// Sample: Sending signal. PID: 6364 SIG: 9
-						Pattern patternSignal9 = Pattern.compile(
-						        ".*?Sending signal\\.\\sPID:\\s.*?\\sSIG:\\s9.*?", Pattern.MULTILINE
-						                | Pattern.CASE_INSENSITIVE);
+						Pattern patternSignal9 = Pattern.compile(".*?Sending signal\\.\\sPID:\\s.*?\\sSIG:\\s9.*?",
+						        Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
 
 						boolean foundMatch = false;
 
@@ -428,15 +426,14 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 						{
 							String line = logcat.get(i);
 
-							// Search for crashes resulting from signals 9 and 15
+							// Search for crashes resulting from signals 9 and
+							// 15
 							Matcher matcher = patternSignal9.matcher(line);
 							if (matcher.find())
 							{
 								Bundle params = new Bundle();
-								params.putString(Key.REASON,
-								        AppRestartReasonType.APP_KILLED.getName());
-								params.putString(Key.SEVERITY,
-								        AppRestartReasonType.APP_KILLED.getSeverity());
+								params.putString(Key.REASON, AppRestartReasonType.APP_KILLED.getName());
+								params.putString(Key.SEVERITY, AppRestartReasonType.APP_KILLED.getSeverity());
 								getEventMessenger().trigger(ON_APP_STARTED, params);
 
 								ACRA.getErrorReporter()
@@ -452,10 +449,8 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 							if (matcher.find())
 							{
 								Bundle params = new Bundle();
-								params.putString(Key.REASON,
-								        AppRestartReasonType.APP_KILLED.getName());
-								params.putString(Key.SEVERITY,
-								        AppRestartReasonType.APP_KILLED.getSeverity());
+								params.putString(Key.REASON, AppRestartReasonType.APP_KILLED.getName());
+								params.putString(Key.SEVERITY, AppRestartReasonType.APP_KILLED.getSeverity());
 								getEventMessenger().trigger(ON_APP_STARTED, params);
 
 								ACRA.getErrorReporter()
@@ -471,10 +466,8 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 							if (matcher.find())
 							{
 								Bundle params = new Bundle();
-								params.putString(Key.REASON,
-								        AppRestartReasonType.SIGNAL_CRASH.getName());
-								params.putString(Key.SEVERITY,
-								        AppRestartReasonType.SIGNAL_CRASH.getSeverity());
+								params.putString(Key.REASON, AppRestartReasonType.SIGNAL_CRASH.getName());
+								params.putString(Key.SEVERITY, AppRestartReasonType.SIGNAL_CRASH.getSeverity());
 								getEventMessenger().trigger(ON_APP_STARTED, params);
 
 								ACRA.getErrorReporter()
@@ -491,8 +484,7 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 						{
 							Bundle params = new Bundle();
 							params.putString(Key.REASON, AppRestartReasonType.UNKNOWN.getName());
-							params.putString(Key.SEVERITY,
-							        AppRestartReasonType.UNKNOWN.getSeverity());
+							params.putString(Key.SEVERITY, AppRestartReasonType.UNKNOWN.getSeverity());
 							getEventMessenger().trigger(ON_APP_STARTED, params);
 
 							ACRA.getErrorReporter()
@@ -510,16 +502,14 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 				{
 					Bundle params = new Bundle();
 					params.putString(Key.REASON, AppRestartReasonType.STANDBY_WAKEUP.getName());
-					params.putString(Key.SEVERITY,
-					        AppRestartReasonType.STANDBY_WAKEUP.getSeverity());
+					params.putString(Key.SEVERITY, AppRestartReasonType.STANDBY_WAKEUP.getSeverity());
 					getEventMessenger().trigger(ON_APP_STARTED, params);
 				}
 				else if (AppRestartReasonType.UNHANDLED_CRASH.getReason() == reason)
 				{
 					Bundle params = new Bundle();
 					params.putString(Key.REASON, AppRestartReasonType.UNHANDLED_CRASH.getName());
-					params.putString(Key.SEVERITY,
-					        AppRestartReasonType.UNHANDLED_CRASH.getSeverity());
+					params.putString(Key.SEVERITY, AppRestartReasonType.UNHANDLED_CRASH.getSeverity());
 					getEventMessenger().trigger(ON_APP_STARTED, params);
 				}
 				else
@@ -530,8 +520,7 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 					getEventMessenger().trigger(ON_APP_STARTED, params);
 
 					ACRA.getErrorReporter().handleSilentException(
-					        new RuntimeException(
-					                "Generated exception due to unexpected application restart."));
+					        new RuntimeException("Generated exception due to unexpected application restart."));
 				}
 			}
 
@@ -547,7 +536,7 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 		{
 			// Don't delete this or app features that use it may fail
 			// FIXME: Need to work around this
-			//file.delete();
+			// file.delete();
 			return true;
 		}
 		return false;
@@ -555,12 +544,9 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 
 	public static enum AppRestartReasonType
 	{
-		COLDBOOT(-1, "system_start", Severity.INFO.name()),
-		STANDBY_WAKEUP(1, "standby_wakeup", Severity.INFO.name()),
-		UNHANDLED_CRASH(2, "app_crash", Severity.ERROR.name()),
-		SIGNAL_CRASH(3, "system_crash", Severity.FATAL.name()),
-		APP_KILLED(4, "app_killed", Severity.FATAL.name()),
-		UNKNOWN(5, "unknown", Severity.FATAL.name());
+		COLDBOOT(-1, "system_start", Severity.INFO.name()), STANDBY_WAKEUP(1, "standby_wakeup", Severity.INFO.name()), UNHANDLED_CRASH(
+		        2, "app_crash", Severity.ERROR.name()), SIGNAL_CRASH(3, "system_crash", Severity.FATAL.name()), APP_KILLED(
+		        4, "app_killed", Severity.FATAL.name()), UNKNOWN(5, "unknown", Severity.FATAL.name());
 
 		private int _reason;
 		private String _name;
@@ -592,31 +578,32 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 	public void setAppRestartReason(AppRestartReasonType reason)
 	{
 		FileOutputStream fos = null;
-	    try
-	    {
+		try
+		{
 			File f = new File(Environment.getInstance().getFilesDir(), getPrefs()
 			        .getString(Param.APP_START_REASON_FILE));
-	        fos = new FileOutputStream(f);
-	        fos.write(new byte[] { (byte) reason.getReason() });
-	    }
-	    catch (IOException e)
-	    {
-	        Log.e(TAG, e.getMessage(), e);
-	    }
-	    finally
-	    {
-	        if (fos != null)
-	        {
-	            try
-                {
-                    fos.close();
-                }
-                catch (IOException e)
-                {
-                	Log.e(TAG, e.getMessage(), e);
-                }
-	        }
-	    }
+			fos = new FileOutputStream(f);
+			fos.write(new byte[]
+			{ (byte) reason.getReason() });
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		finally
+		{
+			if (fos != null)
+			{
+				try
+				{
+					fos.close();
+				}
+				catch (IOException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
+			}
+		}
 	}
 
 	private int getAppRestartReason()
@@ -631,24 +618,29 @@ public class FeatureCrashLogACRA extends FeatureComponent implements EventReceiv
 			reason = fis.read();
 		}
 		catch (IOException e)
-	    {
-	        Log.e(TAG, e.getMessage(), e);
-	    }
-	    finally
-	    {
-	        if (fis != null)
-	        {
-	            try
-                {
-	            	fis.close();
-                }
-                catch (IOException e)
-                {
-                	Log.e(TAG, e.getMessage(), e);
-                }
-	        }
-	    }
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		finally
+		{
+			if (fis != null)
+			{
+				try
+				{
+					fis.close();
+				}
+				catch (IOException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
+			}
+		}
 		return reason;
+	}
+
+	public void sendLogcat() throws IOException
+	{
+		ACRA.getErrorReporter().handleSilentException(new Exception("Sending logcat from user activity."));
 	}
 
 	private List<String> readLogcat()

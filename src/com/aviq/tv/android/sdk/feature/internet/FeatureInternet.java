@@ -111,7 +111,8 @@ public class FeatureInternet extends FeatureScheduler
 			public void onReceiveResult(FeatureError error)
 			{
 				Log.i(TAG, ".initialize:onReceiveResult: " + error);
-				onFeatureInitialized.onInitialized(error);
+				if (onFeatureInitialized != null)
+					onFeatureInitialized.onInitialized(error);
 				getEventMessenger().trigger(ON_SCHEDULE);
 			}
 		});
@@ -174,8 +175,7 @@ public class FeatureInternet extends FeatureScheduler
 					        || (timeElapsed < getPrefs().getInt(Param.CHECK_ATTEMPTS_TIMEOUT)))
 					{
 						_attemptsCounter++;
-						Log.w(TAG, "Check internet failed. Trying " + (_checkAttempts - _attemptsCounter + 1)
-						        + " more times");
+						Log.w(TAG, _attemptsCounter + "/" + _checkAttempts +  ": " + result);
 						getEventMessenger().postDelayed(this, getPrefs().getInt(Param.CHECK_ATTEMPT_DELAY));
 						return;
 					}
@@ -362,7 +362,7 @@ public class FeatureInternet extends FeatureScheduler
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			_onResultReceived.onReceiveResult(new FeatureError(error));
+			_onResultReceived.onReceiveResult(new FeatureError(FeatureInternet.this, error));
 		}
 	}
 

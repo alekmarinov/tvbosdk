@@ -275,7 +275,8 @@ public class FeatureEventCollector extends FeatureScheduler
 				@Override
 				public void onReceiveResult(FeatureError result)
 				{
-					Log.i(TAG, ".uploadFile:onReceiveResult: " + result);
+					if (result.isError())
+						Log.e(TAG, ".uploadFile:onReceiveResult: " + result);
 				}
 			});
 		}

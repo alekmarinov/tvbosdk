@@ -26,7 +26,7 @@ public class ResultCode
 	/**
 	 * Unknown host
 	 */
-	public static final int UNKNOWN_HOST = -8;
+	public static final int CONNECTION_ERROR = -8;
 
 	/**
 	 * Required feature is missing
@@ -74,8 +74,8 @@ public class ResultCode
 			case IO_ERROR:
 				txt = "i/o error";
 			break;
-			case UNKNOWN_HOST:
-				txt = "unknown host";
+			case CONNECTION_ERROR:
+				txt = "connection error";
 			break;
 			case FEATURE_NOT_FOUND:
 				txt = "feature not found";
@@ -99,6 +99,6 @@ public class ResultCode
 				txt = "general failure";
 			break;
 		}
-		return txt + " " + resCode;
+		return txt;
 	}
 }

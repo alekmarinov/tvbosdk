@@ -272,7 +272,7 @@ public class EventMessenger extends Handler
 							}
 							else
 							{
-								Log.w(_tag, "Event key `" + eventParamKey + "' has null value!");
+								Log.d(_tag, "Event key `" + eventParamKey + "' has null value!");
 							}
 						}
 						else

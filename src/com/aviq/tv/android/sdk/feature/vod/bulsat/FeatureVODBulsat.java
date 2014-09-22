@@ -286,7 +286,7 @@ Log.e(TAG, "title = " + vod.getTitle()); // + ", num VODs = " + node.getData().g
 		public void onErrorResponse(VolleyError error)
 		{
 			Log.e(TAG, "Error retrieving VOD data: " + error);
-			_onFeatureInitialized.onInitialized(new FeatureError(error));
+			_onFeatureInitialized.onInitialized(new FeatureError(FeatureVODBulsat.this, error));
 		}
 	}
 

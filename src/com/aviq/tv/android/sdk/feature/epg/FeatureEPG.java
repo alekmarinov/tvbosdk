@@ -130,7 +130,20 @@ public abstract class FeatureEPG extends FeatureScheduler
 		 */
 		MAX_CHANNELS(0),
 
+		/**
+		 * Enable/disable local epg cache
+		 */
+		USE_LOCAL_CACHE(true),
+
+		/**
+		 * epg cache file
+		 */
 		EPG_CACHE_PATH("cache" + File.separator + "epg.data"),
+
+		/**
+		 * epg cache expire time
+		 */
+		EPG_CACHE_EXPIRE(6 * 60 * 60 * 1000),
 
 		/**
 		 * The number of days in past the program is allowed to be imported by
@@ -142,12 +155,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		 * The number of days in future the program is allowed to be imported by
 		 * EPG
 		 */
-		PROGRAM_RANGE_MAX_DAYS(7),
-
-		/**
-		 * Enable/disable local epg cache
-		 */
-		USE_LOCAL_CACHE(true);
+		PROGRAM_RANGE_MAX_DAYS(7);
 
 		Param(boolean value)
 		{
@@ -178,9 +186,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 	 */
 	public interface IOnProgramDetails
 	{
-		void onProgramDetails(Program program);
-
-		void onError(int resultCode);
+		void onProgramDetails(FeatureError error, Program program);
 	}
 
 	private RequestQueue _httpQueue;
@@ -292,7 +298,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 	{
 		if (program.hasDetails())
 		{
-			onProgramDetails.onProgramDetails(program);
+			onProgramDetails.onProgramDetails(FeatureError.OK, program);
 			return;
 		}
 
@@ -535,17 +541,14 @@ public abstract class FeatureEPG extends FeatureScheduler
 		public void onResponse(JSONObject response)
 		{
 			_program.setDetails(response);
-			_onProgramDetails.onProgramDetails(_program);
+			_onProgramDetails.onProgramDetails(FeatureError.OK, _program);
 			_programDetailsRequest = null;
 		}
 
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			int resultCode = ResultCode.GENERAL_FAILURE;
-			if (error.networkResponse != null)
-				resultCode = error.networkResponse.statusCode;
-			_onProgramDetails.onError(resultCode);
+			_onProgramDetails.onProgramDetails(new FeatureError(error), null);
 			_programDetailsRequest = null;
 		}
 	}
@@ -795,15 +798,29 @@ public abstract class FeatureEPG extends FeatureScheduler
 			return;
 		}
 
+		// Save time of serialization to user settings
 		Prefs userPrefs = Environment.getInstance().getUserPrefs();
-
-		// Save time of serialization to user settingss
 		userPrefs.put(UserParam.EPG_CACHE_CREATED_ON, System.currentTimeMillis());
 	}
 
 	private boolean uncacheEpgData()
 	{
 		Log.i(TAG, ".uncacheEpgData");
+
+		Prefs userPrefs = Environment.getInstance().getUserPrefs();
+		if (userPrefs.has(UserParam.EPG_CACHE_CREATED_ON))
+		{
+			long cacheCreatedOn = userPrefs.getLong(UserParam.EPG_CACHE_CREATED_ON);
+			int cacheTimeElapsed = (int) (System.currentTimeMillis() - cacheCreatedOn);
+			int epgCacheExpire = getPrefs().getInt(Param.EPG_CACHE_EXPIRE);
+			Log.i(TAG, "EPG cache time elapsed " + (cacheTimeElapsed / 1000) + "s, EPG_CACHE_EXPIRE = " + (epgCacheExpire / 1000) + "s");
+			if (cacheTimeElapsed > epgCacheExpire)
+			{
+				Log.i(TAG, "EPG cache expired");
+				return false;
+			}
+		}
+
 		return deserializeData();
 	}
 

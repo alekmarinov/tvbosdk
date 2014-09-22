@@ -98,6 +98,8 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 		}
 	}
 
+	private String _logcatDir;
+
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
@@ -106,6 +108,17 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
 
 		FeatureDevice.StartReason startReason = _feature.Component.DEVICE.getStartReason();
+
+		// initialize logcat file directory
+		File filesDir = Environment.getInstance().getFilesDir();
+		_logcatDir = filesDir.getAbsolutePath() + File.separator + getPrefs().getString(Param.LOGCAT_DIRECTORY);
+		filesDir = new File(_logcatDir);
+		if (!filesDir.exists())
+			filesDir.mkdirs();
+
+		// delete previously stored logcat files
+		deleteLogcats(_logcatDir);
+
 		if (!FeatureDevice.StartReason.NORMAL.equals(startReason))
 		{
 			if (FeatureDevice.StartReason.SUICIDE.equals(startReason))
@@ -125,23 +138,13 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 						String logcatFileName = null;
 						try
 						{
-							File filesDir = Environment.getInstance().getFilesDir();
-							String logcatDir = filesDir.getAbsolutePath() + File.separator
-							        + getPrefs().getString(Param.LOGCAT_DIRECTORY);
-							filesDir = new File(logcatDir);
-							if (!filesDir.exists())
-								filesDir.mkdirs();
-
-							// delete previously stored logcat files
-							deleteLogcats(logcatDir);
-
 							// saves logcat and search logcat for signal
 							logcatFileName = newLogcatName();
-							String logcatFilePath = logcatDir + File.separator + logcatFileName;
+							String logcatFilePath = _logcatDir + File.separator + logcatFileName;
 							reason = saveLogcatAndDetectSignalReason(logcatFilePath);
 
 							// upload logcat on server
-							String logcatUrl = uploadLogcat(logcatFilePath);
+							String logcatUrl = uploadLogcatFile(logcatFilePath);
 							bundleEx.putString(Extras.LOGCAT_URL.name(), logcatUrl);
 						}
 						catch (IOException e)
@@ -222,7 +225,19 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 
 	private void log(Severity severity, String tag, String message, Throwable ex, Bundle extra)
 	{
-		Log.e(tag, message, ex);
+		switch (severity)
+		{
+			case INFO:
+				Log.i(tag, message, ex);
+			break;
+			case ALERT:
+				Log.e(tag, message, ex);
+			break;
+			case FATAL:
+			case ERROR:
+				Log.e(tag, message, ex);
+			break;
+		}
 
 		Bundle bundle = new Bundle();
 		if (extra != null)
@@ -261,7 +276,7 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 							bundle.putString(Extras.AUTHOR.name(), "unknown");
 						}
 
-						 bundle.putString(Extras.PARAMS.name(), collectFeatureParams(feature));
+						bundle.putString(Extras.PARAMS.name(), collectFeatureParams(feature));
 						break;
 					}
 				}
@@ -291,14 +306,7 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 	@Override
 	public void uncaughtException(Thread thread, final Throwable ex)
 	{
-		new Thread(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				fatal(TAG, "uncaught exception: " + ex.getMessage(), ex);
-			}
-		}).start();
+		fatal(TAG, "uncaught exception: " + ex.getMessage(), ex);
 	}
 
 	private String collectFeatureParams(IFeature feature)
@@ -346,7 +354,25 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 		}
 	}
 
-	private String uploadLogcat(String logcatFilePath)
+	/**
+	 * Sends logcat to server and returns logcat URL on the server where it can
+	 * be located if the sending succeeds
+	 *
+	 * @throws IOException
+	 */
+	public void sendLogcat() throws IOException
+	{
+		// saves logcat and search logcat for signal
+		String logcatFileName = newLogcatName();
+		String logcatFilePath = _logcatDir + File.separator + logcatFileName;
+		saveLogcat(logcatFilePath);
+		String logcatUrl = uploadLogcatFile(logcatFilePath);
+		Bundle bundle = new Bundle();
+		bundle.putString(Extras.LOGCAT_URL.name(), logcatUrl);
+		log(Severity.INFO, TAG, "Event with logcat attached", null, bundle);
+	}
+
+	private String uploadLogcatFile(String logcatFilePath)
 	{
 		String url = getPrefs().getString(Param.CRASHLOG_SERVER_URL);
 		final Bundle uploadParams = new Bundle();
@@ -372,9 +398,10 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 					featureInternet.uploadFile(uploadParams, new OnResultReceived()
 					{
 						@Override
-						public void onReceiveResult(FeatureError error)
+						public void onReceiveResult(FeatureError result)
 						{
-							Log.i(TAG, ".uploadFile:onReceiveResult: " + error);
+							if (result.isError())
+								Log.e(TAG, ".uploadFile:onReceiveResult: " + result);
 							featureInternet.getEventMessenger().unregister(_this, FeatureInternet.ON_CONNECTED);
 						}
 					});
@@ -388,6 +415,22 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 		if (url.charAt(url.length() - 1) != '/')
 			url = url + '/';
 		return url + Files.baseName(logcatFilePath);
+	}
+
+	private Stack<String> saveLogcat(String logcatFileName) throws IOException
+	{
+		BufferedReader logcatReader = new BufferedReader(new InputStreamReader(
+		        _feature.Component.DEVICE.getLogcatInputStream()));
+		Stack<String> logcatStack = new Stack<String>();
+		String line;
+		FileOutputStream fileOut = new FileOutputStream(logcatFileName);
+		while ((line = logcatReader.readLine()) != null)
+		{
+			fileOut.write((line + "\n").getBytes());
+			logcatStack.push(line);
+		}
+		fileOut.close();
+		return logcatStack;
 	}
 
 	private String saveLogcatAndDetectSignalReason(String logcatFileName) throws IOException
@@ -412,20 +455,10 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 		Pattern patternSignal9 = Pattern.compile(".*?Sending signal\\.\\sPID:\\s.*?\\sSIG:\\s9.*?", Pattern.MULTILINE
 		        | Pattern.CASE_INSENSITIVE);
 
-		BufferedReader logcatReader = new BufferedReader(new InputStreamReader(
-		        _feature.Component.DEVICE.getLogcatInputStream()));
-		Stack<String> logcatStack = new Stack<String>();
-		String line;
-		FileOutputStream fileOut = new FileOutputStream(logcatFileName);
-		while ((line = logcatReader.readLine()) != null)
-		{
-			fileOut.write((line + "\n").getBytes());
-			logcatStack.push(line);
-		}
-		fileOut.close();
+		Stack<String> logcatStack = saveLogcat(logcatFileName);
 		while (!logcatStack.isEmpty())
 		{
-			line = logcatStack.pop();
+			String line = logcatStack.pop();
 
 			// Search for crashes resulting from signals 9 and 15
 			Matcher matcher = patternSignal9.matcher(line);

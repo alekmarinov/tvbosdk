@@ -135,7 +135,10 @@ public class FeatureEPGZattoo extends FeatureEPG
 			@Override
 			public void onReceiveResult(FeatureError result)
 			{
-				onStreamURLReceived.onStreamURL(result.getBundle().getString(ClientZAPI.EXTRA_URL));
+				String url = null;
+				if (!result.isError())
+					url = result.getBundle().getString(ClientZAPI.EXTRA_URL);
+				onStreamURLReceived.onStreamURL(url);
 			}
 		});
 	}

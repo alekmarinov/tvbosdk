@@ -45,7 +45,7 @@ public class FeatureHttpServer extends FeatureComponent
 		catch (IOException e)
 		{
 			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(new FeatureError(e));
+			onFeatureInitialized.onInitialized(new FeatureError(this, e));
 		}
 	}
 
