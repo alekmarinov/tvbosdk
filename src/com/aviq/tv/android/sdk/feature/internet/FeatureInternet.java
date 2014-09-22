@@ -30,6 +30,7 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
@@ -107,12 +108,10 @@ public class FeatureInternet extends FeatureScheduler
 		checkInternet(new OnResultReceived()
 		{
 			@Override
-			public void onReceiveResult(int resultCode, Bundle resultData)
+			public void onReceiveResult(FeatureError error)
 			{
-				Log.i(TAG,
-				        ".initialize:onReceiveResult: resultCode = " + resultCode + " ("
-				                + TextUtils.implodeBundle(resultData) + ")");
-				onFeatureInitialized.onInitialized(FeatureInternet.this, resultCode);
+				Log.i(TAG, ".initialize:onReceiveResult: " + error);
+				onFeatureInitialized.onInitialized(error);
 				getEventMessenger().trigger(ON_SCHEDULE);
 			}
 		});
@@ -125,12 +124,11 @@ public class FeatureInternet extends FeatureScheduler
 		checkInternet(new OnResultReceived()
 		{
 			@Override
-			public void onReceiveResult(int resultCode, Bundle resultData)
+			public void onReceiveResult(FeatureError error)
 			{
 				Log.i(TAG,
-				        ".onSchedule:onReceiveResult: resultCode = " + resultCode + " ("
-				                + TextUtils.implodeBundle(resultData) + ")");
-				getEventMessenger().trigger(resultCode == ResultCode.OK ? ON_CONNECTED : ON_DISCONNECTED, resultData);
+				        ".onSchedule:onReceiveResult: " + error);
+				getEventMessenger().trigger(error.isError() ? ON_DISCONNECTED : ON_CONNECTED, error.getBundle());
 				scheduleDelayed(getPrefs().getInt(Param.CHECK_INTERVAL) * 1000);
 			}
 		});
@@ -166,9 +164,10 @@ public class FeatureInternet extends FeatureScheduler
 			}
 
 			@Override
-			public void onReceiveResult(int resultCode, Bundle resultData)
+			public void onReceiveResult(FeatureError result)
 			{
-				if (resultCode != ResultCode.OK)
+				Bundle resultData = result.getBundle();
+				if (result.isError())
 				{
 					long timeElapsed = System.currentTimeMillis() - _checkStart;
 					if (_attemptsCounter < _checkAttempts
@@ -214,7 +213,7 @@ public class FeatureInternet extends FeatureScheduler
 						Log.e(TAG, e.getMessage(), e);
 					}
 				}
-				onResultReceived.onReceiveResult(resultCode, resultData);
+				onResultReceived.onReceiveResult(result);
 			}
 		}
 		getEventMessenger().post(new InternetCheckResponse());
@@ -287,7 +286,7 @@ public class FeatureInternet extends FeatureScheduler
 				{
 					resultData.putString(key, response.headers.get(key));
 				}
-				onResultReceived.onReceiveResult(response.statusCode, resultData);
+				onResultReceived.onReceiveResult(new FeatureError(FeatureInternet.this, response.statusCode, resultData));
 				return super.parseNetworkResponse(response);
 			}
 		};
@@ -354,7 +353,7 @@ public class FeatureInternet extends FeatureScheduler
 			Bundle resultData = new Bundle();
 			resultData.putString(ResultExtras.URL.name(), _url);
 			resultData.putString(ResultExtras.CONTENT.name(), response);
-			_onResultReceived.onReceiveResult(ResultCode.OK, resultData);
+			_onResultReceived.onReceiveResult(new FeatureError(FeatureInternet.this, ResultCode.OK, resultData));
 		}
 
 		/**
@@ -363,23 +362,7 @@ public class FeatureInternet extends FeatureScheduler
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			int statusCode = ResultCode.GENERAL_FAILURE;
-			StringBuffer headerInfo = new StringBuffer();
-			if (error.networkResponse != null)
-			{
-				statusCode = error.networkResponse.statusCode;
-				for (String key : error.networkResponse.headers.keySet())
-				{
-					String value = error.networkResponse.headers.get(key);
-					headerInfo.append(key).append('=').append(value).append('\n');
-				}
-			}
-			Log.e(TAG, _url + " -> " + statusCode + " ( " + error.getMessage() + "), header = {" + headerInfo + "}");
-			Bundle resultData = new Bundle();
-			resultData.putString(ResultExtras.URL.name(), _url);
-			resultData.putString(ResultExtras.ERROR_MESSAGE.name(), error.getMessage());
-			resultData.putInt(ResultExtras.ERROR_CODE.name(), statusCode);
-			_onResultReceived.onReceiveResult(statusCode, resultData);
+			_onResultReceived.onReceiveResult(new FeatureError(error));
 		}
 	}
 

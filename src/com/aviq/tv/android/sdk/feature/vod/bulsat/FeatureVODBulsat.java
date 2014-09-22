@@ -19,8 +19,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
-import com.aviq.tv.android.sdk.core.Log;
-
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
 import com.android.volley.Request;
@@ -31,7 +29,8 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.StringRequest;
 import com.aviq.tv.android.sdk.core.Environment;
-import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.feature.vod.FeatureVOD;
@@ -230,18 +229,15 @@ Log.e(TAG, "title = " + vod.getTitle()); // + ", num VODs = " + node.getData().g
 
 			//print(_vodData.getRoot()); // Dump tree data to logcat
 
-			_onFeatureInitialized.onInitialized(FeatureVODBulsat.this, ResultCode.OK);
+			_onFeatureInitialized.onInitialized(FeatureError.OK(FeatureVODBulsat.this));
 		}
 
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
-			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving VOD data: code " + statusCode + ": " + error);
-			_onFeatureInitialized.onInitialized(FeatureVODBulsat.this, statusCode);
+			Log.e(TAG, "Error retrieving VOD data: " + error);
+			_onFeatureInitialized.onInitialized(new FeatureError(FeatureVODBulsat.this, error));
 		}
-
 	}
 
 	private class VodResponseCallback implements Response.Listener<String>, Response.ErrorListener
@@ -289,10 +285,8 @@ Log.e(TAG, "title = " + vod.getTitle()); // + ", num VODs = " + node.getData().g
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
-			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving VOD data: code " + statusCode + ": " + error);
-			_onFeatureInitialized.onInitialized(FeatureVODBulsat.this, statusCode);
+			Log.e(TAG, "Error retrieving VOD data: " + error);
+			_onFeatureInitialized.onInitialized(new FeatureError(error));
 		}
 	}
 

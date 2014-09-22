@@ -10,15 +10,18 @@
 
 package com.aviq.tv.android.sdk.core.feature;
 
+import com.aviq.tv.android.sdk.core.ResultCode;
+
 /**
  * Throw when requested feature is not found
  *
  */
 @SuppressWarnings("serial")
-public class FeatureNotFoundException extends Exception
+public class FeatureNotFoundException extends FeatureError
 {
 	public FeatureNotFoundException()
 	{
+		super(null, ResultCode.FEATURE_NOT_FOUND);
 	}
 
 	/**
@@ -26,7 +29,7 @@ public class FeatureNotFoundException extends Exception
 	 */
 	public FeatureNotFoundException(FeatureName.Component featureId)
 	{
-		super("Component feature " + featureId + " is not found");
+		super(null, ResultCode.FEATURE_NOT_FOUND, "Component feature " + featureId + " is not found");
 	}
 
 	/**
@@ -34,7 +37,7 @@ public class FeatureNotFoundException extends Exception
 	 */
 	public FeatureNotFoundException(FeatureName.Scheduler featureId)
 	{
-		super("Scheduler feature " + featureId + " is not found");
+		super(null, ResultCode.FEATURE_NOT_FOUND, "Scheduler feature " + featureId + " is not found");
 	}
 
 	/**
@@ -42,7 +45,7 @@ public class FeatureNotFoundException extends Exception
 	 */
 	public FeatureNotFoundException(FeatureName.State featureId)
 	{
-		super("State feature " + featureId + " is not found");
+		super(null, ResultCode.FEATURE_NOT_FOUND, "State feature " + featureId + " is not found");
 	}
 
 	/**
@@ -50,7 +53,7 @@ public class FeatureNotFoundException extends Exception
 	 */
 	public FeatureNotFoundException(String detailMessage)
 	{
-		super(detailMessage);
+		super(null, ResultCode.FEATURE_NOT_FOUND, detailMessage);
 	}
 
 	/**
@@ -58,7 +61,7 @@ public class FeatureNotFoundException extends Exception
 	 */
 	public FeatureNotFoundException(Throwable throwable)
 	{
-		super(throwable);
+		super(null, ResultCode.FEATURE_NOT_FOUND, throwable);
 	}
 
 	/**
@@ -67,6 +70,6 @@ public class FeatureNotFoundException extends Exception
 	 */
 	public FeatureNotFoundException(String detailMessage, Throwable throwable)
 	{
-		super(detailMessage, throwable);
+		super(null, ResultCode.FEATURE_NOT_FOUND, detailMessage, throwable);
 	}
 }

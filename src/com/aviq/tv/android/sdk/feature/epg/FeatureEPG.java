@@ -33,7 +33,6 @@ import org.json.JSONObject;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.os.Bundle;
-import com.aviq.tv.android.sdk.core.Log;
 
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
@@ -48,8 +47,10 @@ import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -444,7 +445,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
 			Log.e(TAG, "Error retrieving channels with code " + statusCode + ": " + error);
-			_onFeatureInitialized.onInitialized(FeatureEPG.this, statusCode);
+			_onFeatureInitialized.onInitialized(new FeatureError(FeatureEPG.this, statusCode, error));
 		}
 	}
 
@@ -595,8 +596,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 				                + ddf.format(_maxDate.getTime()));
 				resetMinMaxDates();
 			}
-			_onFeatureInitialized.onInitialized(FeatureEPG.this, ResultCode.OK);
-
+			super.initialize(_onFeatureInitialized);
 		}
 		else
 		{

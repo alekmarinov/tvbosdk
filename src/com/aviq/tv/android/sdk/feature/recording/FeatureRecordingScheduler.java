@@ -24,12 +24,12 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import com.aviq.tv.android.sdk.core.Log;
-
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
@@ -349,7 +349,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	}
 
 	/**
-	 * Returns iterator of integers representing those day offsets having one or more recordings
+	 * Returns iterator of integers representing those day offsets having one or
+	 * more recordings
 	 *
 	 * @return Iterator<Integer>
 	 */
@@ -404,16 +405,13 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	protected boolean loadRecordFromDataProvider(OnLoadRecordings onLoadRecordings,
 	        OnFeatureInitialized onFeatureInitialized)
 	{
-
-		HashMap<String, NavigableMap<String, RecordingScheduler>> _channelToRecordsNavigableMap = new HashMap<String, NavigableMap<String, RecordingScheduler>>();
-		if (_userPrefs.has(UserParam.RECORDINGS))
+		try
 		{
-			String recordings = _userPrefs.getString(UserParam.RECORDINGS);
-			String[] records = recordings.split(RECORD_DELIMITER);
-			int statusCode = ResultCode.OK;
-
-			try
+			HashMap<String, NavigableMap<String, RecordingScheduler>> _channelToRecordsNavigableMap = new HashMap<String, NavigableMap<String, RecordingScheduler>>();
+			if (_userPrefs.has(UserParam.RECORDINGS))
 			{
+				String recordings = _userPrefs.getString(UserParam.RECORDINGS);
+				String[] records = recordings.split(RECORD_DELIMITER);
 				for (String record : records)
 				{
 					String[] items = record.split(ITEM_DELIMITER);
@@ -446,34 +444,19 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					navigableMap.put(startTime, rc);
 					_dayOffsets.add(Calendars.getDayOffsetByDate(calStartTime));
 				}
-				statusCode = ResultCode.OK;
+				return true;
 			}
-			catch (ParseException e)
-			{
-				Log.e(TAG, e.getMessage(), e);
-				statusCode = ResultCode.GENERAL_FAILURE;
-				return false;
-			}
-			finally
-			{
-				// Elmira Pavlova: Null pointer check is made because of
-				// unit test issues
-				if (onFeatureInitialized != null)
-				{
-					onFeatureInitialized.onInitialized(FeatureRecordingScheduler.this, statusCode);
-				}
-			}
+			super.initialize(onFeatureInitialized);
+			onLoadRecordings.onRecordingLoaded(_channelToRecordsNavigableMap);
+			return true;
 		}
-		else
+		catch (ParseException e)
 		{
-			if (onFeatureInitialized != null)
-			{
-				onFeatureInitialized.onInitialized(FeatureRecordingScheduler.this, ResultCode.OK);
-			}
+			Log.e(TAG, e.getMessage(), e);
+			onFeatureInitialized.onInitialized(new FeatureError(FeatureRecordingScheduler.this,
+			        ResultCode.INTERNAL_ERROR, e));
 		}
-		onLoadRecordings.onRecordingLoaded(_channelToRecordsNavigableMap);
-
-		return true;
+		return false;
 	}
 
 	protected boolean saveRecordsToDataProvider(String recordings)

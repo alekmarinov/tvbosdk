@@ -53,7 +53,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 public class FeatureManager
 {
 	public static final String TAG = FeatureManager.class.getSimpleName();
-	public static final int FEATURE_DEFAULT_INIT_TIMEOUT = 120;
+	public static final int FEATURE_DEFAULT_INIT_TIMEOUT = 180;
 	private List<IFeature> _features = new ArrayList<IFeature>();
 	private final FeatureInitializer _featureInitializer = new FeatureInitializer();
 	private FeatureFactoryCustom _featureFactory = new FeatureFactoryCustom();
@@ -559,7 +559,7 @@ public class FeatureManager
 		new OnResultReceived()
 		{
 			@Override
-			public void onReceiveResult(int resultCode, Bundle resultData)
+			public void onReceiveResult(FeatureError error)
 			{
 				if (aviqtvXMLHandler.getIncludeUrls().size() > 0)
 				{
@@ -589,12 +589,12 @@ public class FeatureManager
 										catch (SAXException e)
 										{
 											Log.e(TAG, e.getMessage(), e);
-											resultReceived.onReceiveResult(ResultCode.PROTOCOL_ERROR, null);
+											resultReceived.onReceiveResult(new FeatureError(null, ResultCode.PROTOCOL_ERROR, e));
 										}
 										catch (IOException e)
 										{
 											Log.e(TAG, e.getMessage(), e);
-											resultReceived.onReceiveResult(ResultCode.GENERAL_FAILURE, null);
+											resultReceived.onReceiveResult(new FeatureError(null, ResultCode.IO_ERROR, e));
 										}
 									}
 								});
@@ -602,18 +602,18 @@ public class FeatureManager
 							catch (IOException e)
 							{
 								Log.e(TAG, e.getMessage(), e);
-								onResult(ResultCode.GENERAL_FAILURE);
+								onResult(new FeatureError(null, ResultCode.IO_ERROR, e));
 							}
 						}
 
-						private void onResult(final int resultCode)
+						private void onResult(final FeatureError error)
 						{
 							Environment.getInstance().runOnUiThread(new Runnable()
 							{
 								@Override
 								public void run()
 								{
-									resultReceived.onReceiveResult(resultCode, null);
+									resultReceived.onReceiveResult(error);
 								}
 							});
 						}
@@ -622,10 +622,10 @@ public class FeatureManager
 				}
 				else
 				{
-					resultReceived.onReceiveResult(ResultCode.OK, null);
+					resultReceived.onReceiveResult(FeatureError.OK);
 				}
 			}
-		}.onReceiveResult(ResultCode.OK, null);
+		}.onReceiveResult(FeatureError.OK);
 	}
 
 	/**
@@ -640,14 +640,14 @@ public class FeatureManager
 	{
 		new Thread(new Runnable()
 		{
-			private void onResult(final int resultCode)
+			private void onResult(final FeatureError error)
 			{
 				Environment.getInstance().runOnUiThread(new Runnable()
 				{
 					@Override
 					public void run()
 					{
-						resultReceived.onReceiveResult(resultCode, null);
+						resultReceived.onReceiveResult(error);
 					}
 				});
 			}
@@ -658,15 +658,15 @@ public class FeatureManager
 				try
 				{
 					addFeaturesFromXml(url.openConnection().getInputStream(), resultReceived);
-					onResult(ResultCode.OK);
+					onResult(FeatureError.OK);
 				}
 				catch (SAXException e)
 				{
-					onResult(ResultCode.PROTOCOL_ERROR);
+					onResult(new FeatureError(null, ResultCode.PROTOCOL_ERROR, e));
 				}
 				catch (IOException e)
 				{
-					onResult(ResultCode.GENERAL_FAILURE);
+					onResult(new FeatureError(null, ResultCode.IO_ERROR, e));
 				}
 			}
 		}).start();
@@ -901,16 +901,16 @@ public class FeatureManager
 							feature.setDependencyFeatures(new Features(feature.dependencies()));
 							feature.initialize(FeatureInitializer.this);
 						}
-						catch (FeatureNotFoundException e)
-						{
-							_onFeatureInitialized.onInitialized(feature, ResultCode.FEATURE_NOT_FOUND);
-						}
+                        catch (FeatureError e)
+                        {
+							_onFeatureInitialized.onInitialized(e);
+                        }
 					}
 				});
 			}
 			else
 			{
-				_onFeatureInitialized.onInitialized(null, ResultCode.OK);
+				_onFeatureInitialized.onInitialized(FeatureError.OK);
 			}
 		}
 
@@ -921,27 +921,27 @@ public class FeatureManager
 			IFeature feature = _features.get(_featureNumber);
 			Log.e(TAG, _featureNumber + ". initialize " + (System.currentTimeMillis() - _initStartedTime) + " ms: "
 			        + feature + " timeout!");
-			_onFeatureInitialized.onInitialized(feature, ResultCode.TIMEOUT);
+			_onFeatureInitialized.onInitialized(new FeatureError(feature, ResultCode.TIMEOUT));
 		}
 
 		@Override
-		public void onInitialized(IFeature feature, int resultCode)
+		public void onInitialized(FeatureError error)
 		{
 			stopTimeout();
-			onInitializeProgress(feature, 1.0f);
+			onInitializeProgress(error.getFeature(), 1.0f);
 			if (_lastFeatureNumber == _featureNumber)
 			{
-				throw new RuntimeException("Internal Error: Attempt to initialize feature " + feature
+				throw new RuntimeException("Internal Error: Attempt to initialize feature " + error.getFeature()
 				        + " more than once");
 			}
 			_lastFeatureNumber = _featureNumber;
-			Log.i(TAG, "<" + _featureNumber + ". " + feature + " initialized in "
-			        + (System.currentTimeMillis() - _initStartedTime) + " ms with result " + resultCode);
+			Log.i(TAG, "<" + _featureNumber + ". " + error.getFeature() + " initialized in "
+			        + (System.currentTimeMillis() - _initStartedTime) + " ms with result " + error);
 
 			// Stop all features initialization when one fails to initialize
-			if (resultCode != ResultCode.OK)
+			if (error.isError())
 			{
-				_onFeatureInitialized.onInitialized(feature, resultCode);
+				_onFeatureInitialized.onInitialized(error);
 			}
 			else
 			{

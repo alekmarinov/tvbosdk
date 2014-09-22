@@ -10,11 +10,9 @@
 
 package com.aviq.tv.android.sdk.feature.epg.zattoo;
 
-import android.os.Bundle;
-
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
-import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
@@ -83,25 +81,25 @@ public class FeatureEPGZattoo extends FeatureEPG
 		        new OnResultReceived()
 		        {
 			        @Override
-			        public void onReceiveResult(int resultCode, Bundle resultData)
+			        public void onReceiveResult(FeatureError result)
 			        {
-				        if (ResultCode.OK == resultCode)
+				        if (!result.isError())
 				        {
 					        // hello zattoo, loging in...
 					        _clientZAPI.login(getPrefs().getString(Param.ZATTOO_USER),
 					                getPrefs().getString(Param.ZATTOO_PASS), new OnResultReceived()
 					                {
 						                @Override
-						                public void onReceiveResult(int resultCode, Bundle resultData)
+						                public void onReceiveResult(FeatureError result)
 						                {
-							                Log.i(TAG, "login response: " + resultCode);
+							                Log.i(TAG, "login response: " + result);
 							                FeatureEPGZattoo.super.initialize(onFeatureInitialized);
 						                }
 					                });
 				        }
 				        else
 				        {
-					        onFeatureInitialized.onInitialized(FeatureEPGZattoo.this, resultCode);
+					        onFeatureInitialized.onInitialized(result);
 				        }
 			        }
 		        });
@@ -129,21 +127,22 @@ public class FeatureEPGZattoo extends FeatureEPG
 	}
 
 	@Override
-	public void getStreamUrl(Channel channel, long playTime, long playDuration, final OnStreamURLReceived onStreamURLReceived)
+	public void getStreamUrl(Channel channel, long playTime, long playDuration,
+	        final OnStreamURLReceived onStreamURLReceived)
 	{
 		_clientZAPI.watch(channel.getChannelId(), "hls", new OnResultReceived()
 		{
 			@Override
-			public void onReceiveResult(int resultCode, Bundle resultData)
+			public void onReceiveResult(FeatureError result)
 			{
-				onStreamURLReceived.onStreamURL(resultData.getString(ClientZAPI.EXTRA_URL));
+				onStreamURLReceived.onStreamURL(result.getBundle().getString(ClientZAPI.EXTRA_URL));
 			}
 		});
 	}
 
 	@Override
-    public long getStreamBufferSize(Channel channel)
-    {
-	    return 0;
-    }
+	public long getStreamBufferSize(Channel channel)
+	{
+		return 0;
+	}
 }

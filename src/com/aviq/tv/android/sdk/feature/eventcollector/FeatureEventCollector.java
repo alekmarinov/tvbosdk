@@ -29,7 +29,7 @@ import android.util.JsonWriter;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Log;
-import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -241,7 +241,7 @@ public class FeatureEventCollector extends FeatureScheduler
 		// process events
 		processCollectedEvents();
 		scheduleDelayed(getPrefs().getInt(Param.SEND_EVENTS_INTERVAL));
-		onFeatureInitialized.onInitialized(this, ResultCode.OK);
+		super.initialize(onFeatureInitialized);
 	}
 
 	/**
@@ -273,9 +273,9 @@ public class FeatureEventCollector extends FeatureScheduler
 			_feature.Scheduler.INTERNET.uploadFile(uploadParams, new OnResultReceived()
 			{
 				@Override
-				public void onReceiveResult(int resultCode, Bundle resultData)
+				public void onReceiveResult(FeatureError result)
 				{
-					Log.i(TAG, ".uploadFile:onReceiveResult: resultCode = " + resultCode);
+					Log.i(TAG, ".uploadFile:onReceiveResult: " + result);
 				}
 			});
 		}

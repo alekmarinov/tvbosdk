@@ -29,6 +29,7 @@ import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureManager;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
@@ -371,10 +372,9 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 					featureInternet.uploadFile(uploadParams, new OnResultReceived()
 					{
 						@Override
-						public void onReceiveResult(int resultCode, Bundle resultData)
+						public void onReceiveResult(FeatureError error)
 						{
-							Log.i(TAG, ".uploadFile:onReceiveResult: resultCode = " + resultCode + ", url = "
-							        + uploadParams.getString(UploadService.Extras.URL.name()));
+							Log.i(TAG, ".uploadFile:onReceiveResult: " + error);
 							featureInternet.getEventMessenger().unregister(_this, FeatureInternet.ON_CONNECTED);
 						}
 					});

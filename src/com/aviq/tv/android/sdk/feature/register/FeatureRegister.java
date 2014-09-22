@@ -24,6 +24,7 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
@@ -111,9 +112,9 @@ public class FeatureRegister extends FeatureComponent
 				_feature.Scheduler.INTERNET.getUrlContent(registrationUrl, new OnResultReceived()
 				{
 					@Override
-					public void onReceiveResult(int resultCode, Bundle resultData)
+					public void onReceiveResult(FeatureError error)
 					{
-						Log.d(TAG, ".initialize:onReceiveResult: resultCode = " + resultCode);
+						Log.d(TAG, ".initialize:onReceiveResult: " + error);
 					}
 				});
 			}

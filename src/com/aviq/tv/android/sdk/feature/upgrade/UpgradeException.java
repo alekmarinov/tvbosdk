@@ -10,47 +10,38 @@
 
 package com.aviq.tv.android.sdk.feature.upgrade;
 
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
+
+import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
+import com.aviq.tv.android.sdk.core.feature.IFeature;
 
 /**
  * Exception caused by FeatureUpgrade
  */
-public class UpgradeException extends Exception
+public class UpgradeException extends FeatureError
 {
-    private static final long serialVersionUID = 1L;
-    private int _resultCode;
+	private static final long serialVersionUID = 1L;
 
-	public UpgradeException(int resultCode)
+	public UpgradeException(IFeature feature, Throwable e)
 	{
-		_resultCode = resultCode;
+		super(e);
+		_feature = feature;
+		if (ParserConfigurationException.class.isInstance(e) || SAXException.class.isInstance(e)
+		        || NumberFormatException.class.isInstance(e))
+			_errCode = ResultCode.PROTOCOL_ERROR;
+
 	}
 
-	/**
-	 * @param detailMessage
-	 */
-	public UpgradeException(int resultCode, String detailMessage)
-	{
-		super(detailMessage);
-	}
+	public UpgradeException(IFeature feature, int errCode, String detailedMessage)
+    {
+		super(feature, errCode, detailedMessage);
+    }
 
-	/**
-	 * @param throwable
-	 */
-	public UpgradeException(int resultCode, Throwable throwable)
-	{
-		super(throwable);
-	}
-
-	/**
-	 * @param detailMessage
-	 * @param throwable
-	 */
-	public UpgradeException(int resultCode, String detailMessage, Throwable throwable)
-	{
-		super(detailMessage, throwable);
-	}
-
-	public int getResultCode()
-	{
-		return _resultCode;
-	}
+	public UpgradeException(IFeature feature, int errCode, String detailedMessage, Throwable e)
+    {
+		super(feature, errCode, detailedMessage, e);
+    }
 }

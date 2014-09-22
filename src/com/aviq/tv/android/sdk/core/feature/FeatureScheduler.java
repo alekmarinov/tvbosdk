@@ -18,7 +18,6 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
-import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
@@ -84,12 +83,12 @@ public abstract class FeatureScheduler implements IFeature
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
 		if (onFeatureInitialized != null)
-			onFeatureInitialized.onInitialized(this, ResultCode.OK);
+			onFeatureInitialized.onInitialized(FeatureError.OK(this));
 	}
 
 	protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
 	{
-		onFeatureInitialized.onInitialized(this, ResultCode.OK);
+		onFeatureInitialized.onInitialized(FeatureError.OK);
 	}
 
 	@Override
@@ -150,9 +149,9 @@ public abstract class FeatureScheduler implements IFeature
 			onSchedule(new OnFeatureInitialized()
 			{
 				@Override
-				public void onInitialized(IFeature feature, int resultCode)
+				public void onInitialized(FeatureError error)
 				{
-					Log.i(TAG, "onSchedule.onInitialized: feature = " + feature + ", resultCode = " + resultCode);
+					Log.i(TAG, "onSchedule.onInitialized: " + error);
 					getEventMessenger().trigger(ON_SCHEDULE_FINISHED);
 				}
 

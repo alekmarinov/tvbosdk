@@ -12,11 +12,10 @@ package com.aviq.tv.android.sdk.feature.httpserver;
 
 import java.io.IOException;
 
-import com.aviq.tv.android.sdk.core.Log;
-
 import com.aviq.tv.android.sdk.core.Environment;
-import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
@@ -46,7 +45,7 @@ public class FeatureHttpServer extends FeatureComponent
 		catch (IOException e)
 		{
 			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
+			onFeatureInitialized.onInitialized(new FeatureError(e));
 		}
 	}
 

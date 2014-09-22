@@ -38,6 +38,7 @@ import com.android.volley.toolbox.ImageLoader.ImageCache;
 import com.android.volley.toolbox.Volley;
 import com.aviq.tv.android.sdk.Version;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureManager;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -64,6 +65,7 @@ public class Environment extends Activity
 	public static final int ON_RESUME = EventMessenger.ID("ON_RESUME");
 	public static final int ON_PAUSE = EventMessenger.ID("ON_PAUSE");
 	public static final String EXTRA_ERROR_CODE = "EXTRA_ERROR_CODE";
+	public static final String EXTRA_ERROR_DATA = "EXTRA_ERROR_DATA";
 	public static final String EXTRA_FEATURE_NAME = "EXTRA_FEATURE_NAME";
 	public static final String EXTRA_KEY = "KEY";
 	public static final String EXTRA_KEYCODE = "KEYCODE";
@@ -125,7 +127,7 @@ public class Environment extends Activity
 	private OnResultReceived _onFeaturesReceived = new OnResultReceived()
 	{
 		@Override
-		public void onReceiveResult(int resultCode, Bundle resultData)
+		public void onReceiveResult(FeatureError error)
 		{
 			try
 			{
@@ -160,15 +162,16 @@ public class Environment extends Activity
 				_featureManager.initialize(new OnFeatureInitialized()
 				{
 					@Override
-					public void onInitialized(IFeature feature, int resultCode)
+					public void onInitialized(FeatureError error)
 					{
-						if (resultCode != ResultCode.OK)
+						if (error.isError())
 						{
 							Bundle bundle = new Bundle();
-							bundle.putInt(EXTRA_ERROR_CODE, resultCode);
-							bundle.putString(EXTRA_FEATURE_NAME, feature.getName());
+							bundle.putInt(EXTRA_ERROR_CODE, error.getErrorCode());
+							bundle.putBundle(EXTRA_ERROR_DATA, error.getBundle());
+							bundle.putString(EXTRA_FEATURE_NAME, error.getFeature().getName());
 							_eventMessenger.trigger(ON_FEATURE_INIT_ERROR, bundle);
-							_featureCrashLog.fatal(feature.getName(), "feature init failed with code " + resultCode, null);
+							_featureCrashLog.fatal(error.getFeature().getName(), "feature init failed: " + error, error);
 						}
 						else
 						{
@@ -269,7 +272,7 @@ public class Environment extends Activity
 				_featureManager.addFeaturesFromXml(inputStream, new OnResultReceived()
 				{
 					@Override
-					public void onReceiveResult(int resultCode, Bundle resultData)
+					public void onReceiveResult(FeatureError error)
 					{
 						// initialize environment by app's raw/release.xml
 						Log.i(TAG, "Parsing " + RELEASE_XML_RESOURCE + " xml definition");

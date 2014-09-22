@@ -17,12 +17,11 @@ import java.util.Comparator;
 import java.util.List;
 
 import android.os.Bundle;
-import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
-import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
@@ -82,7 +81,7 @@ public class FeatureWatchlist extends FeatureComponent
 		_watchedPrograms = loadWatchlist(_feature.Scheduler.EPG.getEpgData());
 		_notifyEarlier = getPrefs().getInt(Param.NOTIFY_EARLIER);
 		updateProgramStartNotification();
-		onFeatureInitialized.onInitialized(this, ResultCode.OK);
+		super.initialize(onFeatureInitialized);
 	}
 
 	/**

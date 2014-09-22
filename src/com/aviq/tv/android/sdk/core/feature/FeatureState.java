@@ -14,12 +14,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.os.Bundle;
-import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
-import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.state.BaseState;
 import com.aviq.tv.android.sdk.core.state.StateException;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -86,7 +85,7 @@ public abstract class FeatureState extends BaseState implements IFeature
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
 		if (onFeatureInitialized != null)
-			onFeatureInitialized.onInitialized(this, ResultCode.OK);
+			onFeatureInitialized.onInitialized(FeatureError.OK(this));
 	}
 
 	@Override

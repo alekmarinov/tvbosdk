@@ -25,10 +25,9 @@ import java.util.List;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.DhcpInfo;
-import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
-import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -113,12 +112,12 @@ public class FeatureEthernet extends FeatureNetwork
 			// FIXME: Should this be fatal error?
 			// onFeatureInitialized.onInitialized(this,
 			// ResultCode.NOT_SUPPORTED);
-			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 		}
 		else
 		{
-			onFeatureInitialized.onInitialized(this, ResultCode.OK);
+//			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 		}
+		super.initialize(onFeatureInitialized);
 	}
 
 	@Override

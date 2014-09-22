@@ -16,10 +16,8 @@ import java.io.StringReader;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Document;
@@ -27,7 +25,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 import android.os.Bundle;
 import android.os.RecoverySystem;
@@ -38,6 +35,7 @@ import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -288,7 +286,7 @@ public class FeatureUpgrade extends FeatureScheduler
 	{
 		if (!isUpgradeReady())
 		{
-			throw new UpgradeException(ResultCode.GENERAL_FAILURE, "rebootToInstall: Not ready for software upgrade");
+			throw new UpgradeException(this, ResultCode.GENERAL_FAILURE, "rebootToInstall: Not ready for software upgrade");
 		}
 
 		int delay = getPrefs().getInt(Param.UPGRADE_REBOOT_DELAY);
@@ -317,7 +315,7 @@ public class FeatureUpgrade extends FeatureScheduler
 				}
 				catch (IOException e)
 				{
-					setStatus(new UpgradeException(ResultCode.GENERAL_FAILURE, "rebootToInstall: failed", e));
+					setStatus(new UpgradeException(FeatureUpgrade.this, ResultCode.IO_ERROR, "rebootToInstall: failed", e));
 				}
 			}
 		}, delay);
@@ -443,13 +441,13 @@ public class FeatureUpgrade extends FeatureScheduler
 		_feature.Scheduler.INTERNET.getUrlContent(abmpUpdateCheckUrl, new OnResultReceived()
 		{
 			@Override
-			public void onReceiveResult(int resultCode, Bundle resultData)
+			public void onReceiveResult(FeatureError result)
 			{
-				if (ResultCode.OK == resultCode)
+				if (!result.isError())
 				{
 					try
 					{
-						String content = resultData.getString(FeatureInternet.ResultExtras.CONTENT.name());
+						String content = result.getBundle().getString(FeatureInternet.ResultExtras.CONTENT.name());
 						DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 						DocumentBuilder db = dbf.newDocumentBuilder();
 						InputSource xmlSource = new InputSource(new StringReader(content));
@@ -507,30 +505,14 @@ public class FeatureUpgrade extends FeatureScheduler
 							setOkStatus();
 						}
 					}
-					catch (ParserConfigurationException e)
+					catch (Exception e)
 					{
-						setStatus(new UpgradeException(ResultCode.PROTOCOL_ERROR, e));
-					}
-					catch (SAXException e)
-					{
-						setStatus(new UpgradeException(ResultCode.PROTOCOL_ERROR, e));
-					}
-					catch (NumberFormatException e)
-					{
-						setStatus(new UpgradeException(ResultCode.PROTOCOL_ERROR, e));
-					}
-					catch (IOException e)
-					{
-						setStatus(new UpgradeException(ResultCode.INTERNAL_ERROR, e));
-					}
-					catch (XPathExpressionException e)
-					{
-						setStatus(new UpgradeException(ResultCode.INTERNAL_ERROR, e));
+						setStatus(new UpgradeException(FeatureUpgrade.this, e));
 					}
 				}
 				else
 				{
-					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, resultCode);
+					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, result.getErrorCode());
 				}
 				getEventMessenger().trigger(ON_UPDATE_CHECKED);
 			}
@@ -561,11 +543,11 @@ public class FeatureUpgrade extends FeatureScheduler
 	private void setStatus(UpgradeException exception)
 	{
 		if (_standingBy)
-			Log.w(TAG, exception.getMessage());
+			Log.w(TAG, exception.toString());
 		else
-			Log.e(TAG, exception.getMessage(), exception);
+			Log.e(TAG, exception.toString(), exception);
 		_exception = exception;
-		setStatus(Status.ERROR, ErrorReason.EXCEPTION, exception.getResultCode());
+		setStatus(Status.ERROR, ErrorReason.EXCEPTION, exception.getErrorCode());
 	}
 
 	// returns the last downloaded and verified with checksum firmware file
@@ -604,11 +586,11 @@ public class FeatureUpgrade extends FeatureScheduler
 		_feature.Scheduler.INTERNET.getUrlContent(updateUrlMd5, new ServiceController.OnResultReceived()
 		{
 			@Override
-			public void onReceiveResult(int resultCode, Bundle resultData)
+			public void onReceiveResult(FeatureError result)
 			{
-				if (ResultCode.OK == resultCode)
+				if (!result.isError())
 				{
-					String md5Content = resultData.getString(ResultExtras.CONTENT.name());
+					String md5Content = result.getBundle().getString(ResultExtras.CONTENT.name());
 					String[] md5Parts = md5Content.split(" ");
 					if (md5Parts.length > 0)
 						md5Content = md5Parts[0];
@@ -654,19 +636,19 @@ public class FeatureUpgrade extends FeatureScheduler
 					_feature.Scheduler.INTERNET.downloadFile(downloadParams, new OnResultReceived()
 					{
 						@Override
-						public void onReceiveResult(int resultCode, Bundle resultData)
+						public void onReceiveResult(FeatureError result)
 						{
-							if (DownloadService.DOWNLOAD_PROGRESS == resultCode)
+							if (DownloadService.DOWNLOAD_PROGRESS == result.getErrorCode())
 							{
-								float progress = resultData.getFloat(DownloadService.ResultExtras.PROGRESS.name());
+								float progress = result.getBundle().getFloat(DownloadService.ResultExtras.PROGRESS.name());
 								Log.v(TAG, "File download progress " + progress);
-								getEventMessenger().trigger(ON_UPDATE_PROGRESS, resultData);
+								getEventMessenger().trigger(ON_UPDATE_PROGRESS, result.getBundle());
 							}
-							else if (DownloadService.DOWNLOAD_SUCCESS == resultCode)
+							else if (DownloadService.DOWNLOAD_SUCCESS == result.getErrorCode())
 							{
 								Log.i(TAG, ".downloadUpdate: download success");
 								// Download finished, checking md5
-								String downloadedMd5 = resultData.getString(DownloadService.ResultExtras.MD5.name());
+								String downloadedMd5 = result.getBundle().getString(DownloadService.ResultExtras.MD5.name());
 								if (!md5.equalsIgnoreCase(downloadedMd5))
 								{
 									// md5 check failed
@@ -682,12 +664,12 @@ public class FeatureUpgrade extends FeatureScheduler
 									setOkStatus();
 								}
 							}
-							else if (DownloadService.DOWNLOAD_FAILED == resultCode)
+							else if (DownloadService.DOWNLOAD_FAILED == result.getErrorCode())
 							{
 								Log.e(TAG, ".downloadUpdate: download failed");
-								Throwable exception = (Throwable) resultData
+								Throwable exception = (Throwable) result.getBundle()
 								        .getSerializable(DownloadService.ResultExtras.EXCEPTION.name());
-								setStatus(new UpgradeException(ResultCode.GENERAL_FAILURE, exception));
+								setStatus(new UpgradeException(FeatureUpgrade.this, exception));
 							}
 						}
 					});
@@ -695,7 +677,7 @@ public class FeatureUpgrade extends FeatureScheduler
 				else
 				{
 					Log.e(TAG, "Error retrieving md5 file " + updateUrlMd5);
-					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, resultCode);
+					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, result.getErrorCode());
 				}
 			}
 		});
