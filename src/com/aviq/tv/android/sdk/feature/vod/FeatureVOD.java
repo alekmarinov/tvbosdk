@@ -34,7 +34,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 	
 	public abstract <T> T getVodData();
 	public abstract void loadVod(String id, OnVodLoaded onVodLoadedListener);
-	public abstract void search(String[] keywords, OnVodSearchResult onVodSearchResult);
+	public abstract void search(String term, OnVodSearchResult onVodSearchResult);
 	
 	public static interface OnVodLoaded 
 	{

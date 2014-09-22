@@ -4,7 +4,11 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -26,15 +30,21 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.feature.vod.FeatureVOD;
-import com.aviq.tv.android.sdk.feature.vod.FeatureVOD.OnVodSearchResult;
+import com.aviq.tv.android.sdk.utils.MapUtils;
+import com.aviq.tv.android.sdk.utils.MapUtils.SortingOrder;
 import com.google.gson.JsonSyntaxException;
 
 public class FeatureVODBulsat extends FeatureVOD
 {
 	public static final String TAG = FeatureVODBulsat.class.getSimpleName();
 
+	private static final int SCORE_TITLE = 1000;
+	private static final int SCORE_SHORT_DESC = 900;
+	private static final int SCORE_DESC = 800;
+
 	private OnFeatureInitialized _onFeatureInitialized;
 	private VodTree<VodGroup> _vodData;
+	private Locale mLocale = new Locale("bg", "BG");
 
 	public enum Param
 	{
@@ -104,41 +114,84 @@ public class FeatureVODBulsat extends FeatureVOD
 		Environment.getInstance().getRequestQueue().add(request);
 	}
 	
-	public void search(String[] keywords, OnVodSearchResult onVodSearchResult)
+	public void search(String term, OnVodSearchResult onVodSearchResult)
 	{
-Log.e(TAG, "keywords = " + Arrays.toString(keywords));
+		String[] terms = term.split("\\s");
+		List<String> keywordList = new ArrayList<String>(terms.length);
+		for (String s : terms)
+		{
+// TODO uncomment
+//			if (s.length() < 3)
+//				continue;
+			keywordList.add(s.trim());
+		}
+		String[] keywords = keywordList.toArray(new String[] {});
+		
+		Log.v(TAG, "Run search with keywords = " + Arrays.toString(keywords));
+		
+		Map<Vod, Integer> resultMap = new HashMap<Vod, Integer>();
+		searchVodTree(_vodData.getRoot(), keywords, resultMap);
+
+		LinkedHashMap<Vod, Integer> sortedResultMap = MapUtils.sortMapByValue(resultMap, SortingOrder.DESCENDING);
 		
 		List<Vod> resultList = new ArrayList<Vod>();
-		searchVodTree(_vodData.getRoot(), keywords, resultList);
+		for (Map.Entry<Vod, Integer> entry : sortedResultMap.entrySet())
+			resultList.add(entry.getKey());
+
 		onVodSearchResult.onVodSearchResult(resultList);
 	}
 	
-	public void searchVodTree(VodTree.Node<VodGroup> node, String[] keywords, List<Vod> resultList)
+	/**
+	 * Search VOD tree for VOD items and score each result based on which
+	 * property it is found in.
+	 * 
+	 * TODO: maybe add keyword frequency in the scoring as well
+	 * 
+	 * @param node
+	 * @param keywords
+	 * @param resultMap
+	 */
+	public void searchVodTree(VodTree.Node<VodGroup> node, String[] keywords, Map<Vod, Integer> resultMap)
 	{
 		// searching: title, shortDescription, description
-		
-		boolean hasKeywords = true;
 		
 		List<Vod> vodList = node.getData().getVodList();
 		for (Vod vod : vodList)
 		{
-Log.e(TAG, "title = " + vod.getTitle()); // + ", num VODs = " + node.getData().getVodList().size());
-
+			boolean hasKeywords = true;
+			boolean inTitle = true;
+			boolean inShortDesc = true;
+			boolean inDesc = true;
+			int score = 0;
+			
 			for (String keyword : keywords)
 			{
-				hasKeywords = hasKeywords && vod.getTitle().indexOf(keyword) > -1;
-//				hasKeywords = hasKeywords && vod.getShortDescription().indexOf(keyword) > -1;
-//				hasKeywords = hasKeywords && vod.getDescription().indexOf(keyword) > -1;
+				inTitle = vod.getTitle() != null ? vod.getTitle()
+						.toLowerCase(mLocale).indexOf(keyword) > -1 : false;
+				inShortDesc = vod.getShortDescription() != null ? vod
+						.getShortDescription().toLowerCase(mLocale)
+						.indexOf(keyword) > -1 : false;
+				inDesc = vod.getDescription() != null ? vod.getDescription()
+						.toLowerCase(mLocale).indexOf(keyword) > -1 : false;
+				
+				hasKeywords = inTitle || inShortDesc || inDesc;
+				
+				if (inTitle)
+					score += SCORE_TITLE;
+				if (inShortDesc)
+					score += SCORE_SHORT_DESC;
+				if (inDesc)
+					score += SCORE_DESC;
 			}
-			
+
 			if (hasKeywords)
-				resultList.add(vod);
+				resultMap.put(vod, score);
 		}
 		
 		if (node.hasChildren())
 		{
 			for (VodTree.Node<VodGroup> child : node.getChildren())
-				searchVodTree(child, keywords, resultList);
+				searchVodTree(child, keywords, resultMap);
 		}
 	}
 	
