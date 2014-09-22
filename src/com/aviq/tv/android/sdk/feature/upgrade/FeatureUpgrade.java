@@ -48,6 +48,7 @@ import com.aviq.tv.android.sdk.feature.internet.DownloadService;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet.ResultExtras;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
 import com.aviq.tv.android.sdk.feature.system.FeatureStandBy;
 import com.aviq.tv.android.sdk.utils.Files;
 
@@ -191,6 +192,7 @@ public class FeatureUpgrade extends FeatureScheduler
 
 	public FeatureUpgrade() throws FeatureNotFoundException
 	{
+		require(FeatureName.Component.DEVICE);
 		require(FeatureName.Component.REGISTER);
 		require(FeatureName.Scheduler.INTERNET);
 	}
@@ -429,7 +431,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		Bundle updateCheckUrlParams = new Bundle();
 		updateCheckUrlParams.putString("SERVER",
 		        _feature.Component.REGISTER.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
-		updateCheckUrlParams.putString("BOX_ID", _feature.Component.REGISTER.getBoxId());
+		updateCheckUrlParams.putString("BOX_ID", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC));
 		updateCheckUrlParams.putString("VERSION", Environment.getInstance().getBuildVersion());
 
 		String abmpUpdateCheckUrl = getPrefs().getString(Param.ABMP_UPDATE_CHECK_URL, updateCheckUrlParams);
@@ -591,7 +593,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		Bundle updateUrlParams = new Bundle();
 		updateUrlParams.putString("SERVER",
 		        _feature.Component.REGISTER.getPrefs().getString(FeatureRegister.Param.ABMP_SERVER));
-		updateUrlParams.putString("BOX_ID", _feature.Component.REGISTER.getBoxId());
+		updateUrlParams.putString("BOX_ID", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC));
 		updateUrlParams.putString("FILE_NAME", _updateInfo.FileName);
 		final String updateUrl = getPrefs().getString(Param.ABMP_UPDATE_DOWNLOAD_URL, updateUrlParams);
 

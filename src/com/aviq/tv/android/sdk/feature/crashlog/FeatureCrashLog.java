@@ -45,7 +45,7 @@ import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.network.FeatureNetwork;
-import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
 
 /**
  * Handle unhandled exceptions.
@@ -140,6 +140,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		require(FeatureName.Scheduler.INTERNET);
 		require(FeatureName.Component.EASTER_EGG);
 		require(FeatureName.Scheduler.EVENT_COLLECTOR);
+		require(FeatureName.Component.DEVICE);
 	}
 
 	@Override
@@ -284,12 +285,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 			errorReporter.putCustomData(Key.EVENT, prepareEventObject());
 		}
 
-		String boxId = "00:00:00:00:00:00";
-		FeatureRegister featureRegister = (FeatureRegister) Environment.getInstance().getFeatureComponent(FeatureName.Component.REGISTER);
-		if (featureRegister != null)
-		{
-			boxId = featureRegister.getBoxId();
-		}
+		String boxId = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
 		errorReporter.putCustomData("BOX_ID", boxId);
 		errorReporter.putCustomData("BRAND", getBrand());
 		errorReporter.putCustomData("CUSTOMER", getCustomer());
@@ -318,14 +314,7 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		JSONObject device = new JSONObject();
 		try
 		{
-
-			String boxId = "00:00:00:00:00:00";
-			FeatureRegister featureRegister = (FeatureRegister) Environment.getInstance().getFeatureComponent(FeatureName.Component.REGISTER);
-			if (featureRegister != null)
-			{
-				boxId = featureRegister.getBoxId();
-			}
-
+			String boxId = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
 			device.accumulate(Key.MAC, boxId);
 
 			String localIP = FeatureNetwork.getLocalIP();
