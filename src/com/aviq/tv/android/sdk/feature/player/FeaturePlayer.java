@@ -11,7 +11,7 @@
 package com.aviq.tv.android.sdk.feature.player;
 
 import android.os.Bundle;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 import android.view.SurfaceView;
 import android.widget.MediaController;
 import android.widget.VideoView;
@@ -24,6 +24,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.player.AndroidPlayer;
 import com.aviq.tv.android.sdk.player.BasePlayer;
@@ -32,6 +33,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Component feature providing player
  */
+@Author("alek")
 public class FeaturePlayer extends FeatureComponent implements EventReceiver, AndroidPlayer.OnPlayerStatusListener
 {
 	public static final String TAG = FeaturePlayer.class.getSimpleName();
@@ -61,7 +63,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		EXTRA
 	}
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * Start playing timeout in seconds

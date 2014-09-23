@@ -18,7 +18,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.acra.ACRA;
 import org.xml.sax.SAXException;
 
 import android.app.Activity;
@@ -31,7 +30,6 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v4.util.LruCache;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.KeyEvent;
 
 import com.android.volley.RequestQueue;
@@ -40,6 +38,7 @@ import com.android.volley.toolbox.ImageLoader.ImageCache;
 import com.android.volley.toolbox.Volley;
 import com.aviq.tv.android.sdk.Version;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureManager;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -50,7 +49,6 @@ import com.aviq.tv.android.sdk.core.feature.IFeature.OnFeatureInitialized;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.core.state.StateManager;
-import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 
 /**
@@ -65,8 +63,7 @@ public class Environment extends Activity
 	public static final int ON_FEATURE_INIT_ERROR = EventMessenger.ID("ON_FEATURE_INIT_ERROR");
 	public static final int ON_RESUME = EventMessenger.ID("ON_RESUME");
 	public static final int ON_PAUSE = EventMessenger.ID("ON_PAUSE");
-	public static final String EXTRA_ERROR_CODE = "EXTRA_ERROR_CODE";
-	public static final String EXTRA_FEATURE_NAME = "EXTRA_FEATURE_NAME";
+	// FIXME: Convert EXTRA_KEY* to enum ExtraKey
 	public static final String EXTRA_KEY = "KEY";
 	public static final String EXTRA_KEYCODE = "KEYCODE";
 	public static final String EXTRA_KEYCONSUMED = "KEYCONSUMED";
@@ -75,7 +72,12 @@ public class Environment extends Activity
 	private static final String ECLIPSE_XML_RESOURCE = "eclipse";
 	private static final String RELEASE_XML_RESOURCE = "release";
 
-	public enum Param
+	public enum ExtraInitError
+	{
+		ERROR_CODE, ERROR_DATA, FEATURE_NAME, FEATURE_CLASS
+	}
+
+	public static enum Param
 	{
 		/**
 		 * whether we are in release build
@@ -126,7 +128,7 @@ public class Environment extends Activity
 	private OnResultReceived _onFeaturesReceived = new OnResultReceived()
 	{
 		@Override
-		public void onReceiveResult(int resultCode, Bundle resultData)
+		public void onReceiveResult(FeatureError error)
 		{
 			try
 			{
@@ -160,27 +162,16 @@ public class Environment extends Activity
 				_featureManager.initialize(new OnFeatureInitialized()
 				{
 					@Override
-					public void onInitialized(IFeature feature, int resultCode)
+					public void onInitialized(FeatureError error)
 					{
-						if (resultCode != ResultCode.OK)
+						if (error.isError())
 						{
 							Bundle bundle = new Bundle();
-							bundle.putInt(EXTRA_ERROR_CODE, resultCode);
-							bundle.putString(EXTRA_FEATURE_NAME, feature.getName());
+							bundle.putInt(ExtraInitError.ERROR_CODE.name(), error.getErrorCode());
+							bundle.putBundle(ExtraInitError.ERROR_DATA.name(), error.getBundle());
+							bundle.putString(ExtraInitError.FEATURE_NAME.name(), error.getFeature().getName());
+							bundle.putString(ExtraInitError.FEATURE_CLASS.name(), error.getFeature().getClass().getName());
 							_eventMessenger.trigger(ON_FEATURE_INIT_ERROR, bundle);
-
-							Exception exception = new Exception(FeatureCrashLog.EXCEPTION_TAG
-							        + " Error during initializating feature: [" + feature.getName()
-							        + "]. Result code: [" + resultCode + "]");
-							Log.e(TAG, exception.getMessage());
-							try
-							{
-								ACRA.getErrorReporter().handleSilentException(exception);
-							}
-							catch (Exception e)
-							{
-								Log.e(TAG, e.getMessage(), e);
-							}
 						}
 						else
 						{
@@ -247,13 +238,12 @@ public class Environment extends Activity
 		super.onCreate(savedInstanceState);
 		if (_isCreated)
 		{
-			suicide();
+			finish();
 			throw new RuntimeException("This process has already started!");
 		}
 		_isCreated = true;
 
 		Log.i(TAG, ".onCreate");
-		Thread.currentThread().setUncaughtExceptionHandler(new AppUncaughtExceptionHandler());
 
 		try
 		{
@@ -263,10 +253,10 @@ public class Environment extends Activity
 			int appDebugXmlId = getResources().getIdentifier(ECLIPSE_XML_RESOURCE, "raw", getPackageName());
 			if (appDebugXmlId != 0)
 			{
-				String warnMsg = "Using debug xml definition - " + ECLIPSE_XML_RESOURCE;
-				Log.w(TAG, String.format(String.format("%%0%dd", warnMsg.length()), 0).replace("0", "-"));
-				Log.w(TAG, warnMsg);
-				Log.w(TAG, String.format(String.format("%%0%dd", warnMsg.length()), 0).replace("0", "-"));
+				String infoMsg = "Using debug xml definition - " + ECLIPSE_XML_RESOURCE;
+				Log.i(TAG, String.format(String.format("%%0%dd", infoMsg.length()), 0).replace("0", "-"));
+				Log.i(TAG, infoMsg);
+				Log.i(TAG, String.format(String.format("%%0%dd", infoMsg.length()), 0).replace("0", "-"));
 
 				// initialize environment by debug app's raw/eclipse.xml
 				Log.i(TAG, "Parsing " + ECLIPSE_XML_RESOURCE + " xml definition");
@@ -282,7 +272,7 @@ public class Environment extends Activity
 				_featureManager.addFeaturesFromXml(inputStream, new OnResultReceived()
 				{
 					@Override
-					public void onReceiveResult(int resultCode, Bundle resultData)
+					public void onReceiveResult(FeatureError error)
 					{
 						// initialize environment by app's raw/release.xml
 						Log.i(TAG, "Parsing " + RELEASE_XML_RESOURCE + " xml definition");
@@ -349,12 +339,6 @@ public class Environment extends Activity
 	public boolean isPause()
 	{
 		return _isPause;
-	}
-
-	public void suicide()
-	{
-		Log.i(TAG, ".suicide: Comitting suicide...");
-		finish();
 	}
 
 	@Override
@@ -744,15 +728,4 @@ public class Environment extends Activity
 			// put(url, bitmap);
 		}
 	}
-
-	public static class AppUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler
-	{
-		@Override
-		public void uncaughtException(Thread thread, Throwable ex)
-		{
-			Log.e(TAG, "Got an uncaught exception: " + ex.toString());
-			Log.e(TAG, ex.getMessage(), ex);
-		}
-	}
-
 }

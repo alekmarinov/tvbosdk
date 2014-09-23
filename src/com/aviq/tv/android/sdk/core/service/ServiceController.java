@@ -17,7 +17,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ResultReceiver;
-import android.util.Log;
+
+import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 
 /**
  * Controls service starting and result handling
@@ -34,7 +36,7 @@ public class ServiceController
 	 */
 	public interface OnResultReceived
 	{
-		void onReceiveResult(int resultCode, Bundle resultData);
+		void onReceiveResult(FeatureError error);
 	}
 
 	/**
@@ -145,7 +147,7 @@ public class ServiceController
 		{
 			if (_then != null)
 			{
-				_then.onReceiveResult(resultCode, resultData);
+				_then.onReceiveResult(new FeatureError(null, resultCode, resultData));
 			}
 		}
 	}

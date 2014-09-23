@@ -24,9 +24,11 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
+import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
@@ -35,12 +37,13 @@ import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
  * Feature registering box to ABMP
  */
 @SuppressLint("DefaultLocale")
-@PriorityFeature
+@Priority
+@Author("alek")
 public class FeatureRegister extends FeatureComponent
 {
 	private static final String TAG = FeatureRegister.class.getSimpleName();
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * Box ID
@@ -109,9 +112,9 @@ public class FeatureRegister extends FeatureComponent
 				_feature.Scheduler.INTERNET.getUrlContent(registrationUrl, new OnResultReceived()
 				{
 					@Override
-					public void onReceiveResult(int resultCode, Bundle resultData)
+					public void onReceiveResult(FeatureError error)
 					{
-						Log.d(TAG, ".initialize:onReceiveResult: resultCode = " + resultCode);
+						Log.d(TAG, ".initialize:onReceiveResult: " + error);
 					}
 				});
 			}

@@ -29,6 +29,8 @@ import com.android.volley.toolbox.Volley;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
+import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 
 /**
@@ -148,58 +150,50 @@ public class ClientZAPI
 		public void onResponse(String response)
 		{
 			Log.i(TAG, ".onResponse: response = " + response);
-			_onResultReceived.onReceiveResult(ResultCode.OK, new Bundle());
+			_onResultReceived.onReceiveResult(FeatureError.OK);
 		}
 
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			Log.i(TAG, ".onErrorResponse: error = " + error);
-			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
-			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error  " + statusCode + ": " + error);
-			Bundle bundle = new Bundle();
-			bundle.putString(EXTRA_ERROR, error.toString());
-			_onResultReceived.onReceiveResult(statusCode, bundle);
+			Log.i(TAG, ".onErrorResponse: " + error);
+			_onResultReceived.onReceiveResult(new FeatureError(Environment.getInstance().getFeatureScheduler(
+			        FeatureName.Scheduler.EPG), error));
 		}
 	}
 
 	private class ResponseCallbackWatch extends ResponseCallback
 	{
 		ResponseCallbackWatch(OnResultReceived onResultReceived)
-        {
-	        super(onResultReceived);
-        }
+		{
+			super(onResultReceived);
+		}
 
 		@Override
 		public void onResponse(String response)
 		{
-			Log.i(TAG, ".onResponse: response = " + response);
+			Log.i(TAG, ".onResponse: " + response);
 			try
-            {
+			{
 				JSONObject json = new JSONObject(response);
 				JSONObject stream = json.getJSONObject("stream");
 				Bundle bundle = new Bundle();
 				bundle.putString(EXTRA_URL, stream.getString("url"));
 				bundle.putString(EXTRA_STOP_URL, stream.getString("stop_url"));
-				_onResultReceived.onReceiveResult(ResultCode.OK, bundle);
-            }
-            catch (JSONException e)
-            {
-            	Log.e(TAG, e.getMessage(), e);
-            }
+				_onResultReceived.onReceiveResult(new FeatureError(null, ResultCode.OK, bundle));
+			}
+			catch (JSONException e)
+			{
+				Log.e(TAG, e.getMessage(), e);
+			}
 		}
 
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			Log.i(TAG, ".onErrorResponse: error = " + error);
-			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
-			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Watch Error  " + statusCode + ": " + error);
-			Bundle bundle = new Bundle();
-			bundle.putString(EXTRA_ERROR, error.toString());
-			_onResultReceived.onReceiveResult(statusCode, bundle);
+			Log.i(TAG, ".onErrorResponse: " + error);
+			_onResultReceived.onReceiveResult(new FeatureError(Environment.getInstance().getFeatureScheduler(
+			        FeatureName.Scheduler.EPG), error));
 		}
 	}
 }

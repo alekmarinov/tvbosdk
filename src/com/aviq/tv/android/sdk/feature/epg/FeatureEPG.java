@@ -33,7 +33,6 @@ import org.json.JSONObject;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.os.Bundle;
-import android.util.Log;
 
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
@@ -48,12 +47,15 @@ import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.system.FeatureTimeZone;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
@@ -64,6 +66,7 @@ import com.google.gson.JsonSyntaxException;
 /**
  * Component feature providing EPG data
  */
+@Author("alek")
 public abstract class FeatureEPG extends FeatureScheduler
 {
 	public static final String TAG = FeatureEPG.class.getSimpleName();
@@ -75,7 +78,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		rayv, wilmaa, bulsat, zattoo
 	}
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * The main url to the EPG server
@@ -127,7 +130,20 @@ public abstract class FeatureEPG extends FeatureScheduler
 		 */
 		MAX_CHANNELS(0),
 
+		/**
+		 * Enable/disable local epg cache
+		 */
+		USE_LOCAL_CACHE(true),
+
+		/**
+		 * epg cache file
+		 */
 		EPG_CACHE_PATH("cache" + File.separator + "epg.data"),
+
+		/**
+		 * epg cache expire time
+		 */
+		EPG_CACHE_EXPIRE(6 * 60 * 60 * 1000),
 
 		/**
 		 * The number of days in past the program is allowed to be imported by
@@ -139,12 +155,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		 * The number of days in future the program is allowed to be imported by
 		 * EPG
 		 */
-		PROGRAM_RANGE_MAX_DAYS(7),
-
-		/**
-		 * Enable/disable local epg cache
-		 */
-		USE_LOCAL_CACHE(true);
+		PROGRAM_RANGE_MAX_DAYS(7);
 
 		Param(boolean value)
 		{
@@ -175,9 +186,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 	 */
 	public interface IOnProgramDetails
 	{
-		void onProgramDetails(Program program);
-
-		void onError(int resultCode);
+		void onProgramDetails(FeatureError error, Program program);
 	}
 
 	private RequestQueue _httpQueue;
@@ -289,7 +298,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 	{
 		if (program.hasDetails())
 		{
-			onProgramDetails.onProgramDetails(program);
+			onProgramDetails.onProgramDetails(FeatureError.OK, program);
 			return;
 		}
 
@@ -442,7 +451,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
 			Log.e(TAG, "Error retrieving channels with code " + statusCode + ": " + error);
-			_onFeatureInitialized.onInitialized(FeatureEPG.this, statusCode);
+			_onFeatureInitialized.onInitialized(new FeatureError(FeatureEPG.this, statusCode, error));
 		}
 	}
 
@@ -532,17 +541,14 @@ public abstract class FeatureEPG extends FeatureScheduler
 		public void onResponse(JSONObject response)
 		{
 			_program.setDetails(response);
-			_onProgramDetails.onProgramDetails(_program);
+			_onProgramDetails.onProgramDetails(FeatureError.OK, _program);
 			_programDetailsRequest = null;
 		}
 
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			int resultCode = ResultCode.GENERAL_FAILURE;
-			if (error.networkResponse != null)
-				resultCode = error.networkResponse.statusCode;
-			_onProgramDetails.onError(resultCode);
+			_onProgramDetails.onProgramDetails(new FeatureError(error), null);
 			_programDetailsRequest = null;
 		}
 	}
@@ -593,8 +599,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 				                + ddf.format(_maxDate.getTime()));
 				resetMinMaxDates();
 			}
-			_onFeatureInitialized.onInitialized(FeatureEPG.this, ResultCode.OK);
-
+			super.initialize(_onFeatureInitialized);
 		}
 		else
 		{
@@ -793,15 +798,29 @@ public abstract class FeatureEPG extends FeatureScheduler
 			return;
 		}
 
+		// Save time of serialization to user settings
 		Prefs userPrefs = Environment.getInstance().getUserPrefs();
-
-		// Save time of serialization to user settingss
 		userPrefs.put(UserParam.EPG_CACHE_CREATED_ON, System.currentTimeMillis());
 	}
 
 	private boolean uncacheEpgData()
 	{
 		Log.i(TAG, ".uncacheEpgData");
+
+		Prefs userPrefs = Environment.getInstance().getUserPrefs();
+		if (userPrefs.has(UserParam.EPG_CACHE_CREATED_ON))
+		{
+			long cacheCreatedOn = userPrefs.getLong(UserParam.EPG_CACHE_CREATED_ON);
+			int cacheTimeElapsed = (int) (System.currentTimeMillis() - cacheCreatedOn);
+			int epgCacheExpire = getPrefs().getInt(Param.EPG_CACHE_EXPIRE);
+			Log.i(TAG, "EPG cache time elapsed " + (cacheTimeElapsed / 1000) + "s, EPG_CACHE_EXPIRE = " + (epgCacheExpire / 1000) + "s");
+			if (cacheTimeElapsed > epgCacheExpire)
+			{
+				Log.i(TAG, "EPG cache expired");
+				return false;
+			}
+		}
+
 		return deserializeData();
 	}
 

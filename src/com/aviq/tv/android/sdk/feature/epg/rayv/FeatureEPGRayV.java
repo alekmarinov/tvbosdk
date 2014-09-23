@@ -11,7 +11,7 @@
 package com.aviq.tv.android.sdk.feature.epg.rayv;
 
 import android.os.Bundle;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
@@ -32,7 +32,7 @@ public class FeatureEPGRayV extends FeatureEPG
 
 	private int _streamPort = DEFAULT_STREAM_PORT;
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * RayV streamer initialization

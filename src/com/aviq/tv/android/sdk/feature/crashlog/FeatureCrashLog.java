@@ -3,131 +3,94 @@
  *
  * Project:     AVIQTVSDK
  * Filename:    FeatureCrashLog.java
- * Author:      zhelyazko
- * Date:        1 Apr 2014
- * Description: Handle unhandled exceptions.
+ * Author:      alek
+ * Date:        18 Sep 2014
+ * Description: Feature handling application errors and crashes
  */
 
 package com.aviq.tv.android.sdk.feature.crashlog;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Random;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.acra.ACRA;
-import org.acra.ACRAConfiguration;
-import org.acra.ACRAConfigurationException;
-import org.acra.ErrorReporter;
-import org.acra.ReportingInteractionMode;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import android.app.Application;
 import android.os.Bundle;
-import android.widget.Toast;
+import android.text.format.Time;
+import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.EventReceiver;
-import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
+import com.aviq.tv.android.sdk.core.feature.FeatureManager;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
+import com.aviq.tv.android.sdk.core.feature.IFeature;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
+import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
+import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
+import com.aviq.tv.android.sdk.feature.eventcollector.FeatureEventCollector;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
-import com.aviq.tv.android.sdk.feature.network.FeatureNetwork;
+import com.aviq.tv.android.sdk.feature.internet.UploadService;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
+import com.aviq.tv.android.sdk.utils.Files;
 
 /**
- * Handle unhandled exceptions.
+ * Feature handling application errors and crashes
  */
-@PriorityFeature
-public class FeatureCrashLog extends FeatureComponent implements EventReceiver
+@Author("alek")
+@Priority
+public class FeatureCrashLog extends FeatureComponent implements Thread.UncaughtExceptionHandler
 {
 	public static final String TAG = FeatureCrashLog.class.getSimpleName();
+	public static final int ON_CRASH_ERROR = EventMessenger.ID("ON_CRASH_ERROR");
 
-	public static final int ON_RUNTIME_EXCEPTION = EventMessenger.ID("ON_RUNTIME_EXCEPTION");
-	public static final int ON_APP_STARTED = EventMessenger.ID("ON_APP_STARTED");
+	public static enum Extras
+	{
+		SEVERITY, TAG, MESSAGE, LOGCAT_URL, TRACEBACK, FILENAME, METHOD, LINE_NUMBER, FEATURE, PARAMS, AUTHOR
+	}
 
-	public static final String EXTRA_RUNTIME_EXCEPTION_MESSAGE = "EXTRA_RUNTIME_EXCEPTION_MESSAGE";
-	public static final String EXTRA_RUNTIME_EXCEPTION_IS_SILENT = "EXTRA_RUNTIME_EXCEPTION_IS_SILENT";
+	public FeatureCrashLog() throws FeatureNotFoundException
+	{
+		require(FeatureName.Component.EASTER_EGG);
+		require(FeatureName.Component.DEVICE);
+	}
 
-	/**
-	 * Add this to any calls to ACRA.handleSilentException when sending logcat
-	 * to the server.
-	 */
-	public static final String EXCEPTION_TAG = "[SILENT-EXCEPTION-ID]";
-	public static final String NO_VALUE = "n/a";
-
-	public static enum Severity
+	public enum Severity
 	{
 		INFO, ALERT, ERROR, FATAL;
 	}
 
-	public static interface Key
+	public static enum Param
 	{
-		String SEVERITY = "severity";
-		String REASON = "reason";
-		String DEVICE = "device";
-		String EVENT = "event";
-		String MAC = "mac";
-		String IP = "ip";
-		String SW = "sw";
-		String VERSION = "version";
-		String PUBLIC_IP = "public_ip";
-		String KIND = "kind";
-		String CUSTOMER = "customer";
-		String BRAND = "brand";
-		String TIMESTAMP = "timestamp";
-		String SOURCE = "source";
-		String ITEM = "item";
-	}
+		/** Crash Log URL */
+		CRASHLOG_SERVER_URL("https://services.aviq.com:30227/upload/logs/"),
 
-	public enum Param
-	{
-		/** Server location where crashlogs are uploaded. */
-		REMOTE_SERVER("https://services.aviq.com:30227/upload/logs/"),
+		/** Username for report URL */
+		CRASHLOG_SERVER_USERNAME(""),
 
-		/** Username for remote server */
-		REMOTE_SERVER_USERNAME(""),
+		/** Password for report URL */
+		CRASHLOG_SERVER_PASSWORD(""),
 
-		/** Password for remote server */
-		REMOTE_SERVER_PASSWORD(""),
+		/** Logcat name template */
+		LOGCAT_FILENAME_TEMPLATE("${BUILD}-${CUSTOMER}-${BRAND}-${MAC}-${DATETIME}-${RANDOM}.logcat"),
 
-		/** Socket timeout in milliseconds */
-		SOCKET_TIMEOUT_MILLIS(20000),
+		/** Path to the CA certificate relative to the assets folder */
+		CRASHLOG_SERVER_CA_CERT_PATH(""),
 
-		CRASHLOG_CUSTOMER(""),
-		CRASHLOG_BRAND(""),
-
-		COLD_BOOT_FILE("/cache/update/coldboot.txt"),
-
-		/**
-		 * This file (in the "files" directory) contains the following data:
-		 * 0 = app started after cold boot
-		 * 1 = app started after standby's suicide
-		 * 2 = app started after ACRA handled some uncaught exception
-		 */
-		APP_START_REASON_FILE("app_start_reason.txt");
-
-		/*
-		 * TODO
-		 * config.setLogcatArguments(new String[] {"-t", "1000", "-v", "time"});
-		 */
-
-		Param(int value)
-		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Component.CRASHLOG).put(name(), value);
-		}
+		/** Directory where to store logcat before upload */
+		LOGCAT_DIRECTORY("logcat");
 
 		Param(String value)
 		{
@@ -135,31 +98,118 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		}
 	}
 
-	public FeatureCrashLog() throws FeatureNotFoundException
-	{
-		require(FeatureName.Scheduler.INTERNET);
-		require(FeatureName.Component.EASTER_EGG);
-		require(FeatureName.Scheduler.EVENT_COLLECTOR);
-		require(FeatureName.Component.DEVICE);
-	}
+	private String _logcatDir;
 
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		initAcra();
+		Thread.currentThread().setUncaughtExceptionHandler(this);
 		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
 
-		/**
-		 * The purpose of this is to be able to catch requests for crash events
-		 * triggered from outside the app.
-		 */
-		getEventMessenger().register(this, ON_RUNTIME_EXCEPTION);
+		Environment.getInstance().getEventMessenger().register(new EventReceiver()
+		{
+			@Override
+			public void onEvent(int msgId, Bundle bundle)
+			{
+				String featureName = bundle.getString(Environment.ExtraInitError.FEATURE_NAME.name());
+				String featureClassName = bundle.getString(Environment.ExtraInitError.FEATURE_CLASS.name());
+				Class<?> featureClass;
+				IFeature feature = null;
+                try
+                {
+	                featureClass = Class.forName(featureClassName);
+					feature = Environment.getInstance().getFeature(featureClass);
+                }
+                catch (ClassNotFoundException e)
+                {
+                	Log.e(TAG, e.getMessage(), e);
+                }
+				int errCode = bundle.getInt(Environment.ExtraInitError.ERROR_CODE.name());
+				Bundle errData = bundle.getBundle(Environment.ExtraInitError.ERROR_DATA.name());
+				FeatureError error = new FeatureError(feature, errCode, errData);
+				fatal(featureName, "feature init failed: " + error, error);
+			}
+		}, Environment.ON_FEATURE_INIT_ERROR);
 
-		// Detect the reason for the app start
-		sendAppStartEvent();
+		FeatureDevice.StartReason startReason = _feature.Component.DEVICE.getStartReason();
 
-		super.initialize(onFeatureInitialized);
+		// initialize logcat file directory
+		File filesDir = Environment.getInstance().getFilesDir();
+		_logcatDir = filesDir.getAbsolutePath() + File.separator + getPrefs().getString(Param.LOGCAT_DIRECTORY);
+		filesDir = new File(_logcatDir);
+		if (!filesDir.exists())
+			filesDir.mkdirs();
+
+		// delete previously stored logcat files
+		deleteLogcats(_logcatDir);
+
+		if (!FeatureDevice.StartReason.NORMAL.equals(startReason))
+		{
+			if (FeatureDevice.StartReason.SUICIDE.equals(startReason))
+			{
+				alert(TAG, "Suicide restart: " + _feature.Component.DEVICE.getSuicideReason(), null);
+				super.initialize(onFeatureInitialized);
+			}
+			else
+			{
+				new Thread(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						String reason = null;
+						Bundle bundleEx = new Bundle();
+						String logcatFileName = null;
+						try
+						{
+							// saves logcat and search logcat for signal
+							logcatFileName = newLogcatName();
+							String logcatFilePath = _logcatDir + File.separator + logcatFileName;
+							reason = saveLogcatAndDetectSignalReason(logcatFilePath);
+
+							// upload logcat on server
+							String logcatUrl = uploadLogcatFile(logcatFilePath);
+							bundleEx.putString(Extras.LOGCAT_URL.name(), logcatUrl);
+						}
+						catch (IOException e)
+						{
+							Log.e(TAG, e.getMessage(), e);
+						}
+						if (reason == null)
+							reason = "Restart without reason. Check logcat " + logcatFileName;
+
+						fatal(TAG, reason, null, bundleEx);
+
+						Environment.getInstance().runOnUiThread(new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								FeatureCrashLog.super.initialize(onFeatureInitialized);
+							}
+						});
+					}
+				}).start();
+			}
+		}
+		else
+		{
+			super.initialize(onFeatureInitialized);
+		}
+	}
+
+	@Override
+	public void onEvent(int msgId, Bundle bundle)
+	{
+		if (FeatureEasterEgg.ON_KEY_SEQUENCE == msgId)
+		{
+			String keySeq = bundle.getString(FeatureEasterEgg.EXTRA_KEY_SEQUENCE);
+			if (FeatureEasterEgg.KEY_SEQ_LOG.equals(keySeq))
+			{
+				throw new RuntimeException("Test Fatal Exception");
+			}
+		}
 	}
 
 	@Override
@@ -168,506 +218,359 @@ public class FeatureCrashLog extends FeatureComponent implements EventReceiver
 		return FeatureName.Component.CRASHLOG;
 	}
 
+	/**
+	 * Sends logcat to server and returns logcat URL on the server where it can
+	 * be located if the sending succeeds
+	 *
+	 * @throws IOException
+	 */
+	public void sendLogcat() throws IOException
+	{
+		// saves logcat and search logcat for signal
+		String logcatFileName = newLogcatName();
+		String logcatFilePath = _logcatDir + File.separator + logcatFileName;
+		saveLogcat(logcatFilePath);
+		String logcatUrl = uploadLogcatFile(logcatFilePath);
+		Bundle bundle = new Bundle();
+		bundle.putString(Extras.LOGCAT_URL.name(), logcatUrl);
+		log(Severity.INFO, TAG, "Event with logcat attached", null, bundle);
+	}
+
+	/**
+	 * Log info message
+	 *
+	 * @param tag Used to identify the source of a log message
+	 * @param message The message you would like logged.
+	 * @param ex An exception to log
+	 */
+	public void info(String tag, String message, Throwable ex)
+	{
+		log(Severity.INFO, tag, message, ex);
+	}
+
+	/**
+	 * Log alert message
+	 *
+	 * @param tag Used to identify the source of a log message
+	 * @param message The message you would like logged.
+	 * @param ex An exception to log
+	 */
+	public void alert(String tag, String message, Throwable ex)
+	{
+		log(Severity.ALERT, tag, message, ex);
+	}
+
+	/**
+	 * Log error message
+	 *
+	 * @param tag Used to identify the source of a log message
+	 * @param message The message you would like logged.
+	 * @param ex An exception to log
+	 */
+	public void error(String tag, String message, Throwable ex)
+	{
+		log(Severity.ERROR, tag, message, ex);
+	}
+
+	/**
+	 * Log fatal error
+	 *
+	 * @param tag Used to identify the source of a log message
+	 * @param message The message you would like logged.
+	 * @param ex An exception to log
+	 */
+	public void fatal(String tag, String message, Throwable ex)
+	{
+		log(Severity.FATAL, tag, message, ex);
+	}
+
+	/**
+	 * Log fatal error
+	 *
+	 * @param tag Used to identify the source of a log message
+	 * @param message The message you would like logged.
+	 * @param ex An exception to log
+	 * @param extra Additional data related to the fatal error
+	 */
+	public void fatal(String tag, String message, Throwable ex, Bundle extra)
+	{
+		log(Severity.FATAL, tag, message, ex, extra);
+	}
+
 	@Override
-	public void onEvent(int msgId, Bundle bundle)
+	public void uncaughtException(Thread thread, final Throwable ex)
 	{
-		if (msgId == FeatureInternet.ON_CONNECTED)
-		{
-			String publicIP = bundle.getString(FeatureInternet.ResultExtras.PUBLIC_IP.name()); //  _feature.Scheduler.INTERNET.getPublicIP();
-			if (publicIP != null)
-			{
-				// Got the public IP, no need to check for it anymore
-				_feature.Scheduler.INTERNET.getEventMessenger().unregister(this, FeatureInternet.ON_CONNECTED);
-				ACRA.getErrorReporter().putCustomData("PUBLIC_IP", publicIP);
-
-				// Ensure this is in the data as well
-				String localIP = FeatureNetwork.getLocalIP();
-				if (localIP == null || localIP.trim().length() == 0)
-					localIP = NO_VALUE;
-				ACRA.getErrorReporter().putCustomData("LOCAL_IP", localIP);
-
-				// Only reset it if already there
-				if (ACRA.getErrorReporter().getCustomData(Key.DEVICE) != null)
-					ACRA.getErrorReporter().putCustomData(Key.DEVICE, prepareDeviceObject());
-			}
-		}
-		else if (FeatureEasterEgg.ON_KEY_SEQUENCE == msgId)
-		{
-			String keySeq = bundle.getString(FeatureEasterEgg.EXTRA_KEY_SEQUENCE);
-			if (FeatureEasterEgg.KEY_SEQ_LOG.equals(keySeq))
-			{
-				ACRA.getErrorReporter().handleSilentException(
-				        new Exception(EXCEPTION_TAG + " Sending logcat from user activity."));
-
-				Toast.makeText(Environment.getInstance().getApplicationContext(),
-				        "Log has been captured and sent for processing. Thank you!", Toast.LENGTH_LONG).show();
-			}
-		}
-		else if (ON_RUNTIME_EXCEPTION == msgId)
-		{
-			String msg = "User-triggered runtime error.";
-			boolean isSilent = false;
-
-			if (bundle != null)
-			{
-				if (bundle.containsKey(EXTRA_RUNTIME_EXCEPTION_MESSAGE))
-					msg = bundle.getString(EXTRA_RUNTIME_EXCEPTION_MESSAGE);
-
-				if (bundle.containsKey(EXTRA_RUNTIME_EXCEPTION_IS_SILENT))
-					isSilent = bundle.getBoolean(EXTRA_RUNTIME_EXCEPTION_IS_SILENT);
-			}
-
-			if (isSilent)
-			{
-				ACRA.getErrorReporter().handleSilentException(new RuntimeException(msg));
-			}
-			else
-			{
-				throw new RuntimeException(msg);
-			}
-		}
+		fatal(TAG, "uncaught exception: " + ex.getMessage(), ex);
 	}
 
-	private void initAcra()
+	private void log(Severity severity, String tag, String message, Throwable ex)
 	{
-		Log.i(TAG, ".initAcra");
+		log(severity, tag, message, ex, null);
+	}
 
-		Environment env = Environment.getInstance();
-		Application app = env.getApplication();
+	private void log(Severity severity, String tag, String message, Throwable ex, Bundle extra)
+	{
+		switch (severity)
+		{
+			case INFO:
+				Log.i(tag, message, ex);
+			break;
+			case ALERT:
+				Log.e(tag, message, ex);
+			break;
+			case FATAL:
+			case ERROR:
+				Log.e(tag, message, ex);
+			break;
+		}
 
-		String serverUri = getPrefs().getString(Param.REMOTE_SERVER);
-		String username = getPrefs().getString(Param.REMOTE_SERVER_USERNAME);
-		String password = getPrefs().getString(Param.REMOTE_SERVER_PASSWORD);
+		Bundle bundle = new Bundle();
+		if (extra != null)
+			bundle.putAll(extra);
+		bundle.putString(Extras.SEVERITY.name(), severity.name());
+		bundle.putString(Extras.TAG.name(), tag);
+		bundle.putString(Extras.MESSAGE.name(), tag + ": " + message);
 
-		ACRAConfiguration config = ACRA.getNewDefaultConfig(app);
-		config.setFormUri(serverUri);
-		config.setFormUriBasicAuthLogin(username);
-		config.setFormUriBasicAuthPassword(password);
-		config.setDisableSSLCertValidation(true);
-		config.setHttpMethod(org.acra.sender.HttpSender.Method.PUT);
-		// config.setReportType(org.acra.sender.HttpSender.Type.JSON);
-		config.setReportType(org.acra.sender.HttpSender.Type.FORM);
-		config.setSocketTimeout(20000);
-		config.setLogcatArguments(new String[]
-		{ "-t", "6000", "-v", "time" });
-		config.setApplicationLogFile(null);
-		config.setApplicationLogFileLines(0);
-		config.setAdditionalSharedPreferences(null);
+		if (ex != null)
+		{
+			bundle.putString(Extras.TRACEBACK.name(), android.util.Log.getStackTraceString(ex));
 
+			FeatureManager featureManager = Environment.getInstance().getFeatureManager();
+			StackTraceElement steLog = null;
+			for (StackTraceElement ste : ex.getStackTrace())
+			{
+				// log first point in exception stack
+				if (steLog == null)
+					steLog = ste;
+				String className = ste.getClassName();
+				try
+				{
+					Class<?> featureClass = Class.forName(className);
+					if (featureManager.isFeature(featureClass))
+					{
+						// got feature in exception back trace
+						IFeature feature = featureManager.getFeature(featureClass);
+						bundle.putString(Extras.FEATURE.name(), feature.getName());
+						Author author = featureClass.getAnnotation(Author.class);
+						if (author != null)
+						{
+							bundle.putString(Extras.AUTHOR.name(), author.value());
+						}
+						else
+						{
+							bundle.putString(Extras.AUTHOR.name(), "unknown");
+						}
+
+						bundle.putString(Extras.PARAMS.name(), collectFeatureParams(feature));
+						break;
+					}
+				}
+				catch (ClassNotFoundException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
+				catch (FeatureNotFoundException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
+			}
+			bundle.putString(Extras.FILENAME.name(), steLog.getFileName());
+			bundle.putString(Extras.METHOD.name(), steLog.getMethodName());
+			bundle.putInt(Extras.LINE_NUMBER.name(), steLog.getLineNumber());
+		}
+
+		if (Severity.FATAL.equals(severity))
+		{
+			bundle.putBoolean(FeatureEventCollector.OnTrackExtra.IMMEDIATE.name(), Boolean.TRUE);
+			getEventMessenger().triggerDirect(ON_CRASH_ERROR, bundle);
+		}
+		else
+			getEventMessenger().trigger(ON_CRASH_ERROR, bundle);
+	}
+
+	private String collectFeatureParams(IFeature feature)
+	{
+		StringBuffer sb = new StringBuffer();
 		try
 		{
-			config.setMode(ReportingInteractionMode.SILENT);
+			Prefs prefs = feature.getPrefs();
+			Class<?> paramClass = Class.forName(feature.getClass().getName() + "$Param");
+			boolean isFirst = true;
+			for (Object paramName : paramClass.getEnumConstants())
+			{
+				if (isFirst)
+					isFirst = false;
+				else
+					sb.append(',');
+				String paramValue = prefs.getString(paramName);
+				sb.append(paramName).append('=').append(paramValue);
+			}
 		}
-		catch (ACRAConfigurationException e)
+		catch (ClassNotFoundException e)
 		{
 			Log.e(TAG, e.getMessage(), e);
 		}
-		ACRA.setConfig(config);
-
-		ACRA.init(app);
-
-		// Set a custom sender; always right after ACRA.init().
-		// CrashLogJsonReportSender crashLogSender = new
-		// CrashLogJsonReportSender(app);
-		CrashLogTextReportSender crashLogSender = new CrashLogTextReportSender(app);
-		ACRA.getErrorReporter().setReportSender(crashLogSender);
-
-		// Add a new sender; keep the previous senders
-		// ACRA.getErrorReporter().addReportSender(yourSender);
-
-		ErrorReporter errorReporter = ACRA.getErrorReporter();
-
-		// Add custom report data
-
-		if (CrashLogJsonReportSender.class.equals(crashLogSender.getClass()))
-		{
-			errorReporter.putCustomData(Key.DEVICE, prepareDeviceObject());
-			errorReporter.putCustomData(Key.EVENT, prepareEventObject());
-		}
-
-		String boxId = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
-		errorReporter.putCustomData("BOX_ID", boxId);
-		errorReporter.putCustomData("BRAND", getBrand());
-		errorReporter.putCustomData("CUSTOMER", getCustomer());
-		errorReporter.putCustomData("SW_VERSION", Environment.getInstance().getBuildVersion());
-
-		// FIXME: Take from FeatureEthernet when implemented.
-		errorReporter.putCustomData("ETHERNET_MAC", boxId);
-
-		String localIP = FeatureNetwork.getLocalIP();
-		if (localIP == null || localIP.trim().length() == 0)
-			localIP = NO_VALUE;
-		errorReporter.putCustomData("LOCAL_IP", localIP);
-
-		String publicIP = _feature.Scheduler.INTERNET.getPublicIP();
-		if (publicIP == null || publicIP.trim().length() == 0)
-			publicIP = NO_VALUE;
-		errorReporter.putCustomData("PUBLIC_IP", publicIP);
-
-		// If the public IP is null, wait for Internet to show up and recheck
-		if (NO_VALUE.equals(publicIP))
-			_feature.Scheduler.INTERNET.getEventMessenger().register(this, FeatureInternet.ON_CONNECTED);
+		return sb.toString();
 	}
 
-	private String prepareDeviceObject()
+	private void deleteLogcats(String logcatsDir)
 	{
-		JSONObject device = new JSONObject();
-		try
+		Log.d(TAG, ".deleteLogcats: logcatsDir = " + logcatsDir);
+		String[] files = new File(logcatsDir).list();
+		if (files == null)
 		{
-			String boxId = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
-			device.accumulate(Key.MAC, boxId);
-
-			String localIP = FeatureNetwork.getLocalIP();
-			if (localIP == null || localIP.trim().length() == 0)
-				localIP = NO_VALUE;
-			device.accumulate(Key.IP, localIP);
-
-			String publicIP = _feature.Scheduler.INTERNET.getPublicIP();
-			if (publicIP == null || publicIP.trim().length() == 0)
-				publicIP = NO_VALUE;
-			device.accumulate(Key.PUBLIC_IP, publicIP);
-
-			JSONObject sw = new JSONObject();
-			sw.accumulate(Key.VERSION, Environment.getInstance().getBuildVersion());
-			sw.accumulate(Key.KIND, Environment.getInstance().getPrefs().getString(Environment.Param.RELEASE));
-			sw.accumulate(Key.CUSTOMER, getCustomer()); // _featureRegister.getBrand()
-			sw.accumulate(Key.BRAND, getBrand()); // _featureRegister.getBrand()
-
-			device.accumulate(Key.SW, sw);
+			Log.w(TAG, "Directory " + logcatsDir + " is missing");
+			return;
 		}
-		catch (JSONException e)
+		String expExt = Files.ext(getPrefs().getString(Param.LOGCAT_FILENAME_TEMPLATE));
+		for (String fileName : files)
 		{
-			Log.e(TAG, e.getMessage(), e);
+			if (expExt.equals(Files.ext(fileName)))
+			{
+				Log.i(TAG, "Deleting " + fileName + " in " + logcatsDir);
+				new File(logcatsDir, fileName).delete();
+			}
 		}
-		return device.toString();
 	}
 
-	private String prepareEventObject()
+	private String uploadLogcatFile(String logcatFilePath)
 	{
-		JSONObject event = new JSONObject();
-		try
+		String url = getPrefs().getString(Param.CRASHLOG_SERVER_URL);
+		final Bundle uploadParams = new Bundle();
+		uploadParams.putString(UploadService.Extras.URL.name(), url);
+		uploadParams.putString(UploadService.Extras.CA_CERT_PATH.name(),
+		        getPrefs().getString(Param.CRASHLOG_SERVER_CA_CERT_PATH));
+		uploadParams.putString(UploadService.Extras.USERNAME.name(),
+		        getPrefs().getString(Param.CRASHLOG_SERVER_USERNAME));
+		uploadParams.putString(UploadService.Extras.PASSWORD.name(),
+		        getPrefs().getString(Param.CRASHLOG_SERVER_PASSWORD));
+		uploadParams.putString(UploadService.Extras.LOCAL_FILE.name(), logcatFilePath);
+
+		final FeatureInternet featureInternet = (FeatureInternet) Environment.getInstance().getFeatureScheduler(
+		        FeatureName.Scheduler.INTERNET);
+		if (featureInternet != null)
 		{
-			event.accumulate(Key.TIMESTAMP, "{{TIMESTAMP}}");
-			event.accumulate(Key.SOURCE, "system");
-			event.accumulate(Key.ITEM, "crash");
-		}
-		catch (JSONException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-		}
-		return event.toString();
-	}
-
-	private String getCustomer()
-	{
-		return getPrefs().getString(Param.CRASHLOG_CUSTOMER);
-	}
-
-	private String getBrand()
-	{
-		return getPrefs().getString(Param.CRASHLOG_BRAND);
-	}
-
-	private void sendAppStartEvent()
-	{
-		Log.i(TAG, ".sendAppStartEvent");
-
-		boolean isColdBood = isColdBoot();
-		Log.i(TAG, "isColdBoot = " + isColdBood);
-
-		File f = new File(Environment.getInstance().getFilesDir(), getPrefs().getString(Param.APP_START_REASON_FILE));
-		if (isColdBood)
-		{
-			// Cold boot => OK, delete reason file
-			f.delete();
-
-			Bundle params = new Bundle();
-			params.putString(Key.REASON, AppRestartReasonType.COLDBOOT.getName());
-			params.putString(Key.SEVERITY, AppRestartReasonType.COLDBOOT.getSeverity());
-			getEventMessenger().trigger(ON_APP_STARTED, params);
+			featureInternet.getEventMessenger().register(new EventReceiver()
+			{
+				@Override
+				public void onEvent(int msgId, Bundle bundle)
+				{
+					final EventReceiver _this = this;
+					featureInternet.uploadFile(uploadParams, new OnResultReceived()
+					{
+						@Override
+						public void onReceiveResult(FeatureError result)
+						{
+							if (result.isError())
+								Log.e(TAG, ".uploadFile:onReceiveResult: " + result);
+							featureInternet.getEventMessenger().unregister(_this, FeatureInternet.ON_CONNECTED);
+						}
+					});
+				}
+			}, FeatureInternet.ON_CONNECTED);
 		}
 		else
 		{
-			// Reason file does not exists - unknown reason for app restart
-			if (!f.exists())
+			Log.w(TAG, "FeatureInternet is required to send logcats on server");
+		}
+		if (url.charAt(url.length() - 1) != '/')
+			url = url + '/';
+		return url + Files.baseName(logcatFilePath);
+	}
+
+	private Stack<String> saveLogcat(String logcatFileName) throws IOException
+	{
+		BufferedReader logcatReader = new BufferedReader(new InputStreamReader(
+		        _feature.Component.DEVICE.getLogcatInputStream()));
+		Stack<String> logcatStack = new Stack<String>();
+		String line;
+		FileOutputStream fileOut = new FileOutputStream(logcatFileName);
+		while ((line = logcatReader.readLine()) != null)
+		{
+			fileOut.write((line + "\n").getBytes());
+			logcatStack.push(line);
+		}
+		fileOut.close();
+		return logcatStack;
+	}
+
+	private String saveLogcatAndDetectSignalReason(String logcatFileName) throws IOException
+	{
+		// Pattern for Signal 7 = SIGBUS, Incorrect access to
+		// memory (data misalignment)
+		Pattern patternSignal7 = Pattern.compile(".*?Fatal signal 7.*?", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
+
+		// Pattern for Signal 11 = SIGSEGV, Incorrect access to
+		// memory (write to inaccessible memory)
+		Pattern patternSignal11 = Pattern
+		        .compile(".*?Fatal signal 11.*?", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
+
+		// Pattern for Signal 15 = SIGTERM, Termination request.
+		// JVM will exit normally.
+		// Sample: Process 5035 terminated by signal (15)
+		Pattern patternSignal15 = Pattern.compile(".*?Process\\s.*?\\sterminated by signal \\(15\\).*?",
+		        Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
+
+		// Pattern for Signal 9 = App kill
+		// Sample: Sending signal. PID: 6364 SIG: 9
+		Pattern patternSignal9 = Pattern.compile(".*?Sending signal\\.\\sPID:\\s.*?\\sSIG:\\s9.*?", Pattern.MULTILINE
+		        | Pattern.CASE_INSENSITIVE);
+
+		Stack<String> logcatStack = saveLogcat(logcatFileName);
+		while (!logcatStack.isEmpty())
+		{
+			String line = logcatStack.pop();
+
+			// Search for crashes resulting from signals 9 and 15
+			Matcher matcher = patternSignal9.matcher(line);
+			if (matcher.find())
 			{
-				new Thread(new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						// Pattern for Signal 7 = SIGBUS, Incorrect access to
-						// memory (data misalignment)
-						//
-						// Pattern for Signal 11 = SIGSEGV, Incorrect access to
-						// memory (write to inaccessible memory)
-
-						Pattern patternSignal711 = Pattern.compile(".*?Fatal signal (7|11).*?", Pattern.MULTILINE
-						        | Pattern.CASE_INSENSITIVE);
-
-						// Pattern for Signal 15 = SIGTERM, Termination request.
-						// JVM will exit normally.
-						// Sample: Process 5035 terminated by signal (15)
-
-						Pattern patternSignal15 = Pattern.compile(
-								".*?Process\\s.*?\\sterminated by signal \\(15\\).*?", Pattern.MULTILINE
-						                | Pattern.CASE_INSENSITIVE);
-
-						// Pattern for Signal 9 = App kill
-						// Sample: Sending signal. PID: 6364 SIG: 9
-						Pattern patternSignal9 = Pattern.compile(
-						        ".*?Sending signal\\.\\sPID:\\s.*?\\sSIG:\\s9.*?", Pattern.MULTILINE
-						                | Pattern.CASE_INSENSITIVE);
-
-						boolean foundMatch = false;
-
-						List<String> logcat = readLogcat();
-						for (int i = logcat.size() - 1; i > -1; i--)
-						{
-							String line = logcat.get(i);
-
-							// Search for crashes resulting from signals 9 and 15
-							Matcher matcher = patternSignal9.matcher(line);
-							if (matcher.find())
-							{
-								Bundle params = new Bundle();
-								params.putString(Key.REASON,
-								        AppRestartReasonType.APP_KILLED.getName());
-								params.putString(Key.SEVERITY,
-								        AppRestartReasonType.APP_KILLED.getSeverity());
-								getEventMessenger().trigger(ON_APP_STARTED, params);
-
-								ACRA.getErrorReporter()
-								        .handleSilentException(
-								                new RuntimeException(
-								                        "Generated exception due to unexpected application restart: signal 9 - app killed via shell command."));
-
-								foundMatch = true;
-								break;
-							}
-
-							matcher = patternSignal15.matcher(line);
-							if (matcher.find())
-							{
-								Bundle params = new Bundle();
-								params.putString(Key.REASON,
-								        AppRestartReasonType.APP_KILLED.getName());
-								params.putString(Key.SEVERITY,
-								        AppRestartReasonType.APP_KILLED.getSeverity());
-								getEventMessenger().trigger(ON_APP_STARTED, params);
-
-								ACRA.getErrorReporter()
-								        .handleSilentException(
-								                new RuntimeException(
-								                        "Generated exception due to unexpected application restart: signal 15 - VM terminated the application."));
-
-								foundMatch = true;
-								break;
-							}
-
-							matcher = patternSignal711.matcher(line);
-							if (matcher.find())
-							{
-								Bundle params = new Bundle();
-								params.putString(Key.REASON,
-								        AppRestartReasonType.SIGNAL_CRASH.getName());
-								params.putString(Key.SEVERITY,
-								        AppRestartReasonType.SIGNAL_CRASH.getSeverity());
-								getEventMessenger().trigger(ON_APP_STARTED, params);
-
-								ACRA.getErrorReporter()
-								        .handleSilentException(
-								                new RuntimeException(
-								                        "Generated exception due to unexpected application restart: signal 7 (data misalignment) or signal 11 (write to inaccessible memory)."));
-
-								foundMatch = true;
-								break;
-							}
-						}
-
-						if (!foundMatch)
-						{
-							Bundle params = new Bundle();
-							params.putString(Key.REASON, AppRestartReasonType.UNKNOWN.getName());
-							params.putString(Key.SEVERITY,
-							        AppRestartReasonType.UNKNOWN.getSeverity());
-							getEventMessenger().trigger(ON_APP_STARTED, params);
-
-							ACRA.getErrorReporter()
-							        .handleSilentException(
-							                new RuntimeException(
-							                        "Generated exception due to unexpected application restart: unknown reason."));
-						}
-					}
-				}).start();
-			}
-			else
-			{
-				int reason = getAppRestartReason();
-				if (AppRestartReasonType.STANDBY_WAKEUP.getReason() == reason)
-				{
-					Bundle params = new Bundle();
-					params.putString(Key.REASON, AppRestartReasonType.STANDBY_WAKEUP.getName());
-					params.putString(Key.SEVERITY,
-					        AppRestartReasonType.STANDBY_WAKEUP.getSeverity());
-					getEventMessenger().trigger(ON_APP_STARTED, params);
-				}
-				else if (AppRestartReasonType.UNHANDLED_CRASH.getReason() == reason)
-				{
-					Bundle params = new Bundle();
-					params.putString(Key.REASON, AppRestartReasonType.UNHANDLED_CRASH.getName());
-					params.putString(Key.SEVERITY,
-					        AppRestartReasonType.UNHANDLED_CRASH.getSeverity());
-					getEventMessenger().trigger(ON_APP_STARTED, params);
-				}
-				else
-				{
-					Bundle params = new Bundle();
-					params.putString(Key.REASON, AppRestartReasonType.UNKNOWN.getName());
-					params.putString(Key.SEVERITY, AppRestartReasonType.UNKNOWN.getSeverity());
-					getEventMessenger().trigger(ON_APP_STARTED, params);
-
-					ACRA.getErrorReporter().handleSilentException(
-					        new RuntimeException(
-					                "Generated exception due to unexpected application restart."));
-				}
+				return "signal 9: kill from shell";
 			}
 
-			// Delete the file, don't need it anymore
-			f.delete();
-		}
-	}
-
-	private boolean isColdBoot()
-	{
-		File file = new File(getPrefs().getString(Param.COLD_BOOT_FILE));
-		if (file.exists())
-		{
-			// Don't delete this or app features that use it may fail
-			// FIXME: Need to work around this
-			//file.delete();
-			return true;
-		}
-		return false;
-	}
-
-	public static enum AppRestartReasonType
-	{
-		COLDBOOT(-1, "system_start", Severity.INFO.name()),
-		STANDBY_WAKEUP(1, "standby_wakeup", Severity.INFO.name()),
-		UNHANDLED_CRASH(2, "app_crash", Severity.ERROR.name()),
-		SIGNAL_CRASH(3, "system_crash", Severity.FATAL.name()),
-		APP_KILLED(4, "app_killed", Severity.FATAL.name()),
-		UNKNOWN(5, "unknown", Severity.FATAL.name());
-
-		private int _reason;
-		private String _name;
-		private String _severity;
-
-		private AppRestartReasonType(int id, String name, String severity)
-		{
-			_reason = id;
-			_name = name;
-			_severity = severity;
-		}
-
-		public int getReason()
-		{
-			return _reason;
-		}
-
-		public String getName()
-		{
-			return _name;
-		}
-
-		public String getSeverity()
-		{
-			return _severity;
-		}
-	}
-
-	public void setAppRestartReason(AppRestartReasonType reason)
-	{
-		FileOutputStream fos = null;
-	    try
-	    {
-			File f = new File(Environment.getInstance().getFilesDir(), getPrefs()
-			        .getString(Param.APP_START_REASON_FILE));
-	        fos = new FileOutputStream(f);
-	        fos.write(new byte[] { (byte) reason.getReason() });
-	    }
-	    catch (IOException e)
-	    {
-	        Log.e(TAG, e.getMessage(), e);
-	    }
-	    finally
-	    {
-	        if (fos != null)
-	        {
-	            try
-                {
-                    fos.close();
-                }
-                catch (IOException e)
-                {
-                	Log.e(TAG, e.getMessage(), e);
-                }
-	        }
-	    }
-	}
-
-	private int getAppRestartReason()
-	{
-		int reason = AppRestartReasonType.COLDBOOT.getReason();
-		FileInputStream fis = null;
-		try
-		{
-			File f = new File(Environment.getInstance().getFilesDir(), getPrefs()
-			        .getString(Param.APP_START_REASON_FILE));
-			fis = new FileInputStream(f);
-			reason = fis.read();
-		}
-		catch (IOException e)
-	    {
-	        Log.e(TAG, e.getMessage(), e);
-	    }
-	    finally
-	    {
-	        if (fis != null)
-	        {
-	            try
-                {
-	            	fis.close();
-                }
-                catch (IOException e)
-                {
-                	Log.e(TAG, e.getMessage(), e);
-                }
-	        }
-	    }
-		return reason;
-	}
-
-	private List<String> readLogcat()
-	{
-		List<String> log = new ArrayList<String>(10000);
-		try
-		{
-			Process process = Runtime.getRuntime().exec("logcat -v time -t 6000 -d");
-			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-			String line = "";
-			while ((line = bufferedReader.readLine()) != null)
+			matcher = patternSignal15.matcher(line);
+			if (matcher.find())
 			{
-				log.add(line);
+				return "signal 15: VM terminated the application";
+			}
+
+			matcher = patternSignal7.matcher(line);
+			if (matcher.find())
+			{
+				return "signal 7: data misalignment";
+			}
+
+			matcher = patternSignal11.matcher(line);
+			if (matcher.find())
+			{
+				return "signal 11: write to inaccessible memory";
 			}
 		}
-		catch (IOException e)
-		{
-			Log.e(TAG, "Cannot retrieve logcat.", e);
-		}
+		return null;
+	}
 
-		return log;
+	/**
+	 * Composes new logcat file name
+	 *
+	 * @return logcat file name to upload on the server
+	 */
+	private String newLogcatName()
+	{
+		Time time = new Time();
+		time.set(System.currentTimeMillis());
+		String eventDateTime = time.format("%Y.%m.%d_%H.%M.%S");
+
+		Random rnd = new Random();
+		int randomNum = rnd.nextInt(1000);
+
+		Bundle substitute = new Bundle();
+
+		substitute.putString("BUILD", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.BUILD));
+		substitute.putString("CUSTOMER", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.CUSTOMER));
+		substitute.putString("BRAND", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.BRAND));
+		substitute.putString("MAC", _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC));
+		substitute.putString("DATETIME", eventDateTime);
+		substitute.putString("RANDOM", String.valueOf(randomNum));
+		return getPrefs().getString(Param.LOGCAT_FILENAME_TEMPLATE, substitute);
 	}
 }

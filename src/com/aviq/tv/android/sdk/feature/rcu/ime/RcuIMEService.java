@@ -18,7 +18,7 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.inputmethodservice.InputMethodService;
 import android.os.SystemClock;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 import android.util.SparseArray;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;

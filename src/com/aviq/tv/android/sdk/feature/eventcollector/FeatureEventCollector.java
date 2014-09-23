@@ -25,16 +25,17 @@ import java.util.TimeZone;
 import android.os.Bundle;
 import android.text.format.Time;
 import android.util.JsonWriter;
-import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
-import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
-import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
+import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet.GeoIpExtras;
@@ -44,15 +45,18 @@ import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
- * Scheduler feature sending collected events periodically to remote event tracking system
+ * Scheduler feature sending collected events periodically to remote event
+ * tracking system
  */
-@PriorityFeature
+@Priority
+@Author("zhelyazko")
 public class FeatureEventCollector extends FeatureScheduler
 {
 	public static final String TAG = FeatureEventCollector.class.getSimpleName();
 	public static final int ON_TRACK = EventMessenger.ID("ON_TRACK");
+	public static final String EXTRA_PROCESS_NOW = "PROCESS_NOW";
 
-	public enum Param
+	public static enum Param
 	{
 		/** Schedule interval. */
 		SEND_EVENTS_INTERVAL(16 * 1000),
@@ -88,7 +92,14 @@ public class FeatureEventCollector extends FeatureScheduler
 	 */
 	public enum OnTrackExtra
 	{
-		EVENT, SOURCE
+		/** event name */
+		EVENT,
+
+		/** application source name */
+		SOURCE,
+
+		/** set to true to process the event immediatly */
+		IMMEDIATE
 	}
 
 	/**
@@ -147,7 +158,7 @@ public class FeatureEventCollector extends FeatureScheduler
 			{
 				// verify if the custom param is not one of the OnTrackExtra
 				boolean skipParam = false;
-				for (OnTrackExtra extra: OnTrackExtra.values())
+				for (OnTrackExtra extra : OnTrackExtra.values())
 				{
 					if (extra.name().equals(key.toUpperCase()))
 					{
@@ -164,12 +175,17 @@ public class FeatureEventCollector extends FeatureScheduler
 			}
 			eventParams.putBundle(eventName, customAttributes);
 			addEvent(eventParams);
+
+			if (bundle.getBoolean(OnTrackExtra.IMMEDIATE.name()))
+			{
+				processCollectedEvents();
+			}
 		}
 		else if (FeatureInternet.ON_CONNECTED == msgId)
 		{
-			for (GeoIpExtras geoip: FeatureInternet.GeoIpExtras.values())
+			for (GeoIpExtras geoip : FeatureInternet.GeoIpExtras.values())
 			{
-				if ( bundle.containsKey(geoip.name()))
+				if (bundle.containsKey(geoip.name()))
 					TextUtils.putBundleObject(_geoIp, geoip.name().toLowerCase(), bundle.get(geoip.name()));
 			}
 		}
@@ -200,6 +216,7 @@ public class FeatureEventCollector extends FeatureScheduler
 	{
 		return _geoIp;
 	}
+
 	/**
 	 * Create event attributes to attach to each event
 	 *
@@ -224,7 +241,7 @@ public class FeatureEventCollector extends FeatureScheduler
 		// process events
 		processCollectedEvents();
 		scheduleDelayed(getPrefs().getInt(Param.SEND_EVENTS_INTERVAL));
-		onFeatureInitialized.onInitialized(this, ResultCode.OK);
+		super.initialize(onFeatureInitialized);
 	}
 
 	/**
@@ -238,9 +255,9 @@ public class FeatureEventCollector extends FeatureScheduler
 
 		if (data != null && data.length() > 0)
 		{
-			String reportName = getReportName();
+			String reportName = newReportName();
 			String url = getPrefs().getString(Param.EVENTS_SERVER_URL);
-			if (url.indexOf(url.length() - 1) != '/')
+			if (url.charAt(url.length() - 1) != '/')
 				url += '/';
 			url += reportName;
 			Bundle uploadParams = new Bundle();
@@ -256,20 +273,21 @@ public class FeatureEventCollector extends FeatureScheduler
 			_feature.Scheduler.INTERNET.uploadFile(uploadParams, new OnResultReceived()
 			{
 				@Override
-				public void onReceiveResult(int resultCode, Bundle resultData)
+				public void onReceiveResult(FeatureError result)
 				{
-					Log.i(TAG, ".uploadFile:onReceiveResult: resultCode = " + resultCode);
+					if (result.isError())
+						Log.e(TAG, ".uploadFile:onReceiveResult: " + result);
 				}
 			});
 		}
 	}
 
 	/**
-	 * Gets tracking report file name
+	 * Composes new tracking report file name
 	 *
 	 * @return file name to upload on the server
 	 */
-	protected String getReportName()
+	protected String newReportName()
 	{
 		Time time = new Time();
 		time.set(System.currentTimeMillis());

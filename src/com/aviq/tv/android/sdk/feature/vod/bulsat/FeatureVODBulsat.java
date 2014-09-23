@@ -1,3 +1,12 @@
+/**
+ * Copyright (c) 2007-2013, AVIQ Bulgaria Ltd
+ *
+ * Project:     AVIQTVSDK
+ * Filename:    FeatureVODBulsat.java
+ * Author:      zhelyazko
+ * Date:        3 Feb 2014
+ * Description: Feature providing VOD data from Bulsatcom
+ */
 package com.aviq.tv.android.sdk.feature.vod.bulsat;
 
 import java.io.IOException;
@@ -14,8 +23,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
-import android.util.Log;
-
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
 import com.android.volley.Request;
@@ -26,7 +33,8 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.StringRequest;
 import com.aviq.tv.android.sdk.core.Environment;
-import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.feature.vod.FeatureVOD;
@@ -34,6 +42,9 @@ import com.aviq.tv.android.sdk.utils.MapUtils;
 import com.aviq.tv.android.sdk.utils.MapUtils.SortingOrder;
 import com.google.gson.JsonSyntaxException;
 
+/**
+ * Feature providing VOD data from Bulsatcom
+ */
 public class FeatureVODBulsat extends FeatureVOD
 {
 	public static final String TAG = FeatureVODBulsat.class.getSimpleName();
@@ -46,10 +57,10 @@ public class FeatureVODBulsat extends FeatureVOD
 	private VodTree<VodGroup> _vodData;
 	private Locale mLocale = new Locale("bg", "BG");
 
-	public enum Param
+	public static enum Param
 	{
 		VOD_XML_URL("http://185.4.83.193/?xml&vod"),
-		
+
 		/**
 		 * Schedule interval
 		 */
@@ -97,19 +108,21 @@ public class FeatureVODBulsat extends FeatureVOD
 		scheduleDelayed(getPrefs().getInt(Param.VOD_UPDATE_INTERVAL));
 	}
 
-	@SuppressWarnings("unchecked")
+	@Override
+    @SuppressWarnings("unchecked")
 	public VodTree<VodGroup> getVodData()
 	{
 		return _vodData;
 	}
 
-	public void loadVod(String id, OnVodLoaded onVodLoadedListener)
+	@Override
+    public void loadVod(String id, OnVodLoaded onVodLoadedListener)
 	{
 		String vodServerURL = getPrefs().getString(Param.VOD_XML_URL) + "=" + id;
 		Log.i(TAG, "Retrieving VOD data from: " + vodServerURL);
-		
+
 		VodResponseCallback callback = new VodResponseCallback(onVodLoadedListener);
-		
+
 		StringRequest request = new StringRequest(Request.Method.GET, vodServerURL, callback, callback);
 		Environment.getInstance().getRequestQueue().add(request);
 	}
@@ -126,7 +139,7 @@ public class FeatureVODBulsat extends FeatureVOD
 			keywordList.add(s.trim());
 		}
 		String[] keywords = keywordList.toArray(new String[] {});
-		
+
 		Log.v(TAG, "Run search with keywords = " + Arrays.toString(keywords));
 		
 		Map<Vod, Integer> resultMap = new HashMap<Vod, Integer>();
@@ -140,7 +153,7 @@ public class FeatureVODBulsat extends FeatureVOD
 
 		onVodSearchResult.onVodSearchResult(resultList);
 	}
-	
+
 	/**
 	 * Search VOD tree for VOD items and score each result based on which
 	 * property it is found in.
@@ -154,7 +167,7 @@ public class FeatureVODBulsat extends FeatureVOD
 	public void searchVodTree(VodTree.Node<VodGroup> node, String[] keywords, Map<Vod, Integer> resultMap)
 	{
 		// searching: title, shortDescription, description
-		
+
 		List<Vod> vodList = node.getData().getVodList();
 		for (Vod vod : vodList)
 		{
@@ -187,14 +200,14 @@ public class FeatureVODBulsat extends FeatureVOD
 			if (hasKeywords)
 				resultMap.put(vod, score);
 		}
-		
+
 		if (node.hasChildren())
 		{
 			for (VodTree.Node<VodGroup> child : node.getChildren())
 				searchVodTree(child, keywords, resultMap);
 		}
 	}
-	
+
 	private class VodRequest<T> extends Request<T>
 	{
 		private final Class<T> mClazz;
@@ -269,29 +282,26 @@ public class FeatureVODBulsat extends FeatureVOD
 
 			//print(_vodData.getRoot()); // Dump tree data to logcat
 
-			_onFeatureInitialized.onInitialized(FeatureVODBulsat.this, ResultCode.OK);
+			_onFeatureInitialized.onInitialized(FeatureError.OK(FeatureVODBulsat.this));
 		}
 
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
-			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving VOD data: code " + statusCode + ": " + error);
-			_onFeatureInitialized.onInitialized(FeatureVODBulsat.this, statusCode);
+			Log.e(TAG, "Error retrieving VOD data: " + error);
+			_onFeatureInitialized.onInitialized(new FeatureError(FeatureVODBulsat.this, error));
 		}
-
 	}
 
 	private class VodResponseCallback implements Response.Listener<String>, Response.ErrorListener
 	{
 		private OnVodLoaded _callback;
-		
+
 		public VodResponseCallback(OnVodLoaded callback)
 		{
 			_callback = callback;
 		}
-		
+
 		@Override
 		public void onResponse(String response)
 		{
@@ -299,9 +309,9 @@ public class FeatureVODBulsat extends FeatureVOD
 			{
 				VodDetailsXmlParser xmlParser = new VodDetailsXmlParser();
 				xmlParser.initialize();
-				
+
 				Vod vod = xmlParser.fromXML(response);
-				
+
 				if (_callback != null)
 					_callback.onVodLoaded(vod);
 			}
@@ -316,8 +326,8 @@ public class FeatureVODBulsat extends FeatureVOD
 				Log.e(TAG, "SAX parser error.", e);
 				if (_callback != null)
 					_callback.onVodError(e);
-			} 
-			catch (IOException e) 
+			}
+			catch (IOException e)
 			{
 				Log.e(TAG, "Error parsing XML.", e);
 				if (_callback != null)
@@ -328,13 +338,11 @@ public class FeatureVODBulsat extends FeatureVOD
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
-			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving VOD data: code " + statusCode + ": " + error);
-			_onFeatureInitialized.onInitialized(FeatureVODBulsat.this, statusCode);
+			Log.e(TAG, "Error retrieving VOD data: " + error);
+			_onFeatureInitialized.onInitialized(new FeatureError(FeatureVODBulsat.this, error));
 		}
 	}
-	
+
 	//---------------------------------------------------
 	// DEBUGGING CODE TO DUMP THE VOD TREE RECURSIVELY
 	//---------------------------------------------------

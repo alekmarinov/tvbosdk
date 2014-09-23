@@ -26,7 +26,7 @@ public interface IFeature extends EventReceiver
 
 	public interface OnFeatureInitialized
 	{
-		public void onInitialized(IFeature feature, int resultCode);
+		public void onInitialized(FeatureError error);
 
 		public void onInitializeProgress(IFeature feature, float progress);
 	}
@@ -40,7 +40,7 @@ public interface IFeature extends EventReceiver
 	/**
 	 * Method to be invoked to initialize this feature
 	 */
-	void initialize(OnFeatureInitialized onFeatureInitialized);
+	void initialize(OnFeatureInitialized onFeatureInitialized) throws FeatureError;
 
 	/**
 	 * Define the other features this feature is depending on

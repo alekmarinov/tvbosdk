@@ -3,7 +3,7 @@
  *
  * Project:     AVIQTVSDK
  * Filename:    FeatureWebTV.java
- * Author:      zheliazko
+ * Author:      zhelyazko
  * Date:        30 Jan 2014
  * Description: Component feature managing WebTV streams
  */
@@ -18,8 +18,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.util.Log;
-
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
 import com.android.volley.Response;
@@ -29,19 +27,23 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.JsonRequest;
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 
 /**
  * Component feature managing WebTV streams
  */
+@Author("zhelyazko")
 public class FeatureWebTV extends FeatureComponent
 {
 	public static final String TAG = FeatureWebTV.class.getSimpleName();
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * URL of file with video streams.
@@ -141,22 +143,20 @@ public class FeatureWebTV extends FeatureComponent
 			try
 			{
 				parseContent(response, _videoStreams);
-				_onFeatureInitialized.onInitialized(FeatureWebTV.this, ResultCode.OK);
+				_onFeatureInitialized.onInitialized(FeatureError.OK(FeatureWebTV.this));
 			}
 			catch (JSONException e)
 			{
 				Log.e(TAG, "Error parsing WebTV video streams.", e);
-				_onFeatureInitialized.onInitialized(FeatureWebTV.this, ResultCode.GENERAL_FAILURE);
+				_onFeatureInitialized.onInitialized(new FeatureError(FeatureWebTV.this, ResultCode.PROTOCOL_ERROR, e));
 			}
 		}
 
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
-			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving WebTV video streams with code " + statusCode + ": " + error);
-			_onFeatureInitialized.onInitialized(FeatureWebTV.this, statusCode);
+			Log.e(TAG, "Error retrieving WebTV video streams with code: " + error);
+			_onFeatureInitialized.onInitialized(new FeatureError(FeatureWebTV.this, error));
 		}
 	}
 

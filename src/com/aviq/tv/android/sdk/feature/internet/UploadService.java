@@ -51,9 +51,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.text.TextUtils;
-import android.util.Log;
 
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.service.BaseService;
 
 public class UploadService extends BaseService
@@ -92,7 +93,7 @@ public class UploadService extends BaseService
 		String caCertPath = intent.getExtras().getString(Extras.CA_CERT_PATH.name());
 
 		Log.i(TAG, ".onHandleIntent: url = " + url + ", caCertPath = " + caCertPath + ", username = " + username
-		        + ", password = " + password + ", localFile = " + localFile + ", buffer size = " + buffer.length());
+		        + ", password = " + password + ", localFile = " + localFile + ", buffer size = " + (buffer != null?buffer.length():-1));
 
 		if (localFile != null)
 		{
@@ -176,7 +177,7 @@ public class UploadService extends BaseService
 	        String username, String password)
 	{
 		Bundle resultData = new Bundle();
-		int statusCode = ResultCode.GENERAL_FAILURE;
+		int statusCode;
 		try
 		{
 			HttpPut httpPut = new HttpPut(url);
@@ -194,8 +195,10 @@ public class UploadService extends BaseService
 		}
 		catch (Exception e)
 		{
-			Log.e(TAG, "Cannot send event report.", e);
-			resultData.putSerializable(ResultExtras.EXCEPTION.name(), e);
+			FeatureError fe = new FeatureError(e);
+			Log.e(TAG, "Cannot send data to " + url, fe);
+			statusCode = fe.getErrorCode();
+			resultData.putSerializable(ResultExtras.EXCEPTION.name(), fe);
 		}
 		if (resultReceiver != null)
 			resultReceiver.send(statusCode, resultData);

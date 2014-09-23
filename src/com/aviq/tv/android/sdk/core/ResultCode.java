@@ -19,6 +19,16 @@ public class ResultCode
 	public static final int NOT_FOUND_404 = 404;
 
 	/**
+	 * I/O error
+	 */
+	public static final int IO_ERROR = -9;
+
+	/**
+	 * Remote communication error
+	 */
+	public static final int COMMUNICATION_ERROR = -8;
+
+	/**
 	 * Required feature is missing
 	 */
 	public static final int FEATURE_NOT_FOUND = -7;
@@ -52,4 +62,43 @@ public class ResultCode
 	 * Not specified error
 	 */
 	public static final int GENERAL_FAILURE = -1;
+
+	public static String text(int resCode)
+	{
+		String txt = "http ";
+		switch (resCode)
+		{
+			case OK:
+				txt = "success";
+			break;
+			case IO_ERROR:
+				txt = "i/o error";
+			break;
+			case COMMUNICATION_ERROR:
+				txt = "communication error";
+			break;
+			case FEATURE_NOT_FOUND:
+				txt = "feature not found";
+			break;
+			case TIMEOUT:
+				txt = "timeout error";
+			break;
+			case INIT_ERROR:
+				txt = "init error";
+			break;
+			case INTERNAL_ERROR:
+				txt = "internal error";
+			break;
+			case PROTOCOL_ERROR:
+				txt = "protocol error";
+			break;
+			case NOT_SUPPORTED:
+				txt = "not supported";
+			break;
+			case GENERAL_FAILURE:
+				txt = "general failure";
+			break;
+		}
+		return txt;
+	}
 }

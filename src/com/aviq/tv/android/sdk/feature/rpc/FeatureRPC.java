@@ -18,11 +18,13 @@ import java.net.URL;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 
 
 /**
  * Lua based RPC scripting service
  */
+@Author("alek")
 public abstract class FeatureRPC extends FeatureComponent
 {
 	public static final String TAG = FeatureRPC.class.getSimpleName();

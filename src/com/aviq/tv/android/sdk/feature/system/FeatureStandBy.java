@@ -18,7 +18,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
@@ -27,7 +27,8 @@ import com.aviq.tv.android.sdk.core.Key;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.core.feature.PriorityFeature;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
+import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.rcu.ime.RcuIMEService;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -35,7 +36,8 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Controls standby logic
  */
-@PriorityFeature
+@Priority
+@Author("alek")
 public class FeatureStandBy extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureStandBy.class.getSimpleName();
@@ -59,7 +61,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	private static final String ACTION_HDMI_HW_PLUGGED = "android.intent.action.HDMI_HW_PLUGGED";
 	private static final String EXTRA_HDMI_HW_PLUGGED_STATE = "state";
 
-	public enum Param
+	public static enum Param
 	{
 		/** Enter standby when HDMI cable is unplugged */
 		IS_STANDBY_BY_HDMI_OFF(false),

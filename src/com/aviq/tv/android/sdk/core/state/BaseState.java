@@ -43,52 +43,6 @@ public class BaseState extends Fragment
 	}
 
 	/**
-	 * FIXME: What was the purpose of this method?!
-	 * Create state
-	 *
-	 * @param params
-	 *            The params set to this State when showing
-	 * @param isOverlay
-	 *            set to true to show this state as Overlay
-	 * @throws StateException
-	 */
-	private void create(Bundle params, boolean isOverlay) throws StateException
-	{
-		Log.i(getClass().getSimpleName(), ".create: isOverlay = " + isOverlay);
-		Environment env = (Environment) getActivity();
-		if (isOverlay)
-			env.getStateManager().setStateOverlay(this, params);
-		else
-			env.getStateManager().setStateMain(this, params);
-	}
-
-	/**
-	 * FIXME: What was the purpose of this method?!
-	 * Create state on main layer of the screen
-	 *
-	 * @param params
-	 *            The params set to this State when showing
-	 * @throws StateException
-	 */
-	private void create(Bundle params) throws StateException
-	{
-		create(params, false);
-	}
-
-	/**
-	 * FIXME: What was the purpose of this method?!
-	 * Create state on overlay layer of the screen
-	 *
-	 * @param params
-	 *            The params set to this State when showing
-	 * @throws StateException
-	 */
-	private void createOverlay(Bundle params) throws StateException
-	{
-		create(params, true);
-	}
-
-	/**
 	 * Destroy and remove state from screen
 	 */
 	public void close()

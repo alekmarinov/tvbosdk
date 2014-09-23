@@ -21,17 +21,19 @@ import java.net.SocketAddress;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import android.util.Log;
+import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 
 /**
  * Provides low level access to system
  */
+@Author("alek")
 public class FeatureSystem extends FeatureComponent
 {
 	public static final String TAG = FeatureSystem.class.getSimpleName();
@@ -44,7 +46,7 @@ public class FeatureSystem extends FeatureComponent
 	private int _port;
 	private String _host;
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * Executor port number

@@ -30,8 +30,10 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
+import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -39,6 +41,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Feature managing Internet access
  */
+@Author("alek")
 public class FeatureInternet extends FeatureScheduler
 {
 	private static final String TAG = FeatureInternet.class.getSimpleName();
@@ -46,7 +49,7 @@ public class FeatureInternet extends FeatureScheduler
 	public static final int ON_CONNECTED = EventMessenger.ID("ON_CONNECTED");
 	public static final int ON_DISCONNECTED = EventMessenger.ID("ON_DISCONNECTED");
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * Check URL interval in seconds
@@ -69,10 +72,10 @@ public class FeatureInternet extends FeatureScheduler
 		CHECK_ATTEMPT_DELAY(4000),
 
 		/** URL to check against for the box's geoip information */
-		GEOIP_URL("http://freegeoip.net/json"),
+		GEOIP_URL("http://www.telize.com/geoip"),
 
 		/** Backup URL to check against for the box's geoip information */
-		GEOIP_URL_BACKUP("http://www.telize.com/geoip");
+		GEOIP_URL_BACKUP("http://freegeoip.net/json");
 
 		Param(int value)
 		{
@@ -102,18 +105,8 @@ public class FeatureInternet extends FeatureScheduler
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-		checkInternet(new OnResultReceived()
-		{
-			@Override
-			public void onReceiveResult(int resultCode, Bundle resultData)
-			{
-				Log.i(TAG,
-				        ".initialize:onReceiveResult: resultCode = " + resultCode + " ("
-				                + TextUtils.implodeBundle(resultData) + ")");
-				onFeatureInitialized.onInitialized(FeatureInternet.this, resultCode);
-				getEventMessenger().trigger(ON_SCHEDULE);
-			}
-		});
+		getEventMessenger().trigger(ON_SCHEDULE);
+		super.initialize(onFeatureInitialized);
 	}
 
 	@Override
@@ -123,12 +116,11 @@ public class FeatureInternet extends FeatureScheduler
 		checkInternet(new OnResultReceived()
 		{
 			@Override
-			public void onReceiveResult(int resultCode, Bundle resultData)
+			public void onReceiveResult(FeatureError error)
 			{
 				Log.i(TAG,
-				        ".onSchedule:onReceiveResult: resultCode = " + resultCode + " ("
-				                + TextUtils.implodeBundle(resultData) + ")");
-				getEventMessenger().trigger(resultCode == ResultCode.OK ? ON_CONNECTED : ON_DISCONNECTED, resultData);
+				        ".onSchedule:onReceiveResult: " + error);
+				getEventMessenger().trigger(error.isError() ? ON_DISCONNECTED : ON_CONNECTED, error.getBundle());
 				scheduleDelayed(getPrefs().getInt(Param.CHECK_INTERVAL) * 1000);
 			}
 		});
@@ -164,17 +156,17 @@ public class FeatureInternet extends FeatureScheduler
 			}
 
 			@Override
-			public void onReceiveResult(int resultCode, Bundle resultData)
+			public void onReceiveResult(FeatureError result)
 			{
-				if (resultCode != ResultCode.OK)
+				Bundle resultData = result.getBundle();
+				if (result.isError())
 				{
 					long timeElapsed = System.currentTimeMillis() - _checkStart;
 					if (_attemptsCounter < _checkAttempts
 					        || (timeElapsed < getPrefs().getInt(Param.CHECK_ATTEMPTS_TIMEOUT)))
 					{
 						_attemptsCounter++;
-						Log.w(TAG, "Check internet failed. Trying " + (_checkAttempts - _attemptsCounter + 1)
-						        + " more times");
+						Log.w(TAG, _attemptsCounter + "/" + _checkAttempts +  ": " + result);
 						getEventMessenger().postDelayed(this, getPrefs().getInt(Param.CHECK_ATTEMPT_DELAY));
 						return;
 					}
@@ -212,7 +204,7 @@ public class FeatureInternet extends FeatureScheduler
 						Log.e(TAG, e.getMessage(), e);
 					}
 				}
-				onResultReceived.onReceiveResult(resultCode, resultData);
+				onResultReceived.onReceiveResult(result);
 			}
 		}
 		getEventMessenger().post(new InternetCheckResponse());
@@ -285,7 +277,7 @@ public class FeatureInternet extends FeatureScheduler
 				{
 					resultData.putString(key, response.headers.get(key));
 				}
-				onResultReceived.onReceiveResult(response.statusCode, resultData);
+				onResultReceived.onReceiveResult(new FeatureError(FeatureInternet.this, response.statusCode, resultData));
 				return super.parseNetworkResponse(response);
 			}
 		};
@@ -352,7 +344,7 @@ public class FeatureInternet extends FeatureScheduler
 			Bundle resultData = new Bundle();
 			resultData.putString(ResultExtras.URL.name(), _url);
 			resultData.putString(ResultExtras.CONTENT.name(), response);
-			_onResultReceived.onReceiveResult(ResultCode.OK, resultData);
+			_onResultReceived.onReceiveResult(new FeatureError(FeatureInternet.this, ResultCode.OK, resultData));
 		}
 
 		/**
@@ -361,23 +353,7 @@ public class FeatureInternet extends FeatureScheduler
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			int statusCode = ResultCode.GENERAL_FAILURE;
-			StringBuffer headerInfo = new StringBuffer();
-			if (error.networkResponse != null)
-			{
-				statusCode = error.networkResponse.statusCode;
-				for (String key : error.networkResponse.headers.keySet())
-				{
-					String value = error.networkResponse.headers.get(key);
-					headerInfo.append(key).append('=').append(value).append('\n');
-				}
-			}
-			Log.e(TAG, _url + " -> " + statusCode + " ( " + error.getMessage() + "), header = {" + headerInfo + "}");
-			Bundle resultData = new Bundle();
-			resultData.putString(ResultExtras.URL.name(), _url);
-			resultData.putString(ResultExtras.ERROR_MESSAGE.name(), error.getMessage());
-			resultData.putInt(ResultExtras.ERROR_CODE.name(), statusCode);
-			_onResultReceived.onReceiveResult(statusCode, resultData);
+			_onResultReceived.onReceiveResult(new FeatureError(FeatureInternet.this, error));
 		}
 	}
 

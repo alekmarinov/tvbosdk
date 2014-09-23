@@ -30,7 +30,7 @@ import android.content.res.AssetManager;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
-import com.aviq.tv.android.sdk.core.ResultCode;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 
 /**
@@ -42,7 +42,7 @@ public class FeatureLuaRPC extends FeatureRPC
 	private static final int BUF_SIZE = 1024 * 100;
 	private static final String EOL = "-- End of Lua";
 
-	public enum Param
+	public static enum Param
 	{
 		/**
 		 * RPC host listen
@@ -93,7 +93,7 @@ public class FeatureLuaRPC extends FeatureRPC
 		{
 			Log.e(TAG, e.getMessage(), e);
 			if (onFeatureInitialized != null)
-				onFeatureInitialized.onInitialized(this, ResultCode.GENERAL_FAILURE);
+				onFeatureInitialized.onInitialized(new FeatureError(this, e));
 		}
 	}
 
