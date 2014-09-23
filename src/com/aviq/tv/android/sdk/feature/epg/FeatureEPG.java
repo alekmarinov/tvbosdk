@@ -142,6 +142,11 @@ public abstract class FeatureEPG extends FeatureScheduler
 		PROGRAM_RANGE_MAX_DAYS(7),
 
 		/**
+		 * epg cache expire time
+		 */
+		EPG_CACHE_EXPIRE(6 * 60 * 60 * 1000),
+
+		/**
 		 * Enable/disable local epg cache
 		 */
 		USE_LOCAL_CACHE(true);
@@ -802,6 +807,21 @@ public abstract class FeatureEPG extends FeatureScheduler
 	private boolean uncacheEpgData()
 	{
 		Log.i(TAG, ".uncacheEpgData");
+
+		Prefs userPrefs = Environment.getInstance().getUserPrefs();
+		if (userPrefs.has(UserParam.EPG_CACHE_CREATED_ON))
+		{
+			long cacheCreatedOn = userPrefs.getLong(UserParam.EPG_CACHE_CREATED_ON);
+			int cacheTimeElapsed = (int) (System.currentTimeMillis() - cacheCreatedOn);
+			int epgCacheExpire = getPrefs().getInt(Param.EPG_CACHE_EXPIRE);
+			Log.i(TAG, "EPG cache time elapsed " + (cacheTimeElapsed / 1000) + "s, EPG_CACHE_EXPIRE = " + (epgCacheExpire / 1000) + "s");
+			if (cacheTimeElapsed > epgCacheExpire)
+			{
+				Log.i(TAG, "EPG cache expired");
+				return false;
+			}
+		}
+
 		return deserializeData();
 	}
 

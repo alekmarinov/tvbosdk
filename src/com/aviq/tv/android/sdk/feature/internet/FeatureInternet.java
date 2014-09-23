@@ -102,18 +102,20 @@ public class FeatureInternet extends FeatureScheduler
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-		checkInternet(new OnResultReceived()
-		{
-			@Override
-			public void onReceiveResult(int resultCode, Bundle resultData)
-			{
-				Log.i(TAG,
-				        ".initialize:onReceiveResult: resultCode = " + resultCode + " ("
-				                + TextUtils.implodeBundle(resultData) + ")");
-				onFeatureInitialized.onInitialized(FeatureInternet.this, resultCode);
+//		checkInternet(new OnResultReceived()
+//		{
+//			@Override
+//			public void onReceiveResult(int resultCode, Bundle resultData)
+//			{
+//				Log.i(TAG,
+//				        ".initialize:onReceiveResult: resultCode = " + resultCode + " ("
+//				                + TextUtils.implodeBundle(resultData) + ")");
+//				onFeatureInitialized.onInitialized(FeatureInternet.this, resultCode);
 				getEventMessenger().trigger(ON_SCHEDULE);
-			}
-		});
+//			}
+//		});
+
+		super.initialize(onFeatureInitialized);
 	}
 
 	@Override
