@@ -67,7 +67,7 @@ public class FeatureError extends Exception
 		}
 		else if (UnknownHostException.class.isInstance(e) || NoConnectionError.class.isInstance(e))
 		{
-			_errCode = ResultCode.CONNECTION_ERROR;
+			_errCode = ResultCode.COMMUNICATION_ERROR;
 		}
 		else if (VolleyError.class.isInstance(e))
 		{

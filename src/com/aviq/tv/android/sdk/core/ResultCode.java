@@ -24,9 +24,9 @@ public class ResultCode
 	public static final int IO_ERROR = -9;
 
 	/**
-	 * Unknown host
+	 * Remote communication error
 	 */
-	public static final int CONNECTION_ERROR = -8;
+	public static final int COMMUNICATION_ERROR = -8;
 
 	/**
 	 * Required feature is missing
@@ -74,8 +74,8 @@ public class ResultCode
 			case IO_ERROR:
 				txt = "i/o error";
 			break;
-			case CONNECTION_ERROR:
-				txt = "connection error";
+			case COMMUNICATION_ERROR:
+				txt = "communication error";
 			break;
 			case FEATURE_NOT_FOUND:
 				txt = "feature not found";

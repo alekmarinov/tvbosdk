@@ -195,8 +195,8 @@ public class UploadService extends BaseService
 		}
 		catch (Exception e)
 		{
-			Log.e(TAG, "Cannot send data.", e);
 			FeatureError fe = new FeatureError(e);
+			Log.e(TAG, "Cannot send data to " + url, fe);
 			statusCode = fe.getErrorCode();
 			resultData.putSerializable(ResultExtras.EXCEPTION.name(), fe);
 		}

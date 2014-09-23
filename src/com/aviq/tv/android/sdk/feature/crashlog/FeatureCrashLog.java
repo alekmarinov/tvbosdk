@@ -107,6 +107,31 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 		Thread.currentThread().setUncaughtExceptionHandler(this);
 		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
 
+		Environment.getInstance().getEventMessenger().register(new EventReceiver()
+		{
+			@Override
+			public void onEvent(int msgId, Bundle bundle)
+			{
+				String featureName = bundle.getString(Environment.ExtraInitError.FEATURE_NAME.name());
+				String featureClassName = bundle.getString(Environment.ExtraInitError.FEATURE_CLASS.name());
+				Class<?> featureClass;
+				IFeature feature = null;
+                try
+                {
+	                featureClass = Class.forName(featureClassName);
+					feature = Environment.getInstance().getFeature(featureClass);
+                }
+                catch (ClassNotFoundException e)
+                {
+                	Log.e(TAG, e.getMessage(), e);
+                }
+				int errCode = bundle.getInt(Environment.ExtraInitError.ERROR_CODE.name());
+				Bundle errData = bundle.getBundle(Environment.ExtraInitError.ERROR_DATA.name());
+				FeatureError error = new FeatureError(feature, errCode, errData);
+				fatal(featureName, "feature init failed: " + error, error);
+			}
+		}, Environment.ON_FEATURE_INIT_ERROR);
+
 		FeatureDevice.StartReason startReason = _feature.Component.DEVICE.getStartReason();
 
 		// initialize logcat file directory
@@ -193,29 +218,89 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 		return FeatureName.Component.CRASHLOG;
 	}
 
+	/**
+	 * Sends logcat to server and returns logcat URL on the server where it can
+	 * be located if the sending succeeds
+	 *
+	 * @throws IOException
+	 */
+	public void sendLogcat() throws IOException
+	{
+		// saves logcat and search logcat for signal
+		String logcatFileName = newLogcatName();
+		String logcatFilePath = _logcatDir + File.separator + logcatFileName;
+		saveLogcat(logcatFilePath);
+		String logcatUrl = uploadLogcatFile(logcatFilePath);
+		Bundle bundle = new Bundle();
+		bundle.putString(Extras.LOGCAT_URL.name(), logcatUrl);
+		log(Severity.INFO, TAG, "Event with logcat attached", null, bundle);
+	}
+
+	/**
+	 * Log info message
+	 *
+	 * @param tag Used to identify the source of a log message
+	 * @param message The message you would like logged.
+	 * @param ex An exception to log
+	 */
 	public void info(String tag, String message, Throwable ex)
 	{
 		log(Severity.INFO, tag, message, ex);
 	}
 
+	/**
+	 * Log alert message
+	 *
+	 * @param tag Used to identify the source of a log message
+	 * @param message The message you would like logged.
+	 * @param ex An exception to log
+	 */
 	public void alert(String tag, String message, Throwable ex)
 	{
 		log(Severity.ALERT, tag, message, ex);
 	}
 
+	/**
+	 * Log error message
+	 *
+	 * @param tag Used to identify the source of a log message
+	 * @param message The message you would like logged.
+	 * @param ex An exception to log
+	 */
 	public void error(String tag, String message, Throwable ex)
 	{
 		log(Severity.ERROR, tag, message, ex);
 	}
 
+	/**
+	 * Log fatal error
+	 *
+	 * @param tag Used to identify the source of a log message
+	 * @param message The message you would like logged.
+	 * @param ex An exception to log
+	 */
 	public void fatal(String tag, String message, Throwable ex)
 	{
 		log(Severity.FATAL, tag, message, ex);
 	}
 
+	/**
+	 * Log fatal error
+	 *
+	 * @param tag Used to identify the source of a log message
+	 * @param message The message you would like logged.
+	 * @param ex An exception to log
+	 * @param extra Additional data related to the fatal error
+	 */
 	public void fatal(String tag, String message, Throwable ex, Bundle extra)
 	{
 		log(Severity.FATAL, tag, message, ex, extra);
+	}
+
+	@Override
+	public void uncaughtException(Thread thread, final Throwable ex)
+	{
+		fatal(TAG, "uncaught exception: " + ex.getMessage(), ex);
 	}
 
 	private void log(Severity severity, String tag, String message, Throwable ex)
@@ -303,12 +388,6 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 			getEventMessenger().trigger(ON_CRASH_ERROR, bundle);
 	}
 
-	@Override
-	public void uncaughtException(Thread thread, final Throwable ex)
-	{
-		fatal(TAG, "uncaught exception: " + ex.getMessage(), ex);
-	}
-
 	private String collectFeatureParams(IFeature feature)
 	{
 		StringBuffer sb = new StringBuffer();
@@ -352,24 +431,6 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 				new File(logcatsDir, fileName).delete();
 			}
 		}
-	}
-
-	/**
-	 * Sends logcat to server and returns logcat URL on the server where it can
-	 * be located if the sending succeeds
-	 *
-	 * @throws IOException
-	 */
-	public void sendLogcat() throws IOException
-	{
-		// saves logcat and search logcat for signal
-		String logcatFileName = newLogcatName();
-		String logcatFilePath = _logcatDir + File.separator + logcatFileName;
-		saveLogcat(logcatFilePath);
-		String logcatUrl = uploadLogcatFile(logcatFilePath);
-		Bundle bundle = new Bundle();
-		bundle.putString(Extras.LOGCAT_URL.name(), logcatUrl);
-		log(Severity.INFO, TAG, "Event with logcat attached", null, bundle);
 	}
 
 	private String uploadLogcatFile(String logcatFilePath)

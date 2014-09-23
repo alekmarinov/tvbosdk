@@ -15,7 +15,6 @@ import java.lang.reflect.Field;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.channels.FeatureChannels;
-import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
@@ -30,7 +29,6 @@ import com.aviq.tv.android.sdk.feature.recording.FeatureRecordingScheduler;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 import com.aviq.tv.android.sdk.feature.rpc.FeatureRPC;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice;
-import com.aviq.tv.android.sdk.feature.system.FeatureNethogs;
 import com.aviq.tv.android.sdk.feature.system.FeatureStandBy;
 import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
 import com.aviq.tv.android.sdk.feature.system.FeatureTimeZone;
@@ -67,13 +65,12 @@ public class Features
 		public FeatureRPC RPC;
 		public FeatureSystem SYSTEM;
 		public FeatureEasterEgg EASTER_EGG;
-		public FeatureCrashLog CRASHLOG;
 		public FeatureTimeZone TIMEZONE;
-		public FeatureNethogs NETHOGS;
 		public FeatureStandBy STANDBY;
 		public FeatureRecordingScheduler RECORDING_SCHEDULER;
 		public FeatureDevice DEVICE;
 		public FeatureVolume VOLUME;
+		public FeatureComponent CRASHLOG;
 	}
 
 	public class Schedulers

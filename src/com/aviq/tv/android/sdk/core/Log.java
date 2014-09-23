@@ -11,7 +11,6 @@
 
 package com.aviq.tv.android.sdk.core;
 
-import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 
 public class Log
@@ -116,8 +115,7 @@ public class Log
 				@Override
 				public void run()
 				{
-					FeatureCrashLog crashLog = (FeatureCrashLog) Environment.getInstance().getFeatureComponent(
-					        FeatureName.Component.CRASHLOG);
+					FeatureCrashLog crashLog = (FeatureCrashLog) Environment.getInstance().getFeature(FeatureCrashLog.class);
 					if (crashLog != null)
 					{
 						if (level == WARN)

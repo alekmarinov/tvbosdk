@@ -49,7 +49,6 @@ import com.aviq.tv.android.sdk.core.feature.IFeature.OnFeatureInitialized;
 import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.core.state.StateManager;
-import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 
 /**
@@ -64,9 +63,7 @@ public class Environment extends Activity
 	public static final int ON_FEATURE_INIT_ERROR = EventMessenger.ID("ON_FEATURE_INIT_ERROR");
 	public static final int ON_RESUME = EventMessenger.ID("ON_RESUME");
 	public static final int ON_PAUSE = EventMessenger.ID("ON_PAUSE");
-	public static final String EXTRA_ERROR_CODE = "EXTRA_ERROR_CODE";
-	public static final String EXTRA_ERROR_DATA = "EXTRA_ERROR_DATA";
-	public static final String EXTRA_FEATURE_NAME = "EXTRA_FEATURE_NAME";
+	// FIXME: Convert EXTRA_KEY* to enum ExtraKey
 	public static final String EXTRA_KEY = "KEY";
 	public static final String EXTRA_KEYCODE = "KEYCODE";
 	public static final String EXTRA_KEYCONSUMED = "KEYCONSUMED";
@@ -74,6 +71,11 @@ public class Environment extends Activity
 	private static final String AVIQTV_XML_RESOURCE = "aviqtv";
 	private static final String ECLIPSE_XML_RESOURCE = "eclipse";
 	private static final String RELEASE_XML_RESOURCE = "release";
+
+	public enum ExtraInitError
+	{
+		ERROR_CODE, ERROR_DATA, FEATURE_NAME, FEATURE_CLASS
+	}
 
 	public static enum Param
 	{
@@ -118,7 +120,6 @@ public class Environment extends Activity
 	private boolean _isInitialized = false;
 	private static boolean _isCreated = false;
 	private FeatureRCU _featureRCU;
-	private FeatureCrashLog _featureCrashLog;
 	private boolean _keyEventsEnabled = true;
 	private ExceptKeysList _exceptKeys = new ExceptKeysList();
 	private Context _context;
@@ -146,7 +147,6 @@ public class Environment extends Activity
 				_stateManager.setMessageState(_featureManager.use(FeatureName.State.MESSAGE_BOX));
 				_stateManager.setOverlayBackgroundColor(getPrefs().getInt(Param.OVERLAY_BACKGROUND_COLOR));
 				_featureRCU = (FeatureRCU) _featureManager.use(FeatureName.Component.RCU);
-				_featureCrashLog = (FeatureCrashLog) _featureManager.use(FeatureName.Component.CRASHLOG);
 
 				_serviceController = new ServiceController(Environment.this);
 				_requestQueue = Volley.newRequestQueue(Environment.this);
@@ -167,11 +167,11 @@ public class Environment extends Activity
 						if (error.isError())
 						{
 							Bundle bundle = new Bundle();
-							bundle.putInt(EXTRA_ERROR_CODE, error.getErrorCode());
-							bundle.putBundle(EXTRA_ERROR_DATA, error.getBundle());
-							bundle.putString(EXTRA_FEATURE_NAME, error.getFeature().getName());
+							bundle.putInt(ExtraInitError.ERROR_CODE.name(), error.getErrorCode());
+							bundle.putBundle(ExtraInitError.ERROR_DATA.name(), error.getBundle());
+							bundle.putString(ExtraInitError.FEATURE_NAME.name(), error.getFeature().getName());
+							bundle.putString(ExtraInitError.FEATURE_CLASS.name(), error.getFeature().getClass().getName());
 							_eventMessenger.trigger(ON_FEATURE_INIT_ERROR, bundle);
-							_featureCrashLog.fatal(error.getFeature().getName(), "feature init failed: " + error, error);
 						}
 						else
 						{

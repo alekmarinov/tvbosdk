@@ -105,17 +105,8 @@ public class FeatureInternet extends FeatureScheduler
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-		checkInternet(new OnResultReceived()
-		{
-			@Override
-			public void onReceiveResult(FeatureError error)
-			{
-				Log.i(TAG, ".initialize:onReceiveResult: " + error);
-				if (onFeatureInitialized != null)
-					onFeatureInitialized.onInitialized(error);
-				getEventMessenger().trigger(ON_SCHEDULE);
-			}
-		});
+		getEventMessenger().trigger(ON_SCHEDULE);
+		super.initialize(onFeatureInitialized);
 	}
 
 	@Override

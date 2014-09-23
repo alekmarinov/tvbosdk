@@ -35,7 +35,6 @@ public class FeatureName
 		EASTER_EGG,
 		CRASHLOG,
 		TIMEZONE,
-		NETHOGS,
 		STANDBY,
 		DEBUG,
 		RECORDING_SCHEDULER,
