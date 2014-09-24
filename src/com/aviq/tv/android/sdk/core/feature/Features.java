@@ -117,6 +117,7 @@ public class Features
 		public FeatureState RECORDINGS;
 		public FeatureState RECORDING_ITEMS;
 		public FeatureState RECORDING_DETAILS;
+		public FeatureState ERROR;
 	}
 
 	public Features(FeatureSet featureSet) throws FeatureNotFoundException
