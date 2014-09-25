@@ -75,7 +75,7 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 	public static enum Param
 	{
 		/** Crash Log URL */
-		CRASHLOG_SERVER_URL("https://services.aviq.com:30227/upload/logs/"),
+		CRASHLOG_SERVER_URL(""),
 
 		/** Username for report URL */
 		CRASHLOG_SERVER_USERNAME(""),
@@ -408,7 +408,7 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 		}
 		catch (ClassNotFoundException e)
 		{
-			Log.e(TAG, e.getMessage(), e);
+			Log.d(TAG, "Feature " + feature + " have no params");
 		}
 		return sb.toString();
 	}

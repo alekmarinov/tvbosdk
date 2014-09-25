@@ -31,7 +31,7 @@ public class ChannelBulsat extends Channel implements Serializable
 
 	public static enum Genre
 	{
-		NATIONAL, SPORT, SCIENCE, MOVIE, MUSIC, KIDS, OTHER, EROTIC, RADIO, VOD
+		NATIONAL, SPORT, SCIENCE, MOVIE, MUSIC, KIDS, OTHER, EROTIC, RADIO // , VOD
 	}
 
 	private static Map<String, Genre> _genreMap = new HashMap<String, Genre>();
