@@ -39,7 +39,8 @@ public class FeatureName
 		DEBUG,
 		RECORDING_SCHEDULER,
 		DEVICE,
-		VOLUME
+		VOLUME,
+		WEATHER
 	}
 
 	public static enum Scheduler
@@ -55,6 +56,7 @@ public class FeatureName
 		MENU,
 		EVENT_COLLECTOR,
 		VOD
+		
 	}
 
 	public static enum State

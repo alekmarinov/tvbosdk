@@ -36,6 +36,7 @@ import com.aviq.tv.android.sdk.feature.upgrade.FeatureUpgrade;
 import com.aviq.tv.android.sdk.feature.vod.FeatureVOD;
 import com.aviq.tv.android.sdk.feature.volume.FeatureVolume;
 import com.aviq.tv.android.sdk.feature.watchlist.FeatureWatchlist;
+import com.aviq.tv.android.sdk.feature.weather.FeatureWeather;
 import com.aviq.tv.android.sdk.feature.webtv.FeatureWebTV;
 
 /**
@@ -71,6 +72,7 @@ public class Features
 		public FeatureDevice DEVICE;
 		public FeatureVolume VOLUME;
 		public FeatureComponent CRASHLOG;
+		public FeatureWeather WEATHER;
 	}
 
 	public class Schedulers
@@ -79,7 +81,7 @@ public class Features
 		public FeatureEPG EPG;
 		public FeatureUpgrade UPGRADE;
 		public FeatureScheduler EVENT_COLLECTOR;
-		public FeatureVOD VOD;
+		public FeatureVOD VOD;		
 	}
 
 	public class States
