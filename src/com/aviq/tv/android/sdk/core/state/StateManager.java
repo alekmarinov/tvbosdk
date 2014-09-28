@@ -297,8 +297,8 @@ public class StateManager
 			Log.i(TAG, logMsg.toString());
 
 			// FIXME: just for debugging
-			if ("FeatureStateVODDetails".equals(stateName) && params.getParcelableArrayList("VODGROUP_PATH") == null)
-				throw new RuntimeException("Who are you?");
+			//if ("FeatureStateVODDetails".equals(stateName) && params.getParcelableArrayList("VODGROUP_PATH") == null)
+			//	throw new RuntimeException("Who are you?");
 
 			switch (_activeStates.size())
 			{

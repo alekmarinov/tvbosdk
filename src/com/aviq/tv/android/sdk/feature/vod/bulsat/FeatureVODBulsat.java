@@ -133,9 +133,8 @@ public class FeatureVODBulsat extends FeatureVOD
 		List<String> keywordList = new ArrayList<String>(terms.length);
 		for (String s : terms)
 		{
-// TODO uncomment
-//			if (s.length() < 3)
-//				continue;
+			if (s.length() < 3)
+				continue;
 			keywordList.add(s.trim());
 		}
 		String[] keywords = keywordList.toArray(new String[] {});
