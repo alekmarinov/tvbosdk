@@ -23,17 +23,18 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
-import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
-import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet.ResultExtras;
+import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice.UserParam;
 import com.aviq.tv.android.sdk.feature.vod.bulsat.FeatureVODBulsat;
 
 /**
@@ -42,8 +43,10 @@ import com.aviq.tv.android.sdk.feature.vod.bulsat.FeatureVODBulsat;
 public class FeatureWeather extends FeatureComponent
 {
 	public static final String TAG = FeatureVODBulsat.class.getSimpleName();
-	private OnFeatureInitialized _onFeatureInitialized;
-	private WeatherData _data;
+	public static final int ON_WEATHER_CHANGE = EventMessenger.ID("ON_WEATHER_CHANGE");	
+	private WeatherData _data = new WeatherData();
+	private long _lastSendTime;
+	private int _updateInterval;
 	
 	public static enum Param
 	{
@@ -55,9 +58,9 @@ public class FeatureWeather extends FeatureComponent
 		
 		IMAGE_URL("https://s.yimg.com/zz/combo?a/i/us/we/52/${IMAGE_NAME}.gif"),
 		/**
-		 * Schedule interval
+		 * Update interval in secunds
 		 */
-		WEATHER_UPDATE_INTERVAL(1 * 60 * 1000);
+		WEATHER_UPDATE_INTERVAL(60);
 		
 		Param(String value)
 		{
@@ -85,8 +88,9 @@ public class FeatureWeather extends FeatureComponent
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		_feature.Scheduler.INTERNET.getEventMessenger().register(this, FeatureInternet.ON_CONNECTED);
-		_onFeatureInitialized = onFeatureInitialized;
+		_feature.Scheduler.INTERNET.getEventMessenger().register(this, FeatureInternet.ON_CONNECTED);	
+		_lastSendTime = 0;
+		_updateInterval = this.getPrefs().getInt(Param.WEATHER_UPDATE_INTERVAL);
 		super.initialize(onFeatureInitialized);
 	}
 	
@@ -98,34 +102,38 @@ public class FeatureWeather extends FeatureComponent
 		{
 			try
 			{
-				String latitude = null;
-				String longitude = null;
-				_data = null;
-				String content = bundle.getString(FeatureInternet.ResultExtras.CONTENT.name());
-				JSONObject obj;
-				obj = new JSONObject(content);
-				String latitudeName = ResultExtras.LATITUDE.name().toLowerCase();
-				String longitudeName = ResultExtras.LONGITUDE.name().toLowerCase();
-				if (!obj.isNull(latitudeName) && (!obj.isNull(longitudeName)))
+				long deltaInSeconds = (System.currentTimeMillis() - _lastSendTime) / 1000;
+				if (deltaInSeconds > _updateInterval)
 				{
-					latitude = Double.toString(obj.getDouble(latitudeName));
-					longitude = Double.toString(obj.getDouble(longitudeName));
-					
-					WeatherResponseCallback responseCallback = new WeatherResponseCallback();
-					Bundle queryParams = new Bundle();
-					queryParams.putString("LONGTITUDE", longitude);
-					queryParams.putString("LATITUDE", latitude);
-					String query = getPrefs().getString(Param.YAHOO_QUERY, queryParams);					
-					query = URLEncoder.encode(query, "UTF-8").replaceAll("\\+", "%20");
-					Bundle queryUrlParams = new Bundle();
-					queryUrlParams.putString("YAHOO_QUERY", query);
-					String weatherServerURL = getPrefs().getString(Param.WEATHER_QUERY_URL, queryUrlParams);
-					Log.i(TAG, "Retrieving weather data from: " + weatherServerURL);
-					
-					JsonObjectRequest weatherContentRequest = new JsonObjectRequest(Request.Method.GET,
-					        weatherServerURL, null, responseCallback, responseCallback);
-					Environment.getInstance().getRequestQueue().add(weatherContentRequest);
-				}				
+					_lastSendTime = System.currentTimeMillis();
+					String latitude = null;
+					String longitude = null;
+					String content = bundle.getString(FeatureInternet.ResultExtras.CONTENT.name());
+					JSONObject obj;
+					obj = new JSONObject(content);
+					String latitudeName = ResultExtras.LATITUDE.name().toLowerCase();
+					String longitudeName = ResultExtras.LONGITUDE.name().toLowerCase();
+					if (!obj.isNull(latitudeName) && (!obj.isNull(longitudeName)))
+					{
+						latitude = Double.toString(obj.getDouble(latitudeName));
+						longitude = Double.toString(obj.getDouble(longitudeName));
+						
+						WeatherResponseCallback responseCallback = new WeatherResponseCallback();
+						Bundle queryParams = new Bundle();
+						queryParams.putString("LONGTITUDE", longitude);
+						queryParams.putString("LATITUDE", latitude);
+						String query = getPrefs().getString(Param.YAHOO_QUERY, queryParams);
+						query = URLEncoder.encode(query, "UTF-8").replaceAll("\\+", "%20");
+						Bundle queryUrlParams = new Bundle();
+						queryUrlParams.putString("YAHOO_QUERY", query);
+						String weatherServerURL = getPrefs().getString(Param.WEATHER_QUERY_URL, queryUrlParams);
+						Log.i(TAG, "Retrieving weather data from: " + weatherServerURL);
+						
+						JsonObjectRequest weatherContentRequest = new JsonObjectRequest(Request.Method.GET,
+						        weatherServerURL, null, responseCallback, responseCallback);
+						Environment.getInstance().getRequestQueue().add(weatherContentRequest);
+					}
+				}
 			}
 			catch (JSONException e)
 			{
@@ -143,13 +151,28 @@ public class FeatureWeather extends FeatureComponent
 	{
 		for (int id = 0; id < QUERY_TAGS.values().length - 2; id++)
 		{
-			if(response.isNull(QUERY_TAGS.values()[id].name()))
+			if (response.isNull(QUERY_TAGS.values()[id].name()))
+			{
+				Log.w(TAG, "Tag " + QUERY_TAGS.values()[id].name() + " missing");
 				return;
+			}
 			response = response.getJSONObject(QUERY_TAGS.values()[id].name());
 		}
-		_data = new WeatherData();
-		_data.setImgCode(response.getInt(QUERY_TAGS.code.name()));
-		_data.setTemp(response.getInt(QUERY_TAGS.temp.name()));
+		
+		if (!response.isNull(QUERY_TAGS.code.name()) && (!response.isNull(QUERY_TAGS.temp.name())))
+		{
+			int code = response.getInt(QUERY_TAGS.code.name());
+			int temp = response.getInt(QUERY_TAGS.temp.name());			
+			_data.setImgCode(code);
+			_data.setTemp(temp);
+			if(_data.isChanged())
+				getEventMessenger().trigger(ON_WEATHER_CHANGE);	
+		}
+		else
+		{
+			Log.w(TAG, "Tag code or temp missing");
+		}
+		
 	}
 	
 	private class WeatherResponseCallback implements Response.Listener<JSONObject>, Response.ErrorListener
@@ -160,13 +183,10 @@ public class FeatureWeather extends FeatureComponent
 			try
 			{
 				parseContent(response);
-				_onFeatureInitialized.onInitialized(FeatureError.OK(FeatureWeather.this));
 			}
 			catch (JSONException e)
 			{
 				Log.e(TAG, "Error parsing weather data", e);
-				_onFeatureInitialized
-				        .onInitialized(new FeatureError(FeatureWeather.this, ResultCode.PROTOCOL_ERROR, e));
 			}
 		}
 		
@@ -174,7 +194,6 @@ public class FeatureWeather extends FeatureComponent
 		public void onErrorResponse(VolleyError error)
 		{
 			Log.e(TAG, "Error retrieving weather data with code: " + error);
-			_onFeatureInitialized.onInitialized(new FeatureError(FeatureWeather.this, error));
 		}
 	}
 	
@@ -182,11 +201,12 @@ public class FeatureWeather extends FeatureComponent
 	{
 		private int _imgCode;
 		private int _temp;
+		private boolean _isChanged;
 		
 		public WeatherData(int imgCode, int temp)
 		{
-			_imgCode = imgCode;
-			_temp = temp;
+			setTemp(temp);
+			setImgCode(imgCode);
 		}
 		
 		public WeatherData()
@@ -196,17 +216,31 @@ public class FeatureWeather extends FeatureComponent
 		
 		private void setImgCode(int i)
 		{
-			_imgCode = i;
+			if (i != _imgCode) 
+			{
+				_isChanged = true;			
+				_imgCode = i;
+			}
 		}
 		
 		private void setTemp(int temp)
 		{
-			_temp = temp;
+			if (temp != _temp) 
+			{
+				_isChanged = true;			
+				_temp = temp;
+			}
 		}
 		
 		public int getImgCode()
 		{
+			_isChanged = false;
 			return _imgCode;
+		}
+
+		public boolean isChanged()
+		{
+			return _isChanged;
 		}
 		
 		public String getImgURL()
@@ -214,14 +248,14 @@ public class FeatureWeather extends FeatureComponent
 			Bundle queryParams = new Bundle();
 			queryParams.putInt("IMAGE_NAME", _imgCode);
 			String imgURL = getPrefs().getString(Param.IMAGE_URL, queryParams);
+			_isChanged = false;
 			return imgURL;
 		}
 		
 		public int getTemp()
 		{
 			return _temp;
-		}
-		
+		}		
 	}
 	
 	public WeatherData getWeatherData()
