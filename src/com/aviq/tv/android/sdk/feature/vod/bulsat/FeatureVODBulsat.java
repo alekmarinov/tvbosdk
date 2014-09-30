@@ -14,6 +14,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -110,11 +111,39 @@ public class FeatureVODBulsat extends FeatureVOD
 
 	@Override
     @SuppressWarnings("unchecked")
-	public VodTree<VodGroup> getVodData()
+	public VodTree<VodGroup> getVodData(boolean removeEmptyElements)
 	{
+		if (removeEmptyElements)
+			removeEmptyNodes(_vodData.getRoot());
+		
 		return _vodData;
 	}
 
+	@SuppressWarnings("unchecked")
+	public void removeEmptyNodes(VodTree.Node<VodGroup> node)
+	{
+		if (node.hasChildren())
+		{
+			// Use array to avoid ConcurrentModificationException
+			for (VodTree.Node<VodGroup> child : node.getChildren().toArray(new VodTree.Node[0]))
+				removeEmptyNodes(child);
+		}
+		else
+		{
+			// Remove a node when it has no children and no leaves
+			if (node.getData().getVodList().isEmpty())
+			{
+				node.getParent().remove(node.getData());
+			}
+		}
+		
+		// Check the current node in case there are no children left
+		if (!node.hasChildren() && node.getData().getVodList().isEmpty() && node.getParent() != null)
+		{
+			node.getParent().remove(node.getData());
+		}
+	}
+	
 	@Override
     public void loadVod(String id, OnVodLoaded onVodLoadedListener)
 	{

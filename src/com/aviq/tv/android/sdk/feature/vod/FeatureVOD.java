@@ -47,7 +47,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 		return FeatureName.Scheduler.VOD;
 	}
 
-	public abstract <T> T getVodData();
+	public abstract <T> T getVodData(boolean removeEmptyElements);
 	public abstract void loadVod(String id, OnVodLoaded onVodLoadedListener);
 	public abstract void search(String term, OnVodSearchResult onVodSearchResult);
 

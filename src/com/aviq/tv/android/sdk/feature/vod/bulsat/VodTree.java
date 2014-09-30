@@ -1,6 +1,7 @@
 package com.aviq.tv.android.sdk.feature.vod.bulsat;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import android.os.Parcel;
@@ -74,6 +75,19 @@ public class VodTree<T extends Parcelable> implements Parcelable
 			return node;
 		}
 
+		public void remove(T data)
+		{
+			for (Iterator<VodTree.Node<T>> iter = _children.iterator(); iter.hasNext(); )
+			{
+				VodTree.Node<T> child = iter.next();
+				if (child.getData().equals(data))
+				{
+					iter.remove();
+					break;
+				}
+			}
+		}
+		
 		public List<Node<T>> getChildren()
 		{
 			return _children;
