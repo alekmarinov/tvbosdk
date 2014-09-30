@@ -23,4 +23,5 @@ public interface IEpgDataProvider
 	public List<Program> getProgramList(String channelId, Calendar timeStart, Calendar timeEnd);
 	public Program getProgramById(String channelId, String programId);
 	public Calendar getMaxEpgStopTime();
+	public Calendar getMinEpgStartTime();
 }

@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.NavigableMap;
 
 import android.graphics.Bitmap;
-import com.aviq.tv.android.sdk.core.Log;
 
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.utils.Calendars;
 
 public class EpgData implements IEpgDataProvider, Serializable
@@ -235,6 +235,7 @@ public class EpgData implements IEpgDataProvider, Serializable
 		return _maxEpgStopTime;
 	}
 
+	@Override
 	public Calendar getMinEpgStartTime()
 	{
 		return _minEpgStartTime;
