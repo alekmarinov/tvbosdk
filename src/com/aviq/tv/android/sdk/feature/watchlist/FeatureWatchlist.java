@@ -27,7 +27,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
-import com.aviq.tv.android.sdk.feature.epg.EpgData;
+import com.aviq.tv.android.sdk.feature.epg.IEpgDataProvider;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -192,7 +192,7 @@ public class FeatureWatchlist extends FeatureComponent
 	}
 
 	// Loads programs list from watchlist settings
-	private ArrayList<Program> loadWatchlist(EpgData epgData)
+	private ArrayList<Program> loadWatchlist(IEpgDataProvider epgData)
 	{
 		ArrayList<Program> programs = new ArrayList<Program>();
 		if (epgData == null || !_userPrefs.has(UserParam.WATCHLIST))
