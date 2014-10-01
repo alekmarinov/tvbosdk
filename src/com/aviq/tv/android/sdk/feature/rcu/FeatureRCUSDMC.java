@@ -17,7 +17,7 @@ import com.aviq.tv.android.sdk.core.Key;
 /**
  * Defines SDMC RCU specific keys mapping
  */
-public class FeatureRCUSDMC extends FeatureRCU
+public class FeatureRCUSDMC extends FeatureRCUKeyboard
 {
 	@Override
 	public Key getKey(int keyCode)
@@ -117,6 +117,6 @@ public class FeatureRCUSDMC extends FeatureRCU
 			case 314:
 				return Key.SLEEP;
 		}
-		return Key.UNKNOWN;
+		return super.getKey(keyCode);
 	}
 }

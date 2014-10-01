@@ -17,7 +17,7 @@ import com.aviq.tv.android.sdk.core.Key;
 /**
  * Defines Wilmaa RCU specific keys mapping
  */
-public class FeatureRCUWilmaa extends FeatureRCU
+public class FeatureRCUWilmaa extends FeatureRCUKeyboard
 {
 	@Override
 	public Key getKey(int keyCode)
@@ -102,6 +102,6 @@ public class FeatureRCUWilmaa extends FeatureRCU
 			case KeyEvent.KEYCODE_9:
 				return Key.NUM_9;
 		}
-		return Key.UNKNOWN;
+		return super.getKey(keyCode);
 	}
 }
