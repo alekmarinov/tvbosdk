@@ -101,6 +101,7 @@ public class FeatureName
 		RECORDINGS,
 		RECORDING_ITEMS,
 		RECORDING_DETAILS,
-		ERROR
+		ERROR,
+		PASSWORD
 	}
 }
