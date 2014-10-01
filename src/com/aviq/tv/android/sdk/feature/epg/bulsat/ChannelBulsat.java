@@ -121,14 +121,14 @@ public class ChannelBulsat extends Channel implements Serializable
 		}
 		catch (NumberFormatException nfe)
 		{
-			Log.e("ChannelBulsat", nfe.getMessage(), nfe);
+			Log.w("ChannelBulsat", "Missing or invalid ChannelNo in channel " + getChannelId());
 		}
 
 		String genreTitle = attributes[channelBulsatMetaData.metaChannelGenre];
 		Genre genre = _genreMap.get(genreTitle);
 		if (genre == null)
 		{
-			Log.w(TAG, "Can't find genre mapping of " + genreTitle + ", mapping to " + Genre.OTHER);
+			Log.w(TAG, "Can't find genre mapping of " + genreTitle + ", mapping to " + Genre.OTHER + " in channel " + getChannelId());
 			genre = Genre.OTHER;
 		}
 		setGenre(genre);
@@ -139,7 +139,7 @@ public class ChannelBulsat extends Channel implements Serializable
 		}
 		catch (NumberFormatException nfe)
 		{
-			Log.e("ChannelBulsat", nfe.getMessage(), nfe);
+			Log.w("ChannelBulsat", "Missing or invalid NDVR in channel " + getChannelId());
 		}
 		if (attributes[channelBulsatMetaData.metaChannelStreamUrl] != null)
 			setStreamUrl(new String(attributes[channelBulsatMetaData.metaChannelStreamUrl]));

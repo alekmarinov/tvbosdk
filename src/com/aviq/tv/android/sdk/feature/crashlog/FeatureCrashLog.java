@@ -116,15 +116,15 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 				String featureClassName = bundle.getString(Environment.ExtraInitError.FEATURE_CLASS.name());
 				Class<?> featureClass;
 				IFeature feature = null;
-                try
-                {
-	                featureClass = Class.forName(featureClassName);
+				try
+				{
+					featureClass = Class.forName(featureClassName);
 					feature = Environment.getInstance().getFeature(featureClass);
-                }
-                catch (ClassNotFoundException e)
-                {
-                	Log.e(TAG, e.getMessage(), e);
-                }
+				}
+				catch (ClassNotFoundException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
 				int errCode = bundle.getInt(Environment.ExtraInitError.ERROR_CODE.name());
 				Bundle errData = bundle.getBundle(Environment.ExtraInitError.ERROR_DATA.name());
 				FeatureError error = new FeatureError(feature, errCode, errData);
@@ -239,9 +239,12 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 	/**
 	 * Log info message
 	 *
-	 * @param tag Used to identify the source of a log message
-	 * @param message The message you would like logged.
-	 * @param ex An exception to log
+	 * @param tag
+	 *            Used to identify the source of a log message
+	 * @param message
+	 *            The message you would like logged.
+	 * @param ex
+	 *            An exception to log
 	 */
 	public void info(String tag, String message, Throwable ex)
 	{
@@ -251,9 +254,12 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 	/**
 	 * Log alert message
 	 *
-	 * @param tag Used to identify the source of a log message
-	 * @param message The message you would like logged.
-	 * @param ex An exception to log
+	 * @param tag
+	 *            Used to identify the source of a log message
+	 * @param message
+	 *            The message you would like logged.
+	 * @param ex
+	 *            An exception to log
 	 */
 	public void alert(String tag, String message, Throwable ex)
 	{
@@ -263,9 +269,12 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 	/**
 	 * Log error message
 	 *
-	 * @param tag Used to identify the source of a log message
-	 * @param message The message you would like logged.
-	 * @param ex An exception to log
+	 * @param tag
+	 *            Used to identify the source of a log message
+	 * @param message
+	 *            The message you would like logged.
+	 * @param ex
+	 *            An exception to log
 	 */
 	public void error(String tag, String message, Throwable ex)
 	{
@@ -275,9 +284,12 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 	/**
 	 * Log fatal error
 	 *
-	 * @param tag Used to identify the source of a log message
-	 * @param message The message you would like logged.
-	 * @param ex An exception to log
+	 * @param tag
+	 *            Used to identify the source of a log message
+	 * @param message
+	 *            The message you would like logged.
+	 * @param ex
+	 *            An exception to log
 	 */
 	public void fatal(String tag, String message, Throwable ex)
 	{
@@ -287,10 +299,14 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 	/**
 	 * Log fatal error
 	 *
-	 * @param tag Used to identify the source of a log message
-	 * @param message The message you would like logged.
-	 * @param ex An exception to log
-	 * @param extra Additional data related to the fatal error
+	 * @param tag
+	 *            Used to identify the source of a log message
+	 * @param message
+	 *            The message you would like logged.
+	 * @param ex
+	 *            An exception to log
+	 * @param extra
+	 *            Additional data related to the fatal error
 	 */
 	public void fatal(String tag, String message, Throwable ex, Bundle extra)
 	{
@@ -402,7 +418,16 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 					isFirst = false;
 				else
 					sb.append(',');
-				String paramValue = prefs.getString(paramName);
+
+				String paramValue = null;
+				try
+				{
+					paramValue = prefs.getString(paramName);
+				}
+				catch (ClassCastException cce)
+				{
+					paramValue = String.valueOf(prefs.getInt(paramName));
+				}
 				sb.append(paramName).append('=').append(paramValue);
 			}
 		}
