@@ -20,13 +20,6 @@ public class FeatureRCUBulsat extends FeatureRCUSDMC
 	@Override
 	public Key getKey(int keyCode)
 	{
-		Key key = super.getKey(keyCode);
-		if (key == Key.UNKNOWN)
-		{
-			switch (keyCode)
-			{
-			}
-		}
-		return key;
+		return super.getKey(keyCode);
 	}
 }
