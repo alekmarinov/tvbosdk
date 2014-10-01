@@ -282,7 +282,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		scheduleDelayed(getPrefs().getInt(Param.UPDATE_INTERVAL));
 	}
 
-	public EpgData getEpgData()
+	public IEpgDataProvider getEpgData()
 	{
 		return _epgData;
 	}

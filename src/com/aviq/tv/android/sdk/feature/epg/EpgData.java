@@ -119,6 +119,7 @@ public class EpgData implements IEpgDataProvider, Serializable
 	 *            id
 	 * @return the Channel with specified id
 	 */
+	@Override
 	public Channel getChannel(String channelId)
 	{
 		for (Channel channel : _channelList)

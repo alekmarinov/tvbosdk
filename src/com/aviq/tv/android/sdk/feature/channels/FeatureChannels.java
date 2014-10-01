@@ -27,9 +27,9 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
-import com.aviq.tv.android.sdk.feature.epg.EpgData;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG.OnStreamURLReceived;
+import com.aviq.tv.android.sdk.feature.epg.IEpgDataProvider;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice.IStatusFieldGetter;
@@ -586,7 +586,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	{
 		List<Channel> channels = new ArrayList<Channel>();
 
-		EpgData epgData = _feature.Scheduler.EPG.getEpgData();
+		IEpgDataProvider epgData = _feature.Scheduler.EPG.getEpgData();
 		if (epgData == null)
 		{
 			Log.e(TAG, "No EPG data exists.");
