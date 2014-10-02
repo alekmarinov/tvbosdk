@@ -53,7 +53,6 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 public class FeatureManager
 {
 	public static final String TAG = FeatureManager.class.getSimpleName();
-	public static final int FEATURE_DEFAULT_INIT_TIMEOUT = 180;
 	private List<IFeature> _features = new ArrayList<IFeature>();
 	private final FeatureInitializer _featureInitializer = new FeatureInitializer();
 	private FeatureFactoryCustom _featureFactory = new FeatureFactoryCustom();

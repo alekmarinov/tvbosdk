@@ -27,7 +27,6 @@ import java.util.TreeSet;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
-import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
@@ -90,12 +89,13 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		{
 			@Override
 			public void onRecordingLoaded(
+					FeatureError error,
 			        Map<String, NavigableMap<String, RecordingScheduler>> channelToRecordsNavigableMap)
 			{
 				_channelToRecordsNavigableMap = channelToRecordsNavigableMap;
-
+				onFeatureInitialized.onInitialized(error);
 			}
-		}, onFeatureInitialized);
+		});
 	}
 
 	@Override
@@ -400,11 +400,10 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 *
 	 * @param onLoadRecordings
 	 *            - OnLoadRecordings callback
-	 * @return true - if operation completed successfully
 	 */
-	protected boolean loadRecordFromDataProvider(OnLoadRecordings onLoadRecordings,
-	        OnFeatureInitialized onFeatureInitialized)
+	protected void loadRecordFromDataProvider(OnLoadRecordings onLoadRecordings)
 	{
+		FeatureError error = FeatureError.OK(this);
 		try
 		{
 			HashMap<String, NavigableMap<String, RecordingScheduler>> _channelToRecordsNavigableMap = new HashMap<String, NavigableMap<String, RecordingScheduler>>();
@@ -424,7 +423,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 					if (isDateExpiredForRecordings(calStartTime, null))
 					{
-						Log.e(TAG, "Record start at " + startTime + "has expired date");
+						Log.e(TAG, "Record start at " + startTime + " has expired date");
 						continue;
 					}
 
@@ -444,19 +443,13 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					navigableMap.put(startTime, rc);
 					_dayOffsets.add(Calendars.getDayOffsetByDate(calStartTime));
 				}
-				return true;
 			}
-			super.initialize(onFeatureInitialized);
-			onLoadRecordings.onRecordingLoaded(_channelToRecordsNavigableMap);
-			return true;
 		}
 		catch (ParseException e)
 		{
-			Log.e(TAG, e.getMessage(), e);
-			onFeatureInitialized.onInitialized(new FeatureError(FeatureRecordingScheduler.this,
-			        ResultCode.INTERNAL_ERROR, e));
+			error = new FeatureError(this, e);
 		}
-		return false;
+		onLoadRecordings.onRecordingLoaded(error, _channelToRecordsNavigableMap);
 	}
 
 	protected boolean saveRecordsToDataProvider(String recordings)
@@ -470,6 +463,6 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 */
 	protected interface OnLoadRecordings
 	{
-		public void onRecordingLoaded(Map<String, NavigableMap<String, RecordingScheduler>> map);
+		public void onRecordingLoaded(FeatureError error, Map<String, NavigableMap<String, RecordingScheduler>> map);
 	}
 }

@@ -87,7 +87,7 @@ public class Environment extends Activity
 		/**
 		 * Timeout in seconds for feature initialization
 		 */
-		FEATURE_INITIALIZE_TIMEOUT(FeatureManager.FEATURE_DEFAULT_INIT_TIMEOUT),
+		FEATURE_INITIALIZE_TIMEOUT(180),
 
 		/**
 		 * The overlay background color

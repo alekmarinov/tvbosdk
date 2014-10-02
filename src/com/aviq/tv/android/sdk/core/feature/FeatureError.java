@@ -94,7 +94,7 @@ public class FeatureError extends Exception
 	 */
 	public FeatureError(IFeature feature, int errCode)
 	{
-		this(feature, errCode, null, null);
+		this(feature, errCode, ResultCode.text(errCode), null);
 	}
 
 	/**
@@ -107,7 +107,7 @@ public class FeatureError extends Exception
 	 */
 	public FeatureError(IFeature feature, int errCode, Bundle errData)
 	{
-		this(feature, errCode, errData, null, null);
+		this(feature, errCode, errData, ResultCode.text(errCode), null);
 	}
 
 	/**
