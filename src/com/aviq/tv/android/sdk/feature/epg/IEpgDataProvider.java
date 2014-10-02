@@ -12,6 +12,7 @@ public interface IEpgDataProvider
 	public Channel getChannel(String channelId);
 	public Bitmap getChannelLogoBitmap(int index);
 	public Program getProgram(String channelId, Calendar when);
+	public Program getProgramByOffset(String channelId, Calendar when, int offset);
 	public List<Channel> getChannels();
 	public List<Program> getProgramList(String channelId, Calendar timeStart, Calendar timeEnd);
 	public Program getProgramById(String channelId, String programId);
