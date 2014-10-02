@@ -216,6 +216,12 @@ public class EpgData implements IEpgDataProvider, Serializable
 	}
 
 	@Override
+	public Program getProgramByOffset(String channelId, Calendar when, int offset)
+	{
+		return getProgramByIndex(channelId, getProgramIndex(channelId, when) + offset);
+	}
+
+	@Override
 	public Program getProgramById(String channelId, String programId)
 	{
 		List<Program> programsList = _channelToProgramListMap.get(channelId);
