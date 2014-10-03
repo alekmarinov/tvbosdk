@@ -294,8 +294,15 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			Log.e(TAG, ".isProgramRecorded(null) is not allowed!");
 			return false;
 		}
-		NavigableMap<String, RecordingScheduler> navMap = _channelToRecordsNavigableMap.get(program.getChannel()
-		        .getChannelId());
+
+		if (_channelToRecordsNavigableMap == null)
+		{
+			Log.e(TAG, ".isProgramRecorded: _channelToRecordsNavigableMap = null is not allowed!");
+			return false;
+		}
+
+		Channel channel = program.getChannel();
+		NavigableMap<String, RecordingScheduler> navMap = _channelToRecordsNavigableMap.get(channel.getChannelId());
 		if (navMap == null)
 		{
 			return false;
@@ -404,9 +411,9 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	protected void loadRecordFromDataProvider(OnLoadRecordings onLoadRecordings)
 	{
 		FeatureError error = FeatureError.OK(this);
+		HashMap<String, NavigableMap<String, RecordingScheduler>> channelToRecordsNavigableMap = new HashMap<String, NavigableMap<String, RecordingScheduler>>();
 		try
 		{
-			HashMap<String, NavigableMap<String, RecordingScheduler>> _channelToRecordsNavigableMap = new HashMap<String, NavigableMap<String, RecordingScheduler>>();
 			if (_userPrefs.has(UserParam.RECORDINGS))
 			{
 				String recordings = _userPrefs.getString(UserParam.RECORDINGS);
@@ -430,14 +437,14 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					NavigableMap<String, RecordingScheduler> navigableMap = null;
 					RecordingScheduler rc = new RecordingScheduler(chnId, startTime, duration);
 
-					if (!_channelToRecordsNavigableMap.containsKey(chnId))
+					if (!channelToRecordsNavigableMap.containsKey(chnId))
 					{
 						navigableMap = new TreeMap<String, RecordingScheduler>();
-						_channelToRecordsNavigableMap.put(chnId, navigableMap);
+						channelToRecordsNavigableMap.put(chnId, navigableMap);
 					}
 					else
 					{
-						navigableMap = _channelToRecordsNavigableMap.get(chnId);
+						navigableMap = channelToRecordsNavigableMap.get(chnId);
 					}
 
 					navigableMap.put(startTime, rc);
@@ -449,7 +456,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		{
 			error = new FeatureError(this, e);
 		}
-		onLoadRecordings.onRecordingLoaded(error, _channelToRecordsNavigableMap);
+		onLoadRecordings.onRecordingLoaded(error, channelToRecordsNavigableMap);
 	}
 
 	protected boolean saveRecordsToDataProvider(String recordings)
