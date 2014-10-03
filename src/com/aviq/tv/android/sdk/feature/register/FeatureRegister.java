@@ -53,7 +53,7 @@ public class FeatureRegister extends FeatureComponent
 		/**
 		 * ABMP Server address
 		 */
-		ABMP_SERVER("http://services.aviq.com:978"),
+		ABMP_SERVER(""),
 
 		/**
 		 * Brand name to represent the box on ABMP
