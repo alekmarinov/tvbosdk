@@ -43,6 +43,9 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureEasterEgg.class.getSimpleName();
 
+	/** 000 = PWD */
+	public static final String KEY_SEQ_PWD = "000";
+
 	/** 738 = SET */
 	public static final String KEY_SEQ_SET = "RR738RR";
 	/** 564 = LOG */
@@ -144,6 +147,11 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 
 		// View Hierarchy
 		keySeq = getPrefs().getString(Param.KEY_SEQUENCE_VHR);
+		_sequenceList.add(keySeq);
+		_sequencePrefixes.add(keySeq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
+
+		// FIXME:
+		keySeq = KEY_SEQ_PWD;
 		_sequenceList.add(keySeq);
 		_sequencePrefixes.add(keySeq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
 

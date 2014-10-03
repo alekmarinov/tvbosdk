@@ -96,6 +96,11 @@ public abstract class Program implements Comparable<Program>, Serializable
 		_title = title;
 	}
 
+	public void setChannel(Channel channel)
+	{
+		_channel = channel;
+	}
+
 	/** Return the program length in milliseconds */
 	public long getLengthMillis()
 	{

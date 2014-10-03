@@ -182,7 +182,7 @@ public class EpgData implements IEpgDataProvider, Serializable
 		return list;
 	}
 
-	public int getProgramIndex(String channelId, Calendar when)
+	private int getProgramIndex(String channelId, Calendar when)
 	{
 		NavigableMap<Calendar, Integer> programMap = _channelToProgramNavigableMap.get(channelId);
 		if (programMap == null)
@@ -197,7 +197,7 @@ public class EpgData implements IEpgDataProvider, Serializable
 		return -1;
 	}
 
-	public Program getProgramByIndex(String channelId, int programIndex)
+	private Program getProgramByIndex(String channelId, int programIndex)
 	{
 		List<Program> programsList = _channelToProgramListMap.get(channelId);
 		if (programsList == null)
