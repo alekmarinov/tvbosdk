@@ -118,8 +118,7 @@ public class FeatureInternet extends FeatureScheduler
 			@Override
 			public void onReceiveResult(FeatureError error)
 			{
-				Log.i(TAG,
-				        ".onSchedule:onReceiveResult: " + error);
+				Log.i(TAG, ".onSchedule:onReceiveResult: " + error);
 				getEventMessenger().trigger(error.isError() ? ON_DISCONNECTED : ON_CONNECTED, error.getBundle());
 				scheduleDelayed(getPrefs().getInt(Param.CHECK_INTERVAL) * 1000);
 			}
@@ -166,7 +165,7 @@ public class FeatureInternet extends FeatureScheduler
 					        || (timeElapsed < getPrefs().getInt(Param.CHECK_ATTEMPTS_TIMEOUT)))
 					{
 						_attemptsCounter++;
-						Log.w(TAG, _attemptsCounter + "/" + _checkAttempts +  ": " + result);
+						Log.w(TAG, _attemptsCounter + "/" + _checkAttempts + ": " + result);
 						getEventMessenger().postDelayed(this, getPrefs().getInt(Param.CHECK_ATTEMPT_DELAY));
 						return;
 					}
@@ -256,7 +255,15 @@ public class FeatureInternet extends FeatureScheduler
 	}
 
 	/**
-	 * Get headers from Url
+	 * Get headers from Url. <br>
+	 * <b>Caution:</b> Do not use this method against large content behind the
+	 * url.
+	 * The Volley library is allocating memory with size the content length
+	 * returned by the request header,
+	 * which may lead to OutOfMemoryError.
+	 *<br>
+	 * FIXME: Make head request issue workaround by providing custom HttpStack
+	 * to the Environment's request queue.
 	 *
 	 * @param url
 	 *            the url to get headers from
@@ -277,7 +284,8 @@ public class FeatureInternet extends FeatureScheduler
 				{
 					resultData.putString(key, response.headers.get(key));
 				}
-				onResultReceived.onReceiveResult(new FeatureError(FeatureInternet.this, response.statusCode, resultData));
+				onResultReceived
+				        .onReceiveResult(new FeatureError(FeatureInternet.this, response.statusCode, resultData));
 				return super.parseNetworkResponse(response);
 			}
 		};
