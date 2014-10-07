@@ -24,10 +24,12 @@ public class ChannelBulsat extends Channel implements Serializable
 {
 	private static final String TAG = ChannelBulsat.class.getSimpleName();
 	private static final long serialVersionUID = -8718850662391176233L;
+	private static final String PG18 = "PG18";
 	private int _channelNo;
 	private Genre _genre;
 	private String _streamUrl;
 	private String _seekUrl;
+	private boolean _parentControl;
 
 	public static enum Genre
 	{
@@ -69,6 +71,7 @@ public class ChannelBulsat extends Channel implements Serializable
 		public int metaChannelNdvr;
 		public int metaChannelStreamUrl;
 		public int metaChannelSeekUrl;
+		public int metaChannelPG;
 	}
 
 	public void setStreamUrl(String streamUrl)
@@ -111,6 +114,16 @@ public class ChannelBulsat extends Channel implements Serializable
 		return _genre;
 	}
 
+	public void setParentControl(boolean parentControl)
+	{
+		_parentControl = parentControl;
+	}
+
+	public boolean isParentControl()
+	{
+		return _parentControl;
+	}
+
 	@Override
 	public void setAttributes(Channel.MetaData channelMetaData, String[] attributes)
 	{
@@ -145,5 +158,7 @@ public class ChannelBulsat extends Channel implements Serializable
 			setStreamUrl(new String(attributes[channelBulsatMetaData.metaChannelStreamUrl]));
 		if (attributes[channelBulsatMetaData.metaChannelSeekUrl] != null)
 			setSeekUrl(new String(attributes[channelBulsatMetaData.metaChannelSeekUrl]));
+		if (attributes[channelBulsatMetaData.metaChannelPG] != null)
+			setParentControl(PG18.equals(attributes[channelBulsatMetaData.metaChannelPG]));
 	}
 }
