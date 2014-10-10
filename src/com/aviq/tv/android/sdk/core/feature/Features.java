@@ -72,8 +72,7 @@ public class Features
 		public FeatureDevice DEVICE;
 		public FeatureVolume VOLUME;
 		public FeatureComponent CRASHLOG;
-		public FeatureWeather WEATHER;
-		
+		public FeatureWeather WEATHER;	
 	}
 
 	public class Schedulers
@@ -122,6 +121,7 @@ public class Features
 		public FeatureState RECORDING_DETAILS;
 		public FeatureState ERROR;
 		public FeatureState PASSWORD;
+		public FeatureState FAVOURITE_CHANNELS;
 	}
 
 	public Features(FeatureSet featureSet) throws FeatureNotFoundException

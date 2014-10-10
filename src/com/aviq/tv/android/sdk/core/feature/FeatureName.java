@@ -40,7 +40,7 @@ public class FeatureName
 		RECORDING_SCHEDULER,
 		DEVICE,
 		VOLUME,
-		WEATHER
+		WEATHER		
 	}
 
 	public static enum Scheduler
@@ -102,6 +102,7 @@ public class FeatureName
 		RECORDING_ITEMS,
 		RECORDING_DETAILS,
 		ERROR,
-		PASSWORD
+		PASSWORD,
+		FAVOURITE_CHANNELS
 	}
 }
