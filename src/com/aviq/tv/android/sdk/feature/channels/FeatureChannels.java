@@ -142,14 +142,18 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 			}
 			else if (msgId == FeaturePlayer.ON_PLAY_PAUSE)
 			{
-				if (_feature.Component.PLAYER.isPaused())
-					_featureTimeshift.pause();
-				else
-					_featureTimeshift.resume();
+				if (_featureTimeshift != null)
+				{
+					if (_feature.Component.PLAYER.isPaused())
+						_featureTimeshift.pause();
+					else
+						_featureTimeshift.resume();
+				}
 			}
 			else if (msgId == FeaturePlayer.ON_PLAY_STOP)
 			{
-				_featureTimeshift.seekLive();
+				if (_featureTimeshift != null)
+					_featureTimeshift.seekLive();
 			}
 			else if (msgId == FeaturePlayer.ON_PLAY_ERROR || msgId == FeaturePlayer.ON_PLAY_STOP
 			        || msgId == FeaturePlayer.ON_PLAY_TIMEOUT)
