@@ -27,10 +27,10 @@ import android.net.TrafficStats;
 import android.os.Bundle;
 import android.os.StatFs;
 import android.os.SystemClock;
-import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
@@ -48,7 +48,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 public class FeatureDevice extends FeatureComponent
 {
 	public static final String TAG = FeatureDevice.class.getSimpleName();
-	private static final int ON_STATUS = EventMessenger.ID("ON_STATUS");
+	public static final int ON_STATUS = EventMessenger.ID("ON_STATUS");
 	private static int KB = 1024;
 	private static String CMD_STAT = "vmstat -n 1 -d %d";
 	private static String CMD_LOGCAT = "logcat -v time -t 6000 -d";
