@@ -58,6 +58,11 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		AUTOPLAY(true),
 
 		/**
+		 * Set all channels as favorites if there are none favorite channels
+		 */
+		DEFAULT_ALL_CHANNELS_FAVORITE(true),
+
+		/**
 		 * Default channel depending on currently selected language
 		 */
 		DEFAULT_CHANNEL_DE, DEFAULT_CHANNEL_FR, DEFAULT_CHANNEL_EN;
@@ -600,7 +605,8 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		boolean isEmpty = !_userPrefs.has(UserParam.CHANNELS) || _userPrefs.getString(UserParam.CHANNELS).length() == 0;
 		if (isEmpty)
 		{
-			channels.addAll(epgData.getChannels());
+			if (getPrefs().getBool(Param.DEFAULT_ALL_CHANNELS_FAVORITE))
+				channels.addAll(epgData.getChannels());
 			return channels;
 		}
 		else
