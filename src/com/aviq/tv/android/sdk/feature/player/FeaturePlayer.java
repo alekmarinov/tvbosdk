@@ -11,7 +11,6 @@
 package com.aviq.tv.android.sdk.feature.player;
 
 import android.os.Bundle;
-import com.aviq.tv.android.sdk.core.Log;
 import android.view.SurfaceView;
 import android.widget.MediaController;
 import android.widget.VideoView;
@@ -20,6 +19,7 @@ import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Key;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
@@ -256,6 +256,14 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	}
 
 	/**
+	 * @return Returns media duration
+	 */
+	public int getDuration()
+	{
+		return _player.getDuration();
+	}
+
+	/**
 	 * This can be either a VideoView or a SurfaceView.
 	 *
 	 * @return SurfaceView
@@ -273,6 +281,11 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	public void setPositionAndSize(int x, int y, int w, int h)
 	{
 		_player.setPositionAndSize(x, y, w, h);
+	}
+
+	public void seekTo(int offset)
+	{
+		_player.seekTo(offset);
 	}
 
 	public void setFullScreen()

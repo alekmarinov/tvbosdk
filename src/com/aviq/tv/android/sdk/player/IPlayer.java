@@ -42,6 +42,13 @@ public interface IPlayer
 	void resume();
 
 	/**
+	 * Seeks in stream position at the specified offset in milliseconds
+	 *
+	 * @param offset
+	 */
+	void seekTo(int offset);
+
+	/**
 	 * Returns true if player is currently playing media
 	 */
 	boolean isPlaying();
@@ -55,4 +62,9 @@ public interface IPlayer
 	 * Returns playback position
 	 */
 	int getPosition();
+
+	/**
+	 * Returns media duration
+	 */
+	int getDuration();
 }

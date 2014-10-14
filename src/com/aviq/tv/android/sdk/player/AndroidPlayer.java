@@ -113,7 +113,7 @@ public class AndroidPlayer extends BasePlayer implements OnCompletionListener, O
 	/**
 	 * Resume paused media playback
 	 *
-	 * @see com.aviq.tv.android.sdk.player.IPlayer#resume()
+	 * @see com.aviq.tv.android.sdk.player.IPlayer#seekAt()
 	 */
 	@Override
 	public void resume()
@@ -121,6 +121,19 @@ public class AndroidPlayer extends BasePlayer implements OnCompletionListener, O
 		Log.i(TAG, ".resume");
 		super.resume();
 		_videoView.start();
+	}
+
+	/**
+	 * Seeks in stream position at the specified offset in milliseconds
+	 *
+	 * @see com.aviq.tv.android.sdk.player.IPlayer#seekTo(int)
+	 */
+	@Override
+	public void seekTo(int offset)
+	{
+		Log.i(TAG, ".seekTo: offset = " + offset);
+		super.seekTo(offset);
+		_videoView.seekTo(offset);
 	}
 
 	@Override
@@ -141,6 +154,12 @@ public class AndroidPlayer extends BasePlayer implements OnCompletionListener, O
 	{
 		return _videoView.getCurrentPosition();
 	}
+
+	@Override
+    public int getDuration()
+    {
+		return _videoView.getDuration();
+    }
 
 	@Override
 	public VideoView getView()
