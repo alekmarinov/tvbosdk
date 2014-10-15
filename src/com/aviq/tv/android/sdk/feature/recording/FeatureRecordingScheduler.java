@@ -430,7 +430,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 					if (isDateExpiredForRecordings(calStartTime, null))
 					{
-						Log.e(TAG, "Record start at " + startTime + " has expired date");
+						Log.i(TAG, "Record since " + Calendars.makeString(calStartTime) + " has expired date");
 						continue;
 					}
 

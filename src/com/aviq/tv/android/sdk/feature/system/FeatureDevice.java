@@ -387,7 +387,7 @@ public class FeatureDevice extends FeatureComponent
 			if (fieldValue != null)
 				TextUtils.putBundleObject(bundle, paramName, fieldValue);
 			else
-				Log.w(TAG, "Param " + paramName + " has null value!");
+				Log.d(TAG, "Param " + paramName + " has null value!");
 		}
 		getEventMessenger().trigger(ON_STATUS, bundle);
 
