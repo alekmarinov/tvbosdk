@@ -93,7 +93,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 	protected String getChannelsUrl()
 	{
 		String url = super.getChannelsUrl();
-		return url + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg";
+		return url + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable";
 	}
 
 	@Override

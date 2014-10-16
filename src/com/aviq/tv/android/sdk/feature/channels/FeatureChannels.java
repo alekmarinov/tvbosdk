@@ -615,7 +615,6 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 			String[] channelIds = buffer.split(",");
 			for (String channelId : channelIds)
 			{
-				Log.i(TAG, "epgData -> " + epgData + ", channels -> " + channels);
 				Channel channel = epgData.getChannel(channelId);
 				if (channel != null)
 					channels.add(channel);
@@ -642,14 +641,15 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	{
 		if (channelId != null)
 		{
-			List<Channel> favoriteChannels = getActiveChannels();
-			for (int i = 0; i < favoriteChannels.size(); i++)
+			List<Channel> activeChannels = getActiveChannels();
+			for (int i = 0; i < activeChannels.size(); i++)
 			{
-				Channel channel = favoriteChannels.get(i);
+				Channel channel = activeChannels.get(i);
 				if (channel.getChannelId().equals(channelId))
 					return i;
 			}
 		}
+		Log.w(TAG, ".findChannelIndex: Can't find channel index of `" + channelId + "'");
 		return -1;
 	}
 }
