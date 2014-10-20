@@ -73,6 +73,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 				bulsatMetaData.metaChannelSeekUrl = j;
 			else if ("pg".equals(key))
 				bulsatMetaData.metaChannelPG = j;
+			else if ("recordable".equals(key))
+				bulsatMetaData.metaChannelRecordable = j;
 		}
 	}
 

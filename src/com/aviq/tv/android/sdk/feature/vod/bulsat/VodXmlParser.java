@@ -143,7 +143,9 @@ class VodXmlParser
 
 				// Fetch the image and cache it
 				// FIXME: Alek, this causes NullPtrException
-				fetchVodPoster(_currentVod.getTitle(), _currentVod.getPoster());
+
+				// Alek: ...and better not do it still causes app lags just after start
+				// fetchVodPoster(_currentVod.getTitle(), _currentVod.getPoster());
 			}
 			else if (TAG_TITLE_ORG.equals(localName))
 			{
