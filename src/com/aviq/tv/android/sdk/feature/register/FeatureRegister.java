@@ -56,11 +56,6 @@ public class FeatureRegister extends FeatureComponent
 		ABMP_SERVER(""),
 
 		/**
-		 * Brand name to represent the box on ABMP
-		 */
-		BRAND(""),
-
-		/**
 		 * ABMP registration URL format
 		 */
 		ABMP_REGISTER_URL(

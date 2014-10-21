@@ -149,12 +149,18 @@ public class AndroidPlayer extends BasePlayer implements OnCompletionListener, O
 		return super.isPaused();
 	}
 
+	/**
+	 * @return playback position in milliseconds
+	 */
 	@Override
 	public int getPosition()
 	{
 		return _videoView.getCurrentPosition();
 	}
 
+	/**
+	 * @return media duration in milliseconds
+	 */
 	@Override
     public int getDuration()
     {

@@ -59,12 +59,12 @@ public interface IPlayer
 	boolean isPaused();
 
 	/**
-	 * Returns playback position
+	 * @return playback position in milliseconds
 	 */
 	int getPosition();
 
 	/**
-	 * Returns media duration
+	 * Returns media duration in milliseconds
 	 */
 	int getDuration();
 }

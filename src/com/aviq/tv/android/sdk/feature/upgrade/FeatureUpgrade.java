@@ -733,9 +733,9 @@ public class FeatureUpgrade extends FeatureScheduler
 		return false;
 	}
 
-	private boolean isNewVersion(String otherVersion, String brand)
+	private boolean isNewVersion(String otherVersion, String otherBrand)
 	{
-		return isVersionsDiffer(Environment.getInstance().getBuildVersion(), _feature.Component.REGISTER.getPrefs()
-		        .getString(FeatureRegister.Param.BRAND), otherVersion, brand);
+		String currentBrand = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.BRAND);
+		return isVersionsDiffer(Environment.getInstance().getBuildVersion(), currentBrand, otherVersion, otherBrand);
 	}
 }

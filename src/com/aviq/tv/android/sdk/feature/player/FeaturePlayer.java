@@ -248,7 +248,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	}
 
 	/**
-	 * @return Returns playback position
+	 * @return Returns playback position in milliseconds
 	 */
 	public int getPosition()
 	{
