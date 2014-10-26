@@ -160,6 +160,21 @@ public class FeatureError extends Exception
 	 *            bundle with extra error data
 	 * @param detailMessage
 	 *            message describing the error
+	 */
+	public FeatureError(IFeature feature, int errCode, Bundle errData, String detailMessage)
+	{
+		this(feature, errCode, errData, detailMessage, null);
+	}
+
+	/**
+	 * @param feature
+	 *            the feature related to this error
+	 * @param errCode
+	 *            the code of the error
+	 * @param errData
+	 *            bundle with extra error data
+	 * @param detailMessage
+	 *            message describing the error
 	 * @param throwable
 	 *            optional exception object
 	 */

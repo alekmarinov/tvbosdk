@@ -38,7 +38,6 @@ import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
-import com.aviq.tv.android.sdk.feature.internet.FeatureInternet.GeoIpExtras;
 import com.aviq.tv.android.sdk.feature.internet.UploadService;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
@@ -62,7 +61,7 @@ public class FeatureEventCollector extends FeatureScheduler
 		SEND_EVENTS_INTERVAL(16 * 1000),
 
 		/** Report URL */
-		EVENTS_SERVER_URL("https://services.aviq.com:30227/upload/logs/"),
+		EVENTS_SERVER_URL(""),
 
 		/** Username for report URL */
 		EVENTS_SERVER_USERNAME(""),
@@ -106,7 +105,6 @@ public class FeatureEventCollector extends FeatureScheduler
 	 * keep all collected events until uploading to the tracking server
 	 */
 	private List<Bundle> _eventList = Collections.synchronizedList(new ArrayList<Bundle>());
-	private Bundle _geoIp = new Bundle();
 
 	public FeatureEventCollector() throws FeatureNotFoundException
 	{
@@ -181,14 +179,6 @@ public class FeatureEventCollector extends FeatureScheduler
 				processCollectedEvents();
 			}
 		}
-		else if (FeatureInternet.ON_CONNECTED == msgId)
-		{
-			for (GeoIpExtras geoip : FeatureInternet.GeoIpExtras.values())
-			{
-				if (bundle.containsKey(geoip.name()))
-					TextUtils.putBundleObject(_geoIp, geoip.name().toLowerCase(), bundle.get(geoip.name()));
-			}
-		}
 	}
 
 	/**
@@ -214,7 +204,10 @@ public class FeatureEventCollector extends FeatureScheduler
 	 */
 	protected Bundle createGeoIPAttributes()
 	{
-		return _geoIp;
+		Bundle geoIp = _feature.Scheduler.INTERNET.getGeoIP();
+		if (geoIp == null)
+			geoIp = new Bundle();
+		return geoIp;
 	}
 
 	/**
