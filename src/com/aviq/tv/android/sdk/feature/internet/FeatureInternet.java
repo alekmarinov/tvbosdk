@@ -558,6 +558,8 @@ public class FeatureInternet extends FeatureScheduler
 	@Deprecated
 	public String getPublicIP()
 	{
-		return _geoIp.getString(GeoIpExtras.PUBLIC_IP.name());
+		if (_geoIp != null)
+			return _geoIp.getString(GeoIpExtras.PUBLIC_IP.name());
+		return null;
 	}
 }
