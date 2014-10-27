@@ -54,7 +54,17 @@ public class FeatureEPGZattoo extends FeatureEPG
 		/**
 		 * Zattoo UUID
 		 */
-		ZATTOO_UUID("c7fb5bb2-c201-4b3a-9b76-7c25d5090cad");
+		ZATTOO_UUID("c7fb5bb2-c201-4b3a-9b76-7c25d5090cad"),
+
+		/**
+		 * requested minimum bitrate of zattoo stream
+		 */
+		ZATTOO_STREAM_MINRATE(1100),
+
+		/**
+		 * requested initial bitrate of zattoo stream
+		 */
+		ZATTOO_STREAM_INITRATE(2000);
 
 		Param(String value)
 		{
@@ -76,7 +86,8 @@ public class FeatureEPGZattoo extends FeatureEPG
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-		_clientZAPI = new ClientZAPI(getPrefs().getString(Param.ZATTOO_BASE_URL));
+		_clientZAPI = new ClientZAPI(getPrefs().getString(Param.ZATTOO_BASE_URL), getPrefs().getInt(
+		        Param.ZATTOO_STREAM_MINRATE), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE));
 		_clientZAPI.hello(getPrefs().getString(Param.ZATTOO_APP_TID), getPrefs().getString(Param.ZATTOO_UUID),
 		        new OnResultReceived()
 		        {

@@ -44,15 +44,19 @@ public class ClientZAPI
 	public static final String EXTRA_STOP_URL = "STOP_URL";
 	private String _baseUri;
 	private String _cookie;
+	private int _minRate;
+	private int _initRate;
 	private RequestQueue _requestQueue;
 
-	public ClientZAPI(String baseUri)
+	public ClientZAPI(String baseUri, int minRate, int initRate)
 	{
+		_minRate = minRate;
+		_initRate = initRate;
 		_baseUri = baseUri;
 		_requestQueue = Volley.newRequestQueue(Environment.getInstance(), new ExtHttpClientStack(new SslHttpClient()));
 	}
 
-	public void hello(final String appTid, final String uuid, OnResultReceived onResultReceived)
+	public void hello(final String appid, final String uuid, OnResultReceived onResultReceived)
 	{
 		ResponseCallback responseCallbackHello = new ResponseCallback(onResultReceived);
 		StringRequest stringRequest = new StringRequest(Request.Method.POST, _baseUri + "/zapi/session/hello",
@@ -62,7 +66,7 @@ public class ClientZAPI
 			protected Map<String, String> getParams() throws AuthFailureError
 			{
 				Map<String, String> params = new HashMap<String, String>();
-				params.put("app_tid", appTid);
+				params.put("app_tid", appid);
 				params.put("uuid", uuid);
 				params.put("lang", "en");
 				params.put("format", "json");
@@ -78,7 +82,16 @@ public class ClientZAPI
 				return super.parseNetworkResponse(response);
 			}
 		};
-		_requestQueue.add(stringRequest);
+        try
+        {
+	       String body = new String(stringRequest.getPostBody());
+			Log.i(TAG, "call " + stringRequest.getUrl() + " [" + body + "]");
+			_requestQueue.add(stringRequest);
+        }
+        catch (AuthFailureError e)
+        {
+	        Log.e(TAG, e.getMessage(), e);
+        }
 	}
 
 	public void login(final String username, final String password, OnResultReceived onResultReceived)
@@ -105,7 +118,16 @@ public class ClientZAPI
 				return super.parseNetworkResponse(response);
 			}
 		};
-		_requestQueue.add(stringRequest);
+        try
+        {
+	       String body = new String(stringRequest.getPostBody());
+			Log.i(TAG, "call " + stringRequest.getUrl() + " [" + body + "]");
+			_requestQueue.add(stringRequest);
+        }
+        catch (AuthFailureError e)
+        {
+	        Log.e(TAG, e.getMessage(), e);
+        }
 	}
 
 	public void watch(final String channelId, final String streamType, OnResultReceived onResultReceived)
@@ -120,8 +142,8 @@ public class ClientZAPI
 				Map<String, String> params = new HashMap<String, String>();
 				params.put("cid", channelId);
 				params.put("stream_type", streamType);
-				params.put("initialrate", "2000");
-				params.put("minrate", "1100");
+				params.put("initialrate", String.valueOf(_initRate));
+				params.put("minrate", String.valueOf(_minRate));
 				return params;
 			}
 
@@ -134,7 +156,16 @@ public class ClientZAPI
 				return super.parseNetworkResponse(response);
 			}
 		};
-		_requestQueue.add(stringRequest);
+        try
+        {
+	       String body = new String(stringRequest.getPostBody());
+			Log.i(TAG, "call " + stringRequest.getUrl() + " [" + body + "]");
+			_requestQueue.add(stringRequest);
+        }
+        catch (AuthFailureError e)
+        {
+	        Log.e(TAG, e.getMessage(), e);
+        }
 	}
 
 	private class ResponseCallback implements Response.Listener<String>, Response.ErrorListener
