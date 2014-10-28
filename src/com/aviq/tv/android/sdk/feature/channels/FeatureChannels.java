@@ -607,7 +607,6 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		{
 			if (getPrefs().getBool(Param.DEFAULT_ALL_CHANNELS_FAVORITE))
 				channels.addAll(epgData.getChannels());
-			return channels;
 		}
 		else
 		{
@@ -618,6 +617,12 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				Channel channel = epgData.getChannel(channelId);
 				if (channel != null)
 					channels.add(channel);
+			}
+
+			if (channels.size() == 0 && isUseFavorites())
+			{
+				Log.w(TAG, "No favorite channels after update. Adding all channels as favorites");
+				channels.addAll(epgData.getChannels());
 			}
 		}
 		Log.i(TAG, "Loaded " + channels.size() + " favorite channels");
