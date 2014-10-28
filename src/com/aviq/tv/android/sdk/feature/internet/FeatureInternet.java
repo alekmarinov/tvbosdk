@@ -369,10 +369,66 @@ public class FeatureInternet extends FeatureScheduler
 	 */
 	public void checkInternet(final OnResultReceived onResultReceived)
 	{
+		final ConnectivityManager connectivityManager = (ConnectivityManager) Environment.getInstance()
+		        .getSystemService(Context.CONNECTIVITY_SERVICE);
+		final FeatureError noError = new FeatureError(FeatureInternet.this, ResultCode.OK);
+		final NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+		if (networkInfo != null)
+		{
+			checkInternet(networkInfo.getType(), new OnResultReceived()
+			{
+				@Override
+				public void onReceiveResult(FeatureError error)
+				{
+					if (error.isError())
+					{
+						int netType = networkInfo.getType();
+						switch (netType)
+						{
+							case ConnectivityManager.TYPE_ETHERNET:
+								netType = ConnectivityManager.TYPE_WIFI;
+							break;
+							case ConnectivityManager.TYPE_WIFI:
+								netType = ConnectivityManager.TYPE_ETHERNET;
+							break;
+						}
+						checkInternet(netType, onResultReceived);
+					}
+					else
+						onResultReceived.onReceiveResult(noError);
+				}
+			});
+		}
+		else
+		{
+			checkInternet(ConnectivityManager.TYPE_ETHERNET, new OnResultReceived()
+			{
+				@Override
+				public void onReceiveResult(FeatureError error)
+				{
+					if (error.isError())
+						checkInternet(ConnectivityManager.TYPE_WIFI, onResultReceived);
+					else
+						onResultReceived.onReceiveResult(noError);
+				}
+			});
+		}
+	}
+
+	/**
+	 * Checks for internet access by probing route to list of hosts via given network type
+	 *
+	 * @param networkType the network type to use for routing
+	 * @param onResultReceived
+	 */
+	public void checkInternet(final int networkType, final OnResultReceived onResultReceived)
+	{
 		final String[] hosts = new String[]
 		{ getPrefs().getString(Param.CHECK_HOST_ACCESS), getPrefs().getString(Param.CHECK_HOST_ACCESS_BACKUP) };
 		final int checkTimeout = getPrefs().getInt(Param.CHECK_TIMEOUT);
 		final Object mutex = new Object();
+		final ConnectivityManager connectivityManager = (ConnectivityManager) Environment.getInstance()
+		        .getSystemService(Context.CONNECTIVITY_SERVICE);
 
 		new Thread(new Runnable()
 		{
@@ -385,12 +441,8 @@ public class FeatureInternet extends FeatureScheduler
 				Thread threads[] = new Thread[hosts.length];
 				FeatureError error = new FeatureError(FeatureInternet.this, ResultCode.OK);
 				final Bundle bundle = new Bundle();
-				final ConnectivityManager connectivityManager = (ConnectivityManager) Environment.getInstance()
-				        .getSystemService(Context.CONNECTIVITY_SERVICE);
-				final NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-				if (networkInfo != null)
-				{
-					bundle.putInt(OnConnectedExtras.NETWORK_TYPE.name(), networkInfo.getType());
+
+					bundle.putInt(OnConnectedExtras.NETWORK_TYPE.name(), networkType);
 
 					StringBuffer hostNames = new StringBuffer();
 					for (int i = 0; i < hosts.length; i++)
@@ -415,7 +467,7 @@ public class FeatureInternet extends FeatureScheduler
 										int addr = ((ip[3] & 0xff) << 24) | ((ip[2] & 0xff) << 16)
 										        | ((ip[1] & 0xff) << 8) | (ip[0] & 0xff);
 
-										connected = connectivityManager.requestRouteToHost(networkInfo.getType(), addr);
+										connected = connectivityManager.requestRouteToHost(networkType, addr);
 										bundle.putBoolean(host, connected);
 									}
 									Log.i(TAG, host + " - " + (connected ? "OK" : "FAIL"));
@@ -438,9 +490,9 @@ public class FeatureInternet extends FeatureScheduler
 						}, hosts[i]);
 					}
 
-					for (int i = 0; i < hosts.length; i++)
+					for (int j = 0; j < hosts.length; j++)
 					{
-						threads[i].start();
+						threads[j].start();
 					}
 
 					synchronized (mutex)
@@ -464,12 +516,6 @@ public class FeatureInternet extends FeatureScheduler
 							}
 						}
 					}
-				}
-				else
-				{
-					error = new FeatureError(FeatureInternet.this, ResultCode.IO_ERROR, bundle,
-					        "No active network available");
-				}
 
 				final FeatureError result = error;
 				getEventMessenger().post(new Runnable()
