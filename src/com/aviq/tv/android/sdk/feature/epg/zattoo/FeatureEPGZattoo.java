@@ -34,12 +34,12 @@ public class FeatureEPGZattoo extends FeatureEPG
 		/**
 		 * Registered Zattoo user account name
 		 */
-		ZATTOO_USER("samtest@zattoo.com"),
+		ZATTOO_USER("aviq@zattoo.com"),
 
 		/**
 		 * Registered Zattoo account password
 		 */
-		ZATTOO_PASS("12345"),
+		ZATTOO_PASS("avZat14"),
 
 		/**
 		 * Zattoo base URL
