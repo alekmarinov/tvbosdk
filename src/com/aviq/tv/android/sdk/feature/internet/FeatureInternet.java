@@ -107,7 +107,7 @@ public class FeatureInternet extends FeatureScheduler
 
 	public enum GeoIpExtras
 	{
-		PUBLIC_IP, LATITUDE, LONGITUDE, CITY, COUNTRY, REGION, ISP
+		public_ip, latitude, longitude, city, country, region, isp
 	}
 
 	public enum OnConnectedExtras
@@ -571,23 +571,23 @@ public class FeatureInternet extends FeatureScheduler
 					{
 						JSONObject obj = new JSONObject(content);
 						if (!obj.isNull("ip"))
-							resultData.putString(GeoIpExtras.PUBLIC_IP.name(), obj.getString("ip"));
+							resultData.putString(GeoIpExtras.public_ip.name(), obj.getString("ip"));
 						if (!obj.isNull("latitude"))
-							resultData.putDouble(GeoIpExtras.LATITUDE.name(), obj.getDouble("latitude"));
+							resultData.putDouble(GeoIpExtras.latitude.name(), obj.getDouble("latitude"));
 						if (!obj.isNull("longitude"))
-							resultData.putDouble(GeoIpExtras.LONGITUDE.name(), obj.getDouble("longitude"));
+							resultData.putDouble(GeoIpExtras.longitude.name(), obj.getDouble("longitude"));
 						if (!obj.isNull("city"))
-							resultData.putString(GeoIpExtras.CITY.name(), obj.getString("city"));
+							resultData.putString(GeoIpExtras.city.name(), obj.getString("city"));
 						if (!obj.isNull("country"))
-							resultData.putString(GeoIpExtras.COUNTRY.name(), obj.getString("country"));
+							resultData.putString(GeoIpExtras.country.name(), obj.getString("country"));
 						else if (!obj.isNull("country_name"))
-							resultData.putString(GeoIpExtras.COUNTRY.name(), obj.getString("country_name"));
+							resultData.putString(GeoIpExtras.country.name(), obj.getString("country_name"));
 						if (!obj.isNull("region"))
-							resultData.putString(GeoIpExtras.REGION.name(), obj.getString("region"));
+							resultData.putString(GeoIpExtras.region.name(), obj.getString("region"));
 						else if (!obj.isNull("region_name"))
-							resultData.putString(GeoIpExtras.REGION.name(), obj.getString("region_name"));
+							resultData.putString(GeoIpExtras.region.name(), obj.getString("region_name"));
 						if (!obj.isNull("isp"))
-							resultData.putString(GeoIpExtras.ISP.name(), obj.getString("isp"));
+							resultData.putString(GeoIpExtras.isp.name(), obj.getString("isp"));
 					}
 					catch (JSONException e)
 					{
@@ -605,7 +605,7 @@ public class FeatureInternet extends FeatureScheduler
 	public String getPublicIP()
 	{
 		if (_geoIp != null)
-			return _geoIp.getString(GeoIpExtras.PUBLIC_IP.name());
+			return _geoIp.getString(GeoIpExtras.public_ip.name());
 		return null;
 	}
 }

@@ -99,8 +99,8 @@ public class FeatureWeather extends FeatureComponent
 			return ;
 		}
 		WeatherResponseCallback responseCallback = new WeatherResponseCallback();
-		double longitude = geoIp.getDouble(FeatureInternet.GeoIpExtras.LONGITUDE.name(), -1.0);
-		double latitude = geoIp.getDouble(FeatureInternet.GeoIpExtras.LATITUDE.name(), -1.0);
+		double longitude = geoIp.getDouble(FeatureInternet.GeoIpExtras.longitude.name(), -1.0);
+		double latitude = geoIp.getDouble(FeatureInternet.GeoIpExtras.latitude.name(), -1.0);
 		Log.i(TAG, ".retrieveWeather: longitude = " + longitude + ", latitude = " + latitude);
 		Bundle queryParams = new Bundle();
 		queryParams.putString("LONGTITUDE", String.valueOf(longitude));
