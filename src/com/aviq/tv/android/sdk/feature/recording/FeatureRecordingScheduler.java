@@ -13,6 +13,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,6 +32,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.Program;
@@ -55,7 +57,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	/**
 	 * FIXME: Obtain from more general place
 	 */
-	private SimpleDateFormat _sdf = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
+	private SimpleDateFormat _sdfUTC = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
+	private TimeZone _utc = TimeZone.getTimeZone("UTC");
 	private Prefs _userPrefs;
 
 	public static enum UserParam
@@ -79,17 +82,21 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		}
 	}
 
+	public FeatureRecordingScheduler() throws FeatureNotFoundException
+	{
+		require(FeatureName.Component.TIMEZONE);
+	}
+
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		_userPrefs = Environment.getInstance().getUserPrefs();
-		_sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+		_sdfUTC.setTimeZone(_utc);
 
 		loadRecordFromDataProvider(new OnLoadRecordings()
 		{
 			@Override
-			public void onRecordingLoaded(
-					FeatureError error,
+			public void onRecordingLoaded(FeatureError error,
 			        Map<String, NavigableMap<String, RecordingScheduler>> channelToRecordsNavigableMap)
 			{
 				_channelToRecordsNavigableMap = channelToRecordsNavigableMap;
@@ -110,7 +117,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 * @param channelID
 	 *            channel ID
 	 * @param start
-	 *            range start
+	 *            range start in UTC
 	 * @param duration
 	 *            range duration in seconds
 	 * @return true if record is added successfully, otherwise false
@@ -123,11 +130,11 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			return false;
 		}
 
-		String startTime = _sdf.format(start.getTime());
-		Calendar calTime = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+		String startTime = _sdfUTC.format(start.getTime());
+		Calendar calTime = Calendar.getInstance();
 		calTime.setTime(start.getTime());
 		calTime.add(Calendar.SECOND, duration);
-		String endTime = _sdf.format(calTime.getTime());
+		String endTime = _sdfUTC.format(calTime.getTime());
 
 		if (isDateInFuture(start))
 		{
@@ -157,13 +164,12 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					// check if such prevRecord () doen't exist
 					if (prevRecord != null)
 					{
-						calTime.setTime(_sdf.parse(prevRecord));
+						calTime.setTime(_sdfUTC.parse(prevRecord));
 						int secDuration = navMap.get(prevRecord).getDuration();
 						calTime.add(Calendar.SECOND, secDuration);
-						String prevEndTime = _sdf.format(calTime.getTime());
+						String prevEndTime = _sdfUTC.format(calTime.getTime());
 						// check if newly added record start after prevRecord
-						// has
-						// finished
+						// has finished
 						isRecordValid = (startTime.compareTo(prevEndTime) >= 0);
 					}
 					else
@@ -174,7 +180,11 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					{
 						RecordingScheduler rc = new RecordingScheduler(channelID, startTime, duration);
 						navMap.put(startTime, rc);
-						_dayOffsets.add(Calendars.getDayOffsetByDate(start));
+						int dayOffset = Calendars.getDayOffsetByDate(start);
+						Log.i(TAG,
+						        "Adding dayoffset " + dayOffset + " for " + channelID + "/"
+						                + Calendars.makeString(start));
+						_dayOffsets.add(dayOffset);
 					}
 					else
 					{
@@ -246,9 +256,11 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		NavigableMap<String, RecordingScheduler> navMap = _channelToRecordsNavigableMap.get(channelID);
 		if (navMap != null)
 		{
-			String startTime = _sdf.format(start.getTime());
+			String startTime = _sdfUTC.format(start.getTime());
 			navMap.remove(startTime);
-			_dayOffsets.remove(Calendars.getDayOffsetByDate(start));
+			int dayOffset = Calendars.getDayOffsetByDate(start);
+			Log.i(TAG, "Removing dayoffset " + dayOffset + " for " + channelID + "/" + Calendars.makeString(start));
+			_dayOffsets.remove(dayOffset);
 			return saveRecords();
 		}
 		return true;
@@ -263,19 +275,34 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	public List<RecordingScheduler> getRecordsByDate(int dateOffset)
 	{
 		List<RecordingScheduler> ls = new ArrayList<RecordingScheduler>();
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
-		Calendar now = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-		now.add(Calendar.DATE, dateOffset);
-		String strNow = df.format(now.getTime());
+		Calendar date = Calendars.getDateByDayOffsetFrom(
+		        Calendar.getInstance(_feature.Component.TIMEZONE.getTimeZone()), dateOffset);
+		// String strDate = String.format("%04d%02d%02d",
+		// date.get(Calendar.YEAR), 1 + date.get(Calendar.MONTH),
+		// date.get(Calendar.DAY_OF_MONTH));
+		Log.d(TAG, ".getRecordsByDate: dateOffset = " + dateOffset + " -> " + Calendars.makeString(date));
+
 		for (NavigableMap<String, RecordingScheduler> map : _channelToRecordsNavigableMap.values())
 		{
 			for (RecordingScheduler entry : map.values())
 			{
 				String startTime = entry.getStartTime();
-				startTime = startTime.substring(0, DATE_FORMAT_LEN);
-				if (strNow.compareTo(startTime) == 0)
+				try
 				{
-					ls.add(entry);
+					Date programDate = _sdfUTC.parse(startTime);
+					Calendar programTime = Calendar.getInstance(_feature.Component.TIMEZONE.getTimeZone());
+					programTime.setTime(programDate);
+					Log.d(TAG,
+					        "Comparing entry offset " + Calendars.makeString(programTime) + " - "
+					                + Calendars.getDayOffsetByDate(programTime) + " with dateOffset = " + dateOffset);
+					if (Calendars.getDayOffsetByDate(programTime) == dateOffset)
+					{
+						ls.add(entry);
+					}
+				}
+				catch (ParseException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
 				}
 			}
 		}
@@ -319,7 +346,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 */
 	private boolean isDateInFuture(Calendar date)
 	{
-		Calendar now = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+		Calendar now = Calendar.getInstance(_utc);
 		return !date.before(now);
 	}
 
@@ -327,14 +354,14 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 * Checks if scheduled recording expired
 	 *
 	 * @param date
-	 * @param chn
+	 * @param channelID
 	 *            - when argument is not set to null, take into account channel
-	 *            expire period
+	 *            expire period (FIXME: not implemented)
 	 * @return true if schedule record expires, false otherwise
 	 */
 	private boolean isDateExpiredForRecordings(Calendar date, String channelID)
 	{
-		Calendar now = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+		Calendar now = Calendar.getInstance(_utc);
 		now.add(Calendar.HOUR, -getPrefs().getInt(Param.EXPIRE_PERIOD));
 		return date.before(now);
 	}
@@ -372,7 +399,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	private boolean saveRecords()
 	{
 		StringBuilder buffer = new StringBuilder();
-		Calendar calStartTime = Calendar.getInstance();
+		Calendar calStartTime = _feature.Component.TIMEZONE.getCurrentTime();
 
 		for (NavigableMap<String, RecordingScheduler> map : _channelToRecordsNavigableMap.values())
 		{
@@ -380,7 +407,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			{
 				try
 				{
-					calStartTime.setTime(_sdf.parse(entry.getStartTime()));
+					calStartTime.setTime(_sdfUTC.parse(entry.getStartTime()));
 					if (isDateExpiredForRecordings(calStartTime, null))
 					{
 						continue;
@@ -425,8 +452,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					String startTime = items[1];
 					int duration = Integer.parseInt(items[2]);
 
-					Calendar calStartTime = Calendar.getInstance();
-					calStartTime.setTime(_sdf.parse(startTime));
+					Calendar calStartTime = Calendar.getInstance(_utc);
+					calStartTime.setTime(_sdfUTC.parse(startTime));
 
 					if (isDateExpiredForRecordings(calStartTime, null))
 					{
@@ -448,7 +475,10 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					}
 
 					navigableMap.put(startTime, rc);
-					_dayOffsets.add(Calendars.getDayOffsetByDate(calStartTime));
+					int dayOffset = Calendars.getDayOffsetByDate(calStartTime);
+					Log.i(TAG, "Adding dayOffset = " + dayOffset + " from " + Calendars.makeString(calStartTime)
+					        + " into the set");
+					_dayOffsets.add(dayOffset);
 				}
 			}
 		}

@@ -14,6 +14,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Locale;
 
 public class Calendars
 {
@@ -75,7 +76,8 @@ public class Calendars
 		if (cal == null)
 			return "";
 
-		DateFormat df = new SimpleDateFormat(format);
+		DateFormat df = new SimpleDateFormat(format, Locale.getDefault());
+		df.setTimeZone(cal.getTimeZone());
 		return df.format(cal.getTime());
 	}
 
@@ -214,7 +216,7 @@ public class Calendars
 	public static int getDayOffsetByDate(Calendar date)
 	{
 		date = new GregorianCalendar(date.get(Calendar.YEAR), date.get(Calendar.MONTH), date.get(Calendar.DAY_OF_MONTH));
-		Calendar now = Calendar.getInstance();
+		Calendar now = Calendar.getInstance(date.getTimeZone());
 		Calendar today = new GregorianCalendar(now.get(Calendar.YEAR), now.get(Calendar.MONTH),
 		        now.get(Calendar.DAY_OF_MONTH));
 		return (int) (date.getTimeInMillis() - today.getTimeInMillis()) / (1000 * 60 * 60 * 24);

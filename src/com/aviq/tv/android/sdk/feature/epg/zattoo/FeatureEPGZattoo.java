@@ -59,12 +59,12 @@ public class FeatureEPGZattoo extends FeatureEPG
 		/**
 		 * requested minimum bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_MINRATE(1100),
+		ZATTOO_STREAM_MINRATE(1100000),
 
 		/**
 		 * requested initial bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_INITRATE(0);
+		ZATTOO_STREAM_INITRATE(2000000);
 
 		Param(String value)
 		{
