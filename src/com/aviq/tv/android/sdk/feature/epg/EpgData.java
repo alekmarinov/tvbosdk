@@ -50,19 +50,24 @@ public class EpgData implements IEpgDataProvider, Serializable
 		_minEpgStartTime.add(Calendar.YEAR, 1);
 
 		_channelList = newChannelList;
-		_channelLogos = new Bitmap[_channelList.size()];
+		_channelLogos = new Bitmap[ChannelLogoType.values().length * _channelList.size()];
 	}
 
 	synchronized boolean setChannelLogo(int channelIndex, Bitmap newLogo)
 	{
+		return setChannelLogo(channelIndex, newLogo, ChannelLogoType.NORMAL);
+	}
+
+	public synchronized boolean setChannelLogo(int channelIndex, Bitmap newLogo, ChannelLogoType logoType)
+	{
 		// Added for Kryo's serialization since the Bitmap array is transient
 		if (_channelLogos == null)
-			_channelLogos = new Bitmap[_channelList.size()];
+			_channelLogos = new Bitmap[ChannelLogoType.values().length * _channelList.size()];
 
 		if (newLogo == null || channelIndex < 0 || channelIndex > _channelList.size())
 			return false;
 
-		_channelLogos[channelIndex] = newLogo;
+		_channelLogos[logoType.ordinal() * _channelList.size() + channelIndex] = newLogo;
 
 		return true;
 	}
@@ -142,7 +147,13 @@ public class EpgData implements IEpgDataProvider, Serializable
 	@Override
 	public Bitmap getChannelLogoBitmap(int index)
 	{
-		return _channelLogos[index];
+		return getChannelLogoBitmap(index, ChannelLogoType.NORMAL);
+	}
+
+	@Override
+	public Bitmap getChannelLogoBitmap(int index, ChannelLogoType logoType)
+	{
+		return _channelLogos[logoType.ordinal() * _channelList.size() + index];
 	}
 
 	/**

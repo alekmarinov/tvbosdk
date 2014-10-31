@@ -15,11 +15,18 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
+
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.ImageRequest;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
+import com.aviq.tv.android.sdk.feature.epg.IEpgDataProvider;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 
 /**
@@ -75,6 +82,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 				bulsatMetaData.metaChannelPG = j;
 			else if ("recordable".equals(key))
 				bulsatMetaData.metaChannelRecordable = j;
+			else if ("thumbnail_selected".equals(key))
+				bulsatMetaData.metaChannelThumbnailSelected = j;
 		}
 	}
 
@@ -95,7 +104,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 	protected String getChannelsUrl()
 	{
 		String url = super.getChannelsUrl();
-		return url + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable";
+		return url + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable,thumbnail_selected";
 	}
 
 	@Override
@@ -179,4 +188,54 @@ public class FeatureEPGBulsat extends FeatureEPG
 		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
 		return channelBulsat.getNDVR();
 	}
+
+	@Override
+	protected void retrieveChannelLogo(Channel channel, int channelIndex)
+	{
+		super.retrieveChannelLogo(channel, channelIndex);
+
+		// download selected channel logo
+		String channelId = channel.getChannelId();
+		ChannelBulsat channelBulsat = (ChannelBulsat)channel;
+		String channelSelectedLogo = channelBulsat.getThumbnailSelected();
+
+		String channelLogoUrl = getChannelImageUrl(channelId, channelSelectedLogo);
+		Log.d(TAG, "Retrieving channel logo from " + channelLogoUrl);
+
+		LogoSelectedResponseCallback responseCallback = new LogoSelectedResponseCallback(channelId, channelIndex);
+
+		ImageRequest imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth,
+		        _channelLogoHeight, Config.ARGB_8888, responseCallback);
+
+		_httpQueue.add(imageRequest);
+	}
+
+	private class LogoSelectedResponseCallback implements Response.Listener<Bitmap>, Response.ErrorListener
+	{
+		private int _index;
+		private String _channelId;
+
+		LogoSelectedResponseCallback(String channelId, int index)
+		{
+			_channelId = channelId;
+			_index = index;
+		}
+
+		@Override
+		public void onResponse(Bitmap response)
+		{
+			Log.d(TAG, "Received bitmap " + response.getWidth() + "x" + response.getHeight());
+			if (_epgDataBeingLoaded != null)
+			{
+				_epgDataBeingLoaded.setChannelLogo(_index, response, IEpgDataProvider.ChannelLogoType.SELECTED);
+			}
+		}
+
+		@Override
+		public void onErrorResponse(VolleyError error)
+		{
+			Log.d(TAG, "Retrieve channel logo " + _channelId + " with error: " + error);
+		}
+	};
+
 }

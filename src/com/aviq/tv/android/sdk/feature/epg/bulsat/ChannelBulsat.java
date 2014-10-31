@@ -31,6 +31,7 @@ public class ChannelBulsat extends Channel implements Serializable
 	private String _seekUrl;
 	private boolean _parentControl;
 	private boolean _recordable;
+	private String _thumbnailSelected;
 
 	public static enum Genre
 	{
@@ -74,6 +75,7 @@ public class ChannelBulsat extends Channel implements Serializable
 		public int metaChannelSeekUrl;
 		public int metaChannelPG;
 		public int metaChannelRecordable;
+		public int metaChannelThumbnailSelected;
 	}
 
 	public void setStreamUrl(String streamUrl)
@@ -136,6 +138,16 @@ public class ChannelBulsat extends Channel implements Serializable
 		return _recordable;
 	}
 
+	public void setThumbnailSelected(String thumbnailSelected)
+	{
+		_thumbnailSelected = thumbnailSelected;
+	}
+
+	public String getThumbnailSelected()
+	{
+		return _thumbnailSelected;
+	}
+
 	@Override
 	public void setAttributes(Channel.MetaData channelMetaData, String[] attributes)
 	{
@@ -174,5 +186,7 @@ public class ChannelBulsat extends Channel implements Serializable
 			setParentControl(PG18.equals(attributes[channelBulsatMetaData.metaChannelPG]));
 		if (attributes[channelBulsatMetaData.metaChannelRecordable] != null)
 			setRecordable(!"0".equals(attributes[channelBulsatMetaData.metaChannelRecordable]));
+		if (attributes[channelBulsatMetaData.metaChannelThumbnailSelected] != null)
+			setThumbnailSelected(new String(attributes[channelBulsatMetaData.metaChannelThumbnailSelected]));
 	}
 }

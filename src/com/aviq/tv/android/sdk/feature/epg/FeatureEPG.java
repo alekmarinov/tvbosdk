@@ -189,13 +189,13 @@ public abstract class FeatureEPG extends FeatureScheduler
 		void onProgramDetails(FeatureError error, Program program);
 	}
 
-	private RequestQueue _httpQueue;
+	protected RequestQueue _httpQueue;
 	private OnFeatureInitialized _onFeatureInitialized;
 	private int _epgVersion;
 	private String _epgServer;
 	private String _epgProvider;
-	private int _channelLogoWidth;
-	private int _channelLogoHeight;
+	protected int _channelLogoWidth;
+	protected int _channelLogoHeight;
 	private Calendar _minDate;
 	private Calendar _maxDate;
 
@@ -207,7 +207,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 	private int _retrievedChannelPrograms;
 
 	private EpgData _epgData;
-	private EpgData _epgDataBeingLoaded;
+	protected EpgData _epgDataBeingLoaded;
 	private JsonObjectRequest _programDetailsRequest;
 	private FeatureTimeZone _featureTimeZone;
 	private int _maxChannels = 0;
@@ -386,7 +386,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 	 */
 	protected abstract Program createProgram(String id, Channel channel);
 
-	private void retrieveChannelLogo(Channel channel, int channelIndex)
+	protected void retrieveChannelLogo(Channel channel, int channelIndex)
 	{
 		String channelId = channel.getChannelId();
 		String channelLogo = channel.getThumbnail();
