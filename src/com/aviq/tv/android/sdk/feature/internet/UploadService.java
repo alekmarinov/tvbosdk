@@ -45,6 +45,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.AbstractHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 
 import android.content.Intent;
@@ -60,13 +61,18 @@ import com.aviq.tv.android.sdk.core.service.BaseService;
 public class UploadService extends BaseService
 {
 	public static final String TAG = UploadService.class.getSimpleName();
+	public static final int CONNECT_TIMEOUT = DownloadService.CONNECT_TIMEOUT;
+	public static final int WRITE_TIMEOUT = DownloadService.READ_TIMEOUT;
+
+	private int _connTimeout;
+	private int _writeTimeout;
 
 	/**
 	 * Service extras
 	 */
 	public enum Extras
 	{
-		URL, LOCAL_FILE, BUFFER, CA_CERT_PATH, USERNAME, PASSWORD
+		URL, LOCAL_FILE, BUFFER, CA_CERT_PATH, USERNAME, PASSWORD, CONN_TIMEOUT, SOCK_TIMEOUT
 	}
 
 	/**
@@ -91,9 +97,13 @@ public class UploadService extends BaseService
 		String localFile = intent.getExtras().getString(Extras.LOCAL_FILE.name());
 		String buffer = intent.getExtras().getString(Extras.BUFFER.name());
 		String caCertPath = intent.getExtras().getString(Extras.CA_CERT_PATH.name());
+		_connTimeout = intent.getExtras().getInt(Extras.CONN_TIMEOUT.name(), CONNECT_TIMEOUT);
+		_writeTimeout = intent.getExtras().getInt(Extras.SOCK_TIMEOUT.name(), WRITE_TIMEOUT);
 
 		Log.i(TAG, ".onHandleIntent: url = " + url + ", caCertPath = " + caCertPath + ", username = " + username
-		        + ", password = " + password + ", localFile = " + localFile + ", buffer size = " + (buffer != null?buffer.length():-1));
+		        + ", password = " + password + ", localFile = " + localFile + ", buffer size = "
+		        + (buffer != null ? buffer.length() : -1) + ", conn timeout = " + _connTimeout + ", sock timeout = "
+		        + _writeTimeout);
 
 		if (localFile != null)
 		{
@@ -168,6 +178,9 @@ public class UploadService extends BaseService
 		schReg.register(sslTrustAllScheme);
 
 		ClientConnectionManager conMgr = new ThreadSafeClientConnManager(httpParams, schReg);
+
+		HttpConnectionParams.setConnectionTimeout(httpParams, _connTimeout);
+		HttpConnectionParams.setSoTimeout(httpParams, _writeTimeout);
 
 		HttpClient httpClient = new DefaultHttpClient(conMgr, httpParams);
 		return httpClient;

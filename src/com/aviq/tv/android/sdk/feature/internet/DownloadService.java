@@ -46,8 +46,8 @@ import com.aviq.tv.android.sdk.utils.Files;
 public class DownloadService extends BaseService
 {
 	private static final String TAG = DownloadService.class.getSimpleName();
-	private static final int CONNECT_TIMEOUT = 60 * 1000;
-	private static final int READ_TIMEOUT = 60 * 1000;
+	public static final int CONNECT_TIMEOUT = 60 * 1000;
+	public static final int READ_TIMEOUT = 60 * 1000;
 	private static final int BUFFER_SIZE = 10 * 8192;
 	private static final int ONE_MEGABYTE = 1024 * 1024;
 
