@@ -277,18 +277,26 @@ public class Environment extends Activity
 						// initialize environment by app's raw/release.xml
 						Log.i(TAG, "Parsing " + RELEASE_XML_RESOURCE + " xml definition");
 						int appXmlId = getResources().getIdentifier(RELEASE_XML_RESOURCE, "raw", getPackageName());
-						InputStream inputStream = getResources().openRawResource(appXmlId);
-						try
+						if (appXmlId != 0)
 						{
-							_featureManager.addFeaturesFromXml(inputStream, _onFeaturesReceived);
+							InputStream inputStream = getResources().openRawResource(appXmlId);
+							try
+							{
+								_featureManager.addFeaturesFromXml(inputStream, _onFeaturesReceived);
+							}
+							catch (SAXException e)
+							{
+								Log.e(TAG, e.getMessage(), e);
+							}
+							catch (IOException e)
+							{
+								Log.e(TAG, e.getMessage(), e);
+							}
 						}
-						catch (SAXException e)
+						else
 						{
-							Log.e(TAG, e.getMessage(), e);
-						}
-						catch (IOException e)
-						{
-							Log.e(TAG, e.getMessage(), e);
+							Log.d(TAG, "No " + RELEASE_XML_RESOURCE + ".xml to parse");
+							_onFeaturesReceived.onReceiveResult(error);
 						}
 					}
 				});

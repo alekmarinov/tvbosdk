@@ -53,7 +53,7 @@ public class EpgData implements IEpgDataProvider, Serializable
 		_channelLogos = new Bitmap[ChannelLogoType.values().length * _channelList.size()];
 	}
 
-	synchronized boolean setChannelLogo(int channelIndex, Bitmap newLogo)
+	public synchronized boolean setChannelLogo(int channelIndex, Bitmap newLogo)
 	{
 		return setChannelLogo(channelIndex, newLogo, ChannelLogoType.NORMAL);
 	}
@@ -72,7 +72,7 @@ public class EpgData implements IEpgDataProvider, Serializable
 		return true;
 	}
 
-	synchronized boolean addProgramData(String channelId, NavigableMap<Calendar, Integer> newProgramNavigableMap,
+	public synchronized boolean addProgramData(String channelId, NavigableMap<Calendar, Integer> newProgramNavigableMap,
 	        List<Program> newProgramList)
 	{
 		Log.d(TAG, ".addProgramData: channelId = " + channelId + ", newProgramList:size = " + newProgramList.size());
@@ -197,7 +197,11 @@ public class EpgData implements IEpgDataProvider, Serializable
 	{
 		NavigableMap<Calendar, Integer> programMap = _channelToProgramNavigableMap.get(channelId);
 		if (programMap == null)
+		{
+
+			Log.w(TAG, "No program map for " + channelId);
 			return -1;
+		}
 
 		Map.Entry<Calendar, Integer> programEntry = programMap.floorEntry(when);
 		if (programEntry != null)
@@ -205,6 +209,7 @@ public class EpgData implements IEpgDataProvider, Serializable
 			int programIndex = programEntry.getValue();
 			return programIndex;
 		}
+		Log.w(TAG, "No program entry for " + channelId + " at " + Calendars.makeString(when));
 		return -1;
 	}
 
@@ -212,10 +217,16 @@ public class EpgData implements IEpgDataProvider, Serializable
 	{
 		List<Program> programsList = _channelToProgramListMap.get(channelId);
 		if (programsList == null)
+		{
+			Log.w(TAG, "No program list for " + channelId);
 			return null;
+		}
 
 		if (programIndex < 0 || programIndex >= programsList.size())
+		{
+			Log.w(TAG, "Program index " + programIndex + " exceeds range [0," + programsList.size() + ")");
 			return null;
+		}
 
 		return programsList.get(programIndex);
 	}
