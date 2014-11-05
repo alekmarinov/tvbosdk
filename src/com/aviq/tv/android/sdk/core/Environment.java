@@ -149,7 +149,8 @@ public class Environment extends Activity
 				_featureRCU = (FeatureRCU) _featureManager.use(FeatureName.Component.RCU);
 
 				_serviceController = new ServiceController(Environment.this);
-				_requestQueue = Volley.newRequestQueue(Environment.this);
+				if (_requestQueue == null)
+					_requestQueue = Volley.newRequestQueue(Environment.this);
 				_requestQueue.getCache().clear();
 
 				// Use 1/8th of the available memory for this memory cache.
@@ -450,6 +451,11 @@ public class Environment extends Activity
 	public RequestQueue getRequestQueue()
 	{
 		return _requestQueue;
+	}
+
+	public void setRequestQueue(RequestQueue requestQueue)
+	{
+		_requestQueue = requestQueue;
 	}
 
 	/**
