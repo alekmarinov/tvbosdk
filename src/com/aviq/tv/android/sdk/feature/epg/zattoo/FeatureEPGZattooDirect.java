@@ -2,10 +2,10 @@
  * Copyright (c) 2007-2014, AVIQ Bulgaria Ltd
  *
  * Project:     AVIQTVSDK
- * Filename:    FeatureEPGZattoo.java
+ * Filename:    FeatureEPGZattooDirect.java
  * Author:      alek
  * Date:        1 Dec 2013
- * Description: Zattoo specific extension of EPG feature
+ * Description: Zattoo specific extension of EPG feature obtaining data directly from Zattoo servers
  */
 
 package com.aviq.tv.android.sdk.feature.epg.zattoo;
@@ -23,9 +23,9 @@ import com.aviq.tv.android.sdk.feature.epg.Program;
 /**
  * Zattoo specific extension of EPG feature
  */
-public class FeatureEPGZattoo extends FeatureEPG
+public class FeatureEPGZattooDirect extends FeatureEPG
 {
-	public static final String TAG = FeatureEPGZattoo.class.getSimpleName();
+	public static final String TAG = FeatureEPGZattooDirect.class.getSimpleName();
 
 	private ClientZAPI _clientZAPI;
 
@@ -78,7 +78,7 @@ public class FeatureEPGZattoo extends FeatureEPG
 		}
 	}
 
-	public FeatureEPGZattoo() throws FeatureNotFoundException
+	public FeatureEPGZattooDirect() throws FeatureNotFoundException
 	{
 		require(FeatureName.State.NETWORK_WIZARD);
 	}
@@ -92,9 +92,9 @@ public class FeatureEPGZattoo extends FeatureEPG
 		        new OnResultReceived()
 		        {
 			        @Override
-			        public void onReceiveResult(FeatureError result)
+			        public void onReceiveResult(FeatureError error)
 			        {
-				        if (!result.isError())
+				        if (!error.isError())
 				        {
 					        // hello zattoo, loging in...
 					        _clientZAPI.login(getPrefs().getString(Param.ZATTOO_USER),
@@ -104,16 +104,48 @@ public class FeatureEPGZattoo extends FeatureEPG
 						                public void onReceiveResult(FeatureError result)
 						                {
 							                Log.i(TAG, "login response: " + result);
-							                FeatureEPGZattoo.super.initialize(onFeatureInitialized);
+
+							                _clientZAPI.retrieveChannels(new OnResultReceived()
+											{
+												@Override
+												public void onReceiveResult(FeatureError error)
+												{
+													if (!error.isError())
+													{
+										                _clientZAPI.retrievePrograms(new OnResultReceived()
+														{
+															@Override
+															public void onReceiveResult(FeatureError error)
+															{
+																Log.i(TAG, "Updating EPG finished with status " + error);
+																_epgData = _clientZAPI.getEpgData();
+														        onFeatureInitialized.onInitialized(error);
+															}
+														});
+													}
+													else
+													{
+												        onFeatureInitialized.onInitialized(error);
+													}
+												}
+											});
+
+							                FeatureEPGZattooDirect.super.initialize(onFeatureInitialized);
 						                }
 					                });
 				        }
 				        else
 				        {
-					        onFeatureInitialized.onInitialized(result);
+					        onFeatureInitialized.onInitialized(error);
 				        }
 			        }
 		        });
+	}
+
+	@Override
+	protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
+	{
+		// FIXME: implement scheduled EPG data retrieval
 	}
 
 	/**

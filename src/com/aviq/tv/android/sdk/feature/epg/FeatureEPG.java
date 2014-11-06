@@ -206,7 +206,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 	// error
 	private int _retrievedChannelPrograms;
 
-	private EpgData _epgData;
+	protected EpgData _epgData;
 	protected EpgData _epgDataBeingLoaded;
 	private JsonObjectRequest _programDetailsRequest;
 	private FeatureTimeZone _featureTimeZone;
