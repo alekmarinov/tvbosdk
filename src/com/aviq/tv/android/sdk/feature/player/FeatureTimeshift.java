@@ -70,7 +70,13 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	public void setTimeshiftDuration(long timeshiftDuration)
 	{
 		Log.i(TAG, ".setTimeshiftDuration: timeshiftDuration = " + timeshiftDuration);
-		_timeshiftDuration = timeshiftDuration;
+		if (timeshiftDuration != _timeshiftDuration)
+		{
+			Bundle bundle = new Bundle();
+			bundle.putLong(EXTRA_PLAY_TIME_DELTA, _playTimeDelta);
+			getEventMessenger().trigger(ON_SEEK, bundle);
+			_timeshiftDuration = timeshiftDuration;
+		}
 	}
 
 	/**
@@ -159,6 +165,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	 */
 	public long getTimeshiftDuration()
 	{
+		Log.d(TAG, ".getTimeshiftDuration: _timeshiftDuration = " + _timeshiftDuration);
 		if (getPrefs().getInt(Param.TIMESHIFT_DURATION) > 0)
 			return Math.min(getPrefs().getInt(Param.TIMESHIFT_DURATION), currentTime() - _timeshiftTimeStart);
 		else

@@ -72,7 +72,6 @@ public class Features
 		public FeatureDevice DEVICE;
 		public FeatureVolume VOLUME;
 		public FeatureComponent CRASHLOG;
-		public FeatureWeather WEATHER;	
 	}
 
 	public class Schedulers
@@ -81,7 +80,8 @@ public class Features
 		public FeatureEPG EPG;
 		public FeatureUpgrade UPGRADE;
 		public FeatureScheduler EVENT_COLLECTOR;
-		public FeatureVOD VOD;		
+		public FeatureVOD VOD;
+		public FeatureWeather WEATHER;
 	}
 
 	public class States
@@ -159,8 +159,8 @@ public class Features
 	{
 		try
 		{
-			Log.d(TAG, ".setField: clazz = " + featureType.getClass().getSimpleName() + ", fieldName = " + fieldName + ", object = "
-			        + object);
+			Log.d(TAG, ".setField: clazz = " + featureType.getClass().getSimpleName() + ", fieldName = " + fieldName
+			        + ", object = " + object);
 			Field field = featureType.getClass().getField(fieldName);
 			field.set(featureType, object);
 		}

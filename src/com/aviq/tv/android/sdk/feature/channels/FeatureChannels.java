@@ -203,11 +203,14 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		_feature.Scheduler.EPG.getEventMessenger().register(this, FeatureEPG.ON_EPG_UPDATED);
 		_channels = loadFavoriteChannels();
 
-		_featureTimeshift = (FeatureTimeshift) Environment.getInstance().getFeatureComponent(
-		        FeatureName.Component.TIMESHIFT);
+		_featureTimeshift = (FeatureTimeshift) Environment.getInstance().getFeatureComponent(FeatureName.Component.TIMESHIFT);
 		if (_featureTimeshift != null)
 		{
 			_featureTimeshift.getEventMessenger().register(this, FeatureTimeshift.ON_SEEK);
+		}
+		else
+		{
+			Log.i(TAG, "Timeshift support is disabled");
 		}
 
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_RESUME);
@@ -394,11 +397,13 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		// set timeshift buffer size
 		if (_featureTimeshift != null)
 		{
+			Log.i(TAG, "set timeshift buffer size " + index + "/" + lastChannelIndex);
 			// will not modify timeshift parameters unless the channel is
 			// changed
 			if (index != lastChannelIndex)
 			{
 				long bufferSize = _feature.Scheduler.EPG.getStreamBufferSize(channel);
+				Log.i(TAG, "set timeshift buffer size of " + index + "/" + lastChannelIndex + " to " + bufferSize);
 				if (bufferSize > 0)
 				{
 					// timeshift buffer is defined by stream provider
@@ -411,6 +416,10 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				}
 			}
 			playTime = _featureTimeshift.seekAt(playTime);
+		}
+		else
+		{
+			Log.d(TAG, "No timeshift support");
 		}
 
 		// start playing retrieved channel stream

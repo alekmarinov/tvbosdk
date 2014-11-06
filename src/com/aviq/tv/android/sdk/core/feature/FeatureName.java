@@ -39,8 +39,7 @@ public class FeatureName
 		DEBUG,
 		RECORDING_SCHEDULER,
 		DEVICE,
-		VOLUME,
-		WEATHER		
+		VOLUME
 	}
 
 	public static enum Scheduler
@@ -55,8 +54,8 @@ public class FeatureName
 		// FIXME: Scheduler MENU is project specific
 		MENU,
 		EVENT_COLLECTOR,
-		VOD
-		
+		VOD,
+		WEATHER
 	}
 
 	public static enum State

@@ -25,16 +25,16 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Log;
-import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
-import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 
 /**
  * @author Elmira
  */
-public class FeatureWeather extends FeatureComponent
+public class FeatureWeather extends FeatureScheduler
 {
 	public static final String TAG = FeatureWeather.class.getSimpleName();
 	public static final int ON_WEATHER_CHANGE = EventMessenger.ID("ON_WEATHER_CHANGE");
@@ -42,6 +42,11 @@ public class FeatureWeather extends FeatureComponent
 
 	public static enum Param
 	{
+		/**
+		 *  Weather update interval
+		 */
+		UPDATE_INTERVAL(60000),
+
 		WEATHER_QUERY_URL(
 		        "https://query.yahooapis.com/v1/public/yql?q=${YAHOO_QUERY}&format=json&env=store://datatables.org/alltableswithkeys"),
 
@@ -52,12 +57,12 @@ public class FeatureWeather extends FeatureComponent
 
 		Param(String value)
 		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Component.WEATHER).put(name(), value);
+			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.WEATHER).put(name(), value);
 		}
 
 		Param(int value)
 		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Component.WEATHER).put(name(), value);
+			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.WEATHER).put(name(), value);
 		}
 	}
 
@@ -86,8 +91,15 @@ public class FeatureWeather extends FeatureComponent
 		super.onEvent(msgId, bundle);
 		if (FeatureInternet.ON_GEOIP == msgId || Environment.ON_LOADED == msgId)
 		{
-			checkWeather();
+			getEventMessenger().trigger(ON_SCHEDULE);
 		}
+	}
+
+	@Override
+	public void onSchedule(final OnFeatureInitialized onFeatureInitialized)
+	{
+		checkWeather();
+		scheduleDelayed(getPrefs().getInt(Param.UPDATE_INTERVAL));
 	}
 
 	public void checkWeather()
@@ -130,9 +142,9 @@ public class FeatureWeather extends FeatureComponent
 	}
 
 	@Override
-	public Component getComponentName()
+	public Scheduler getSchedulerName()
 	{
-		return FeatureName.Component.WEATHER;
+		return FeatureName.Scheduler.WEATHER;
 	}
 
 	private void parseContent(JSONObject response) throws JSONException
