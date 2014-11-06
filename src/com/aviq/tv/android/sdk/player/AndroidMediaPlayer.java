@@ -81,6 +81,9 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		Log.i(TAG, ".play: url = " + url);
 		super.play(url);
 
+		boolean error = false;
+		int what = Integer.MIN_VALUE;
+		int extra = Integer.MIN_VALUE;
 		try
 		{
 			_mediaPlayer.reset();
@@ -88,15 +91,29 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		}
 		catch (IllegalArgumentException e)
 		{
-			Log.e(TAG, "Error", e);
+			error = true;
+			what = extra = MediaPlayer.MEDIA_ERROR_UNKNOWN;
+			Log.e(TAG, "Error: setDataSource() throws IllegalArgumentException.", e);
 		}
 		catch (IllegalStateException e)
 		{
-			Log.e(TAG, "Error", e);
+			error = true;
+			what = extra = MediaPlayer.MEDIA_ERROR_UNKNOWN;
+			Log.e(TAG, "Error: setDataSource() throws IllegalStateException.", e);
 		}
 		catch (IOException e)
 		{
-			Log.e(TAG, "Error", e);
+			error = true;
+			what = extra = MediaPlayer.MEDIA_ERROR_IO;
+			Log.e(TAG, "Error: setDataSource() throws IOException.", e);
+		}
+		finally
+		{
+			if (error)
+			{
+				onError(_mediaPlayer, what, extra);
+				return;
+			}
 		}
 
 		_mediaPlayer.setOnBufferingUpdateListener(this);
