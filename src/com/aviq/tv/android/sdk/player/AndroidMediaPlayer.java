@@ -131,7 +131,8 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 	{
 		Log.i(TAG, ".stop");
 		super.stop();
-		_mediaPlayer.stop();
+		if (_mediaPlayer != null)
+			_mediaPlayer.stop();
 	}
 
 	/**
@@ -259,6 +260,8 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 		{
             _mediaController.hide();
         }
+
+		_mediaPlayer.reset();
 
 		String error;
 		if (what == MediaPlayer.MEDIA_ERROR_UNKNOWN && extra == 404)
