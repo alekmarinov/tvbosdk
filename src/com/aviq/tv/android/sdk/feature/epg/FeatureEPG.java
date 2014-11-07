@@ -22,8 +22,10 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TimeZone;
 import java.util.TreeMap;
@@ -34,6 +36,7 @@ import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.os.Bundle;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
 import com.android.volley.Request;
@@ -310,7 +313,16 @@ public abstract class FeatureEPG extends FeatureScheduler
 		if (_programDetailsRequest != null)
 			_programDetailsRequest.cancel();
 		_programDetailsRequest = new JsonObjectRequest(Request.Method.GET, programDetailsUrl, null, responseCallback,
-		        responseCallback);
+		        responseCallback)
+		{
+			@Override
+			public Map<String, String> getHeaders() throws AuthFailureError
+			{
+				Map<String, String> headers = new HashMap<String, String>();
+				headers.put("Connection", "close");
+				return headers;
+			}
+		};
 
 		_httpQueue.add(_programDetailsRequest);
 	}
@@ -397,7 +409,16 @@ public abstract class FeatureEPG extends FeatureScheduler
 		LogoResponseCallback responseCallback = new LogoResponseCallback(channelId, channelIndex);
 
 		ImageRequest imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth,
-		        _channelLogoHeight, Config.ARGB_8888, responseCallback);
+		        _channelLogoHeight, Config.ARGB_8888, responseCallback)
+		{
+			@Override
+			public Map<String, String> getHeaders() throws AuthFailureError
+			{
+				Map<String, String> headers = new HashMap<String, String>();
+				headers.put("Connection", "close");
+				return headers;
+			}
+		};
 
 		_httpQueue.add(imageRequest);
 	}
@@ -944,6 +965,14 @@ public abstract class FeatureEPG extends FeatureScheduler
 			this.mClazz = clazz;
 			this.mListener = listener;
 			mGson = gson;
+		}
+
+		@Override
+		public Map<String, String> getHeaders() throws AuthFailureError
+		{
+			Map<String, String> headers = new HashMap<String, String>();
+			headers.put("Connection", "close");
+			return headers;
 		}
 
 		@Override

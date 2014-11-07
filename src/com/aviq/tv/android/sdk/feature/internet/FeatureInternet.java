@@ -216,6 +216,12 @@ public class FeatureInternet extends FeatureScheduler
 			@Override
 			public Map<String, String> getHeaders() throws AuthFailureError
 			{
+				// Prevent HttpClient bug in Android 4.1 to 4.3 where sockets/open files are depleted
+				if (!headers.containsKey("Connection") || !headers.containsKey("connection")
+				        || !headers.containsKey("CONNECTION"))
+				{
+					headers.put("Connection", "close");
+				}
 				return headers;
 			}
 
@@ -262,6 +268,14 @@ public class FeatureInternet extends FeatureScheduler
 		Log.i(TAG, ".getUrlHeaders: " + url);
 		StringRequest stringRequest = new StringRequest(Request.Method.HEAD, url, null, null)
 		{
+			@Override
+			public Map<String, String> getHeaders() throws AuthFailureError
+			{
+				Map<String, String> headers = new HashMap<String, String>();
+				headers.put("Connection", "close");
+				return headers;
+			}
+
 			@Override
 			protected Response<String> parseNetworkResponse(NetworkResponse response)
 			{

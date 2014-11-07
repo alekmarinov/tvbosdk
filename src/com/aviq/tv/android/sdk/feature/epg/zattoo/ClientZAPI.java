@@ -93,6 +93,14 @@ public class ClientZAPI
 		        responseCallback, responseCallback)
 		{
 			@Override
+			public Map<String, String> getHeaders() throws AuthFailureError
+			{
+				Map<String, String> headers = new HashMap<String, String>();
+				headers.put("Connection", "close");
+				return headers;
+			}
+
+			@Override
 			protected Map<String, String> getParams() throws AuthFailureError
 			{
 				Map<String, String> params = new HashMap<String, String>();
@@ -170,6 +178,7 @@ public class ClientZAPI
 			{
 				Map<String, String> header = new HashMap<String, String>();
 				header.put("cookie", _cookie);
+				header.put("Connection", "close");
 				return header;
 			}
 
@@ -213,6 +222,7 @@ public class ClientZAPI
 			{
 				Map<String, String> header = new HashMap<String, String>();
 				header.put("cookie", _cookie);
+				header.put("Connection", "close");
 				return header;
 			}
 
@@ -285,7 +295,16 @@ public class ClientZAPI
 							        if (_countChannelLogos == channels.size())
 								        _onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature));
 						        }
-					        });
+					        })
+					{
+						@Override
+						public Map<String, String> getHeaders() throws AuthFailureError
+						{
+							Map<String, String> headers = new HashMap<String, String>();
+							headers.put("Connection", "close");
+							return headers;
+						}
+					};
 					_requestQueue.add(imageRequest);
 				}
 			}
@@ -395,6 +414,7 @@ public class ClientZAPI
 				{
 					Map<String, String> header = new HashMap<String, String>();
 					header.put("cookie", _cookie);
+					header.put("Connection", "close");
 					return header;
 				}
 
@@ -510,6 +530,14 @@ public class ClientZAPI
 		StringRequest stringRequest = new StringRequest(Request.Method.POST, _baseUri + "/zapi/watch",
 		        responseCallback, responseCallback)
 		{
+			@Override
+			public Map<String, String> getHeaders() throws AuthFailureError
+			{
+				Map<String, String> headers = new HashMap<String, String>();
+				headers.put("Connection", "close");
+				return headers;
+			}
+
 			@Override
 			protected Map<String, String> getParams() throws AuthFailureError
 			{

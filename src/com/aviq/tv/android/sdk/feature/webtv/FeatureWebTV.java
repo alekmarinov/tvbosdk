@@ -12,12 +12,15 @@ package com.aviq.tv.android.sdk.feature.webtv;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
 import com.android.volley.Response;
@@ -198,6 +201,14 @@ public class FeatureWebTV extends FeatureComponent
 			{
 				return Response.error(new ParseError(je));
 			}
+		}
+
+		@Override
+		public Map<String, String> getHeaders() throws AuthFailureError
+		{
+			Map<String, String> headers = new HashMap<String, String>();
+			headers.put("Connection", "close");
+			return headers;
 		}
 	}
 }

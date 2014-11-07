@@ -14,7 +14,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -24,6 +23,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
 import com.android.volley.Request;
@@ -115,7 +115,7 @@ public class FeatureVODBulsat extends FeatureVOD
 	{
 		if (removeEmptyElements)
 			removeEmptyNodes(_vodData.getRoot());
-		
+
 		return _vodData;
 	}
 
@@ -136,14 +136,14 @@ public class FeatureVODBulsat extends FeatureVOD
 				node.getParent().remove(node.getData());
 			}
 		}
-		
+
 		// Check the current node in case there are no children left
 		if (!node.hasChildren() && node.getData().getVodList().isEmpty() && node.getParent() != null)
 		{
 			node.getParent().remove(node.getData());
 		}
 	}
-	
+
 	@Override
     public void loadVod(String id, OnVodLoaded onVodLoadedListener)
 	{
@@ -152,11 +152,21 @@ public class FeatureVODBulsat extends FeatureVOD
 
 		VodResponseCallback callback = new VodResponseCallback(onVodLoadedListener);
 
-		StringRequest request = new StringRequest(Request.Method.GET, vodServerURL, callback, callback);
+		StringRequest request = new StringRequest(Request.Method.GET, vodServerURL, callback, callback)
+		{
+			@Override
+			public Map<String, String> getHeaders() throws AuthFailureError
+			{
+				Map<String, String> headers = new HashMap<String, String>();
+				headers.put("Connection", "close");
+				return headers;
+			}
+		};
 		Environment.getInstance().getRequestQueue().add(request);
 	}
-	
-	public void search(String term, OnVodSearchResult onVodSearchResult)
+
+	@Override
+    public void search(String term, OnVodSearchResult onVodSearchResult)
 	{
 		String[] terms = term.split("\\s");
 		List<String> keywordList = new ArrayList<String>(terms.length);
@@ -169,12 +179,12 @@ public class FeatureVODBulsat extends FeatureVOD
 		String[] keywords = keywordList.toArray(new String[] {});
 
 		Log.v(TAG, "Run search with keywords = " + Arrays.toString(keywords));
-		
+
 		Map<Vod, Integer> resultMap = new HashMap<Vod, Integer>();
 		searchVodTree(_vodData.getRoot(), keywords, resultMap);
 
 		LinkedHashMap<Vod, Integer> sortedResultMap = MapUtils.sortMapByValue(resultMap, SortingOrder.DESCENDING);
-		
+
 		List<Vod> resultList = new ArrayList<Vod>();
 		for (Map.Entry<Vod, Integer> entry : sortedResultMap.entrySet())
 			resultList.add(entry.getKey());
@@ -185,9 +195,9 @@ public class FeatureVODBulsat extends FeatureVOD
 	/**
 	 * Search VOD tree for VOD items and score each result based on which
 	 * property it is found in.
-	 * 
+	 *
 	 * TODO: maybe add keyword frequency in the scoring as well
-	 * 
+	 *
 	 * @param node
 	 * @param keywords
 	 * @param resultMap
@@ -204,7 +214,7 @@ public class FeatureVODBulsat extends FeatureVOD
 			boolean inShortDesc = true;
 			boolean inDesc = true;
 			int score = 0;
-			
+
 			for (String keyword : keywords)
 			{
 				inTitle = vod.getTitle() != null ? vod.getTitle()
@@ -214,9 +224,9 @@ public class FeatureVODBulsat extends FeatureVOD
 						.indexOf(keyword) > -1 : false;
 				inDesc = vod.getDescription() != null ? vod.getDescription()
 						.toLowerCase(mLocale).indexOf(keyword) > -1 : false;
-				
+
 				hasKeywords = inTitle || inShortDesc || inDesc;
-				
+
 				if (inTitle)
 					score += SCORE_TITLE;
 				if (inShortDesc)
@@ -246,6 +256,14 @@ public class FeatureVODBulsat extends FeatureVOD
 			super(Method.GET, url, errorListener);
 			this.mClazz = clazz;
 			this.mListener = listener;
+		}
+
+		@Override
+		public Map<String, String> getHeaders() throws AuthFailureError
+		{
+			Map<String, String> headers = new HashMap<String, String>();
+			headers.put("Connection", "close");
+			return headers;
 		}
 
 		@Override

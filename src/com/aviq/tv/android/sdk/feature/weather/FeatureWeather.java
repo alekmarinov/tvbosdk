@@ -12,12 +12,15 @@ package com.aviq.tv.android.sdk.feature.weather;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.os.Bundle;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -127,7 +130,16 @@ public class FeatureWeather extends FeatureScheduler
 			Log.i(TAG, "Retrieving weather data from: " + weatherServerURL);
 
 			JsonObjectRequest weatherContentRequest = new JsonObjectRequest(Request.Method.GET, weatherServerURL,
-			        null, responseCallback, responseCallback);
+			        null, responseCallback, responseCallback)
+			{
+				@Override
+				public Map<String, String> getHeaders() throws AuthFailureError
+				{
+					Map<String, String> headers = new HashMap<String, String>();
+					headers.put("Connection", "close");
+					return headers;
+				}
+			};
 			Environment.getInstance().getRequestQueue().add(weatherContentRequest);
 		}
 		catch (UnsupportedEncodingException e)
