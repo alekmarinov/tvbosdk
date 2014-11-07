@@ -178,7 +178,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 			// set live url
 			streamUrl = channelBulsat.getStreamUrl();
 		}
-		Log.d(TAG, ".getStreamUrl: channel = " + channel.getChannelId() + ", playTime = " + playTime + ", playDuration = " + playDuration + " -> " + streamUrl);
+		Log.d(TAG, ".getStreamUrl: channel = " + channel.getChannelId() + ", playTime = " + playTime
+		        + ", playDuration = " + playDuration + " -> " + streamUrl);
 		onStreamURLReceived.onStreamURL(streamUrl);
 	}
 
@@ -192,15 +193,13 @@ public class FeatureEPGBulsat extends FeatureEPG
 	@Override
 	protected void retrieveChannelLogo(Channel channel, int channelIndex)
 	{
-		super.retrieveChannelLogo(channel, channelIndex);
-
 		// download selected channel logo
 		String channelId = channel.getChannelId();
-		ChannelBulsat channelBulsat = (ChannelBulsat)channel;
+		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
 		String channelSelectedLogo = channelBulsat.getThumbnailSelected();
 
 		String channelLogoUrl = getChannelImageUrl(channelId, channelSelectedLogo);
-		Log.d(TAG, "Retrieving channel logo from " + channelLogoUrl);
+		Log.d(TAG, "Retrieving selected channel logo for index " + channelIndex + " from " + channelLogoUrl);
 
 		LogoSelectedResponseCallback responseCallback = new LogoSelectedResponseCallback(channelId, channelIndex);
 
@@ -208,6 +207,11 @@ public class FeatureEPGBulsat extends FeatureEPG
 		        _channelLogoHeight, Config.ARGB_8888, responseCallback);
 
 		_httpQueue.add(imageRequest);
+
+		// FIXME: if the request of the selected logo finishes after the request
+		// of the normal logo, the last will not register in the EpgData
+
+		super.retrieveChannelLogo(channel, channelIndex);
 	}
 
 	private class LogoSelectedResponseCallback implements Response.Listener<Bitmap>, Response.ErrorListener
@@ -224,7 +228,9 @@ public class FeatureEPGBulsat extends FeatureEPG
 		@Override
 		public void onResponse(Bitmap response)
 		{
-			Log.d(TAG, "Received bitmap " + response.getWidth() + "x" + response.getHeight());
+			Log.d(TAG,
+			        "Received selected logo for _index = " + _index + " " + response.getWidth() + "x"
+			                + response.getHeight() + ", _epgDataBeingLoaded = " + _epgDataBeingLoaded);
 			if (_epgDataBeingLoaded != null)
 			{
 				_epgDataBeingLoaded.setChannelLogo(_index, response, IEpgDataProvider.ChannelLogoType.SELECTED);

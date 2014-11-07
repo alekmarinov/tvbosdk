@@ -64,10 +64,16 @@ public class EpgData implements IEpgDataProvider, Serializable
 		if (_channelLogos == null)
 			_channelLogos = new Bitmap[ChannelLogoType.values().length * _channelList.size()];
 
-		if (newLogo == null || channelIndex < 0 || channelIndex > _channelList.size())
-			return false;
 
-		_channelLogos[logoType.ordinal() * _channelList.size() + channelIndex] = newLogo;
+		if (newLogo == null || channelIndex < 0 || channelIndex > _channelList.size())
+		{
+			Log.w(TAG, ".setChannelLogo: newLogo = " + newLogo + ", channelIndex = " + channelIndex + ", _channelList size = " + _channelList.size());
+			return false;
+		}
+
+		int arrindex = logoType.ordinal() * _channelList.size() + channelIndex;
+		Log.d(TAG, ".setChannelLogo: newLogo = " + newLogo + ", logoType = " + logoType + ", channelIndex = " + channelIndex + ", _channelList size = " + _channelList.size() + ", arrindex = " + arrindex);
+		_channelLogos[arrindex] = newLogo;
 
 		return true;
 	}
@@ -153,7 +159,10 @@ public class EpgData implements IEpgDataProvider, Serializable
 	@Override
 	public Bitmap getChannelLogoBitmap(int index, ChannelLogoType logoType)
 	{
-		return _channelLogos[logoType.ordinal() * _channelList.size() + index];
+		int arrindex = logoType.ordinal() * _channelList.size() + index;
+		Bitmap bmp = _channelLogos[arrindex];
+		Log.i(TAG, ".getChannelLogoBitmap: index = " + index + ", arrindex = " + arrindex + ", logoType = " + logoType + " -> " + bmp);
+		return bmp;
 	}
 
 	/**
