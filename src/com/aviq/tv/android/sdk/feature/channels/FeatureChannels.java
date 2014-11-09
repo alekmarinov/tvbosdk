@@ -207,6 +207,10 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		if (_featureTimeshift != null)
 		{
 			_featureTimeshift.getEventMessenger().register(this, FeatureTimeshift.ON_SEEK);
+			int lastChannelIndex = getLastChannelIndex();
+			Channel lastChannel = getActiveChannels().get(lastChannelIndex);
+			long bufferSize = _feature.Scheduler.EPG.getStreamBufferSize(lastChannel);
+			_featureTimeshift.setTimeshiftDuration(bufferSize);
 		}
 		else
 		{
