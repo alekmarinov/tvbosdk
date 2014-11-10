@@ -38,6 +38,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureState;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
+import com.aviq.tv.android.sdk.core.state.StateManager;
 import com.aviq.tv.android.sdk.utils.Files;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -376,7 +377,14 @@ public class FeatureDevice extends FeatureComponent
 		bundle.putLong(OnStatusExtra.hddfree.name(), getHddFreeMemory());
 		bundle.putString(OnStatusExtra.network.name(), getNetwork());
 
-		FeatureState mainState = (FeatureState) Environment.getInstance().getStateManager().getMainState();
+		// Do NULL checks as this method is called from different threads.
+		Environment environment = Environment.getInstance();
+		StateManager stateManager = null;
+		if (environment != null)
+			stateManager = environment.getStateManager();
+		FeatureState mainState = null;
+		if (stateManager != null)
+			mainState = (FeatureState) stateManager.getMainState();
 		if (mainState != null)
 			bundle.putString(OnStatusExtra.section.name(), mainState.getStateName().name());
 
