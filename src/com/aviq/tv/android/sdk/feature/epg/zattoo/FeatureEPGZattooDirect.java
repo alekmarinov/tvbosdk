@@ -101,36 +101,43 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 					                getPrefs().getString(Param.ZATTOO_PASS), new OnResultReceived()
 					                {
 						                @Override
-						                public void onReceiveResult(FeatureError result)
+						                public void onReceiveResult(FeatureError error)
 						                {
-							                Log.i(TAG, "login response: " + result);
+							                Log.i(TAG, "login response: " + error);
 
-							                _clientZAPI.retrieveChannels(new OnResultReceived()
-											{
-												@Override
-												public void onReceiveResult(FeatureError error)
+							                if (!error.isError())
+							                {
+								                _clientZAPI.retrieveChannels(new OnResultReceived()
 												{
-													if (!error.isError())
+													@Override
+													public void onReceiveResult(FeatureError error)
 													{
-										                _clientZAPI.retrievePrograms(new OnResultReceived()
+														if (!error.isError())
 														{
-															@Override
-															public void onReceiveResult(FeatureError error)
+											                _clientZAPI.retrievePrograms(new OnResultReceived()
 															{
-																Log.i(TAG, "Updating EPG finished with status " + error);
-																_epgData = _clientZAPI.getEpgData();
-														        onFeatureInitialized.onInitialized(error);
-															}
-														});
+																@Override
+																public void onReceiveResult(FeatureError error)
+																{
+																	Log.i(TAG, "Updating EPG finished with status " + error);
+																	_epgData = _clientZAPI.getEpgData();
+															        onFeatureInitialized.onInitialized(error);
+																}
+															});
+														}
+														else
+														{
+													        onFeatureInitialized.onInitialized(error);
+														}
 													}
-													else
-													{
-												        onFeatureInitialized.onInitialized(error);
-													}
-												}
-											});
-
-							                FeatureEPGZattooDirect.super.initialize(onFeatureInitialized);
+												});
+	
+								                FeatureEPGZattooDirect.super.initialize(onFeatureInitialized);
+							                }
+							                else
+							                {
+										        onFeatureInitialized.onInitialized(error);
+							                }
 						                }
 					                });
 				        }
