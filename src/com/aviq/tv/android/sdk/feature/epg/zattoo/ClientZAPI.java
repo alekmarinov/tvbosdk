@@ -481,6 +481,7 @@ public class ClientZAPI
 
 							// creates zattoo program instance
 							ProgramZattoo program = new ProgramZattoo(_dfUtc.format(cal.getTime()), channel);
+							program.setZapiID(jsonProgram.getString("id"));
 
 							// set program start time
 							cal.setTimeInMillis(jsonProgram.getLong("s") * 1000);
@@ -633,4 +634,70 @@ public class ClientZAPI
 			        FeatureName.Scheduler.EPG), error));
 		}
 	}
+
+	public void retrieveProgramDetails(final ProgramZattoo program, OnResultReceived onResultReceived)
+	{
+		ResponseCallbackDetails responseCallback = new ResponseCallbackDetails(program, onResultReceived);
+		StringRequest stringRequest = new StringRequest(Request.Method.GET, _baseUri + "/zapi/program/details?program_id=" + program.getZapiID(),
+		        responseCallback, responseCallback)
+		{
+			@Override
+			public Map<String, String> getHeaders() throws AuthFailureError
+			{
+				Map<String, String> headers = new HashMap<String, String>();
+				headers.put("Connection", "close");
+				return headers;
+			}
+
+			@Override
+			protected Response<String> parseNetworkResponse(NetworkResponse response)
+			{
+				Map<String, String> responseHeaders = response.headers;
+				_cookie = responseHeaders.get("set-cookie");
+				return super.parseNetworkResponse(response);
+			}
+		};
+		Log.i(TAG, "call " + stringRequest.getUrl());
+		_requestQueue.add(stringRequest);
+	}
+
+	private class ResponseCallbackDetails extends ResponseCallback
+	{
+		private Program _program;
+		ResponseCallbackDetails(Program program, OnResultReceived onResultReceived)
+		{
+			super(onResultReceived);
+			_program = program;
+		}
+
+		@Override
+		public void onResponse(String response)
+		{
+			Log.i(TAG, ".onResponse: " + response);
+			try
+			{
+				JSONObject json = new JSONObject(response);
+				JSONObject jsonProgram = json.getJSONObject("program");
+				_program.setDetails(jsonProgram);
+				super.onResponse(response);
+			}
+			catch (JSONException e)
+			{
+				Log.e(TAG, e.getMessage(), e);
+				_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, e));
+			}
+		}
+
+		@Override
+		public void onErrorResponse(VolleyError error)
+		{
+			Log.i(TAG, ".onErrorResponse: " + error);
+			if (error.networkResponse != null)
+			{
+				Log.d(TAG, "data in network response: " + new String(error.networkResponse.data));
+			}
+			_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, error));
+		}
+	}
+
 }

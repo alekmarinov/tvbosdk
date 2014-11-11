@@ -187,6 +187,19 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 	}
 
 	@Override
+    public void getProgramDetails(String channelId, final Program program, final IOnProgramDetails onProgramDetails)
+	{
+		_clientZAPI.retrieveProgramDetails((ProgramZattoo)program, new OnResultReceived()
+		{
+			@Override
+			public void onReceiveResult(FeatureError error)
+			{
+				onProgramDetails.onProgramDetails(error, program);
+			}
+		});
+	}
+
+	@Override
 	public long getStreamBufferSize(Channel channel)
 	{
 		return 0;

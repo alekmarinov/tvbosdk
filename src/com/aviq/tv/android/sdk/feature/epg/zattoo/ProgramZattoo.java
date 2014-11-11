@@ -10,6 +10,7 @@
 
 package com.aviq.tv.android.sdk.feature.epg.zattoo;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -23,16 +24,18 @@ import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
  */
 public class ProgramZattoo extends Program
 {
-    private static final long serialVersionUID = 6850910305560837142L;
+	private static final long serialVersionUID = 6850910305560837142L;
 
 	public static int MAX_SUMMARY_LENGTH = 100;
 	public static int MIN_SUMMARY_LENGTH = 20;
 
 	private static final String TAG = ProgramZattoo.class.getSimpleName();
 	private JSONObject _detailsResponse;
+	private String _zapiId;
 
 	/**
-	 * No-arg constructor added for Kryo serialization. Do not use for anything else.
+	 * No-arg constructor added for Kryo serialization. Do not use for anything
+	 * else.
 	 */
 	public ProgramZattoo()
 	{
@@ -49,10 +52,41 @@ public class ProgramZattoo extends Program
 		return _detailsResponse != null;
 	}
 
+	public void setZapiID(String zapiId)
+	{
+		_zapiId = zapiId;
+	}
+
+	public String getZapiID()
+	{
+		return _zapiId;
+	}
+
 	@Override
 	public void setDetails(JSONObject detailsResponse)
 	{
 		_detailsResponse = detailsResponse;
+	}
+
+	private String getAnyString(JSONObject object, String field1, String field2)
+	{
+		String value = null;
+		try
+		{
+			value = object.getString(field1);
+		}
+		catch (JSONException e)
+		{
+			try
+			{
+				value = object.getString(field2);
+			}
+			catch (JSONException e1)
+			{
+				Log.e(TAG, e1.getMessage(), e1);
+			}
+		}
+		return value;
 	}
 
 	@Override
@@ -109,22 +143,37 @@ public class ProgramZattoo extends Program
 	private String getAttributeList(String key) throws JSONException
 	{
 		StringBuffer result = new StringBuffer();
-		String element = _detailsResponse.getString(key + ".1");
-		int index = 1;
-		while (element != null)
+		try
 		{
-			if (index > 1)
-				result.append(", ");
-			result.append(element);
-			index++;
-			element = _detailsResponse.getString(key + "." + index);
+			// EPG GW format
+			String element = _detailsResponse.getString(key + ".1");
+			int index = 1;
+			while (element != null)
+			{
+				if (index > 1)
+					result.append(", ");
+				result.append(element);
+				index++;
+				element = _detailsResponse.getString(key + "." + index);
+			}
+		}
+		catch (JSONException e)
+		{
+			// ZAPI format
+			JSONArray list = _detailsResponse.getJSONArray(key);
+			for (int i = 0; i < list.length(); i++)
+			{
+				if (result.length() > 0)
+					result.append(", ");
+				result.append(list.getString(i));
+			}
 		}
 		return result.toString();
 	}
 
 	@Override
-    public void setDetailAttributes(MetaData metaData, String[] attributes)
-    {
+	public void setDetailAttributes(MetaData metaData, String[] attributes)
+	{
 		// no RayV specific channel attributes
-    }
+	}
 }
