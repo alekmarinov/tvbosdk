@@ -373,10 +373,13 @@ public class ClientZAPI
 						for (int day = 0; day < daysTotal; day++)
 						{
 							List<Program> programList = programLists[day];
-							for (Program program: programList)
+							if (programList != null)
 							{
-								allProgramsList.add(program);
-								programMap.put(program.getStartTime(), allProgramsList.size() - 1);
+								for (Program program: programList)
+								{
+									allProgramsList.add(program);
+									programMap.put(program.getStartTime(), allProgramsList.size() - 1);
+								}
 							}
 						}
 						_epgData.addProgramData(channelId, programMap, allProgramsList);
