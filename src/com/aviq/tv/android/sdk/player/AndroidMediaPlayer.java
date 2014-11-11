@@ -148,7 +148,7 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
 	{
 		Log.i(TAG, ".stop");
 		super.stop();
-		if (_mediaPlayer != null)
+		if (_mediaPlayer != null && _mediaPlayer.isPlaying())
 			_mediaPlayer.stop();
 	}
 
