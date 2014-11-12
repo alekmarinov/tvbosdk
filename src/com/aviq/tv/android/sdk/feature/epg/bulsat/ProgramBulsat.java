@@ -24,6 +24,7 @@ import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
 public class ProgramBulsat extends Program implements Serializable
 {
 	private static final long serialVersionUID = 5914858738230945780L;
+	public static final String NO_EPG_DATA = "NO_EPG_DATA";
 
 	private String _description;
 	private String _image;
