@@ -64,7 +64,6 @@ public class EpgData implements IEpgDataProvider, Serializable
 		if (_channelLogos == null)
 			_channelLogos = new Bitmap[ChannelLogoType.values().length * _channelList.size()];
 
-
 		if (newLogo == null || channelIndex < 0 || channelIndex > _channelList.size())
 		{
 			Log.w(TAG, ".setChannelLogo: newLogo = " + newLogo + ", channelIndex = " + channelIndex + ", _channelList size = " + _channelList.size());

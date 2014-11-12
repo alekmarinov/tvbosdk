@@ -9,7 +9,7 @@ public interface IEpgDataProvider
 {
 	public static enum ChannelLogoType
 	{
-		NORMAL, SELECTED
+		NORMAL, SELECTED, FAVORITE
 	}
 
 	public int getChannelCount();

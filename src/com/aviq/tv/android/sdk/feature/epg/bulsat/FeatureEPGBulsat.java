@@ -27,6 +27,7 @@ import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.IEpgDataProvider;
+import com.aviq.tv.android.sdk.feature.epg.IEpgDataProvider.ChannelLogoType;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 
 /**
@@ -84,6 +85,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 				bulsatMetaData.metaChannelRecordable = j;
 			else if ("thumbnail_selected".equals(key))
 				bulsatMetaData.metaChannelThumbnailSelected = j;
+			else if ("thumbnail_favorite".equals(key))
+				bulsatMetaData.metaChannelThumbnailFavorite = j;
 		}
 	}
 
@@ -104,7 +107,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 	protected String getChannelsUrl()
 	{
 		String url = super.getChannelsUrl();
-		return url + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable,thumbnail_selected";
+		return url + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable,thumbnail_selected,thumbnail_favorite";
 	}
 
 	@Override
@@ -193,36 +196,47 @@ public class FeatureEPGBulsat extends FeatureEPG
 	@Override
 	protected void retrieveChannelLogo(Channel channel, int channelIndex)
 	{
+		ImageRequest imageRequest;
+		LogoResponseCallback responseCallback;
+		String channelLogoUrl;
+
 		// download selected channel logo
 		String channelId = channel.getChannelId();
 		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
-		String channelSelectedLogo = channelBulsat.getThumbnailSelected();
 
-		String channelLogoUrl = getChannelImageUrl(channelId, channelSelectedLogo);
+		// retrieves selected channel logo
+		channelLogoUrl = getChannelImageUrl(channelId, channelBulsat.getThumbnailSelected());
 		Log.d(TAG, "Retrieving selected channel logo for index " + channelIndex + " from " + channelLogoUrl);
-
-		LogoSelectedResponseCallback responseCallback = new LogoSelectedResponseCallback(channelId, channelIndex);
-
-		ImageRequest imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth,
+		responseCallback = new LogoResponseCallback(channelId, channelIndex, IEpgDataProvider.ChannelLogoType.SELECTED);
+		imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth,
 		        _channelLogoHeight, Config.ARGB_8888, responseCallback);
-
 		_httpQueue.add(imageRequest);
 
-		// FIXME: if the request of the selected logo finishes after the request
+		// retrieves favorite channel logo
+		channelLogoUrl = getChannelImageUrl(channelId, channelBulsat.getThumbnailFavorite());
+		responseCallback = new LogoResponseCallback(channelId, channelIndex, IEpgDataProvider.ChannelLogoType.FAVORITE);
+		imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth,
+		        _channelLogoHeight, Config.ARGB_8888, responseCallback);
+		_httpQueue.add(imageRequest);
+
+		// FIXME: if the request of the selected or favorite logo finishes after the request
 		// of the normal logo, the last will not register in the EpgData
 
+		// retrieves normal channel logo
 		super.retrieveChannelLogo(channel, channelIndex);
 	}
 
-	private class LogoSelectedResponseCallback implements Response.Listener<Bitmap>, Response.ErrorListener
+	private class LogoResponseCallback implements Response.Listener<Bitmap>, Response.ErrorListener
 	{
 		private int _index;
 		private String _channelId;
+		private ChannelLogoType _logoType;
 
-		LogoSelectedResponseCallback(String channelId, int index)
+		LogoResponseCallback(String channelId, int index, ChannelLogoType logoType)
 		{
 			_channelId = channelId;
 			_index = index;
+			_logoType = logoType;
 		}
 
 		@Override
@@ -233,7 +247,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 			                + response.getHeight() + ", _epgDataBeingLoaded = " + _epgDataBeingLoaded);
 			if (_epgDataBeingLoaded != null)
 			{
-				_epgDataBeingLoaded.setChannelLogo(_index, response, IEpgDataProvider.ChannelLogoType.SELECTED);
+				_epgDataBeingLoaded.setChannelLogo(_index, response, _logoType);
 			}
 		}
 

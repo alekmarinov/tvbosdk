@@ -32,6 +32,7 @@ public class ChannelBulsat extends Channel implements Serializable
 	private boolean _parentControl;
 	private boolean _recordable;
 	private String _thumbnailSelected;
+	private String _thumbnailFavorite;
 
 	public static enum Genre
 	{
@@ -76,6 +77,7 @@ public class ChannelBulsat extends Channel implements Serializable
 		public int metaChannelPG;
 		public int metaChannelRecordable;
 		public int metaChannelThumbnailSelected;
+		public int metaChannelThumbnailFavorite;
 	}
 
 	public void setStreamUrl(String streamUrl)
@@ -148,6 +150,16 @@ public class ChannelBulsat extends Channel implements Serializable
 		return _thumbnailSelected;
 	}
 
+	public void setThumbnailFavorite(String thumbnailFavorite)
+	{
+		_thumbnailFavorite = thumbnailFavorite;
+	}
+
+	public String getThumbnailFavorite()
+	{
+		return _thumbnailFavorite;
+	}
+
 	@Override
 	public void setAttributes(Channel.MetaData channelMetaData, String[] attributes)
 	{
@@ -188,5 +200,7 @@ public class ChannelBulsat extends Channel implements Serializable
 			setRecordable(!"0".equals(attributes[channelBulsatMetaData.metaChannelRecordable]));
 		if (attributes[channelBulsatMetaData.metaChannelThumbnailSelected] != null)
 			setThumbnailSelected(new String(attributes[channelBulsatMetaData.metaChannelThumbnailSelected]));
+		if (attributes[channelBulsatMetaData.metaChannelThumbnailFavorite] != null)
+			setThumbnailFavorite(new String(attributes[channelBulsatMetaData.metaChannelThumbnailFavorite]));
 	}
 }
