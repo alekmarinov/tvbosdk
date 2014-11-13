@@ -168,7 +168,7 @@ public class FeatureUpgrade extends FeatureScheduler
 
 	public enum ErrorReason
 	{
-		NO_ERROR, EXCEPTION, CONNECTION_ERROR, MD5_CHECK_FAILED
+		NO_ERROR, EXCEPTION, CONNECTION_ERROR, MD5_CHECK_FAILED, CANCELLED, OUT_OF_FREE_SPACE
 	}
 
 	public class UpdateInfo
@@ -315,7 +315,7 @@ public class FeatureUpgrade extends FeatureScheduler
 				}
 				catch (IOException e)
 				{
-					setStatus(new UpgradeException(FeatureUpgrade.this, ResultCode.IO_ERROR, "rebootToInstall: failed", e));
+					setStatus(new UpgradeException(FeatureUpgrade.this, ResultCode.IO_ERROR, "rebootToInstall: failed", e), null);
 				}
 			}
 		}, delay);
@@ -426,7 +426,7 @@ public class FeatureUpgrade extends FeatureScheduler
 
 		// Check for software updates
 		Log.i(TAG, "Checking for new software update");
-		setStatus(Status.CHECKING, ErrorReason.NO_ERROR, ResultCode.OK);
+		setStatus(Status.CHECKING, ErrorReason.NO_ERROR, ResultCode.OK, null);
 
 		Bundle updateCheckUrlParams = new Bundle();
 		updateCheckUrlParams.putString("SERVER",
@@ -502,17 +502,17 @@ public class FeatureUpgrade extends FeatureScheduler
 						if (!(_hasUpdate && isDownload))
 						{
 							// set ok status if not downloading
-							setOkStatus();
+							setOkStatus(result.getBundle());
 						}
 					}
 					catch (Exception e)
 					{
-						setStatus(new UpgradeException(FeatureUpgrade.this, e));
+						setStatus(new UpgradeException(FeatureUpgrade.this, e), result.getBundle());
 					}
 				}
 				else
 				{
-					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, result.getErrorCode());
+					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, result.getErrorCode(), result.getBundle());
 				}
 				getEventMessenger().trigger(ON_UPDATE_CHECKED);
 			}
@@ -521,7 +521,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		return true;
 	}
 
-	private void setStatus(Status status, ErrorReason errorReason, int errorCode)
+	private void setStatus(Status status, ErrorReason errorReason, int errorCode, Bundle extraData)
 	{
 		if (!status.equals(_status))
 		{
@@ -531,23 +531,23 @@ public class FeatureUpgrade extends FeatureScheduler
 
 			Log.i(TAG, ".setStatus: trigger = " + ON_STATUS_CHANGED + ", _status = " + _status + ", _errorReason = "
 			        + _errorReason + ", _errorCode = " + _errorCode);
-			getEventMessenger().trigger(ON_STATUS_CHANGED);
+			getEventMessenger().trigger(ON_STATUS_CHANGED, extraData);
 		}
 	}
 
-	private void setOkStatus()
+	private void setOkStatus(Bundle extraData)
 	{
-		setStatus(Status.IDLE, ErrorReason.NO_ERROR, ResultCode.OK);
+		setStatus(Status.IDLE, ErrorReason.NO_ERROR, ResultCode.OK, extraData);
 	}
 
-	private void setStatus(UpgradeException exception)
+	private void setStatus(UpgradeException exception, Bundle extraData)
 	{
 		if (_standingBy)
 			Log.w(TAG, exception.toString());
 		else
 			Log.e(TAG, exception.toString(), exception);
 		_exception = exception;
-		setStatus(Status.ERROR, ErrorReason.EXCEPTION, exception.getErrorCode());
+		setStatus(Status.ERROR, ErrorReason.EXCEPTION, exception.getErrorCode(), extraData);
 	}
 
 	// returns the last downloaded and verified with checksum firmware file
@@ -566,12 +566,12 @@ public class FeatureUpgrade extends FeatureScheduler
 		if (isUpgradeReady())
 		{
 			Log.i(TAG, ".downloadUpdate: upgrade already downloaded");
-			setOkStatus();
+			setOkStatus(null);
 			return;
 		}
 
 		// change status to downloading
-		setStatus(Status.DOWNLOADING, ErrorReason.NO_ERROR, ResultCode.OK);
+		setStatus(Status.DOWNLOADING, ErrorReason.NO_ERROR, ResultCode.OK, null);
 
 		// format download url
 		Bundle updateUrlParams = new Bundle();
@@ -652,7 +652,7 @@ public class FeatureUpgrade extends FeatureScheduler
 								if (!md5.equalsIgnoreCase(downloadedMd5))
 								{
 									// md5 check failed
-									setStatus(Status.ERROR, ErrorReason.MD5_CHECK_FAILED, ResultCode.GENERAL_FAILURE);
+									setStatus(Status.ERROR, ErrorReason.MD5_CHECK_FAILED, ResultCode.GENERAL_FAILURE, result.getBundle());
 								}
 								else
 								{
@@ -661,7 +661,7 @@ public class FeatureUpgrade extends FeatureScheduler
 									_userPrefs.put(UserParam.UPGRADE_FILE, updateFile);
 									_userPrefs.put(UserParam.UPGRADE_VERSION, _updateInfo.Version);
 									_userPrefs.put(UserParam.UPGRADE_BRAND, _updateInfo.Brand);
-									setOkStatus();
+									setOkStatus(result.getBundle());
 								}
 							}
 							else if (DownloadService.DOWNLOAD_FAILED == result.getErrorCode())
@@ -669,7 +669,15 @@ public class FeatureUpgrade extends FeatureScheduler
 								Log.e(TAG, ".downloadUpdate: download failed");
 								Throwable exception = (Throwable) result.getBundle()
 								        .getSerializable(DownloadService.ResultExtras.EXCEPTION.name());
-								setStatus(new UpgradeException(FeatureUpgrade.this, exception));
+								setStatus(new UpgradeException(FeatureUpgrade.this, exception), result.getBundle());
+							}
+							else if (DownloadService.DOWNLOAD_CANCELLED == result.getErrorCode())
+							{
+								setStatus(Status.ERROR, ErrorReason.CANCELLED, ResultCode.IO_ERROR, result.getBundle());
+							}
+							else if (DownloadService.DOWNLOAD_OUT_OF_FREE_SPACE == result.getErrorCode())
+							{
+								setStatus(Status.ERROR, ErrorReason.OUT_OF_FREE_SPACE, ResultCode.IO_ERROR, result.getBundle());
 							}
 						}
 					});
@@ -677,7 +685,7 @@ public class FeatureUpgrade extends FeatureScheduler
 				else
 				{
 					Log.e(TAG, "Error retrieving md5 file " + updateUrlMd5);
-					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, result.getErrorCode());
+					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, result.getErrorCode(), result.getBundle());
 				}
 			}
 		});
