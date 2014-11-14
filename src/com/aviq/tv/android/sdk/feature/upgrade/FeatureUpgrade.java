@@ -64,6 +64,7 @@ public class FeatureUpgrade extends FeatureScheduler
 	public static final int ON_UPDATE_PROGRESS = DownloadService.DOWNLOAD_PROGRESS;
 	public static final int ON_START_UPDATE = EventMessenger.ID("ON_START_UPDATE");
 	public static final int ON_START_FROM_UPDATE = EventMessenger.ID("ON_START_FROM_UPDATE");
+	public static final int ON_UPDATE_FAILED = EventMessenger.ID("ON_UPDATE_FAILED");
 
 	public static final String EXTRA_VERSION = "VERSION";
 	public static final String EXTRA_VERSION_PREV = "VERSION_PREV";
@@ -397,7 +398,23 @@ public class FeatureUpgrade extends FeatureScheduler
 				        .getLong(UserParam.UPGRADE_START_TIME_MILLIS)) / 1000 : -1;
 				params.putLong(EXTRA_UPGRADE_DURATION, duration);
 
-				getEventMessenger().trigger(ON_START_FROM_UPDATE, params);
+				String currentBrand = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.BRAND);
+				if (!isNewVersion(oldVersion, currentBrand))
+				{
+					// Old version = current version, i.e. the upgrade failed
+
+					String expectedVersion = userPrefs.has(UserParam.UPGRADE_VERSION) ? userPrefs
+					        .getString(UserParam.UPGRADE_VERSION) : null;
+					params.putString(EXTRA_VERSION, expectedVersion);
+
+					getEventMessenger().trigger(ON_UPDATE_FAILED, params);
+				}
+				else
+				{
+					// Update succeeded
+					getEventMessenger().trigger(ON_START_FROM_UPDATE, params);
+				}
+
 				userPrefs.put(UserParam.IS_AFTER_UPGRADE, false);
 			}
 
