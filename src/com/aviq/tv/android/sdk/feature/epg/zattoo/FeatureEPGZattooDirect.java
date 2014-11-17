@@ -12,6 +12,7 @@ package com.aviq.tv.android.sdk.feature.epg.zattoo;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -19,6 +20,7 @@ import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
 
 /**
  * Zattoo specific extension of EPG feature
@@ -31,16 +33,6 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 
 	public static enum Param
 	{
-		/**
-		 * Registered Zattoo user account name
-		 */
-		ZATTOO_USER("aviq@zattoo.com"),
-
-		/**
-		 * Registered Zattoo account password
-		 */
-		ZATTOO_PASS("avZat14"),
-
 		/**
 		 * Zattoo base URL
 		 */
@@ -78,9 +70,23 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 		}
 	}
 
+	enum UserParam
+	{
+		/**
+		 * Registered Zattoo user account name
+		 */
+		ZATTOO_USER,
+
+		/**
+		 * Registered Zattoo account password
+		 */
+		ZATTOO_PASS
+	}
+
 	public FeatureEPGZattooDirect() throws FeatureNotFoundException
 	{
 		require(FeatureName.State.NETWORK_WIZARD);
+		require(FeatureName.Component.DEVICE);
 	}
 
 	@Override
@@ -88,6 +94,15 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 	{
 		_clientZAPI = new ClientZAPI(this, getPrefs().getString(Param.ZATTOO_BASE_URL), getPrefs().getInt(
 		        Param.ZATTOO_STREAM_MINRATE), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE));
+		Prefs userPrefs = Environment.getInstance().getUserPrefs();
+		String mac = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
+		mac = mac.replace(":", "");
+		if (!userPrefs.has(UserParam.ZATTOO_USER))
+			userPrefs.put(UserParam.ZATTOO_USER, mac);
+		if (!userPrefs.has(UserParam.ZATTOO_PASS))
+			userPrefs.put(UserParam.ZATTOO_PASS, mac);
+		final String username = userPrefs.getString(UserParam.ZATTOO_USER);
+		final String password = userPrefs.getString(UserParam.ZATTOO_PASS);
 		_clientZAPI.hello(getPrefs().getString(Param.ZATTOO_APP_TID), getPrefs().getString(Param.ZATTOO_UUID),
 		        new OnResultReceived()
 		        {
@@ -97,49 +112,48 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 				        if (!error.isError())
 				        {
 					        // hello zattoo, loging in...
-					        _clientZAPI.login(getPrefs().getString(Param.ZATTOO_USER),
-					                getPrefs().getString(Param.ZATTOO_PASS), new OnResultReceived()
-					                {
-						                @Override
-						                public void onReceiveResult(FeatureError error)
-						                {
-							                Log.i(TAG, "login response: " + error);
+					        _clientZAPI.login(username, password, new OnResultReceived()
+					        {
+						        @Override
+						        public void onReceiveResult(FeatureError error)
+						        {
+							        Log.i(TAG, "login response: " + error);
 
-							                if (!error.isError())
-							                {
-								                _clientZAPI.retrieveChannels(new OnResultReceived()
-												{
-													@Override
-													public void onReceiveResult(FeatureError error)
-													{
-														if (!error.isError())
-														{
-											                _clientZAPI.retrievePrograms(new OnResultReceived()
-															{
-																@Override
-																public void onReceiveResult(FeatureError error)
-																{
-																	Log.i(TAG, "Updating EPG finished with status " + error);
-																	_epgData = _clientZAPI.getEpgData();
-															        onFeatureInitialized.onInitialized(error);
-																}
-															});
-														}
-														else
-														{
+							        if (!error.isError())
+							        {
+								        _clientZAPI.retrieveChannels(new OnResultReceived()
+								        {
+									        @Override
+									        public void onReceiveResult(FeatureError error)
+									        {
+										        if (!error.isError())
+										        {
+											        _clientZAPI.retrievePrograms(new OnResultReceived()
+											        {
+												        @Override
+												        public void onReceiveResult(FeatureError error)
+												        {
+													        Log.i(TAG, "Updating EPG finished with status " + error);
+													        _epgData = _clientZAPI.getEpgData();
 													        onFeatureInitialized.onInitialized(error);
-														}
-													}
-												});
-	
-								                FeatureEPGZattooDirect.super.initialize(onFeatureInitialized);
-							                }
-							                else
-							                {
-										        onFeatureInitialized.onInitialized(error);
-							                }
-						                }
-					                });
+												        }
+											        });
+										        }
+										        else
+										        {
+											        onFeatureInitialized.onInitialized(error);
+										        }
+									        }
+								        });
+
+								        FeatureEPGZattooDirect.super.initialize(onFeatureInitialized);
+							        }
+							        else
+							        {
+								        onFeatureInitialized.onInitialized(error);
+							        }
+						        }
+					        });
 				        }
 				        else
 				        {
@@ -194,9 +208,9 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 	}
 
 	@Override
-    public void getProgramDetails(String channelId, final Program program, final IOnProgramDetails onProgramDetails)
+	public void getProgramDetails(String channelId, final Program program, final IOnProgramDetails onProgramDetails)
 	{
-		_clientZAPI.retrieveProgramDetails((ProgramZattoo)program, new OnResultReceived()
+		_clientZAPI.retrieveProgramDetails((ProgramZattoo) program, new OnResultReceived()
 		{
 			@Override
 			public void onReceiveResult(FeatureError error)
