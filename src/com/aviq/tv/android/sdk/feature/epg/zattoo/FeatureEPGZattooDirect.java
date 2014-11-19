@@ -10,6 +10,8 @@
 
 package com.aviq.tv.android.sdk.feature.epg.zattoo;
 
+import android.text.TextUtils;
+
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
@@ -41,7 +43,8 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 		/**
 		 * Zattoo application ID
 		 */
-		ZATTOO_APP_TID("a48d93cd-0247-4225-8063-301d540f3553"),
+		ZATTOO_APP_TID("3c03cab5-cf36-49ad-88fa-2d25ea24042e"),
+		/*a48d93cd-0247-4225-8063-301d540f3553*/
 
 		/**
 		 * Zattoo UUID
@@ -56,7 +59,17 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 		/**
 		 * requested initial bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_INITRATE(2000000);
+		ZATTOO_STREAM_INITRATE(2000000),
+
+		/**
+		 * force using this username for zattoo
+		 */
+		ZATTOO_FORCE_USER(""),
+
+		/**
+		 * force using this password for zattoo
+		 */
+		ZATTOO_FORCE_PASS("");
 
 		Param(String value)
 		{
@@ -98,9 +111,21 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 		String mac = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
 		mac = mac.replace(":", "");
 		if (!userPrefs.has(UserParam.ZATTOO_USER))
-			userPrefs.put(UserParam.ZATTOO_USER, mac);
+		{
+			String forceUser = getPrefs().getString(Param.ZATTOO_FORCE_USER);
+			if (TextUtils.isEmpty(forceUser))
+				userPrefs.put(UserParam.ZATTOO_USER, mac);
+			else
+				userPrefs.put(UserParam.ZATTOO_USER, forceUser);
+		}
 		if (!userPrefs.has(UserParam.ZATTOO_PASS))
-			userPrefs.put(UserParam.ZATTOO_PASS, mac);
+		{
+			String forcePass = getPrefs().getString(Param.ZATTOO_FORCE_PASS);
+			if (TextUtils.isEmpty(forcePass))
+				userPrefs.put(UserParam.ZATTOO_PASS, mac);
+			else
+				userPrefs.put(UserParam.ZATTOO_PASS, forcePass);
+		}
 		final String username = userPrefs.getString(UserParam.ZATTOO_USER);
 		final String password = userPrefs.getString(UserParam.ZATTOO_PASS);
 		_clientZAPI.hello(getPrefs().getString(Param.ZATTOO_APP_TID), getPrefs().getString(Param.ZATTOO_UUID),

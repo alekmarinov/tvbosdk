@@ -86,7 +86,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		/**
 		 * The main url to the EPG server
 		 */
-		EPG_SERVER("http://aviq-prov-01.vtxnet.net:9090"),
+		EPG_SERVER("http://epg.aviq.bg"),
 
 		/**
 		 * The EPG service version

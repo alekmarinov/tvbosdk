@@ -840,6 +840,9 @@ public class FeatureManager
 		// used to compute feature initialization time
 		private long _initStartedTime;
 
+		// used to accumulate total initialization time
+		private long _initTotalTime;
+
 		// the allowed time for feature initialization
 		private int _timeout = 0;
 
@@ -872,6 +875,7 @@ public class FeatureManager
 		public void initialize()
 		{
 			_featureNumber = _lastFeatureNumber = -1;
+			_initTotalTime = 0;
 			initializeNext();
 		}
 
@@ -909,6 +913,7 @@ public class FeatureManager
 			}
 			else
 			{
+				Log.i(TAG, _features.size() + " features initialized in " + _initTotalTime + " ms total");
 				_onFeatureInitialized.onInitialized(FeatureError.OK);
 			}
 		}
@@ -934,8 +939,10 @@ public class FeatureManager
 				        + " more than once");
 			}
 			_lastFeatureNumber = _featureNumber;
+			long featureInitTime = System.currentTimeMillis() - _initStartedTime;
 			Log.i(TAG, "<" + _featureNumber + ". " + error.getFeature() + " initialized in "
-			        + (System.currentTimeMillis() - _initStartedTime) + " ms with result " + error);
+			        + featureInitTime + " ms with result " + error);
+			_initTotalTime += featureInitTime;
 
 			// Stop all features initialization when one fails to initialize
 			if (error.isError())

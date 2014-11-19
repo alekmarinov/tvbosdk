@@ -163,6 +163,8 @@ public class ClientZAPI
 		public void onErrorResponse(VolleyError error)
 		{
 			Log.i(TAG, ".onErrorResponse: " + error);
+			if (error.networkResponse != null)
+				Log.e(TAG, ".onErrorResponse: data = " + new String(error.networkResponse.data));
 			_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, error));
 		}
 	}
@@ -319,6 +321,8 @@ public class ClientZAPI
 		public void onErrorResponse(VolleyError error)
 		{
 			Log.i(TAG, ".onErrorResponse: " + error);
+			if (error.networkResponse != null)
+				Log.e(TAG, ".onErrorResponse: data = " + new String(error.networkResponse.data));
 			_onResultReceived.onReceiveResult(new FeatureError(Environment.getInstance().getFeatureScheduler(
 			        FeatureName.Scheduler.EPG), error));
 		}
@@ -519,6 +523,8 @@ public class ClientZAPI
 		public void onErrorResponse(VolleyError error)
 		{
 			Log.i(TAG, ".onErrorResponse: " + error);
+			if (error.networkResponse != null)
+				Log.e(TAG, ".onErrorResponse: data = " + new String(error.networkResponse.data));
 			_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, error));
 		}
 
@@ -595,6 +601,8 @@ public class ClientZAPI
 		public void onErrorResponse(VolleyError error)
 		{
 			Log.i(TAG, ".onErrorResponse: " + error);
+			if (error.networkResponse != null)
+				Log.e(TAG, ".onErrorResponse: data = " + new String(error.networkResponse.data));
 			_onResultReceived.onReceiveResult(new FeatureError(Environment.getInstance().getFeatureScheduler(
 			        FeatureName.Scheduler.EPG), error));
 		}
@@ -630,6 +638,8 @@ public class ClientZAPI
 		public void onErrorResponse(VolleyError error)
 		{
 			Log.i(TAG, ".onErrorResponse: " + error);
+			if (error.networkResponse != null)
+				Log.e(TAG, ".onErrorResponse: data = " + new String(error.networkResponse.data));
 			_onResultReceived.onReceiveResult(new FeatureError(Environment.getInstance().getFeatureScheduler(
 			        FeatureName.Scheduler.EPG), error));
 		}
@@ -693,9 +703,7 @@ public class ClientZAPI
 		{
 			Log.i(TAG, ".onErrorResponse: " + error);
 			if (error.networkResponse != null)
-			{
-				Log.d(TAG, "data in network response: " + new String(error.networkResponse.data));
-			}
+				Log.e(TAG, ".onErrorResponse: data = " + new String(error.networkResponse.data));
 			_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, error));
 		}
 	}
