@@ -195,6 +195,14 @@ public class FeatureError extends Exception
 	}
 
 	/**
+	 * @param feature the feature causing this exception
+	 */
+	public void getFeature(IFeature feature)
+	{
+		_feature = feature;
+	}
+
+	/**
 	 * @return result code describing the feature failure
 	 */
 	public int getErrorCode()
@@ -203,11 +211,27 @@ public class FeatureError extends Exception
 	}
 
 	/**
+	 * @param errCode set error code
+	 */
+	public void setErrorCode(int errCode)
+	{
+		_errCode = errCode;
+	}
+
+	/**
 	 * @return extra result data
 	 */
 	public Bundle getBundle()
 	{
 		return _errData;
+	}
+
+	/**
+	 * @param errData Bundle with additional error data
+	 */
+	public void setBundle(Bundle errData)
+	{
+		_errData = errData;
 	}
 
 	/**

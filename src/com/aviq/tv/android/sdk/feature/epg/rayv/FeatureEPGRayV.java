@@ -11,9 +11,10 @@
 package com.aviq.tv.android.sdk.feature.epg.rayv;
 
 import android.os.Bundle;
-import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
@@ -156,7 +157,7 @@ public class FeatureEPGRayV extends FeatureEPG
 		long playTimeDelta = System.currentTimeMillis() / 1000 - playTime;
 		if (playTime > 0 && playTimeDelta > 0)
 			streamUrl += "&timeshift=" + playTimeDelta;
-		onStreamURLReceived.onStreamURL(streamUrl);
+		onStreamURLReceived.onStreamURL(FeatureError.OK, streamUrl);
 	}
 
 	@Override

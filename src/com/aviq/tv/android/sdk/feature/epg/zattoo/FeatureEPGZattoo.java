@@ -19,6 +19,7 @@ import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
+import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
 
 /**
  * Zattoo specific extension of EPG feature
@@ -59,12 +60,22 @@ public class FeatureEPGZattoo extends FeatureEPG
 		/**
 		 * requested minimum bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_MINRATE(1100000),
+		ZATTOO_STREAM_MINRATE_ETH(11000),
 
 		/**
 		 * requested initial bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_INITRATE(2000000);
+		ZATTOO_STREAM_INITRATE_ETH(20000),
+
+		/**
+		 * requested minimum bitrate of zattoo stream
+		 */
+		ZATTOO_STREAM_MINRATE_WIFI(0),
+
+		/**
+		 * requested initial bitrate of zattoo stream
+		 */
+		ZATTOO_STREAM_INITRATE_WIFI(0);
 
 		Param(String value)
 		{
@@ -87,7 +98,8 @@ public class FeatureEPGZattoo extends FeatureEPG
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		_clientZAPI = new ClientZAPI(this, getPrefs().getString(Param.ZATTOO_BASE_URL), getPrefs().getInt(
-		        Param.ZATTOO_STREAM_MINRATE), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE));
+		        Param.ZATTOO_STREAM_MINRATE_ETH), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE_ETH), getPrefs()
+		        .getInt(Param.ZATTOO_STREAM_MINRATE_WIFI), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE_WIFI));
 		_clientZAPI.hello(getPrefs().getString(Param.ZATTOO_APP_TID), getPrefs().getString(Param.ZATTOO_UUID),
 		        new OnResultReceived()
 		        {
@@ -141,15 +153,16 @@ public class FeatureEPGZattoo extends FeatureEPG
 	public void getStreamUrl(Channel channel, long playTime, long playDuration,
 	        final OnStreamURLReceived onStreamURLReceived)
 	{
-		_clientZAPI.watch(channel.getChannelId(), "hls", new OnResultReceived()
+		boolean isEthernet = "ETHERNET".equals(_feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.NETWORK));
+		_clientZAPI.watch(channel.getChannelId(), "hls", isEthernet, new OnResultReceived()
 		{
 			@Override
-			public void onReceiveResult(FeatureError result)
+			public void onReceiveResult(FeatureError error)
 			{
 				String url = null;
-				if (!result.isError())
-					url = result.getBundle().getString(ClientZAPI.EXTRA_URL);
-				onStreamURLReceived.onStreamURL(url);
+				if (!error.isError())
+					url = error.getBundle().getString(ClientZAPI.EXTRA_URL);
+				onStreamURLReceived.onStreamURL(error, url);
 			}
 		});
 	}

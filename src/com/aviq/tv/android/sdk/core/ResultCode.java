@@ -19,6 +19,11 @@ public class ResultCode
 	public static final int NOT_FOUND_404 = 404;
 
 	/**
+	 * Subscription error
+	 */
+	public static final int SUBSCRIPTION_ERROR = -10;
+
+	/**
 	 * I/O error
 	 */
 	public static final int IO_ERROR = -9;

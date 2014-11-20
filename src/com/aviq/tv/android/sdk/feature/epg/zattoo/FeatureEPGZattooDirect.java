@@ -15,6 +15,7 @@ import android.text.TextUtils;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
+import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -32,6 +33,7 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 	public static final String TAG = FeatureEPGZattooDirect.class.getSimpleName();
 
 	private ClientZAPI _clientZAPI;
+	private OnFeatureInitialized _onFeatureInitialized;
 
 	public static enum Param
 	{
@@ -44,7 +46,7 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 		 * Zattoo application ID
 		 */
 		ZATTOO_APP_TID("3c03cab5-cf36-49ad-88fa-2d25ea24042e"),
-		/*a48d93cd-0247-4225-8063-301d540f3553*/
+		/* a48d93cd-0247-4225-8063-301d540f3553 */
 
 		/**
 		 * Zattoo UUID
@@ -54,12 +56,22 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 		/**
 		 * requested minimum bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_MINRATE(1100000),
+		ZATTOO_STREAM_MINRATE_ETH(11000),
 
 		/**
 		 * requested initial bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_INITRATE(2000000),
+		ZATTOO_STREAM_INITRATE_ETH(20000),
+
+		/**
+		 * requested minimum bitrate of zattoo stream
+		 */
+		ZATTOO_STREAM_MINRATE_WIFI(0),
+
+		/**
+		 * requested initial bitrate of zattoo stream
+		 */
+		ZATTOO_STREAM_INITRATE_WIFI(0),
 
 		/**
 		 * force using this username for zattoo
@@ -105,8 +117,10 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
+		_onFeatureInitialized = onFeatureInitialized;
 		_clientZAPI = new ClientZAPI(this, getPrefs().getString(Param.ZATTOO_BASE_URL), getPrefs().getInt(
-		        Param.ZATTOO_STREAM_MINRATE), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE));
+		        Param.ZATTOO_STREAM_MINRATE_ETH), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE_ETH), getPrefs()
+		        .getInt(Param.ZATTOO_STREAM_MINRATE_WIFI), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE_WIFI));
 		Prefs userPrefs = Environment.getInstance().getUserPrefs();
 		String mac = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
 		mac = mac.replace(":", "");
@@ -160,13 +174,13 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 												        {
 													        Log.i(TAG, "Updating EPG finished with status " + error);
 													        _epgData = _clientZAPI.getEpgData();
-													        onFeatureInitialized.onInitialized(error);
+													        onEPGLoadFinished(error);
 												        }
 											        });
 										        }
 										        else
 										        {
-											        onFeatureInitialized.onInitialized(error);
+											        onEPGLoadFinished(error);
 										        }
 									        }
 								        });
@@ -175,14 +189,14 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 							        }
 							        else
 							        {
-								        onFeatureInitialized.onInitialized(error);
+								        onEPGLoadFinished(error);
 							        }
 						        }
 					        });
 				        }
 				        else
 				        {
-					        onFeatureInitialized.onInitialized(error);
+					        onEPGLoadFinished(error);
 				        }
 			        }
 		        });
@@ -219,15 +233,16 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 	public void getStreamUrl(Channel channel, long playTime, long playDuration,
 	        final OnStreamURLReceived onStreamURLReceived)
 	{
-		_clientZAPI.watch(channel.getChannelId(), "hls", new OnResultReceived()
+		boolean isEthernet = "ETHERNET".equals(_feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.NETWORK));
+		_clientZAPI.watch(channel.getChannelId(), "hls", isEthernet, new OnResultReceived()
 		{
 			@Override
-			public void onReceiveResult(FeatureError result)
+			public void onReceiveResult(FeatureError error)
 			{
 				String url = null;
-				if (!result.isError())
-					url = result.getBundle().getString(ClientZAPI.EXTRA_URL);
-				onStreamURLReceived.onStreamURL(url);
+				if (!error.isError())
+					url = error.getBundle().getString(ClientZAPI.EXTRA_URL);
+				onStreamURLReceived.onStreamURL(error, url);
 			}
 		});
 	}
@@ -249,5 +264,24 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 	public long getStreamBufferSize(Channel channel)
 	{
 		return 0;
+	}
+
+	private void onEPGLoadFinished(FeatureError error)
+	{
+		if (!error.isError())
+		{
+			_onFeatureInitialized.onInitialized(error);
+		}
+		else if (error.getErrorCode() == 402)
+		{
+			// translates HTTP 402 error code to SUBSCRIPTION_ERROR
+			error.setErrorCode(ResultCode.SUBSCRIPTION_ERROR);
+			_onFeatureInitialized.onInitialized(error);
+		}
+		else
+		{
+			// FIXME: show continue dialog
+			_onFeatureInitialized.onInitialized(error);
+		}
 	}
 }

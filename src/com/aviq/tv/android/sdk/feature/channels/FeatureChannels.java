@@ -22,6 +22,7 @@ import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -430,7 +431,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		_feature.Scheduler.EPG.getStreamUrl(channel, playTime, playDuration, new OnStreamURLReceived()
 		{
 			@Override
-			public void onStreamURL(final String streamUrl)
+			public void onStreamURL(FeatureError error, final String streamUrl)
 			{
 				if (streamUrl == null)
 				{

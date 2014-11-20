@@ -22,6 +22,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageRequest;
 import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
@@ -183,7 +184,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		}
 		Log.d(TAG, ".getStreamUrl: channel = " + channel.getChannelId() + ", playTime = " + playTime
 		        + ", playDuration = " + playDuration + " -> " + streamUrl);
-		onStreamURLReceived.onStreamURL(streamUrl);
+		onStreamURLReceived.onStreamURL(FeatureError.OK, streamUrl);
 	}
 
 	@Override

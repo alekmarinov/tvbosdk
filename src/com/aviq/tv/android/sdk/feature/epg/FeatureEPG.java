@@ -217,7 +217,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 	public interface OnStreamURLReceived
 	{
-		void onStreamURL(String streamUrl);
+		void onStreamURL(FeatureError error, String streamUrl);
 	}
 
 	public FeatureEPG() throws FeatureNotFoundException

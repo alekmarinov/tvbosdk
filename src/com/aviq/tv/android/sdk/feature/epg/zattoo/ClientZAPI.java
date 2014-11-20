@@ -64,18 +64,22 @@ public class ClientZAPI
 	private String _baseUri;
 	private String _cookie;
 	private String _pghash;
-	private int _minRate;
-	private int _initRate;
+	private int _minRateEth;
+	private int _initRateEth;
+	private int _minRateWifi;
+	private int _initRateWifi;
 	private RequestQueue _requestQueue;
 	private IFeature _ownerFeature;
 	private Map<String, Channel> _channelsMap = new HashMap<String, Channel>();
 	private EpgData _epgData;
 	private int _countChannelLogos;
 
-	public ClientZAPI(IFeature ownerFeature, String baseUri, int minRate, int initRate)
+	public ClientZAPI(IFeature ownerFeature, String baseUri, int minRateEth, int initRateEth, int minRateWifi, int initRateWifi)
 	{
-		_minRate = minRate;
-		_initRate = initRate;
+		_minRateEth = minRateEth;
+		_initRateEth = initRateEth;
+		_minRateWifi = minRateWifi;
+		_initRateWifi = initRateWifi;
 		_baseUri = baseUri;
 		_requestQueue = Volley.newRequestQueue(Environment.getInstance(), new ExtHttpClientStack(new SslHttpClient()));
 		_ownerFeature = ownerFeature;
@@ -534,7 +538,7 @@ public class ClientZAPI
 		}
 	}
 
-	public void watch(final String channelId, final String streamType, OnResultReceived onResultReceived)
+	public void watch(final String channelId, final String streamType, final boolean isEthernet, OnResultReceived onResultReceived)
 	{
 		ResponseCallbackWatch responseCallback = new ResponseCallbackWatch(onResultReceived);
 		StringRequest stringRequest = new StringRequest(Request.Method.POST, _baseUri + "/zapi/watch",
@@ -554,10 +558,20 @@ public class ClientZAPI
 				Map<String, String> params = new HashMap<String, String>();
 				params.put("cid", channelId);
 				params.put("stream_type", streamType);
-				if (_initRate > 0)
-					params.put("initialrate", String.valueOf(_initRate));
-				if (_minRate > 0)
-					params.put("minrate", String.valueOf(_minRate));
+				if (isEthernet)
+				{
+					if (_initRateEth > 0)
+						params.put("initialrate", String.valueOf(_initRateEth));
+					if (_minRateEth > 0)
+						params.put("minrate", String.valueOf(_minRateEth));
+				}
+				else
+				{
+					if (_initRateWifi > 0)
+						params.put("initialrate", String.valueOf(_initRateWifi));
+					if (_minRateWifi > 0)
+						params.put("minrate", String.valueOf(_minRateWifi));
+				}
 				return params;
 			}
 
