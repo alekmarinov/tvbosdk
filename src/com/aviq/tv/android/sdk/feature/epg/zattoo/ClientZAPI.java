@@ -74,7 +74,8 @@ public class ClientZAPI
 	private EpgData _epgData;
 	private int _countChannelLogos;
 
-	public ClientZAPI(IFeature ownerFeature, String baseUri, int minRateEth, int initRateEth, int minRateWifi, int initRateWifi)
+	public ClientZAPI(IFeature ownerFeature, String baseUri, int minRateEth, int initRateEth, int minRateWifi,
+	        int initRateWifi)
 	{
 		_minRateEth = minRateEth;
 		_initRateEth = initRateEth;
@@ -274,45 +275,7 @@ public class ClientZAPI
 					_channelsMap.put(channel.getChannelId(), channel);
 				}
 				_epgData = new EpgData(channels);
-
-				// retrieve channel logos
-				_countChannelLogos = 0;
-				for (final Channel channel : channels)
-				{
-					ImageRequest imageRequest = new ImageRequest(channel.getThumbnail(),
-					        new Response.Listener<Bitmap>()
-					        {
-						        @Override
-						        public void onResponse(Bitmap bitmap)
-						        {
-							        _epgData.setChannelLogo(channel.getIndex(), bitmap);
-							        _countChannelLogos++;
-							        if (_countChannelLogos == channels.size())
-								        _onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature));
-						        }
-					        }, 0, 0, Config.ARGB_8888, new Response.ErrorListener()
-					        {
-						        @Override
-						        public void onErrorResponse(VolleyError volleyError)
-						        {
-							        FeatureError error = new FeatureError(_ownerFeature, volleyError);
-							        Log.e(TAG, error.getMessage(), error);
-							        _countChannelLogos++;
-							        if (_countChannelLogos == channels.size())
-								        _onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature));
-						        }
-					        })
-					{
-						@Override
-						public Map<String, String> getHeaders() throws AuthFailureError
-						{
-							Map<String, String> headers = new HashMap<String, String>();
-							headers.put("Connection", "close");
-							return headers;
-						}
-					};
-					_requestQueue.add(imageRequest);
-				}
+				retrieveChannelLogos(_epgData, _onResultReceived);
 			}
 			catch (JSONException e)
 			{
@@ -332,6 +295,47 @@ public class ClientZAPI
 		}
 	}
 
+	public void retrieveChannelLogos(final EpgData epgData, final OnResultReceived onResultReceived)
+	{
+		// retrieve channel logos
+		_countChannelLogos = 0;
+		for (final Channel channel : epgData.getChannels())
+		{
+			ImageRequest imageRequest = new ImageRequest(channel.getThumbnail(), new Response.Listener<Bitmap>()
+			{
+				@Override
+				public void onResponse(Bitmap bitmap)
+				{
+					epgData.setChannelLogo(channel.getIndex(), bitmap);
+					_countChannelLogos++;
+					if (_countChannelLogos == epgData.getChannels().size())
+						onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature));
+				}
+			}, 0, 0, Config.ARGB_8888, new Response.ErrorListener()
+			{
+				@Override
+				public void onErrorResponse(VolleyError volleyError)
+				{
+					FeatureError error = new FeatureError(_ownerFeature, volleyError);
+					Log.e(TAG, error.getMessage(), error);
+					_countChannelLogos++;
+					if (_countChannelLogos == epgData.getChannels().size())
+						onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature));
+				}
+			})
+			{
+				@Override
+				public Map<String, String> getHeaders() throws AuthFailureError
+				{
+					Map<String, String> headers = new HashMap<String, String>();
+					headers.put("Connection", "close");
+					return headers;
+				}
+			};
+			_requestQueue.add(imageRequest);
+		}
+	}
+
 	public void retrievePrograms(final OnResultReceived onResultReceived)
 	{
 		final int dayFrom = -4;
@@ -345,7 +349,7 @@ public class ClientZAPI
 			private Map<String, List<Program>[]> _channelToProgramLists = new HashMap<String, List<Program>[]>();
 
 			@SuppressWarnings("unchecked")
-            @Override
+			@Override
 			public void onReceiveResult(FeatureError error)
 			{
 				_ndays++;
@@ -383,7 +387,7 @@ public class ClientZAPI
 							List<Program> programList = programLists[day];
 							if (programList != null)
 							{
-								for (Program program: programList)
+								for (Program program : programList)
 								{
 									allProgramsList.add(program);
 									programMap.put(program.getStartTime(), allProgramsList.size() - 1);
@@ -538,7 +542,8 @@ public class ClientZAPI
 		}
 	}
 
-	public void watch(final String channelId, final String streamType, final boolean isEthernet, OnResultReceived onResultReceived)
+	public void watch(final String channelId, final String streamType, final boolean isEthernet,
+	        OnResultReceived onResultReceived)
 	{
 		ResponseCallbackWatch responseCallback = new ResponseCallbackWatch(onResultReceived);
 		StringRequest stringRequest = new StringRequest(Request.Method.POST, _baseUri + "/zapi/watch",
@@ -608,7 +613,7 @@ public class ClientZAPI
 		public void onResponse(String response)
 		{
 			Log.i(TAG, ".onResponse: response = " + response);
-			_onResultReceived.onReceiveResult(FeatureError.OK);
+			_onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature));
 		}
 
 		@Override
@@ -662,8 +667,8 @@ public class ClientZAPI
 	public void retrieveProgramDetails(final ProgramZattoo program, OnResultReceived onResultReceived)
 	{
 		ResponseCallbackDetails responseCallback = new ResponseCallbackDetails(program, onResultReceived);
-		StringRequest stringRequest = new StringRequest(Request.Method.GET, _baseUri + "/zapi/program/details?program_id=" + program.getZapiID(),
-		        responseCallback, responseCallback)
+		StringRequest stringRequest = new StringRequest(Request.Method.GET, _baseUri
+		        + "/zapi/program/details?program_id=" + program.getZapiID(), responseCallback, responseCallback)
 		{
 			@Override
 			public Map<String, String> getHeaders() throws AuthFailureError
@@ -688,6 +693,7 @@ public class ClientZAPI
 	private class ResponseCallbackDetails extends ResponseCallback
 	{
 		private Program _program;
+
 		ResponseCallbackDetails(Program program, OnResultReceived onResultReceived)
 		{
 			super(onResultReceived);

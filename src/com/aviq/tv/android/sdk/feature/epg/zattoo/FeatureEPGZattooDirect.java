@@ -160,32 +160,46 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 
 							        if (!error.isError())
 							        {
-								        _clientZAPI.retrieveChannels(new OnResultReceived()
+								        if (!uncacheEpgData())
 								        {
-									        @Override
-									        public void onReceiveResult(FeatureError error)
+									        _clientZAPI.retrieveChannels(new OnResultReceived()
 									        {
-										        if (!error.isError())
+										        @Override
+										        public void onReceiveResult(FeatureError error)
 										        {
-											        _clientZAPI.retrievePrograms(new OnResultReceived()
+											        if (!error.isError())
 											        {
-												        @Override
-												        public void onReceiveResult(FeatureError error)
+												        _clientZAPI.retrievePrograms(new OnResultReceived()
 												        {
-													        Log.i(TAG, "Updating EPG finished with status " + error);
-													        _epgData = _clientZAPI.getEpgData();
-													        onEPGLoadFinished(error);
-												        }
-											        });
+													        @Override
+													        public void onReceiveResult(FeatureError error)
+													        {
+														        Log.i(TAG, "Updating EPG finished with status " + error);
+														        _epgData = _clientZAPI.getEpgData();
+														        cacheEpgData();
+														        onEPGLoadFinished(error);
+													        }
+												        });
+											        }
+											        else
+											        {
+												        onEPGLoadFinished(error);
+											        }
 										        }
-										        else
-										        {
+									        });
+								        }
+								        else
+								        {
+								        	// load channel logos
+								        	_clientZAPI.retrieveChannelLogos(_epgData, new OnResultReceived()
+											{
+												@Override
+												public void onReceiveResult(FeatureError error)
+												{
 											        onEPGLoadFinished(error);
-										        }
-									        }
-								        });
-
-								        FeatureEPGZattooDirect.super.initialize(onFeatureInitialized);
+												}
+											});
+								        }
 							        }
 							        else
 							        {
@@ -268,8 +282,10 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 
 	private void onEPGLoadFinished(FeatureError error)
 	{
+		Log.i(TAG, ".onEPGLoadFinished: error = " + error);
 		if (!error.isError())
 		{
+			Log.i(TAG, ".onEPGLoadFinished: _onFeatureInitialized = " + _onFeatureInitialized);
 			_onFeatureInitialized.onInitialized(error);
 		}
 		else if (error.getErrorCode() == 402)

@@ -807,7 +807,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		return cacheFile;
 	}
 
-	private void cacheEpgData()
+	protected void cacheEpgData()
 	{
 		Log.i(TAG, ".cacheEpgData");
 
@@ -824,7 +824,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		userPrefs.put(UserParam.EPG_CACHE_CREATED_ON, System.currentTimeMillis());
 	}
 
-	private boolean uncacheEpgData()
+	protected boolean uncacheEpgData()
 	{
 		Log.i(TAG, ".uncacheEpgData");
 
