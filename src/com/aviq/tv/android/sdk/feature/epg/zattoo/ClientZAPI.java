@@ -73,9 +73,10 @@ public class ClientZAPI
 	private Map<String, Channel> _channelsMap = new HashMap<String, Channel>();
 	private EpgData _epgData;
 	private int _countChannelLogos;
+	private int _maxChannels;
 
 	public ClientZAPI(IFeature ownerFeature, String baseUri, int minRateEth, int initRateEth, int minRateWifi,
-	        int initRateWifi)
+	        int initRateWifi, int maxChannels)
 	{
 		_minRateEth = minRateEth;
 		_initRateEth = initRateEth;
@@ -84,6 +85,7 @@ public class ClientZAPI
 		_baseUri = baseUri;
 		_requestQueue = Volley.newRequestQueue(Environment.getInstance(), new ExtHttpClientStack(new SslHttpClient()));
 		_ownerFeature = ownerFeature;
+		_maxChannels = maxChannels;
 	}
 
 	public EpgData getEpgData()
@@ -264,7 +266,10 @@ public class ClientZAPI
 				JSONObject jsonObj = new JSONObject(response);
 				JSONArray jsonChannels = jsonObj.getJSONArray("channels");
 				final List<Channel> channels = new ArrayList<Channel>();
-				for (int i = 0; i < jsonChannels.length(); i++)
+				int maxChannels = jsonChannels.length();
+				if (_maxChannels > 0)
+					maxChannels = Math.min(jsonChannels.length(), _maxChannels);
+				for (int i = 0; i < maxChannels; i++)
 				{
 					ChannelZattoo channel = new ChannelZattoo(i);
 					JSONObject jsonChannel = (JSONObject) jsonChannels.get(i);

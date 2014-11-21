@@ -66,7 +66,7 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 		/**
 		 * requested minimum bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_MINRATE_WIFI(0),
+		ZATTOO_STREAM_MINRATE_WIFI(900),
 
 		/**
 		 * requested initial bitrate of zattoo stream
@@ -120,7 +120,8 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 		_onFeatureInitialized = onFeatureInitialized;
 		_clientZAPI = new ClientZAPI(this, getPrefs().getString(Param.ZATTOO_BASE_URL), getPrefs().getInt(
 		        Param.ZATTOO_STREAM_MINRATE_ETH), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE_ETH), getPrefs()
-		        .getInt(Param.ZATTOO_STREAM_MINRATE_WIFI), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE_WIFI));
+		        .getInt(Param.ZATTOO_STREAM_MINRATE_WIFI), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE_WIFI),
+		        getPrefs().getInt(FeatureEPG.Param.MAX_CHANNELS));
 		Prefs userPrefs = Environment.getInstance().getUserPrefs();
 		String mac = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
 		mac = mac.replace(":", "");
@@ -190,15 +191,15 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 								        }
 								        else
 								        {
-								        	// load channel logos
-								        	_clientZAPI.retrieveChannelLogos(_epgData, new OnResultReceived()
-											{
-												@Override
-												public void onReceiveResult(FeatureError error)
-												{
+									        // load channel logos
+									        _clientZAPI.retrieveChannelLogos(_epgData, new OnResultReceived()
+									        {
+										        @Override
+										        public void onReceiveResult(FeatureError error)
+										        {
 											        onEPGLoadFinished(error);
-												}
-											});
+										        }
+									        });
 								        }
 							        }
 							        else

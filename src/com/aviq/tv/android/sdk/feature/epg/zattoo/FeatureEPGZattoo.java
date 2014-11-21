@@ -99,7 +99,7 @@ public class FeatureEPGZattoo extends FeatureEPG
 	{
 		_clientZAPI = new ClientZAPI(this, getPrefs().getString(Param.ZATTOO_BASE_URL), getPrefs().getInt(
 		        Param.ZATTOO_STREAM_MINRATE_ETH), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE_ETH), getPrefs()
-		        .getInt(Param.ZATTOO_STREAM_MINRATE_WIFI), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE_WIFI));
+		        .getInt(Param.ZATTOO_STREAM_MINRATE_WIFI), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE_WIFI), getPrefs().getInt(FeatureEPG.Param.MAX_CHANNELS));
 		_clientZAPI.hello(getPrefs().getString(Param.ZATTOO_APP_TID), getPrefs().getString(Param.ZATTOO_UUID),
 		        new OnResultReceived()
 		        {
