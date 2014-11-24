@@ -444,7 +444,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				}
 				else
 				{
-					if (streamUrl == null)
+					if (streamUrl != null)
 					{
 						// play stream
 						_feature.Component.PLAYER.play(streamUrl);
