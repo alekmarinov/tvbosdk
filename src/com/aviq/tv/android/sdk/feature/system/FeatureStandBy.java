@@ -18,12 +18,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Key;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -98,7 +98,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	}
 
 	private int _autoStandByWarnTimeout;
-	private int _autoStandbyTimeout;
+	private long _autoStandbyTimeout;
 	private boolean _isStandByHDMI;
 
 	public FeatureStandBy() throws FeatureNotFoundException
@@ -168,10 +168,20 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		}, intentFilter);
 
 		_isStandByHDMI = getPrefs().getBool(Param.IS_STANDBY_HDMI);
-		_autoStandbyTimeout = getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT);
-		postponeAutoStandBy(_autoStandbyTimeout);
+		setAutoStandByTimeout(getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT));
 
 		super.initialize(onFeatureInitialized);
+	}
+
+	/**
+	 * Sets new auto-standby timeout and postpone standby with the new period
+	 * @param autoStandbyTimeout
+	 */
+	public void setAutoStandByTimeout(long autoStandbyTimeout)
+	{
+		Log.i(TAG, ".setAutoStandByTimeout: autoStandbyTimeout = " + (autoStandbyTimeout / 1000) + " secs");
+		_autoStandbyTimeout = autoStandbyTimeout;
+		postponeAutoStandBy(_autoStandbyTimeout);
 	}
 
 	/**
@@ -290,7 +300,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		}
 	}
 
-	private void postponeAutoStandBy(int autoStandbyTimeout)
+	private void postponeAutoStandBy(long autoStandbyTimeout)
 	{
 		if (autoStandbyTimeout > 0)
 		{
@@ -317,12 +327,16 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			{
 				// Go to StandBy now
 				Log.i(TAG, "Entering standby mode...");
-
-				// Send device to standby by emulating a key press for key 26
-				_feature.Component.SYSTEM.command("input keyevent 26");
+				doStandBy();
 			}
 		}
 	};
+
+	protected void doStandBy()
+	{
+		// Send device to standby by emulating a key press for key 26
+		_feature.Component.SYSTEM.command("input keyevent 26");
+	}
 
 	// Runnable callback executed when the auto standby timeout elapses which
 	// will start triggering auto standby warning events for time determined by
