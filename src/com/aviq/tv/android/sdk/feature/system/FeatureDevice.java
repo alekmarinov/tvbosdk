@@ -61,7 +61,7 @@ public class FeatureDevice extends FeatureComponent
 
 	public enum DeviceAttribute
 	{
-		PACKAGE, CUSTOMER, BRAND, BUILD, VERSION, MAC, UPTIME, REALTIME
+		PACKAGE, CUSTOMER, BRAND, BUILD, VERSION, NETWORK, MAC, UPTIME, REALTIME
 	}
 
 	public enum StartReason
@@ -287,6 +287,9 @@ public class FeatureDevice extends FeatureComponent
 
 			case BUILD:
 				return getPrefs().getString(Param.BUILD);
+
+			case NETWORK:
+				return getNetwork();
 
 			case MAC:
 				_deviceMac = getPrefs().getString(Param.MAC);

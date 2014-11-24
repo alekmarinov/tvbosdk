@@ -246,6 +246,52 @@ public class FeatureVODBulsat extends FeatureVOD
 		}
 	}
 
+	/**
+	 * Find all VODs under a VOD group, including any child group's VOD as well.
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Vod>[] findVodsInVodGroup(VodTree.Node<VodGroup> vodData)
+	{ 
+		Log.i(TAG, ".findVodsInVodGroup: vodData.size = " + (vodData != null ? vodData.getChildren().size() : "null"));
+
+		if (vodData == null)
+			return null;
+		
+		int numVodGroups = vodData != null ? vodData.getChildren().size() : 0;
+		if (numVodGroups == 0)
+		{
+			List<Vod>[] vodGroupList = new ArrayList[1];
+			vodGroupList[0] = vodData.getData().getVodList();
+			return vodGroupList;
+		}
+		else
+		{
+			List<Vod>[] vodGroupList = new ArrayList[numVodGroups];
+			for (int i = 0; i < numVodGroups; i++)
+			{
+				vodGroupList[i] = new ArrayList<Vod>();
+				recurseVodsForGroup(vodData.getChildAt(i), vodGroupList[i]);
+			}
+			return vodGroupList;
+		}
+	}
+
+	private static void recurseVodsForGroup(VodTree.Node<VodGroup> node, List<Vod> vodList)
+	{
+		// Add any VODs from this node to the provided list
+		if (node.getData().getVodList().size() > 0)
+		{
+			vodList.addAll(node.getData().getVodList());
+		}
+
+		// Recurse down the tree to discover more VODs
+		if (node.hasChildren())
+		{
+			for (VodTree.Node<VodGroup> child : node.getChildren())
+				recurseVodsForGroup(child, vodList);
+		}
+	}
+	
 	private class VodRequest<T> extends Request<T>
 	{
 		private final Class<T> mClazz;

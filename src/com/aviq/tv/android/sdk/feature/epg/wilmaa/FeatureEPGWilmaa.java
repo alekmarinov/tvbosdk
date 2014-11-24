@@ -10,6 +10,7 @@
 
 package com.aviq.tv.android.sdk.feature.epg.wilmaa;
 
+import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
@@ -92,7 +93,7 @@ public class FeatureEPGWilmaa extends FeatureEPG
 				url.append("end=").append(playTime + playDuration);
 			}
 		}
-		onStreamURLReceived.onStreamURL(url.toString());
+		onStreamURLReceived.onStreamURL(FeatureError.OK, url.toString());
     }
 
 	@Override

@@ -86,7 +86,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		/**
 		 * The main url to the EPG server
 		 */
-		EPG_SERVER("http://aviq-prov-01.vtxnet.net:9090"),
+		EPG_SERVER("http://epg.aviq.bg"),
 
 		/**
 		 * The EPG service version
@@ -217,7 +217,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 	public interface OnStreamURLReceived
 	{
-		void onStreamURL(String streamUrl);
+		void onStreamURL(FeatureError error, String streamUrl);
 	}
 
 	public FeatureEPG() throws FeatureNotFoundException
@@ -807,7 +807,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		return cacheFile;
 	}
 
-	private void cacheEpgData()
+	protected void cacheEpgData()
 	{
 		Log.i(TAG, ".cacheEpgData");
 
@@ -824,7 +824,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		userPrefs.put(UserParam.EPG_CACHE_CREATED_ON, System.currentTimeMillis());
 	}
 
-	private boolean uncacheEpgData()
+	protected boolean uncacheEpgData()
 	{
 		Log.i(TAG, ".uncacheEpgData");
 
