@@ -18,12 +18,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Key;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -317,12 +317,16 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			{
 				// Go to StandBy now
 				Log.i(TAG, "Entering standby mode...");
-
-				// Send device to standby by emulating a key press for key 26
-				_feature.Component.SYSTEM.command("input keyevent 26");
+				doStandBy();
 			}
 		}
 	};
+
+	protected void doStandBy()
+	{
+		// Send device to standby by emulating a key press for key 26
+		_feature.Component.SYSTEM.command("input keyevent 26");
+	}
 
 	// Runnable callback executed when the auto standby timeout elapses which
 	// will start triggering auto standby warning events for time determined by
