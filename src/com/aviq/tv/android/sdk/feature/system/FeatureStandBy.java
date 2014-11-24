@@ -98,7 +98,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	}
 
 	private int _autoStandByWarnTimeout;
-	private int _autoStandbyTimeout;
+	private long _autoStandbyTimeout;
 	private boolean _isStandByHDMI;
 
 	public FeatureStandBy() throws FeatureNotFoundException
@@ -168,10 +168,20 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		}, intentFilter);
 
 		_isStandByHDMI = getPrefs().getBool(Param.IS_STANDBY_HDMI);
-		_autoStandbyTimeout = getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT);
-		postponeAutoStandBy(_autoStandbyTimeout);
+		setAutoStandByTimeout(getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT));
 
 		super.initialize(onFeatureInitialized);
+	}
+
+	/**
+	 * Sets new auto-standby timeout and postpone standby with the new period
+	 * @param autoStandbyTimeout
+	 */
+	public void setAutoStandByTimeout(long autoStandbyTimeout)
+	{
+		Log.i(TAG, ".setAutoStandByTimeout: autoStandbyTimeout = " + (autoStandbyTimeout / 1000) + " secs");
+		_autoStandbyTimeout = autoStandbyTimeout;
+		postponeAutoStandBy(_autoStandbyTimeout);
 	}
 
 	/**
@@ -290,7 +300,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		}
 	}
 
-	private void postponeAutoStandBy(int autoStandbyTimeout)
+	private void postponeAutoStandBy(long autoStandbyTimeout)
 	{
 		if (autoStandbyTimeout > 0)
 		{
