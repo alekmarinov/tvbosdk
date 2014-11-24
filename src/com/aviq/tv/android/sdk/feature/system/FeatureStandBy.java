@@ -145,7 +145,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 						Log.i(TAG, "Resume from standing by requested by user");
 						getEventMessenger().trigger(ON_STANDBY_LEAVE);
 						setHDMIEnabled(true);
-						postponeAutoStandBy(_autoStandbyTimeout);
+						postponeAutoStandBy();
 						Environment.getInstance().setKeyEventsEnabled();
 					}
 					else
@@ -169,6 +169,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 
 		_isStandByHDMI = getPrefs().getBool(Param.IS_STANDBY_HDMI);
 		setAutoStandByTimeout(getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT));
+		postponeAutoStandBy();
 
 		super.initialize(onFeatureInitialized);
 	}
@@ -181,7 +182,6 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".setAutoStandByTimeout: autoStandbyTimeout = " + (autoStandbyTimeout / 1000) + " secs");
 		_autoStandbyTimeout = autoStandbyTimeout;
-		postponeAutoStandBy(_autoStandbyTimeout);
 	}
 
 	/**
@@ -293,21 +293,21 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 				{
 					Log.i(TAG, "Auto standby enabled.");
 					_autoStandbyTimeout = getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT);
-					postponeAutoStandBy(_autoStandbyTimeout);
+					postponeAutoStandBy();
 					getEventMessenger().trigger(ON_STANDBY_AUTO_ENABLED);
 				}
 			}
 		}
 	}
 
-	private void postponeAutoStandBy(long autoStandbyTimeout)
+	public void postponeAutoStandBy()
 	{
-		if (autoStandbyTimeout > 0)
+		if (_autoStandbyTimeout > 0)
 		{
 			// postpones auto standby
 			getEventMessenger().removeCallbacks(_autoStandByRunnable);
-			getEventMessenger().postDelayed(_autoStandByRunnable, autoStandbyTimeout);
-			Log.i(TAG, ".postponeAutoStandBy: timeout = " + (autoStandbyTimeout / 1000) + " secs");
+			getEventMessenger().postDelayed(_autoStandByRunnable, _autoStandbyTimeout);
+			Log.i(TAG, ".postponeAutoStandBy: timeout = " + (_autoStandbyTimeout / 1000) + " secs");
 
 			// remove warnings trigger
 			getEventMessenger().removeCallbacks(_autoStandByWarningRunnable);
