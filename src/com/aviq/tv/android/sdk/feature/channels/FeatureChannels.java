@@ -45,6 +45,8 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	public static final String TAG = FeatureChannels.class.getSimpleName();
 
 	public static final int ON_SWITCH_CHANNEL = EventMessenger.ID("ON_SWITCH_CHANNEL");
+	public static final int ON_GET_STREAM_ERROR = EventMessenger.ID("ON_GET_STREAM_ERROR");
+	public static final String EXTRA_GET_STREAM_ERROR_CODE = "GET_STREAM_ERROR_CODE";
 
 	public enum OnSwitchChannelExtras
 	{
@@ -204,7 +206,8 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		_feature.Scheduler.EPG.getEventMessenger().register(this, FeatureEPG.ON_EPG_UPDATED);
 		_channels = loadFavoriteChannels();
 
-		_featureTimeshift = (FeatureTimeshift) Environment.getInstance().getFeatureComponent(FeatureName.Component.TIMESHIFT);
+		_featureTimeshift = (FeatureTimeshift) Environment.getInstance().getFeatureComponent(
+		        FeatureName.Component.TIMESHIFT);
 		if (_featureTimeshift != null)
 		{
 			_featureTimeshift.getEventMessenger().register(this, FeatureTimeshift.ON_SEEK);
@@ -433,20 +436,30 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 			@Override
 			public void onStreamURL(FeatureError error, final String streamUrl)
 			{
-				if (streamUrl == null)
+				if (error.isError())
 				{
-					Log.e(TAG, channel + " has no stream to play!");
+					Bundle bundle = new Bundle();
+					bundle.putInt(EXTRA_GET_STREAM_ERROR_CODE, error.getErrorCode());
+					getEventMessenger().trigger(ON_GET_STREAM_ERROR, bundle);
 				}
 				else
 				{
-					// play stream
-					_feature.Component.PLAYER.play(streamUrl);
+					if (streamUrl != null)
+					{
+						// play stream
+						_feature.Component.PLAYER.play(streamUrl);
 
-					// avoid register leaks
-					_playEventsReceiver._channel = channel;
-					_feature.Component.PLAYER.getEventMessenger()
-					        .unregister(_playEventsReceiver, EventMessenger.ON_ANY);
-					_feature.Component.PLAYER.getEventMessenger().register(_playEventsReceiver, EventMessenger.ON_ANY);
+						// avoid register leaks
+						_playEventsReceiver._channel = channel;
+						_feature.Component.PLAYER.getEventMessenger().unregister(_playEventsReceiver,
+						        EventMessenger.ON_ANY);
+						_feature.Component.PLAYER.getEventMessenger().register(_playEventsReceiver,
+						        EventMessenger.ON_ANY);
+					}
+					else
+					{
+						Log.e(TAG, channel + " has no stream to play!");
+					}
 				}
 			}
 		});
