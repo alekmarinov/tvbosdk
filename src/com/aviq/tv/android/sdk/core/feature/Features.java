@@ -121,7 +121,8 @@ public class Features
 		public FeatureState RECORDING_DETAILS;
 		public FeatureState ERROR;
 		public FeatureState PASSWORD;
-		public FeatureState FAVOURITE_CHANNELS;
+		public FeatureState FAVOURITE_CHANNELS;	
+		public FeatureState PROGRAM_ITEMS;
 	}
 
 	public Features(FeatureSet featureSet) throws FeatureNotFoundException
