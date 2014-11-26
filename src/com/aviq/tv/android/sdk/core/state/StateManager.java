@@ -19,7 +19,6 @@ import android.app.FragmentTransaction;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
-import com.aviq.tv.android.sdk.core.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -27,6 +26,8 @@ import android.widget.RelativeLayout;
 
 import com.aviq.tv.android.sdk.core.AVKeyEvent;
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.feature.FeatureState;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
 /**
@@ -644,6 +645,14 @@ public class StateManager
 
 							// notify state is shown
 							state.onShow(false);
+
+							if (FeatureState.class.isAssignableFrom(state.getClass()))
+							{
+								FeatureState featureState = (FeatureState)state;
+								Bundle bundle = new Bundle();
+								bundle.putString(Environment.ExtraStateChanged.STATE_NAME.name(), featureState.getStateName().name());
+								Environment.getInstance().getEventMessenger().trigger(Environment.ON_STATE_CHANGED, bundle);
+							}
 						}
 					});
 				}

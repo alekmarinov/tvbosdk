@@ -63,6 +63,8 @@ public class Environment extends Activity
 	public static final int ON_FEATURE_INIT_ERROR = EventMessenger.ID("ON_FEATURE_INIT_ERROR");
 	public static final int ON_RESUME = EventMessenger.ID("ON_RESUME");
 	public static final int ON_PAUSE = EventMessenger.ID("ON_PAUSE");
+	public static final int ON_STATE_CHANGED = EventMessenger.ID("ON_STATE_CHANGED");
+
 	// FIXME: Convert EXTRA_KEY* to enum ExtraKey
 	public static final String EXTRA_KEY = "KEY";
 	public static final String EXTRA_KEYCODE = "KEYCODE";
@@ -75,6 +77,11 @@ public class Environment extends Activity
 	public enum ExtraInitError
 	{
 		ERROR_CODE, ERROR_DATA, FEATURE_NAME, FEATURE_CLASS
+	}
+
+	public enum ExtraStateChanged
+	{
+		STATE_NAME
 	}
 
 	public static enum Param
