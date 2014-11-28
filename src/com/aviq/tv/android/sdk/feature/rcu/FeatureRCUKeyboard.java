@@ -62,6 +62,7 @@ public class FeatureRCUKeyboard extends FeatureRCU
 				return Key.UP;
 			case KeyEvent.KEYCODE_DPAD_DOWN:
 				return Key.DOWN;
+			case KeyEvent.KEYCODE_DPAD_CENTER:
 			case KeyEvent.KEYCODE_ENTER:
 				return Key.OK;
 			case KeyEvent.KEYCODE_F1:
