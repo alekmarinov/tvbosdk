@@ -13,7 +13,9 @@ package com.aviq.tv.android.sdk.feature.epg.bulsat;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import com.aviq.tv.android.sdk.R;
 
+import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 
@@ -33,27 +35,24 @@ public class ChannelBulsat extends Channel implements Serializable
 	private boolean _recordable;
 	private String _thumbnailSelected;
 	private String _thumbnailFavorite;
-
+	
 	public static enum Genre
 	{
 		FAVORITES, NATIONAL, SPORT, SCIENCE, MOVIE, MUSIC, KIDS, OTHER, EROTIC, RADIO, VOD
 	}
-
+	
 	private static Map<String, Genre> _genreMap = new HashMap<String, Genre>();
-
+	
 	static
 	{
-		_genreMap.put("Национални", Genre.NATIONAL);
-		_genreMap.put("Спортни", Genre.SPORT);
-		_genreMap.put("Научни", Genre.SCIENCE);
-		_genreMap.put("Филмови", Genre.MOVIE);
-		_genreMap.put("Музикални", Genre.MUSIC);
-		_genreMap.put("Детски", Genre.KIDS);
-		_genreMap.put("Политематични", Genre.OTHER);
-		_genreMap.put("XXX", Genre.EROTIC);
-		_genreMap.put("Радио", Genre.RADIO);
+		String[] categoryNames = Environment.getInstance().getResources().getStringArray(R.array.categories);
+		Genre[] genreList = Genre.values();		
+		for (int index = 1; index < genreList.length-1; index++)
+		{
+			_genreMap.put(categoryNames[index-1], genreList[index]);
+		}	
 	}
-
+	
 	/**
 	 * No-arg constructor added for Kryo serialization. Do not use for anything
 	 * else.
@@ -61,12 +60,12 @@ public class ChannelBulsat extends Channel implements Serializable
 	public ChannelBulsat()
 	{
 	}
-
+	
 	public ChannelBulsat(int index)
 	{
 		super(index);
 	}
-
+	
 	public static class MetaData extends Channel.MetaData
 	{
 		public int metaChannelChannelNo;
@@ -79,87 +78,87 @@ public class ChannelBulsat extends Channel implements Serializable
 		public int metaChannelThumbnailSelected;
 		public int metaChannelThumbnailFavorite;
 	}
-
+	
 	public void setStreamUrl(String streamUrl)
 	{
 		_streamUrl = streamUrl;
 	}
-
+	
 	public String getStreamUrl()
 	{
 		return _streamUrl;
 	}
-
+	
 	public void setSeekUrl(String seekUrl)
 	{
 		_seekUrl = seekUrl;
 	}
-
+	
 	public String getSeekUrl()
 	{
 		return _seekUrl;
 	}
-
+	
 	public void setChannelNo(int channelNo)
 	{
 		_channelNo = channelNo;
 	}
-
+	
 	public int getChannelNo()
 	{
 		return _channelNo;
 	}
-
+	
 	public void setGenre(Genre genre)
 	{
 		_genre = genre;
 	}
-
+	
 	public Genre getGenre()
 	{
 		return _genre;
 	}
-
+	
 	public void setParentControl(boolean parentControl)
 	{
 		_parentControl = parentControl;
 	}
-
+	
 	public boolean isParentControl()
 	{
 		return _parentControl;
 	}
-
+	
 	public void setRecordable(boolean recordable)
 	{
 		_recordable = recordable;
 	}
-
+	
 	public boolean isRecordable()
 	{
 		return _recordable;
 	}
-
+	
 	public void setThumbnailSelected(String thumbnailSelected)
 	{
 		_thumbnailSelected = thumbnailSelected;
 	}
-
+	
 	public String getThumbnailSelected()
 	{
 		return _thumbnailSelected;
 	}
-
+	
 	public void setThumbnailFavorite(String thumbnailFavorite)
 	{
 		_thumbnailFavorite = thumbnailFavorite;
 	}
-
+	
 	public String getThumbnailFavorite()
 	{
 		return _thumbnailFavorite;
 	}
-
+	
 	@Override
 	public void setAttributes(Channel.MetaData channelMetaData, String[] attributes)
 	{
@@ -172,16 +171,17 @@ public class ChannelBulsat extends Channel implements Serializable
 		{
 			Log.w("ChannelBulsat", "Missing or invalid ChannelNo in channel " + getChannelId());
 		}
-
+		
 		String genreTitle = attributes[channelBulsatMetaData.metaChannelGenre];
 		Genre genre = _genreMap.get(genreTitle);
 		if (genre == null)
 		{
-			Log.w(TAG, "Can't find genre mapping of " + genreTitle + ", mapping to " + Genre.OTHER + " in channel " + getChannelId());
+			Log.w(TAG, "Can't find genre mapping of " + genreTitle + ", mapping to " + Genre.OTHER + " in channel "
+			        + getChannelId());
 			genre = Genre.OTHER;
 		}
 		setGenre(genre);
-
+		
 		try
 		{
 			setNDVR(Integer.parseInt(attributes[channelBulsatMetaData.metaChannelNdvr]));
