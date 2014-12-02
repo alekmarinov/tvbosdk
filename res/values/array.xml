@@ -1,4 +1,15 @@
-<resources>
+<resources>  
+     <string-array name="categories">
+  		<item>Национални</item>
+		<item>Спортни</item>
+		<item>Научни</item>
+		<item>Филмови</item>
+		<item>Музикални</item>
+		<item>Политематични</item>
+		<item>XXX</item>
+		<item>Радио</item>
+		<item>Детски</item>
+    </string-array>  
   <string-array name="files">
        	<item>image0</item>
 		<item>image1</item>
@@ -48,16 +59,5 @@
 		<item>image3</item>
 		<item>image15</item>
 		<item>image3</item>
-    </string-array>   
-     <string-array name="categories">
-  		<item>Национални</item>
-		<item>Спортни</item>
-		<item>Научни</item>
-		<item>Филмови</item>
-		<item>Музикални</item>
-		<item>Политематични</item>
-		<item>XXX</item>
-		<item>Радио</item>
-		<item>Детски</item>
-    </string-array>   
+    </string-array>
 </resources>

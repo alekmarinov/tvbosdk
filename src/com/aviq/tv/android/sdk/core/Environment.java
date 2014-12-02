@@ -99,8 +99,10 @@ public class Environment extends Activity
 		/**
 		 * The overlay background color
 		 */
-		OVERLAY_BACKGROUND_COLOR(0x00000000);
-
+		OVERLAY_BACKGROUND_COLOR(0x00000000),
+		
+		MAIN_BACKGROUND_COLOR(0xFF141b20);
+	
 		Param(int value)
 		{
 			Environment.getInstance().getPrefs().put(name(), value);
@@ -153,6 +155,7 @@ public class Environment extends Activity
 				_stateManager = new StateManager(Environment.this);
 				_stateManager.setMessageState(_featureManager.use(FeatureName.State.MESSAGE_BOX));
 				_stateManager.setOverlayBackgroundColor(getPrefs().getInt(Param.OVERLAY_BACKGROUND_COLOR));
+				_stateManager.setMainBackgroundColor(getPrefs().getInt(Param.MAIN_BACKGROUND_COLOR));
 				_featureRCU = (FeatureRCU) _featureManager.use(FeatureName.Component.RCU);
 
 				_serviceController = new ServiceController(Environment.this);
