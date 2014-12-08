@@ -39,6 +39,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.feature.vod.FeatureVOD;
+import com.aviq.tv.android.sdk.feature.vod.bulsat.VodTree.Node;
 import com.aviq.tv.android.sdk.utils.MapUtils;
 import com.aviq.tv.android.sdk.utils.MapUtils.SortingOrder;
 import com.google.gson.JsonSyntaxException;
@@ -291,7 +292,26 @@ public class FeatureVODBulsat extends FeatureVOD
 				recurseVodsForGroup(child, vodList);
 		}
 	}
-	
+
+	public static VodGroup findVodGroupOfVod(VodTree.Node<VodGroup> startNode, Vod vod)
+	{
+		if (startNode == null)
+			return null;
+		
+		if (startNode.getData().getVodList().contains(vod))
+			return startNode.getData();
+		
+		VodGroup vodGroup = null;
+		for (VodTree.Node<VodGroup> child : startNode.getChildren())
+		{
+			vodGroup = findVodGroupOfVod(child, vod);
+			if (vodGroup != null)
+				return vodGroup;
+		}
+		
+		return null;
+	}
+
 	private class VodRequest<T> extends Request<T>
 	{
 		private final Class<T> mClazz;
