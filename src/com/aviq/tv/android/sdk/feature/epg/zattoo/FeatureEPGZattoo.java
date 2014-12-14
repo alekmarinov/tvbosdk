@@ -35,17 +35,17 @@ public class FeatureEPGZattoo extends FeatureEPG
 		/**
 		 * Registered Zattoo user account name
 		 */
-		ZATTOO_USER("aviq@zattoo.com"),
+		ZATTOO_USER("aviq-test@aviq.com"),
 
 		/**
 		 * Registered Zattoo account password
 		 */
-		ZATTOO_PASS("avZat14"),
+		ZATTOO_PASS("12345"),
 
 		/**
 		 * Zattoo base URL
 		 */
-		ZATTOO_BASE_URL("https://zapi.zattoo.com"),
+		ZATTOO_BASE_URL("https://sandbox.zattoo.com"),
 
 		/**
 		 * Zattoo application ID
@@ -60,22 +60,22 @@ public class FeatureEPGZattoo extends FeatureEPG
 		/**
 		 * requested minimum bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_MINRATE_ETH(11000),
+		ZATTOO_STREAM_MINRATE_ETH(1100000),
 
 		/**
 		 * requested initial bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_INITRATE_ETH(20000),
+		ZATTOO_STREAM_INITRATE_ETH(2000000),
 
 		/**
 		 * requested minimum bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_MINRATE_WIFI(0),
+		ZATTOO_STREAM_MINRATE_WIFI(1100000),
 
 		/**
 		 * requested initial bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_INITRATE_WIFI(0);
+		ZATTOO_STREAM_INITRATE_WIFI(2000000);
 
 		Param(String value)
 		{
