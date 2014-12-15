@@ -56,32 +56,32 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 		/**
 		 * requested minimum bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_MINRATE_ETH(1500),
+		ZATTOO_STREAM_MINRATE_ETH(10000),
 
 		/**
 		 * requested initial bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_INITRATE_ETH(3000),
+		ZATTOO_STREAM_INITRATE_ETH(10000),
 
 		/**
 		 * requested minimum bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_MINRATE_WIFI(900),
+		ZATTOO_STREAM_MINRATE_WIFI(10000),
 
 		/**
 		 * requested initial bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_INITRATE_WIFI(0),
+		ZATTOO_STREAM_INITRATE_WIFI(2000000),
 
 		/**
 		 * force using this username for zattoo
 		 */
-		ZATTOO_FORCE_USER(""),
+		ZATTOO_FORCE_USER("aviq@zattoo.com"),
 
 		/**
 		 * force using this password for zattoo
 		 */
-		ZATTOO_FORCE_PASS("");
+		ZATTOO_FORCE_PASS("avZat14");
 
 		Param(String value)
 		{
