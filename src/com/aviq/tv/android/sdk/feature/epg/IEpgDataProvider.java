@@ -21,6 +21,7 @@ public interface IEpgDataProvider
 	public Program getProgramByOffset(String channelId, Calendar when, int offset);
 	public List<Channel> getChannels();
 	public List<Program> getProgramList(String channelId, Calendar timeStart, Calendar timeEnd);
+	public List<Program> getProgramList(String channelId);
 	public Program getProgramById(String channelId, String programId);
 	public Calendar getMaxEpgStopTime();
 	public Calendar getMinEpgStartTime();

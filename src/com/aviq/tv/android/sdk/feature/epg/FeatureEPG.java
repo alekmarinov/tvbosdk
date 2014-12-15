@@ -749,7 +749,8 @@ public abstract class FeatureEPG extends FeatureScheduler
 				// set custom provider attributes
 				program.setDetailAttributes(metaData, data[i]);
 				programList.add(program);
-				programMap.put(program.getStartTime(), programList.size() - 1);
+				program.setIndex(programList.size() - 1);
+				programMap.put(program.getStartTime(), program.getIndex());
 			}
 			catch (ParseException e)
 			{

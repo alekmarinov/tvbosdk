@@ -201,6 +201,12 @@ public class EpgData implements IEpgDataProvider, Serializable
 		return list;
 	}
 
+	@Override
+	public List<Program> getProgramList(String channelId)
+	{
+		return _channelToProgramListMap.get(channelId);
+	}
+
 	private int getProgramIndex(String channelId, Calendar when)
 	{
 		NavigableMap<Calendar, Integer> programMap = _channelToProgramNavigableMap.get(channelId);

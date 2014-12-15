@@ -25,6 +25,7 @@ public abstract class Program implements Comparable<Program>, Serializable
 	private String _id;
 	private Channel _channel;
 	private String _title;
+	private int _index;
 
 	// Other internal properties
 	private Calendar _startTime;
@@ -94,6 +95,16 @@ public abstract class Program implements Comparable<Program>, Serializable
 	public void setTitle(String title)
 	{
 		_title = title;
+	}
+
+	public int getIndex()
+	{
+		return _index;
+	}
+
+	public void setIndex(int index)
+	{
+		_index = index;
 	}
 
 	public void setChannel(Channel channel)
