@@ -65,8 +65,10 @@ public class ClientZAPI
 	private String _cookie;
 	private String _pghash;
 	private int _minRateEth;
+	private int _maxRateEth;
 	private int _initRateEth;
 	private int _minRateWifi;
+	private int _maxRateWifi;
 	private int _initRateWifi;
 	private RequestQueue _requestQueue;
 	private IFeature _ownerFeature;
@@ -75,12 +77,14 @@ public class ClientZAPI
 	private int _countChannelLogos;
 	private int _maxChannels;
 
-	public ClientZAPI(IFeature ownerFeature, String baseUri, int minRateEth, int initRateEth, int minRateWifi,
-	        int initRateWifi, int maxChannels)
+	public ClientZAPI(IFeature ownerFeature, String baseUri, int minRateEth, int maxRateEth, int initRateEth,
+	        int minRateWifi, int maxRateWifi, int initRateWifi, int maxChannels)
 	{
 		_minRateEth = minRateEth;
+		_maxRateEth = maxRateEth;
 		_initRateEth = initRateEth;
 		_minRateWifi = minRateWifi;
+		_maxRateWifi = maxRateWifi;
 		_initRateWifi = initRateWifi;
 		_baseUri = baseUri;
 		_requestQueue = Volley.newRequestQueue(Environment.getInstance(), new ExtHttpClientStack(new SslHttpClient()));
@@ -574,6 +578,8 @@ public class ClientZAPI
 						params.put("initialrate", String.valueOf(_initRateEth));
 					if (_minRateEth > 0)
 						params.put("minrate", String.valueOf(_minRateEth));
+					if (_maxRateEth > 0)
+						params.put("maxrate", String.valueOf(_maxRateEth));
 				}
 				else
 				{
@@ -581,6 +587,8 @@ public class ClientZAPI
 						params.put("initialrate", String.valueOf(_initRateWifi));
 					if (_minRateWifi > 0)
 						params.put("minrate", String.valueOf(_minRateWifi));
+					if (_maxRateWifi > 0)
+						params.put("maxrate", String.valueOf(_maxRateWifi));
 				}
 				return params;
 			}

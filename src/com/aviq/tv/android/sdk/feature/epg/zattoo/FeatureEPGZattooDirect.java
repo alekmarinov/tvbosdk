@@ -56,22 +56,32 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 		/**
 		 * requested minimum bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_MINRATE_ETH(10000000),
+		ZATTOO_STREAM_MINRATE_ETH(1500),
+
+		/**
+		 * requested maximum bitrate of zattoo stream
+		 */
+		ZATTOO_STREAM_MAXRATE_ETH(3000),
 
 		/**
 		 * requested initial bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_INITRATE_ETH(10000000),
+		ZATTOO_STREAM_INITRATE_ETH(3000),
 
 		/**
 		 * requested minimum bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_MINRATE_WIFI(10000000),
+		ZATTOO_STREAM_MINRATE_WIFI(900),
+
+		/**
+		 * requested maximum bitrate of zattoo stream
+		 */
+		ZATTOO_STREAM_MAXRATE_WIFI(3000),
 
 		/**
 		 * requested initial bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_INITRATE_WIFI(10000000),
+		ZATTOO_STREAM_INITRATE_WIFI(0),
 
 		/**
 		 * force using this username for zattoo
@@ -119,9 +129,10 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 	{
 		_onFeatureInitialized = onFeatureInitialized;
 		_clientZAPI = new ClientZAPI(this, getPrefs().getString(Param.ZATTOO_BASE_URL), getPrefs().getInt(
-		        Param.ZATTOO_STREAM_MINRATE_ETH), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE_ETH), getPrefs()
-		        .getInt(Param.ZATTOO_STREAM_MINRATE_WIFI), getPrefs().getInt(Param.ZATTOO_STREAM_INITRATE_WIFI),
-		        getPrefs().getInt(FeatureEPG.Param.MAX_CHANNELS));
+		        Param.ZATTOO_STREAM_MINRATE_ETH), getPrefs().getInt(Param.ZATTOO_STREAM_MAXRATE_ETH), getPrefs()
+		        .getInt(Param.ZATTOO_STREAM_INITRATE_ETH), getPrefs().getInt(Param.ZATTOO_STREAM_MINRATE_WIFI),
+		        getPrefs().getInt(Param.ZATTOO_STREAM_MAXRATE_WIFI), getPrefs().getInt(
+		                Param.ZATTOO_STREAM_INITRATE_WIFI), getPrefs().getInt(FeatureEPG.Param.MAX_CHANNELS));
 		Prefs userPrefs = Environment.getInstance().getUserPrefs();
 		String mac = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
 		mac = mac.replace(":", "");
