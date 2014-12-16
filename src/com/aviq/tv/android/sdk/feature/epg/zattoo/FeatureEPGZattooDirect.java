@@ -76,12 +76,12 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 		/**
 		 * force using this username for zattoo
 		 */
-		ZATTOO_FORCE_USER("aviq@zattoo.com"),
+		ZATTOO_FORCE_USER(""),
 
 		/**
 		 * force using this password for zattoo
 		 */
-		ZATTOO_FORCE_PASS("avZat14");
+		ZATTOO_FORCE_PASS("");
 
 		Param(String value)
 		{
