@@ -28,8 +28,8 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.support.v4.util.LruCache;
 import android.util.DisplayMetrics;
+import android.util.LruCache;
 import android.view.KeyEvent;
 
 import com.android.volley.RequestQueue;
@@ -100,9 +100,9 @@ public class Environment extends Activity
 		 * The overlay background color
 		 */
 		OVERLAY_BACKGROUND_COLOR(0x00000000),
-		
+
 		MAIN_BACKGROUND_COLOR(0xFF141b20);
-	
+
 		Param(int value)
 		{
 			Environment.getInstance().getPrefs().put(name(), value);
