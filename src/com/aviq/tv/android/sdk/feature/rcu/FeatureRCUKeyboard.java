@@ -93,17 +93,17 @@ public class FeatureRCUKeyboard extends FeatureRCU
 			case KeyEvent.KEYCODE_A:
 				return Key.A;
 			case KeyEvent.KEYCODE_B:
-				return Key.BLUE;
+				return Key.B;
 			case KeyEvent.KEYCODE_C:
 				return Key.C;
 			case KeyEvent.KEYCODE_D:
 				return Key.D;
 			case KeyEvent.KEYCODE_E:
-				return Key.EPG;
+				return Key.E;
 			case KeyEvent.KEYCODE_F:
 				return Key.F;
 			case KeyEvent.KEYCODE_G:
-				return Key.GREEN;
+				return Key.G;
 			case KeyEvent.KEYCODE_H:
 				return Key.H;
 			case KeyEvent.KEYCODE_I:
@@ -125,7 +125,7 @@ public class FeatureRCUKeyboard extends FeatureRCU
 			case KeyEvent.KEYCODE_Q:
 				return Key.Q;
 			case KeyEvent.KEYCODE_R:
-				return Key.RED;
+				return Key.R;
 			case KeyEvent.KEYCODE_S:
 				return Key.S;
 			case KeyEvent.KEYCODE_T:
@@ -139,7 +139,7 @@ public class FeatureRCUKeyboard extends FeatureRCU
 			case KeyEvent.KEYCODE_X:
 				return Key.X;
 			case KeyEvent.KEYCODE_Y:
-				return Key.YELLOW;
+				return Key.Y;
 			case KeyEvent.KEYCODE_Z:
 				return Key.Z;
 		}
