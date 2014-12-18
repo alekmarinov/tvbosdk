@@ -59,6 +59,8 @@ class VodDetailsXmlParser
 	private static final String TAG_SOURCE = "source";
 
 	private static final String ATTR_SOURCE_TYPE = "type";
+	private static final String ATTR_SOURCE_IS3D = "is3D";
+	private static final String ATTR_SOURCE_IS4K = "is4K";
 	
 	private SAXParser _saxParser;
 	private XmlVodHandler _handler;
@@ -99,9 +101,13 @@ class VodDetailsXmlParser
 			else if (TAG_SOURCE.equals(localName))
 			{
 				String type = attributes.getValue(ATTR_SOURCE_TYPE);
+				String is3D = attributes.getValue(ATTR_SOURCE_IS3D);
+				String is4K = attributes.getValue(ATTR_SOURCE_IS4K);
 				
 				_source = new Source();
 				_source.setType(type);
+				_source.set3D(is3D == null || is3D.toLowerCase().equals("false") ? false : true);
+				_source.set4K(is4K == null || is4K.toLowerCase().equals("false") ? false : true);
 			}
 		}
 
@@ -240,3 +246,4 @@ class VodDetailsXmlParser
 		}
 	}
 }
+

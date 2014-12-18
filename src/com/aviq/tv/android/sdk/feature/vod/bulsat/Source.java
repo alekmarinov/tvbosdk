@@ -7,6 +7,8 @@ public class Source implements Parcelable
 {
 	private String _type;
 	private String _url;
+	private boolean _3d;
+	private boolean _4k;
 	
 	public Source()
 	{}
@@ -31,12 +33,37 @@ public class Source implements Parcelable
 		_url = url;
 	}
 	
+	public void set3D(boolean is3D)
+	{
+		_3d = is3D;
+	}
+	
+	public boolean is3D()
+	{
+		return _3d;
+	}
+	
+	public void set4K(boolean is4K)
+	{
+		_4k = is4K;
+	}
+	
+	public boolean is4K()
+	{
+		return _4k;
+	}
+	
 	// Parcelable contract
 	
 	public Source(Parcel in)
 	{
 		_type = in.readString();
 		_url = in.readString();
+		
+		boolean[] bArr = new boolean[2];
+		in.readBooleanArray(bArr);
+		_3d = bArr[0];
+		_4k = bArr[1];
 	}
 	
 	@Override
@@ -50,6 +77,7 @@ public class Source implements Parcelable
     {
 		dest.writeString(_type);
 		dest.writeString(_url);
+		dest.writeBooleanArray(new boolean[] {_3d, _4k});
     }
     
     public static final Parcelable.Creator<Source> CREATOR = new Parcelable.Creator<Source>() 
