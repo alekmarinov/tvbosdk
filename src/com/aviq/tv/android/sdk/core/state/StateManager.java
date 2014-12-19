@@ -58,24 +58,24 @@ public class StateManager
 	private boolean _inSetState = false;
 	private boolean _inCreateState = false;
 	private Stack<StateHistoryEntry> _stateHistory = new Stack<StateHistoryEntry>();
-	
+
 	private class StateHistoryEntry
 	{
 		BaseState state;
 		Bundle params;
-		
+
 		StateHistoryEntry(BaseState state, Bundle params)
 		{
 			this.state = state;
 			this.params = params;
 		}
 	}
-	
+
 	public enum StateLayer
 	{
 		MAIN, OVERLAY, MESSAGE
 	}
-	
+
 	public static class MessageParams
 	{
 		public static final String PARAM_TYPE = "PARAM_TYPE";
@@ -89,75 +89,75 @@ public class StateManager
 		public static final String PARAM_IMAGE_URL = "PARAM_IMAGE_URL";
 		public static final String PARAM_CUSTOM_BUTTON_LABEL = "PARAM_CUSTOM_BUTTON_LABEL";
 		public static final String PARAM_CUSTOM_BUTTON_ACTION_CODE = "PARAM_CUSTOM_BUTTON_ACTION_CODE";
-		
+
 		public enum Type
 		{
 			INFO, WARN, ERROR
 		}
-		
+
 		public enum Button
 		{
 			OK, CANCEL, YES, NO, POSITIVE_BUTTON, NEGATIVE_BUTTON, CUSTOM
 		}
-		
+
 		private Bundle _bundle = new Bundle();
-		
+
 		public MessageParams setType(Type type)
 		{
 			_bundle.putString(PARAM_TYPE, type.name());
 			return this;
 		}
-		
+
 		public MessageParams setTitle(String title)
 		{
 			_bundle.putString(PARAM_TITLE, title);
 			return this;
 		}
-		
+
 		public MessageParams setTitle(int titleId)
 		{
 			_bundle.putString(PARAM_TITLE, Environment.getInstance().getResources().getString(titleId));
 			return this;
 		}
-		
+
 		public MessageParams setText(String text)
 		{
 			_bundle.putString(PARAM_TEXT, text);
 			return this;
 		}
-		
+
 		public MessageParams setText(int textId)
 		{
 			_bundle.putString(PARAM_TEXT, Environment.getInstance().getResources().getString(textId));
 			return this;
 		}
-		
+
 		public MessageParams setImageUrl(String url)
 		{
 			_bundle.putString(PARAM_IMAGE_URL, url);
 			return this;
 		}
-		
+
 		public MessageParams enableButton(Button buttonName)
 		{
 			_bundle.putBoolean(buttonName.name(), true);
 			return this;
 		}
-		
+
 		public MessageParams enablePositiveButton(int labelResId)
 		{
 			_bundle.putBoolean(Button.POSITIVE_BUTTON.name(), true);
 			_bundle.putInt(PARAM_POSITIVE_BUTTON_LABEL, labelResId);
 			return this;
 		}
-		
+
 		public MessageParams enableNegativeButton(int labelResId)
 		{
 			_bundle.putBoolean(Button.NEGATIVE_BUTTON.name(), true);
 			_bundle.putInt(PARAM_NEGATIVE_BUTTON_LABEL, labelResId);
 			return this;
 		}
-		
+
 		public MessageParams addCustomButton(String label, int actionCode)
 		{
 			ArrayList<Bundle> customButtonList = _bundle.getParcelableArrayList(Button.CUSTOM.name());
@@ -166,85 +166,86 @@ public class StateManager
 				customButtonList = new ArrayList<Bundle>();
 				_bundle.putParcelableArrayList(Button.CUSTOM.name(), customButtonList);
 			}
-			
+
 			Bundle bundle = new Bundle();
 			bundle.putString(PARAM_CUSTOM_BUTTON_LABEL, label);
 			bundle.putInt(PARAM_CUSTOM_BUTTON_ACTION_CODE, actionCode);
-			
+
 			customButtonList.add(bundle);
 			return this;
 		}
-		
+
 		public MessageParams skipButtonImage(boolean skipImage)
 		{
 			_bundle.putBoolean(PARAM_SKIP_BTN_IMAGE, skipImage);
 			return this;
 		}
-		
+
 		public MessageParams setAutoHideDelay(int delayMillis)
 		{
 			_bundle.putInt(PARAM_AUTO_HIDE_DELAY, delayMillis);
 			return this;
 		}
-		
+
 		public MessageParams setAutoHideButton(Button buttonName)
 		{
 			_bundle.putString(PARAM_AUTO_HIDE_DEFAULT_BUTTON, buttonName.name());
 			return this;
 		}
-		
+
 		public Bundle getParamsBundle()
 		{
 			return _bundle;
 		}
 	}
-	
+
 	public StateManager(Activity activity)
 	{
 		_activity = activity;
 		// Create enveloping activity layout
 		RelativeLayout contentView = new RelativeLayout(_activity);
-		contentView.setBackgroundColor(Environment.getInstance().getPrefs().getInt(Environment.Param.MAIN_BACKGROUND_COLOR));
+		contentView.setBackgroundColor(Environment.getInstance().getPrefs()
+		        .getInt(Environment.Param.MAIN_BACKGROUND_COLOR));
 		_contentView = contentView;
 		_activity.setContentView(contentView);
-		
+
 		// Create frame layout for main state
 		_mainFrame = new FrameLayout(_activity);
-		
+
 		// Create layout holder for arbitrary number of overlay states
 		_overlayLayout = new RelativeLayout(_activity);
-		
+
 		// Create frame layout for one overlay state
 		_overlayFrame = new FrameLayout(_activity);
 		_overlayFrame.setId(_viewLayerId++);
 		RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
 		        RelativeLayout.LayoutParams.MATCH_PARENT);
 		_overlayLayout.addView(_overlayFrame, lp);
-		
+
 		// Create frame layout for message state
 		_messageFrame = new FrameLayout(_activity);
-		
+
 		// add main state frame layout
 		addViewLayer(_mainFrame, false);
 		addViewLayer(_overlayLayout, false);
 		// addViewLayer(overlayFrame, false);
 		addViewLayer(_messageFrame, false);
-		
+
 		_mainFragmentId = _mainFrame.getId();
 		_overlayFragmentIds.add(_overlayFrame.getId());
 		_messageFragmentId = _messageFrame.getId();
-		
+
 		Log.i(TAG, "StateManager created");
 	}
-	
+
 	private ViewGroup createContentView(Context context)
 	{
 		return new RelativeLayout(context);
 	}
-	
+
 	/**
 	 * Add custom view to the main activity
-	 * 
+	 *
 	 * @param viewLayer
 	 * @param isBottom
 	 *            true if the view must be added at the bottom of the other
@@ -255,7 +256,7 @@ public class StateManager
 		RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
 		        RelativeLayout.LayoutParams.MATCH_PARENT);
 		lp.addRule(RelativeLayout.CENTER_IN_PARENT);
-		
+
 		viewLayer.setId(_viewLayerId);
 		if (isBottom)
 			_contentView.addView(viewLayer, 0, lp);
@@ -263,16 +264,16 @@ public class StateManager
 			_contentView.addView(viewLayer, lp);
 		_viewLayerId++;
 	}
-	
+
 	private View createFrameLayout()
 	{
 		return new FrameLayout(_activity);
 	}
-	
+
 	/**
 	 * Sets new State as active. If isOverlay is true than the new State appears
 	 * over the current main State.
-	 * 
+	 *
 	 * @param state
 	 *            The new State to activate
 	 * @param params
@@ -296,16 +297,16 @@ public class StateManager
 				stateName = newState.getClass().getSimpleName();
 			else
 				stateName = "null";
-			
+
 			logMsg.append(".setState: ").append(stateName).append('(');
 			TextUtils.implodeBundle(logMsg, params, '=', ',').append("), overlay=").append(isOverlay);
 			Log.i(TAG, logMsg.toString());
-			
+
 			// FIXME: just for debugging
 			// if ("FeatureStateVODDetails".equals(stateName) &&
 			// params.getParcelableArrayList("VODGROUP_PATH") == null)
 			// throw new RuntimeException("Who are you?");
-			
+
 			switch (_activeStates.size())
 			{
 				case 0:
@@ -366,7 +367,7 @@ public class StateManager
 						{
 							if (isOverlayAdd)
 								removeState(_activeStates.pop());
-							
+
 							// restore focus of the uncovered view
 							_activeStates.get(_activeStates.size() - 1).onShow(true);
 						}
@@ -399,7 +400,7 @@ public class StateManager
 			_inSetState = false;
 		}
 	}
-	
+
 	public StateLayer getStateLayer(BaseState state)
 	{
 		int stateIndex = _activeStates.indexOf(state);
@@ -409,10 +410,10 @@ public class StateManager
 			return StateLayer.OVERLAY;
 		return null;
 	}
-	
+
 	/**
 	 * Replace one state with another keeping the same layer
-	 * 
+	 *
 	 * @param currentState
 	 *            The state to be replaced. It must occupy MAIN or OVERLAY layer
 	 * @param newState
@@ -433,10 +434,10 @@ public class StateManager
 		else if (StateLayer.OVERLAY.equals(stateLayer))
 			setStateOverlay(newState, params);
 	}
-	
+
 	/**
 	 * Sets new main State as active.
-	 * 
+	 *
 	 * @param state
 	 *            The new State to activate
 	 * @param params
@@ -446,10 +447,10 @@ public class StateManager
 	{
 		setState(state, params, false, false, false);
 	}
-	
+
 	/**
 	 * Adds State to history stack
-	 * 
+	 *
 	 * @param state
 	 *            State to add in the history stack
 	 * @param params
@@ -463,7 +464,7 @@ public class StateManager
 		Log.i(TAG, logMsg.toString());
 		_stateHistory.add(new StateHistoryEntry(state, params));
 	}
-	
+
 	/**
 	 * Sets new main state as active pop'ed from the top of history stack if not
 	 * empty
@@ -480,7 +481,7 @@ public class StateManager
 			setStateMain(entry.state, entry.params);
 		}
 	}
-	
+
 	/**
 	 * @return size of history with pushed main states
 	 */
@@ -488,7 +489,7 @@ public class StateManager
 	{
 		return _stateHistory.size();
 	}
-	
+
 	/**
 	 * Clears the history of pushed Main states
 	 */
@@ -496,10 +497,10 @@ public class StateManager
 	{
 		_stateHistory.clear();
 	}
-	
+
 	/**
 	 * Replace the main State with keeping the above overlays
-	 * 
+	 *
 	 * @param state
 	 *            The new State to activate replacing the current
 	 * @param params
@@ -509,10 +510,10 @@ public class StateManager
 	{
 		setState(state, params, false, false, true);
 	}
-	
+
 	/**
 	 * Sets new State as active overlay.
-	 * 
+	 *
 	 * @param state
 	 *            The new State to activate
 	 * @param params
@@ -522,10 +523,10 @@ public class StateManager
 	{
 		setState(state, params, true, false, false);
 	}
-	
+
 	/**
 	 * Add new State as active overlay.
-	 * 
+	 *
 	 * @param state
 	 *            The new State to activate
 	 * @param params
@@ -535,7 +536,7 @@ public class StateManager
 	{
 		setState(state, params, true, true, false);
 	}
-	
+
 	/**
 	 * Hides overlay state
 	 */
@@ -550,10 +551,10 @@ public class StateManager
 			Log.e(TAG, e.getMessage(), e);
 		}
 	}
-	
+
 	/**
 	 * Displays state on screen at specified state layer (see StateLayer)
-	 * 
+	 *
 	 * @param state
 	 *            to be shown
 	 * @param stateLayer
@@ -576,7 +577,7 @@ public class StateManager
 			logMsg.append(".showState: ").append(state.getClass().getSimpleName()).append('(');
 			TextUtils.implodeBundle(logMsg, params, '=', ',').append("), layer=").append(stateLayer.name());
 			Log.i(TAG, logMsg.toString());
-			
+
 			// Workaround of setting fragment arguments when the fragment is
 			// already
 			// added
@@ -586,56 +587,58 @@ public class StateManager
 				public void run()
 				{
 					state.setArguments(params);
-					FragmentTransaction ft = _activity.getFragmentManager().beginTransaction();
-					int fragmentId = 0;
-					switch (stateLayer)
+					if (!state.isAdded())
 					{
-						case MAIN:
-							fragmentId = _mainFragmentId;
-							_mainFrame.requestFocus();
-						break;
-						case OVERLAY:
-							int nOverlays = _activeStates.size() - 1;
-							_overlayFrame.requestFocus();
-							while (nOverlays > _overlayFragmentIds.size())
-							{
-								// add new overlay frame
-								View overlayFrame = new FrameLayout(_activity);
-								overlayFrame.setId(_viewLayerId++);
-								RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
-								        RelativeLayout.LayoutParams.MATCH_PARENT,
-								        RelativeLayout.LayoutParams.MATCH_PARENT);
-								_overlayLayout.addView(overlayFrame, lp);
-								_overlayFragmentIds.add(overlayFrame.getId());
-								overlayFrame.requestFocus();
-							}
-							fragmentId = _overlayFragmentIds.get(_overlayFragmentIds.size() - 1);
-						break;
-						case MESSAGE:
-							fragmentId = _messageFragmentId;
-							_messageFrame.requestFocus();
-						break;
+						FragmentTransaction ft = _activity.getFragmentManager().beginTransaction();
+						int fragmentId = 0;
+						switch (stateLayer)
+						{
+							case MAIN:
+								fragmentId = _mainFragmentId;
+								_mainFrame.requestFocus();
+							break;
+							case OVERLAY:
+								int nOverlays = _activeStates.size() - 1;
+								_overlayFrame.requestFocus();
+								while (nOverlays > _overlayFragmentIds.size())
+								{
+									// add new overlay frame
+									View overlayFrame = new FrameLayout(_activity);
+									overlayFrame.setId(_viewLayerId++);
+									RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
+									        RelativeLayout.LayoutParams.MATCH_PARENT,
+									        RelativeLayout.LayoutParams.MATCH_PARENT);
+									_overlayLayout.addView(overlayFrame, lp);
+									_overlayFragmentIds.add(overlayFrame.getId());
+									overlayFrame.requestFocus();
+								}
+								fragmentId = _overlayFragmentIds.get(_overlayFragmentIds.size() - 1);
+							break;
+							case MESSAGE:
+								fragmentId = _messageFragmentId;
+								_messageFrame.requestFocus();
+							break;
+						}
+						if (fragmentId == 0)
+							throw new RuntimeException(
+							        "Set fragment layer resource ids with method setFragmentLayerResources");
+
+						ft.add(fragmentId, state);
+						// FIXME: make transition effect depending on state's
+						// StateLayer
+						ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+						// ft.commit();
+						ft.commitAllowingStateLoss();
 					}
-					if (fragmentId == 0)
-						throw new RuntimeException(
-						        "Set fragment layer resource ids with method setFragmentLayerResources");
-					
-					ft.add(fragmentId, state);
-					// FIXME: make transition effect depending on state's
-					// StateLayer
-					ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-					// ft.commit();
-					ft.commitAllowingStateLoss();
-					
 					_handler.post(new Runnable()
 					{
 						@Override
 						public void run()
 						{
-							setStateBackground(stateLayer);							
+							setStateBackground(stateLayer);
 							// notify state is shown
 							state.onShow(false);
-							
+
 							if (FeatureState.class.isAssignableFrom(state.getClass()))
 							{
 								FeatureState featureState = (FeatureState) state;
@@ -646,7 +649,7 @@ public class StateManager
 								        .trigger(Environment.ON_STATE_CHANGED, bundle);
 							}
 						}
-						
+
 						private void setStateBackground(StateLayer layer)
 						{
 							int bgColor = 0;
@@ -656,15 +659,15 @@ public class StateManager
 								bgColor = _overlayBackgroundColor;
 								bgImage = _overlayBackgroundImage;
 							}
-							//else if (StateLayer.MAIN == layer)
-							//{
-							//	bgColor = _mainBackgroundColor;
-							//	bgImage = _mainBackgroundImage;
-							//}
+							// else if (StateLayer.MAIN == layer)
+							// {
+							// bgColor = _mainBackgroundColor;
+							// bgImage = _mainBackgroundImage;
+							// }
 							View stateView = state.getView();
 							if (stateView != null)
 							{
-								if (bgColor != 0)									
+								if (bgColor != 0)
 									state.getView().setBackgroundColor(bgColor);
 								else if (bgImage != 0)
 									state.getView().setBackgroundResource(bgImage);
@@ -677,7 +680,6 @@ public class StateManager
 							{
 								Log.e(TAG, "The view of overlay " + state.getClass().getName() + " is null!");
 							}
-							
 						}
 					});
 				}
@@ -697,11 +699,11 @@ public class StateManager
 			_inCreateState = false;
 		}
 	}
-	
+
 	/**
 	 * FIXME: rename to getMainState for consistency with setStateMain
 	 * Gets current active main state instance
-	 * 
+	 *
 	 * @return current state instance
 	 */
 	public BaseState getMainState()
@@ -710,11 +712,11 @@ public class StateManager
 			return _activeStates.get(0);
 		return null;
 	}
-	
+
 	/**
 	 * FIXME: rename to getStateOverlay for consistency with setStateOverlay
 	 * Gets current active overlay state instance
-	 * 
+	 *
 	 * @return current overlay instance
 	 */
 	public BaseState getOverlayState()
@@ -723,10 +725,10 @@ public class StateManager
 			return _activeStates.get(1);
 		return null;
 	}
-	
+
 	/**
 	 * Delegates key down event to the current active state or overlay
-	 * 
+	 *
 	 * @param keyCode
 	 *            The value in event.getKeyCode().
 	 * @param event
@@ -746,7 +748,7 @@ public class StateManager
 			statesDump.append(_activeStates.get(i));
 		}
 		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", states = " + statesDump);
-		
+
 		if (_messageState.isAdded())
 		{
 			if (_messageState.onKeyDown(keyEvent))
@@ -757,13 +759,13 @@ public class StateManager
 			Log.i(TAG, ".onKeyDown: delegating " + keyEvent + " to " + _activeStates.get(_activeStates.size() - 1));
 			return _activeStates.get(_activeStates.size() - 1).onKeyDown(keyEvent);
 		}
-		
+
 		return false;
 	}
-	
+
 	/**
 	 * Delegates key up event to the current active state or overlay
-	 * 
+	 *
 	 * @param keyCode
 	 *            The value in event.getKeyCode().
 	 * @param event
@@ -783,7 +785,7 @@ public class StateManager
 			statesDump.append(_activeStates.get(i));
 		}
 		Log.i(TAG, ".onKeyUp: key = " + keyEvent + ", states = " + statesDump);
-		
+
 		if (_messageState.isAdded())
 		{
 			return _messageState.onKeyUp(keyEvent);
@@ -793,13 +795,13 @@ public class StateManager
 			Log.i(TAG, ".onKeyUp: delegating " + keyEvent + " to " + _activeStates.get(_activeStates.size() - 1));
 			return _activeStates.get(_activeStates.size() - 1).onKeyUp(keyEvent);
 		}
-		
+
 		return false;
 	}
-	
+
 	/**
 	 * Delegates long key press event to the current active state or overlay
-	 * 
+	 *
 	 * @param keyCode
 	 *            The value in event.getKeyCode().
 	 * @param event
@@ -819,7 +821,7 @@ public class StateManager
 			statesDump.append(_activeStates.get(i));
 		}
 		Log.i(TAG, ".onKeyLongPress: key = " + keyEvent + ", states = " + statesDump);
-		
+
 		if (_messageState.isAdded())
 		{
 			return _messageState.onKeyLongPress(keyEvent);
@@ -829,16 +831,16 @@ public class StateManager
 			Log.i(TAG, ".onKeyLongPress: delegating " + keyEvent + " to " + _activeStates.get(_activeStates.size() - 1));
 			return _activeStates.get(_activeStates.size() - 1).onKeyLongPress(keyEvent);
 		}
-		
+
 		return false;
 	}
-	
+
 	// TODO: Add onLongKeyDown() method
 	// TODO: Add onLongKeyUp() method
-	
+
 	/**
 	 * Show message box
-	 * 
+	 *
 	 * @param MessageParams
 	 *            message box parameters
 	 * @return BaseState used to display the message. Use this reference to
@@ -856,7 +858,7 @@ public class StateManager
 		}
 		return _messageState;
 	}
-	
+
 	/**
 	 * @return BaseState used to display the message
 	 */
@@ -864,7 +866,7 @@ public class StateManager
 	{
 		return _messageState;
 	}
-	
+
 	/**
 	 * Hides message box
 	 */
@@ -874,7 +876,7 @@ public class StateManager
 			if (_activeStates.size() > 0)
 				_activeStates.get(_activeStates.size() - 1).onShow(true);
 	}
-	
+
 	public void closeState(BaseState state)
 	{
 		Log.i(TAG, ".closeState: state = " + state);
@@ -895,50 +897,57 @@ public class StateManager
 			Log.e(TAG, e.getMessage(), e);
 		}
 	}
-	
+
 	/**
 	 * Removes state fragment from screen
-	 * 
+	 *
 	 * @param state
 	 *            to be removed from screen
 	 */
 	private boolean removeState(BaseState state)
 	{
 		Log.i(TAG, ".hideState: " + state.getClass().getSimpleName());
-		
+
 		if (state.isAdded())
 		{
-			FragmentTransaction ft = _activity.getFragmentManager().beginTransaction();
-			ft.remove(state);
-			ft.commit();
-			
+			try
+			{
+				FragmentTransaction ft = _activity.getFragmentManager().beginTransaction();
+				ft.remove(state);
+				ft.commit();
+			}
+			catch (IllegalStateException e)
+			{
+				Log.e(TAG, e.getMessage(), e);
+			}
+
 			// notify state is hidden
 			state.onHide(false);
 			return true;
 		}
 		return false;
 	}
-	
+
 	public void setMessageState(BaseState messageState)
 	{
 		_messageState = messageState;
 	}
-	
+
 	public void setOverlayBackgroundColor(int overlayBackgroundColor)
 	{
 		_overlayBackgroundColor = overlayBackgroundColor;
 	}
-	
+
 	public void setOverlayBackgroundImage(int overlayBackgroundImage)
 	{
 		_overlayBackgroundImage = overlayBackgroundImage;
 	}
-	
+
 	public void setMainBackgroundColor(int overlayBackgroundColor)
 	{
 		_mainBackgroundColor = overlayBackgroundColor;
 	}
-	
+
 	public void setMainBackgroundImage(int overlayBackgroundImage)
 	{
 		_mainBackgroundImage = overlayBackgroundImage;
