@@ -13,6 +13,7 @@ package com.aviq.tv.android.sdk.feature.player;
 import android.os.Bundle;
 import android.view.SurfaceView;
 import android.widget.MediaController;
+import android.widget.RelativeLayout;
 import android.widget.VideoView;
 
 import com.aviq.tv.android.sdk.core.Environment;
@@ -281,6 +282,11 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	public void setPositionAndSize(int x, int y, int w, int h)
 	{
 		_player.setPositionAndSize(x, y, w, h);
+
+		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(w, h);
+		params.leftMargin = x;
+		params.topMargin = y;
+		_videoView.setLayoutParams(params);
 	}
 
 	public void seekTo(int offset)

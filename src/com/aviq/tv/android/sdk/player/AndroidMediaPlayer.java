@@ -438,4 +438,11 @@ public class AndroidMediaPlayer extends BasePlayer implements OnBufferingUpdateL
     {
 		_mediaPlayer.start();
     }
+
+	@Override
+    public int getAudioSessionId()
+    {
+	    // TODO Auto-generated method stub
+	    return 0;
+    }
 }
