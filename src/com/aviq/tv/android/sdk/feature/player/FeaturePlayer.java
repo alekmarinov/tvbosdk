@@ -55,6 +55,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	private int _errWhat;
 	private int _errExtra;
 	private boolean _playPauseEnabled;
+	private boolean _isFullscreen;
 
 	public enum Extras
 	{
@@ -287,6 +288,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		params.leftMargin = x;
 		params.topMargin = y;
 		_videoView.setLayoutParams(params);
+		_isFullscreen = false;
 	}
 
 	public void seekTo(int offset)
@@ -297,6 +299,18 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	public void setFullScreen()
 	{
 		_player.setFullScreen();
+
+		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
+		        RelativeLayout.LayoutParams.MATCH_PARENT);
+		params.leftMargin = 0;
+		params.rightMargin = 0;
+		_videoView.setLayoutParams(params);
+		_isFullscreen = true;
+	}
+
+	public boolean isFullScreen()
+	{
+		return _isFullscreen;
 	}
 
 	public MediaController createMediaController(boolean useFastForward)

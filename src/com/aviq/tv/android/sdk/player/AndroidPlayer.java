@@ -197,11 +197,18 @@ public class AndroidPlayer extends BasePlayer implements OnCompletionListener, O
 	public void setFullScreen()
 	{
 		Log.i(TAG, ".setFullScreen");
-		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
-		        RelativeLayout.LayoutParams.WRAP_CONTENT);
-		params.addRule(RelativeLayout.CENTER_HORIZONTAL);
-		params.addRule(RelativeLayout.CENTER_VERTICAL);
-		setPlayerLayoutParams(params);
+//		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
+//		        RelativeLayout.LayoutParams.WRAP_CONTENT);
+//		params.addRule(RelativeLayout.CENTER_HORIZONTAL);
+//		params.addRule(RelativeLayout.CENTER_VERTICAL);
+//		setPlayerLayoutParams(params);
+//
+		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
+		        RelativeLayout.LayoutParams.MATCH_PARENT);
+		params.leftMargin = 0;
+		params.rightMargin = 0;
+		_videoView.setLayoutParams(params);
+
 	}
 
 	public void setPlayerLayoutParams(RelativeLayout.LayoutParams params)
