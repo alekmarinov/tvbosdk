@@ -136,7 +136,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		/**
 		 * Enable/disable local epg cache
 		 */
-		USE_LOCAL_CACHE(true),
+		USE_LOCAL_CACHE(false),
 
 		/**
 		 * epg cache file
@@ -707,8 +707,6 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
 		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-		SimpleDateFormat ddf = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
-		ddf.setTimeZone(_featureTimeZone.getTimeZone());
 
 		Calendar programRangeMin = Calendar.getInstance(_featureTimeZone.getTimeZone());
 		Calendar programRangeMax = Calendar.getInstance(_featureTimeZone.getTimeZone());

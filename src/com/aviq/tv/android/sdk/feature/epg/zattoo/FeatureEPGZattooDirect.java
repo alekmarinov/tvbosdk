@@ -61,12 +61,12 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 		/**
 		 * requested maximum bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_MAXRATE_ETH(3000),
+		ZATTOO_STREAM_MAXRATE_ETH(5000),
 
 		/**
 		 * requested initial bitrate of zattoo stream
 		 */
-		ZATTOO_STREAM_INITRATE_ETH(3000),
+		ZATTOO_STREAM_INITRATE_ETH(0),
 
 		/**
 		 * requested minimum bitrate of zattoo stream
