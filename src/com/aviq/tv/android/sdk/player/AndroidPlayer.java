@@ -162,10 +162,10 @@ public class AndroidPlayer extends BasePlayer implements OnCompletionListener, O
 	 * @return media duration in milliseconds
 	 */
 	@Override
-    public int getDuration()
-    {
+	public int getDuration()
+	{
 		return _videoView.getDuration();
-    }
+	}
 
 	@Override
 	public VideoView getView()
@@ -197,12 +197,13 @@ public class AndroidPlayer extends BasePlayer implements OnCompletionListener, O
 	public void setFullScreen()
 	{
 		Log.i(TAG, ".setFullScreen");
-//		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
-//		        RelativeLayout.LayoutParams.WRAP_CONTENT);
-//		params.addRule(RelativeLayout.CENTER_HORIZONTAL);
-//		params.addRule(RelativeLayout.CENTER_VERTICAL);
-//		setPlayerLayoutParams(params);
-//
+		// RelativeLayout.LayoutParams params = new
+		// RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
+		// RelativeLayout.LayoutParams.WRAP_CONTENT);
+		// params.addRule(RelativeLayout.CENTER_HORIZONTAL);
+		// params.addRule(RelativeLayout.CENTER_VERTICAL);
+		// setPlayerLayoutParams(params);
+		//
 		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
 		        RelativeLayout.LayoutParams.MATCH_PARENT);
 		params.leftMargin = 0;
@@ -234,7 +235,8 @@ public class AndroidPlayer extends BasePlayer implements OnCompletionListener, O
 	@Override
 	public void removeMediaController()
 	{
-		_mediaController.setVisibility(View.GONE);
+		if (_mediaController != null)
+			_mediaController.setVisibility(View.GONE);
 		_videoView.setMediaController(null);
 	}
 
