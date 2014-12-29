@@ -209,9 +209,8 @@ public class FeatureInternet extends FeatureScheduler
 	public void getUrlContent(String url, final Map<String, String> headers, OnResultReceived onResultReceived)
 	{
 		Log.i(TAG, ".getUrlContent: " + url);
-		OnContentResponse responseSuccess = new OnContentResponse(url, onResultReceived);
-		OnContentResponse responseError = new OnContentResponse(url, onResultReceived);
-		StringRequest stringRequest = new StringRequest(url, responseSuccess, responseError)
+		OnContentResponse onContentResponse = new OnContentResponse(url, onResultReceived);
+		StringRequest stringRequest = new StringRequest(url, onContentResponse, onContentResponse)
 		{
 			@Override
 			public Map<String, String> getHeaders() throws AuthFailureError
