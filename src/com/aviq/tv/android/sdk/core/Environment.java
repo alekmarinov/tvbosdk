@@ -28,6 +28,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.util.DisplayMetrics;
 import android.util.LruCache;
 import android.view.KeyEvent;
@@ -181,7 +182,8 @@ public class Environment extends Activity
 							bundle.putInt(ExtraInitError.ERROR_CODE.name(), error.getErrorCode());
 							bundle.putBundle(ExtraInitError.ERROR_DATA.name(), error.getBundle());
 							bundle.putString(ExtraInitError.FEATURE_NAME.name(), error.getFeature().getName());
-							bundle.putString(ExtraInitError.FEATURE_CLASS.name(), error.getFeature().getClass().getName());
+							bundle.putString(ExtraInitError.FEATURE_CLASS.name(), error.getFeature().getClass()
+							        .getName());
 							_eventMessenger.trigger(ON_FEATURE_INIT_ERROR, bundle);
 						}
 						else
@@ -261,6 +263,14 @@ public class Environment extends Activity
 			// initialize preferences
 			_userPrefs = createUserPrefs();
 			_prefs = createPrefs(SYSTEM_PREFS);
+
+			// enter strict mode in non release builds
+			if (isDevel())
+			{
+				StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().detectAll().build());
+				StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder().detectAll().build());
+			}
+
 			int appDebugXmlId = getResources().getIdentifier(ECLIPSE_XML_RESOURCE, "raw", getPackageName());
 			if (appDebugXmlId != 0)
 			{
@@ -363,15 +373,25 @@ public class Environment extends Activity
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
-		Key key = _featureRCU.getKey(keyCode);
-		return onKeyDown(new AVKeyEvent(event, key));
+		if (_featureRCU != null)
+		{
+			Key key = _featureRCU.getKey(keyCode);
+			return onKeyDown(new AVKeyEvent(event, key));
+		}
+		Log.w(TAG, ".onKeyDown: two early call before feature RCU is ready.");
+		return false;
 	}
 
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event)
 	{
-		Key key = _featureRCU.getKey(keyCode);
-		return onKeyUp(new AVKeyEvent(event, key));
+		if (_featureRCU != null)
+		{
+			Key key = _featureRCU.getKey(keyCode);
+			return onKeyUp(new AVKeyEvent(event, key));
+		}
+		Log.w(TAG, ".onKeyUp: two early call before feature RCU is ready.");
+		return false;
 	}
 
 	@Override

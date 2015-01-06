@@ -292,16 +292,19 @@ public class FeatureDevice extends FeatureComponent
 				return getNetwork();
 
 			case MAC:
-				_deviceMac = getPrefs().getString(Param.MAC);
-				if (_deviceMac.length() == 0)
-					try
-					{
-						_deviceMac = readMacAddress();
-					}
-					catch (FileNotFoundException e)
-					{
-						Log.e(TAG, e.getMessage(), e);
-					}
+				if (_deviceMac == null)
+				{
+					_deviceMac = getPrefs().getString(Param.MAC);
+					if (_deviceMac.length() == 0)
+						try
+						{
+							_deviceMac = readMacAddress();
+						}
+						catch (FileNotFoundException e)
+						{
+							Log.e(TAG, e.getMessage(), e);
+						}
+				}
 				return _deviceMac;
 
 			case REALTIME:
