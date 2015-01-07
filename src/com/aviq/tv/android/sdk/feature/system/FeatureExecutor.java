@@ -2,10 +2,10 @@
  * Copyright (c) 2007-2014, AVIQ Bulgaria Ltd
  *
  * Project:     AVIQTVSDK
- * Filename:    FeatureSystem.java
+ * Filename:    FeatureExecutor.java
  * Author:      alek
  * Date:        3 Mar 2014
- * Description: Provides low level access to system
+ * Description: Provides application's root access via the executor service
  */
 
 package com.aviq.tv.android.sdk.feature.system;
@@ -21,9 +21,8 @@ import java.net.SocketAddress;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import com.aviq.tv.android.sdk.core.Log;
-
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
@@ -31,12 +30,12 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 
 /**
- * Provides low level access to system
+ * Provides application's root access via the executor service
  */
 @Author("alek")
-public class FeatureSystem extends FeatureComponent
+public class FeatureExecutor extends FeatureComponent
 {
-	public static final String TAG = FeatureSystem.class.getSimpleName();
+	public static final String TAG = FeatureExecutor.class.getSimpleName();
 	public static final String DEFAULT_HOST = "localhost";
 	public static final int DEFAULT_PORT = 6869;
 	private BufferedReader _bufferedReader;
@@ -71,11 +70,11 @@ public class FeatureSystem extends FeatureComponent
 		}
 	}
 
-	public FeatureSystem() throws FeatureNotFoundException
+	public FeatureExecutor() throws FeatureNotFoundException
 	{
 	}
 
-	public FeatureSystem(String host, int port)
+	public FeatureExecutor(String host, int port)
 	{
 		_host = host;
 		_port = port;
@@ -95,7 +94,7 @@ public class FeatureSystem extends FeatureComponent
 			@Override
 			public void run()
 			{
-				FeatureSystem.super.initialize(onFeatureInitialized);
+				FeatureExecutor.super.initialize(onFeatureInitialized);
 			}
 		});
 	}

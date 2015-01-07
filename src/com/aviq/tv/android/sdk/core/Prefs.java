@@ -139,7 +139,7 @@ public class Prefs
 			Log.d(TAG + ":" + _name, "Set " + key + " = " + value);
 			Editor edit = _prefs.edit();
 			edit.putString(key.toString(), value);
-			edit.commit();
+			edit.apply();
 		}
 		else
 		{
@@ -164,7 +164,7 @@ public class Prefs
 			Log.d(TAG + ":" + _name, "Set " + key + " = " + value);
 			Editor edit = _prefs.edit();
 			edit.putInt(key.toString(), value);
-			edit.commit();
+			edit.apply();
 		}
 		else
 		{
@@ -189,7 +189,7 @@ public class Prefs
 			Log.d(TAG + ":" + _name, "Set " + key + " = " + value);
 			Editor edit = _prefs.edit();
 			edit.putLong(key.toString(), value);
-			edit.commit();
+			edit.apply();
 		}
 		else
 		{
@@ -214,7 +214,7 @@ public class Prefs
 			Log.d(TAG + ":" + _name, "Set " + key + " = " + value);
 			Editor edit = _prefs.edit();
 			edit.putBoolean(key.toString(), value);
-			edit.commit();
+			edit.apply();
 		}
 		else
 		{
@@ -234,7 +234,7 @@ public class Prefs
 	{
 		Editor edit = _prefs.edit();
 		edit.remove(key.toString());
-		edit.commit();
+		edit.apply();
 	}
 
 	/**
@@ -244,6 +244,6 @@ public class Prefs
 	{
 		Editor edit = _prefs.edit();
 		edit.clear();
-		edit.commit();
+		edit.apply();
 	}
 }

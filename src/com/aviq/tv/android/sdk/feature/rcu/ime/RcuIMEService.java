@@ -18,15 +18,15 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.inputmethodservice.InputMethodService;
 import android.os.SystemClock;
-import com.aviq.tv.android.sdk.core.Log;
 import android.util.SparseArray;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 
 import com.aviq.tv.android.sdk.core.Key;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
-import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
+import com.aviq.tv.android.sdk.feature.system.FeatureExecutor;
 
 public abstract class RcuIMEService extends InputMethodService
 {
@@ -76,7 +76,7 @@ public abstract class RcuIMEService extends InputMethodService
 	private int _keyMaxFreqInterval;
 
 	private long _lastEventTime = 0;
-	private FeatureSystem _featureSystem;
+	private FeatureExecutor _featureSystem;
 	private FeatureRCU _featureRCU;
 	private SharedPreferences _sharedPrefs;
 	private List<Key> _slowKeys = new ArrayList<Key>();
@@ -94,7 +94,7 @@ public abstract class RcuIMEService extends InputMethodService
 
 		_featureRCU = createFeatureRCU();
 		_featureRCU.initialize(null);
-		_featureSystem = new FeatureSystem(FeatureSystem.DEFAULT_HOST, FeatureSystem.DEFAULT_PORT);
+		_featureSystem = new FeatureExecutor(FeatureExecutor.DEFAULT_HOST, FeatureExecutor.DEFAULT_PORT);
 		_featureSystem.initialize(null);
 
 		_sharedPrefs = getSharedPreferences("RcuIME", Context.MODE_PRIVATE);
@@ -148,7 +148,7 @@ public abstract class RcuIMEService extends InputMethodService
 		int value = _sharedPrefs.getInt(name, defValue);
 		Editor edit = _sharedPrefs.edit();
 		edit.putInt(name, value);
-		edit.commit();
+		edit.apply();
 		return value;
 	}
 
@@ -157,7 +157,7 @@ public abstract class RcuIMEService extends InputMethodService
 		String value = _sharedPrefs.getString(name, defValue);
 		Editor edit = _sharedPrefs.edit();
 		edit.putString(name, value);
-		edit.commit();
+		edit.apply();
 		return value;
 	}
 

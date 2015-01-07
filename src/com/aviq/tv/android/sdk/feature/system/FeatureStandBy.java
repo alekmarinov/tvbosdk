@@ -12,6 +12,7 @@ package com.aviq.tv.android.sdk.feature.system;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -30,6 +31,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
+import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.feature.rcu.ime.RcuIMEService;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -104,8 +106,8 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	public FeatureStandBy() throws FeatureNotFoundException
 	{
 		require(FeatureName.Scheduler.INTERNET);
-		require(FeatureName.Component.SYSTEM);
 		require(FeatureName.Component.EASTER_EGG);
+		require(FeatureName.Component.RCU);
 	}
 
 	@Override
@@ -120,6 +122,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".initialize");
 
 		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
+		_feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
 
 		// RcuIMEService will broadcast BROADCAST_ACTION_SLEEP in response to
 		// sleep button pressed. This event may occur at any time even when the
@@ -127,6 +130,8 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		Log.i(TAG, "Registering on " + RcuIMEService.BROADCAST_ACTION_SLEEP);
 		IntentFilter intentFilter = new IntentFilter();
 		intentFilter.addAction(RcuIMEService.BROADCAST_ACTION_SLEEP);
+		intentFilter.addAction(Intent.ACTION_SCREEN_ON);
+		intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
 		if (getPrefs().getBool(Param.IS_STANDBY_BY_HDMI_OFF))
 		{
 			intentFilter.addAction(ACTION_HDMI_HW_PLUGGED);
@@ -160,9 +165,18 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 					boolean plugged = intent.getBooleanExtra(EXTRA_HDMI_HW_PLUGGED_STATE, false);
 					if (!plugged)
 					{
+						// This method is not reliable on some TV
 						// enter standby immediately
 						// _enterStandByRunnable.run();
 					}
+				}
+				else if (Intent.ACTION_SCREEN_ON.equals(action))
+				{
+					getEventMessenger().trigger(ON_STANDBY_LEAVE);
+				}
+				else if (Intent.ACTION_SCREEN_OFF.equals(action))
+				{
+					getEventMessenger().trigger(ON_STANDBY_ENTER);
 				}
 			}
 		}, intentFilter);
@@ -253,11 +267,11 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".setHDMIEnabled: isOn = " + isOn);
 		if (isOn)
 		{
-			_feature.Component.SYSTEM.command("echo 720p > /sys/class/amhdmitx/amhdmitx0/disp_mode");
+			sendSystemCommand("echo 720p > /sys/class/amhdmitx/amhdmitx0/disp_mode");
 		}
 		else
 		{
-			_feature.Component.SYSTEM.command("echo > /sys/class/amhdmitx/amhdmitx0/disp_mode");
+			sendSystemCommand("echo > /sys/class/amhdmitx/amhdmitx0/disp_mode");
 		}
 	}
 
@@ -298,6 +312,10 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 				}
 			}
 		}
+		else if (FeatureRCU.ON_KEY_PRESSED == msgId)
+		{
+			postponeAutoStandBy();
+		}
 	}
 
 	public void postponeAutoStandBy()
@@ -335,7 +353,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	protected void doStandBy()
 	{
 		// Send device to standby by emulating a key press for key 26
-		_feature.Component.SYSTEM.command("input keyevent 26");
+		sendSystemCommand("input keyevent 26");
 	}
 
 	// Runnable callback executed when the auto standby timeout elapses which
@@ -365,7 +383,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			getEventMessenger().trigger(ON_STANDBY_AUTO_WARNING, bundle);
 
 			_autoStandByWarnTimeout -= 1000;
-			if (_autoStandByWarnTimeout > -1)
+			if (_autoStandByWarnTimeout >= 0)
 			{
 				getEventMessenger().postDelayed(this, 1000);
 			}
@@ -375,4 +393,16 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			}
 		}
 	};
+
+	private void sendSystemCommand(String cmd)
+	{
+		try
+        {
+	        Runtime.getRuntime().exec(cmd);
+        }
+        catch (IOException e)
+        {
+        	Log.e(TAG, e.getMessage(), e);
+        }
+	}
 }

@@ -14,7 +14,6 @@ import android.content.Context;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
-import android.net.Uri;
 import android.view.View;
 import android.widget.MediaController;
 import android.widget.RelativeLayout;
@@ -67,7 +66,7 @@ public class AndroidPlayer extends BasePlayer implements OnCompletionListener, O
 	{
 		Log.i(TAG, ".play: url = " + url);
 		super.play(url);
-		_videoView.setVideoURI(Uri.parse(url));
+		_videoView.setVideoPath(url);
 		_videoView.start();
 	}
 

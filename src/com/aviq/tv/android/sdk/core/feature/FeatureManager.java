@@ -67,22 +67,29 @@ public class FeatureManager
 		topologicalSort();
 
 		// export features to json
-		try
+		new Thread(new Runnable()
 		{
-			FileOutputStream fileOutStream = new FileOutputStream(Environment.getInstance().getFilesDir()
-			        .getAbsolutePath()
-			        + "/aviqtv.json");
-			exportToJson(fileOutStream);
-			fileOutStream.close();
-		}
-		catch (FileNotFoundException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-		}
-		catch (IOException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-		}
+			@Override
+			public void run()
+			{
+				try
+				{
+					FileOutputStream fileOutStream = new FileOutputStream(Environment.getInstance().getFilesDir()
+					        .getAbsolutePath()
+					        + "/aviqtv.json");
+					exportToJson(fileOutStream);
+					fileOutStream.close();
+				}
+				catch (FileNotFoundException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
+				catch (IOException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
+			}
+		}).start();
 
 		Log.i(TAG, "Initializing features");
 		_featureInitializer.setOnFeatureInitialized(onFeatureInitialized);
@@ -463,7 +470,8 @@ public class FeatureManager
 	 *
 	 * @param clazz
 	 *            The class to check if is a feature
-	 * @return true if the specified class implements IFeature interface or false otherwise
+	 * @return true if the specified class implements IFeature interface or
+	 *         false otherwise
 	 */
 	public boolean isFeature(Class<?> clazz)
 	{
@@ -588,12 +596,14 @@ public class FeatureManager
 										catch (SAXException e)
 										{
 											Log.e(TAG, e.getMessage(), e);
-											resultReceived.onReceiveResult(new FeatureError(null, ResultCode.PROTOCOL_ERROR, e));
+											resultReceived.onReceiveResult(new FeatureError(null,
+											        ResultCode.PROTOCOL_ERROR, e));
 										}
 										catch (IOException e)
 										{
 											Log.e(TAG, e.getMessage(), e);
-											resultReceived.onReceiveResult(new FeatureError(null, ResultCode.IO_ERROR, e));
+											resultReceived.onReceiveResult(new FeatureError(null, ResultCode.IO_ERROR,
+											        e));
 										}
 									}
 								});
@@ -904,10 +914,10 @@ public class FeatureManager
 							feature.setDependencyFeatures(new Features(feature.dependencies()));
 							feature.initialize(FeatureInitializer.this);
 						}
-                        catch (FeatureError e)
-                        {
+						catch (FeatureError e)
+						{
 							_onFeatureInitialized.onInitialized(e);
-                        }
+						}
 					}
 				});
 			}
@@ -940,8 +950,8 @@ public class FeatureManager
 			}
 			_lastFeatureNumber = _featureNumber;
 			long featureInitTime = System.currentTimeMillis() - _initStartedTime;
-			Log.i(TAG, "<" + _featureNumber + ". " + error.getFeature() + " initialized in "
-			        + featureInitTime + " ms with result " + error);
+			Log.i(TAG, "<" + _featureNumber + ". " + error.getFeature() + " initialized in " + featureInitTime
+			        + " ms with result " + error);
 			_initTotalTime += featureInitTime;
 
 			// Stop all features initialization when one fails to initialize
@@ -1032,7 +1042,7 @@ public class FeatureManager
 				}
 				catch (MalformedURLException e)
 				{
-					throw new SAXParseException(e.getMessage(), _locator);
+					throw new SAXParseException(e.getMessage(), _locator, e);
 				}
 			}
 			else if (TAG_FEATURES.equalsIgnoreCase(localName))
@@ -1054,15 +1064,15 @@ public class FeatureManager
 				}
 				catch (InstantiationException e)
 				{
-					throw new SAXParseException(e.getMessage(), _locator);
+					throw new SAXParseException(e.getMessage(), _locator, e);
 				}
 				catch (IllegalAccessException e)
 				{
-					throw new SAXParseException(e.getMessage(), _locator);
+					throw new SAXParseException(e.getMessage(), _locator, e);
 				}
 				catch (ClassNotFoundException e)
 				{
-					throw new SAXParseException(e.getMessage(), _locator);
+					throw new SAXParseException(e.getMessage(), _locator, e);
 				}
 
 				_featureFactory.registerFeature(_feature);
@@ -1103,7 +1113,7 @@ public class FeatureManager
 				}
 				catch (NumberFormatException e)
 				{
-					throw new SAXParseException(e.getMessage(), _locator);
+					throw new SAXParseException(e.getMessage(), _locator, e);
 				}
 
 				if (prefs.has(_paramName))
@@ -1196,11 +1206,11 @@ public class FeatureManager
 				}
 				catch (FeatureNotFoundException e)
 				{
-					throw new SAXParseException(e.getMessage(), _locator);
+					throw new SAXParseException(e.getMessage(), _locator, e);
 				}
 				catch (ClassNotFoundException e)
 				{
-					throw new SAXParseException(e.getMessage(), _locator);
+					throw new SAXParseException(e.getMessage(), _locator, e);
 				}
 			}
 			else if (TAG_SCHEDULER.equalsIgnoreCase(localName))
@@ -1224,11 +1234,11 @@ public class FeatureManager
 				}
 				catch (FeatureNotFoundException e)
 				{
-					throw new SAXParseException(e.getMessage(), _locator);
+					throw new SAXParseException(e.getMessage(), _locator, e);
 				}
 				catch (ClassNotFoundException e)
 				{
-					throw new SAXParseException(e.getMessage(), _locator);
+					throw new SAXParseException(e.getMessage(), _locator, e);
 				}
 			}
 			else if (TAG_STATE.equalsIgnoreCase(localName))
@@ -1252,11 +1262,11 @@ public class FeatureManager
 				}
 				catch (FeatureNotFoundException e)
 				{
-					throw new SAXParseException(e.getMessage(), _locator);
+					throw new SAXParseException(e.getMessage(), _locator, e);
 				}
 				catch (ClassNotFoundException e)
 				{
-					throw new SAXParseException(e.getMessage(), _locator);
+					throw new SAXParseException(e.getMessage(), _locator, e);
 				}
 			}
 			else if (TAG_HOOKS.equalsIgnoreCase(localName))
@@ -1367,11 +1377,11 @@ public class FeatureManager
 					}
 					catch (FeatureNotFoundException e)
 					{
-						throw new SAXParseException(e.getMessage(), _locator);
+						throw new SAXParseException(e.getMessage(), _locator, e);
 					}
 					catch (ClassNotFoundException e)
 					{
-						throw new SAXParseException(e.getMessage(), _locator);
+						throw new SAXParseException(e.getMessage(), _locator, e);
 					}
 				}
 				else if (featureNameParts.length == 2)
@@ -1415,7 +1425,7 @@ public class FeatureManager
 					}
 					catch (FeatureNotFoundException e)
 					{
-						throw new SAXParseException(e.getMessage(), _locator);
+						throw new SAXParseException(e.getMessage(), _locator, e);
 					}
 				}
 				else

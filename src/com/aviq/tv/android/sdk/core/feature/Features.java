@@ -30,7 +30,7 @@ import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 import com.aviq.tv.android.sdk.feature.rpc.FeatureRPC;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice;
 import com.aviq.tv.android.sdk.feature.system.FeatureStandBy;
-import com.aviq.tv.android.sdk.feature.system.FeatureSystem;
+import com.aviq.tv.android.sdk.feature.system.FeatureExecutor;
 import com.aviq.tv.android.sdk.feature.system.FeatureTimeZone;
 import com.aviq.tv.android.sdk.feature.upgrade.FeatureUpgrade;
 import com.aviq.tv.android.sdk.feature.vod.FeatureVOD;
@@ -64,7 +64,7 @@ public class Features
 		public FeatureLanguage LANGUAGE;
 		public FeatureWebTV WEBTV;
 		public FeatureRPC RPC;
-		public FeatureSystem SYSTEM;
+		public FeatureExecutor SYSTEM;
 		public FeatureEasterEgg EASTER_EGG;
 		public FeatureTimeZone TIMEZONE;
 		public FeatureStandBy STANDBY;

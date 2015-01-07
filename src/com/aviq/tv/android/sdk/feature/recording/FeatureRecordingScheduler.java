@@ -17,13 +17,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
+
+import android.annotation.SuppressLint;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
@@ -57,8 +58,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	/**
 	 * FIXME: Obtain from more general place
 	 */
-	private SimpleDateFormat _sdfUTC = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
-	private TimeZone _utc = TimeZone.getTimeZone("UTC");
+	private SimpleDateFormat _sdfUTC;
+	private TimeZone _utc;
 	private Prefs _userPrefs;
 
 	public static enum UserParam
@@ -82,9 +83,12 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		}
 	}
 
-	public FeatureRecordingScheduler() throws FeatureNotFoundException
+	@SuppressLint("SimpleDateFormat")
+    public FeatureRecordingScheduler() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.TIMEZONE);
+		_sdfUTC = new SimpleDateFormat("yyyyMMddHHmmss");
+		_utc = TimeZone.getTimeZone("UTC");
 	}
 
 	@Override
