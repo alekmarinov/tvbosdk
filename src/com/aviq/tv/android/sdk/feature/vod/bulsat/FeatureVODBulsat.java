@@ -39,7 +39,6 @@ import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.feature.vod.FeatureVOD;
-import com.aviq.tv.android.sdk.feature.vod.bulsat.VodTree.Node;
 import com.aviq.tv.android.sdk.utils.MapUtils;
 import com.aviq.tv.android.sdk.utils.MapUtils.SortingOrder;
 import com.google.gson.JsonSyntaxException;
@@ -61,7 +60,7 @@ public class FeatureVODBulsat extends FeatureVOD
 
 	public static enum Param
 	{
-		VOD_XML_URL("http://185.4.83.193/?xml&vod"),
+		VOD_XML_URL("http://api.iptv.bulsat.com/?xml&vod"),
 
 		/**
 		 * Schedule interval
@@ -252,12 +251,12 @@ public class FeatureVODBulsat extends FeatureVOD
 	 */
 	@SuppressWarnings("unchecked")
 	public static List<Vod>[] findVodsInVodGroup(VodTree.Node<VodGroup> vodData)
-	{ 
+	{
 		Log.i(TAG, ".findVodsInVodGroup: vodData.size = " + (vodData != null ? vodData.getChildren().size() : "null"));
 
 		if (vodData == null)
 			return null;
-		
+
 		int numVodGroups = vodData != null ? vodData.getChildren().size() : 0;
 		if (numVodGroups == 0)
 		{
@@ -297,10 +296,10 @@ public class FeatureVODBulsat extends FeatureVOD
 	{
 		if (startNode == null)
 			return null;
-		
+
 		if (startNode.getData().getVodList().contains(vod))
 			return startNode.getData();
-		
+
 		VodGroup vodGroup = null;
 		for (VodTree.Node<VodGroup> child : startNode.getChildren())
 		{
@@ -308,7 +307,7 @@ public class FeatureVODBulsat extends FeatureVOD
 			if (vodGroup != null)
 				return vodGroup;
 		}
-		
+
 		return null;
 	}
 
