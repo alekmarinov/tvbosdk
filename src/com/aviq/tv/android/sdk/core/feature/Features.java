@@ -21,6 +21,7 @@ import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.language.FeatureLanguage;
 import com.aviq.tv.android.sdk.feature.network.FeatureEthernet;
+import com.aviq.tv.android.sdk.feature.network.FeatureNetwork;
 import com.aviq.tv.android.sdk.feature.network.FeatureWireless;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
@@ -29,8 +30,8 @@ import com.aviq.tv.android.sdk.feature.recording.FeatureRecordingScheduler;
 import com.aviq.tv.android.sdk.feature.register.FeatureRegister;
 import com.aviq.tv.android.sdk.feature.rpc.FeatureRPC;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice;
-import com.aviq.tv.android.sdk.feature.system.FeatureStandBy;
 import com.aviq.tv.android.sdk.feature.system.FeatureExecutor;
+import com.aviq.tv.android.sdk.feature.system.FeatureStandBy;
 import com.aviq.tv.android.sdk.feature.system.FeatureTimeZone;
 import com.aviq.tv.android.sdk.feature.upgrade.FeatureUpgrade;
 import com.aviq.tv.android.sdk.feature.vod.FeatureVOD;
@@ -59,6 +60,7 @@ public class Features
 		public FeatureRegister REGISTER;
 		public FeatureWatchlist WATCHLIST;
 		public FeatureChannels CHANNELS;
+		public FeatureNetwork NETWORK;
 		public FeatureEthernet ETHERNET;
 		public FeatureWireless WIRELESS;
 		public FeatureLanguage LANGUAGE;
@@ -121,7 +123,7 @@ public class Features
 		public FeatureState RECORDING_DETAILS;
 		public FeatureState ERROR;
 		public FeatureState PASSWORD;
-		public FeatureState FAVOURITE_CHANNELS;	
+		public FeatureState FAVOURITE_CHANNELS;
 		public FeatureState PROGRAM_ITEMS;
 	}
 

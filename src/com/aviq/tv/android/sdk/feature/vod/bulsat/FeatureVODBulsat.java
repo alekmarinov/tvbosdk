@@ -27,6 +27,7 @@ import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
 import com.android.volley.Request;
+import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
@@ -57,6 +58,7 @@ public class FeatureVODBulsat extends FeatureVOD
 	private OnFeatureInitialized _onFeatureInitialized;
 	private VodTree<VodGroup> _vodData;
 	private Locale mLocale = new Locale("bg", "BG");
+	protected RequestQueue _httpQueue;
 
 	public static enum Param
 	{
@@ -82,6 +84,7 @@ public class FeatureVODBulsat extends FeatureVOD
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
+		_httpQueue = Environment.getInstance().getRequestQueue();
 		onSchedule(onFeatureInitialized);
 	}
 
@@ -104,7 +107,8 @@ public class FeatureVODBulsat extends FeatureVOD
 		@SuppressWarnings("rawtypes")
 		VodRequest<VodTree> vodRequest = new VodRequest<VodTree>(Request.Method.GET, vodServerURL,
 				VodTree.class, responseCallback, responseCallback);
-		Environment.getInstance().getRequestQueue().add(vodRequest);
+
+		_httpQueue.add(vodRequest);
 
 		scheduleDelayed(getPrefs().getInt(Param.VOD_UPDATE_INTERVAL));
 	}
@@ -162,7 +166,7 @@ public class FeatureVODBulsat extends FeatureVOD
 				return headers;
 			}
 		};
-		Environment.getInstance().getRequestQueue().add(request);
+		_httpQueue.add(request);
 	}
 
 	@Override

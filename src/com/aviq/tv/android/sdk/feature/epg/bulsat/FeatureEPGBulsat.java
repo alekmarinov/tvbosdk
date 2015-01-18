@@ -88,6 +88,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 				bulsatMetaData.metaChannelThumbnailSelected = j;
 			else if ("thumbnail_favorite".equals(key))
 				bulsatMetaData.metaChannelThumbnailFavorite = j;
+			else if ("program_image".equals(key))
+				bulsatMetaData.metaChannelProgramImage = j;
 		}
 	}
 
@@ -108,7 +110,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 	protected String getChannelsUrl()
 	{
 		String url = super.getChannelsUrl();
-		return url + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable,thumbnail_selected,thumbnail_favorite";
+		return url + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable,thumbnail_selected,thumbnail_favorite,program_image";
 	}
 
 	@Override
@@ -211,14 +213,14 @@ public class FeatureEPGBulsat extends FeatureEPG
 		responseCallback = new LogoResponseCallback(channelId, channelIndex, IEpgDataProvider.ChannelLogoType.SELECTED);
 		imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth,
 		        _channelLogoHeight, Config.ARGB_8888, responseCallback);
-		_httpQueue.add(imageRequest);
+		_requestQueue.add(imageRequest);
 
 		// retrieves favorite channel logo
 		channelLogoUrl = getChannelImageUrl(channelId, channelBulsat.getThumbnailFavorite());
 		responseCallback = new LogoResponseCallback(channelId, channelIndex, IEpgDataProvider.ChannelLogoType.FAVORITE);
 		imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth,
 		        _channelLogoHeight, Config.ARGB_8888, responseCallback);
-		_httpQueue.add(imageRequest);
+		_requestQueue.add(imageRequest);
 
 		// FIXME: if the request of the selected or favorite logo finishes after the request
 		// of the normal logo, the last will not register in the EpgData

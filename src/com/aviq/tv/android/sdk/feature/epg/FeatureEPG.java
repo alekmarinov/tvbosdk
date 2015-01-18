@@ -101,7 +101,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		/**
 		 * EPG channel logo url format
 		 */
-		EPG_CHANNEL_IMAGE_URL("${SERVER}/static/${PROVIDER}/${CHANNEL}/${IMAGE}"),
+		EPG_CHANNEL_IMAGE_URL("${SERVER}/static/${PROVIDER}/epg/${CHANNEL}/${IMAGE}"),
 
 		/**
 		 * EPG programs url format
@@ -192,7 +192,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		void onProgramDetails(FeatureError error, Program program);
 	}
 
-	protected RequestQueue _httpQueue;
+	protected RequestQueue _requestQueue;
 	private OnFeatureInitialized _onFeatureInitialized;
 	private int _epgVersion;
 	private String _epgServer;
@@ -240,11 +240,12 @@ public abstract class FeatureEPG extends FeatureScheduler
 		_channelLogoWidth = getPrefs().getInt(Param.CHANNEL_LOGO_WIDTH);
 		_channelLogoHeight = getPrefs().getInt(Param.CHANNEL_LOGO_HEIGHT);
 
-		_httpQueue = Environment.getInstance().getRequestQueue();
+		_requestQueue = Environment.getInstance().getRequestQueue();
 
 		_maxChannels = getPrefs().getInt(Param.MAX_CHANNELS);
 
 		boolean loadedFromCache = uncacheEpgData();
+		Log.i(TAG, "Is EPG loaded from cache: " + loadedFromCache);
 		if (!loadedFromCache)
 		{
 			onSchedule(onFeatureInitialized);
@@ -279,7 +280,8 @@ public abstract class FeatureEPG extends FeatureScheduler
 		        channelsUrl, ChannelListResponse.class, responseCallback, responseCallback);
 
 		resetMinMaxDates();
-		_httpQueue.add(channelListRequest);
+
+		_requestQueue.add(channelListRequest);
 
 		// schedule update later
 		scheduleDelayed(getPrefs().getInt(Param.UPDATE_INTERVAL));
@@ -324,7 +326,8 @@ public abstract class FeatureEPG extends FeatureScheduler
 			}
 		};
 
-		_httpQueue.add(_programDetailsRequest);
+		// retrieves program details from the global request queue
+		_requestQueue.add(_programDetailsRequest);
 	}
 
 	@Override
@@ -420,7 +423,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 			}
 		};
 
-		_httpQueue.add(imageRequest);
+		_requestQueue.add(imageRequest);
 	}
 
 	private void retrievePrograms(Channel channel)
@@ -434,7 +437,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		GsonRequest<ProgramsResponse> programsRequest = new GsonRequest<ProgramsResponse>(Request.Method.GET,
 		        programsUrl, ProgramsResponse.class, responseCallback, responseCallback);
 
-		_httpQueue.add(programsRequest);
+		_requestQueue.add(programsRequest);
 	}
 
 	private class ChannelListResponseCallback implements Response.Listener<ChannelListResponse>, Response.ErrorListener

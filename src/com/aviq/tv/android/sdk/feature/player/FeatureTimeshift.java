@@ -194,7 +194,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".pause");
 		if (_isPaused)
 		{
-			Log.w(TAG, "Attempt to call pause() more than once");
+			Log.d(TAG, "Attempt to call pause() more than once");
 			return ;
 		}
 		_pauseTimeStart = currentTime();
@@ -210,7 +210,7 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".resume");
 		if (!_isPaused)
 		{
-			Log.w(TAG, "Attempt to call resume() more than once");
+			Log.d(TAG, "Attempt to call resume() more than once");
 			return ;
 		}
 		_autoResumer.stop();

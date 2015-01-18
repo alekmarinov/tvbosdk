@@ -326,20 +326,6 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 
 	private void log(Severity severity, String tag, String message, Throwable ex, Bundle extra)
 	{
-		switch (severity)
-		{
-			case INFO:
-				Log.i(tag, message, ex);
-			break;
-			case ALERT:
-				Log.e(tag, message, ex);
-			break;
-			case FATAL:
-			case ERROR:
-				Log.e(tag, message, ex);
-			break;
-		}
-
 		Bundle bundle = new Bundle();
 		if (extra != null)
 			bundle.putAll(extra);

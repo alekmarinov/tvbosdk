@@ -10,13 +10,19 @@
 
 package com.aviq.tv.android.sdk.core;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.xml.sax.SAXException;
 
@@ -27,16 +33,23 @@ import android.content.Intent;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
+import android.graphics.BitmapFactory;
+import android.net.http.AndroidHttpClient;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.DisplayMetrics;
 import android.util.LruCache;
 import android.view.KeyEvent;
 
+import com.android.volley.Cache;
+import com.android.volley.Network;
 import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.BasicNetwork;
+import com.android.volley.toolbox.DiskBasedCache;
+import com.android.volley.toolbox.HttpClientStack;
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.ImageLoader.ImageCache;
-import com.android.volley.toolbox.Volley;
 import com.aviq.tv.android.sdk.Version;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
@@ -51,6 +64,8 @@ import com.aviq.tv.android.sdk.core.service.ServiceController;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.core.state.StateManager;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
+import com.jakewharton.disklrucache.DiskLruCache;
+import com.jakewharton.disklrucache.DiskLruCache.Snapshot;
 
 /**
  * Defines application environment
@@ -102,7 +117,20 @@ public class Environment extends Activity
 		 */
 		OVERLAY_BACKGROUND_COLOR(0x00000000),
 
-		MAIN_BACKGROUND_COLOR(0xFF141b20);
+		/**
+		 * the main background color
+		 */
+		MAIN_BACKGROUND_COLOR(0xFF141b20),
+
+		/**
+		 * Disk cache for images (1G)
+		 */
+		IMAGE_DISK_CACHE_SIZE(1024 * 1024 * 1024),
+
+		/**
+		 * Memory cache for images (50 MB)
+		 */
+		IMAGE_MEM_CACHE_SIZE(50 * 1024 * 1024);
 
 		Param(int value)
 		{
@@ -134,6 +162,8 @@ public class Environment extends Activity
 	private ExceptKeysList _exceptKeys = new ExceptKeysList();
 	private Context _context;
 	private boolean _isPause;
+	private Cache _volleyCache;
+	private Network _volleyNetwork;
 
 	private OnResultReceived _onFeaturesReceived = new OnResultReceived()
 	{
@@ -160,13 +190,41 @@ public class Environment extends Activity
 				_featureRCU = (FeatureRCU) _featureManager.use(FeatureName.Component.RCU);
 
 				_serviceController = new ServiceController(Environment.this);
-				if (_requestQueue == null)
-					_requestQueue = Volley.newRequestQueue(Environment.this);
-				_requestQueue.getCache().clear();
 
-				// Use 1/8th of the available memory for this memory cache.
+				// Setup Volley request queue
+
+				_volleyNetwork = new BasicNetwork(new HttpClientStack(AndroidHttpClient.newInstance("aviqtvsdk/volley")));
+
+				// Use 1/8th of the available memory for caching the global request queue
 				int cacheSize = 1024 * 1024 * memClass / 8;
-				_imageLoader = new ImageLoader(_requestQueue, new BitmapLruCache(cacheSize));
+				_volleyCache = new DiskBasedCache(getCacheDir(), cacheSize / 2);
+
+				_requestQueue = newRequestQueue();
+
+				BitmapMemLruCache memCache = new BitmapMemLruCache(getPrefs().getInt(
+				        Param.IMAGE_MEM_CACHE_SIZE));
+
+//				BitmapDiskLruCache diskCache = new BitmapDiskLruCache(getPrefs().getInt(
+//				        Param.IMAGE_DISK_CACHE_SIZE));
+
+				ImageCache noCache = new ImageCache()
+				{
+					@Override
+					public void putBitmap(String url, Bitmap bitmap)
+					{
+					}
+
+					@Override
+					public Bitmap getBitmap(String url)
+					{
+						return null;
+					}
+				};
+
+				_imageLoader = new ImageLoader(_requestQueue, memCache);
+//				_imageLoader = new ImageLoader(_requestQueue, diskCache);
+//				_imageLoader = new ImageLoader(_requestQueue, new BitmapMemDiskLruCache(memCache, diskCache));
+//				_imageLoader = new ImageLoader(_requestQueue, noCache);
 
 				// initializes features
 				getEventMessenger().trigger(ON_INITIALIZE);
@@ -191,6 +249,8 @@ public class Environment extends Activity
 							_eventMessenger.trigger(ON_LOADED);
 							_isInitialized = true;
 						}
+
+						System.gc();
 					}
 
 					@Override
@@ -491,10 +551,25 @@ public class Environment extends Activity
 		return _requestQueue;
 	}
 
-	public void setRequestQueue(RequestQueue requestQueue)
+	/**
+	 * Creates new RequestQueue
+	 *
+	 * @return RequestQueue
+	 */
+	public RequestQueue newRequestQueue()
 	{
-		_requestQueue = requestQueue;
+		Log.d(TAG, ".newRequestQueue");
+		RequestQueue requestQueue = new RequestQueue(_volleyCache, _volleyNetwork);
+		requestQueue.start();
+		return requestQueue;
 	}
+
+
+	//
+	// public void setRequestQueue(RequestQueue requestQueue)
+	// {
+	// _requestQueue = requestQueue;
+	// }
 
 	/**
 	 * Returns global Volley image loader
@@ -532,6 +607,24 @@ public class Environment extends Activity
 			Log.e(TAG, e.getMessage(), e);
 		}
 		return null;
+	}
+
+	/**
+	 * Returns application version code
+	 *
+	 * @return version code
+	 */
+	public int getVersionCode()
+	{
+		try
+		{
+			return getPackageManager().getPackageInfo(getApplication().getPackageName(), 0).versionCode;
+		}
+		catch (NameNotFoundException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		return 0;
 	}
 
 	/**
@@ -747,29 +840,149 @@ public class Environment extends Activity
 		return new Prefs(name, _context.getSharedPreferences(name, Activity.MODE_PRIVATE), false);
 	}
 
-	private class BitmapLruCache extends LruCache<String, Bitmap> implements ImageCache
+	public class BitmapMemLruCache extends LruCache<String, Bitmap> implements ImageCache
 	{
-		public BitmapLruCache(int maxSize)
-		{
-			super(maxSize);
-		}
+		public BitmapMemLruCache(int cacheSize)
+        {
+	        super(cacheSize);
+        }
 
 		@Override
 		protected int sizeOf(String key, Bitmap value)
 		{
-			return value.getRowBytes() * value.getHeight();
+			return value.getRowBytes() * value.getHeight() / 1024;
+		}
+
+		@Override
+		public Bitmap getBitmap(String key)
+		{
+			return get(key);
+		}
+
+		@Override
+		public void putBitmap(String key, Bitmap bitmap)
+		{
+			put(key, bitmap);
+		}
+	}
+
+	public class BitmapDiskLruCache implements ImageCache
+	{
+		private DiskLruCache _lruCache;
+
+		public BitmapDiskLruCache(int cacheSize)
+		{
+			try
+			{
+				/**
+				 * FIXME: causes silent exception as described bellow:
+				 *
+				 * A resource was acquired at attached stack trace but never released. See java.io.Closeable for information on avoiding resource leaks.
+				 * java.lang.Throwable: Explicit termination method 'close' not called
+				 */
+				_lruCache = DiskLruCache.open(new File(getCacheDir(), "images"), getVersionCode(), 1, cacheSize);
+			}
+			catch (IOException e)
+			{
+				// will not use cache
+				_lruCache = null;
+				Log.e(TAG, e.getMessage(), e);
+			}
 		}
 
 		@Override
 		public Bitmap getBitmap(String url)
 		{
-			return get(url);
+			try
+			{
+				Snapshot snappshot = _lruCache.get(urlToKey(url));
+				if (snappshot != null)
+				{
+					InputStream is = snappshot.getInputStream(0);
+					Bitmap bmp = BitmapFactory.decodeStream(is);
+					is.close();
+					return bmp;
+				}
+			}
+			catch (IOException e)
+			{
+				Log.w(TAG, e.getMessage(), e);
+			}
+			catch (NoSuchAlgorithmException e)
+			{
+				Log.w(TAG, e.getMessage(), e);
+			}
+			return null;
 		}
 
 		@Override
 		public void putBitmap(String url, Bitmap bitmap)
 		{
-			// put(url, bitmap);
+			try
+			{
+				DiskLruCache.Editor creator = _lruCache.edit(urlToKey(url));
+				OutputStream os = creator.newOutputStream(0);
+				bitmap.compress(CompressFormat.JPEG, 100, os);
+				os.close();
+				creator.commit();
+			}
+			catch (IOException e)
+			{
+				Log.w(TAG, e.getMessage(), e);
+			}
+			catch (NoSuchAlgorithmException e)
+			{
+				Log.w(TAG, e.getMessage(), e);
+			}
 		}
+
+		private String urlToKey(String url) throws NoSuchAlgorithmException
+		{
+			MessageDigest digest = MessageDigest.getInstance("MD5");
+			digest.update(url.getBytes());
+			StringBuffer sb = new StringBuffer();
+			byte[] bytes = digest.digest();
+			for (int i = 0; i < bytes.length; i++)
+				sb.append(Integer.toString((bytes[i] & 0xFF) + 0x100, 16).substring(1));
+			return sb.toString();
+		}
+	}
+
+	public class BitmapMemDiskLruCache implements ImageCache
+	{
+		private BitmapMemLruCache _memCache;
+		private BitmapDiskLruCache _diskCache;
+		private ExecutorService _executorService;
+
+		public BitmapMemDiskLruCache(BitmapMemLruCache memCache, BitmapDiskLruCache diskCache)
+		{
+			_memCache = memCache;
+			_diskCache = diskCache;
+			_executorService = Executors.newFixedThreadPool(10);
+		}
+
+		@Override
+        public Bitmap getBitmap(String key)
+        {
+			Bitmap value = _memCache.get(key);
+			if (value == null)
+				value = _diskCache.getBitmap(key);
+			return value;
+        }
+
+		@Override
+        public void putBitmap(final String key, final Bitmap bitmap)
+        {
+			_memCache.put(key, bitmap);
+
+			_executorService.submit(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					_diskCache.putBitmap(key, bitmap);
+				}
+			});
+        }
 	}
 }

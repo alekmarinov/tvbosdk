@@ -114,12 +114,12 @@ public class FeatureDevice extends FeatureComponent
 		/**
 		 * vmstat -d delay
 		 */
-		VMSTAT_DELAY(1),
+		VMSTAT_DELAY(60),
 
 		/**
 		 * The interval to trigger ON_STATUS event
 		 */
-		STATUS_INTERVAL(4),
+		STATUS_INTERVAL(10 * 60),
 
 		/**
 		 * HDD Memory units: 0 - B, 1 - KB, 2 - MB, 3 - GB

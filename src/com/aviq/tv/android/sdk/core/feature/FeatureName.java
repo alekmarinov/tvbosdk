@@ -26,6 +26,7 @@ public class FeatureName
 		REGISTER,
 		WATCHLIST,
 		CHANNELS,
+		NETWORK,
 		ETHERNET,
 		WIRELESS,
 		LANGUAGE,

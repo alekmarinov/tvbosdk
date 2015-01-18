@@ -102,9 +102,7 @@ public class FeatureEthernet extends FeatureNetwork
 			@Override
 			public String getStatusField()
 			{
-
 				return getNetwork();
-
 			}
 		});
 		if (!_ethernetManagerWrapper.isSupported())
@@ -112,10 +110,6 @@ public class FeatureEthernet extends FeatureNetwork
 			// FIXME: Should this be fatal error?
 			// onFeatureInitialized.onInitialized(this,
 			// ResultCode.NOT_SUPPORTED);
-		}
-		else
-		{
-//			onFeatureInitialized.onInitialized(this, ResultCode.OK);
 		}
 		super.initialize(onFeatureInitialized);
 	}
