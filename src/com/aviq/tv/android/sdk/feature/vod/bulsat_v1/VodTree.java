@@ -1,4 +1,4 @@
-package com.aviq.tv.android.sdk.feature.vod.bulsat;
+package com.aviq.tv.android.sdk.feature.vod.bulsat_v1;
 
 import java.util.ArrayList;
 import java.util.Iterator;

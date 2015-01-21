@@ -1,4 +1,4 @@
-package com.aviq.tv.android.sdk.feature.vod.bulsat;
+package com.aviq.tv.android.sdk.feature.vod.bulsat_v1;
 
 /**
  * Copyright (c) 2007-2014, AVIQ Bulgaria Ltd

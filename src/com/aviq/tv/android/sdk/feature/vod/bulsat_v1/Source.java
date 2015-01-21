@@ -1,4 +1,4 @@
-package com.aviq.tv.android.sdk.feature.vod.bulsat;
+package com.aviq.tv.android.sdk.feature.vod.bulsat_v1;
 
 import android.os.Parcel;
 import android.os.Parcelable;
