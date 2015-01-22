@@ -32,9 +32,9 @@ public class FeatureVODBulsat extends FeatureVOD
 	}
 
 	@Override
-	protected VODItem createVodItem(String id, String title, VODGroup parent, String poster)
+	protected VODItem createVodItem(String id, String title, VODGroup parent)
 	{
-		return new VodItemBulsat(id, title, parent, poster);
+		return new VodItemBulsat(id, title, parent);
 	}
 
 	@Override

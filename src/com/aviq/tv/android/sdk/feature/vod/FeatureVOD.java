@@ -35,6 +35,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
+import com.aviq.tv.android.sdk.feature.vod.VODItem.PosterSize;
 import com.aviq.tv.android.sdk.feature.vod.bulsat_v1.Vod;
 
 /**
@@ -76,7 +77,12 @@ public abstract class FeatureVOD extends FeatureScheduler
 		/**
 		 * VOD items url format
 		 */
-		VOD_ITEMS_URL("${SERVER}/v${VERSION}/vod/${PROVIDER}/*?attr=poster");
+		VOD_ITEMS_URL("${SERVER}/v${VERSION}/vod/${PROVIDER}/*?attr=poster_small,poster_medium,poster_large"),
+
+		/**
+		 * VOD image url format
+		 */
+		VOD_IMAGE_URL("${SERVER}/static/${PROVIDER}/vod/${IMAGE}");
 
 		Param(boolean value)
 		{
@@ -257,12 +263,13 @@ public abstract class FeatureVOD extends FeatureScheduler
 		{
 			String key = meta[j];
 
-			Log.i(TAG, ".indexVodItemMetaData: j = " + j + ", key = " + key);
-
-			if ("poster".equals(key))
-				metaData.metaVodItemPoster = j;
+			if ("poster_small".equals(key))
+				metaData.metaVodItemPosterSmall = j;
+			else if ("poster_medium".equals(key))
+				metaData.metaVodItemPosterMedium = j;
+			else if ("poster_large".equals(key))
+				metaData.metaVodItemPosterLarge = j;
 		}
-		Log.i(TAG, ".indexVodItemMetaData: metaVodItemPoster = " + metaData.metaVodItemPoster);
 	}
 
 	private VodData parseVodGroupData(VODGroup.MetaData metaData, JSONArray data) throws JSONException
@@ -318,8 +325,10 @@ public abstract class FeatureVOD extends FeatureScheduler
 			{
 				VODGroup parent = vodData.getVodGroupById(parentId);
 				String vodItemTitle = values[metaData.metaVodGroupTitle];
-				String poster = values[metaData.metaVodItemPoster];
-				VODItem vodItem = createVodItem(vodItemId, vodItemTitle, parent, poster);
+				VODItem vodItem = createVodItem(vodItemId, vodItemTitle, parent);
+				vodItem.setPoster(PosterSize.SMALL, values[metaData.metaVodItemPosterSmall]);
+				vodItem.setPoster(PosterSize.MEDIUM, values[metaData.metaVodItemPosterMedium]);
+				vodItem.setPoster(PosterSize.LARGE, values[metaData.metaVodItemPosterLarge]);
 
 				vodItem.setAttributes(metaData, values);
 
@@ -362,7 +371,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 	 *            the poster image of this VOD item
 	 * @return new VodItem instance
 	 */
-	protected abstract VODItem createVodItem(String id, String title, VODGroup parent, String poster);
+	protected abstract VODItem createVodItem(String id, String title, VODGroup parent);
 
 	protected String getVodGroupsUrl()
 	{
@@ -382,6 +391,15 @@ public abstract class FeatureVOD extends FeatureScheduler
 		bundle.putString("PROVIDER", _vodProvider);
 
 		return getPrefs().getString(Param.VOD_ITEMS_URL, bundle);
+	}
+
+	public String getVodImageUrl(String imageName)
+	{
+		Bundle bundle = new Bundle();
+		bundle.putString("SERVER", _vodServer);
+		bundle.putString("PROVIDER", _vodProvider);
+		bundle.putString("IMAGE", imageName);
+		return getPrefs().getString(Param.VOD_IMAGE_URL, bundle);
 	}
 
 	@Override
@@ -417,8 +435,10 @@ public abstract class FeatureVOD extends FeatureScheduler
 	/**
 	 * Loads VOD groups which direct parent is the specified vodGroupId
 	 *
-	 * @param vodGroupId the id of the parent VOD group
-	 * @param vodGroups out list with child VOD groups
+	 * @param vodGroupId
+	 *            the id of the parent VOD group
+	 * @param vodGroups
+	 *            out list with child VOD groups
 	 * @param onResultReceived
 	 */
 	public void loadVodGroups(String vodGroupId, List<VODGroup> vodGroups, OnResultReceived onResultReceived)
@@ -430,11 +450,15 @@ public abstract class FeatureVOD extends FeatureScheduler
 	}
 
 	/**
-	 * Loads all VOD items which direct or indirect parent is in the specified VOD group list
+	 * Loads all VOD items which direct or indirect parent is in the specified
+	 * VOD group list
 	 *
-	 * @param vodGroups list of VOD groups
-	 * @param vodGroupItems out map of VODGroup to VODItem list
-	 * @param maxItems maximum number of VOD items per VOD Group, 0 - unlimited
+	 * @param vodGroups
+	 *            list of VOD groups
+	 * @param vodGroupItems
+	 *            out map of VODGroup to VODItem list
+	 * @param maxItems
+	 *            maximum number of VOD items per VOD Group, 0 - unlimited
 	 * @param onResultReceived
 	 */
 	public void loadVodItems(List<VODGroup> vodGroups, Map<VODGroup, List<VODItem>> vodGroupItems, int maxItems,
@@ -451,7 +475,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 		{
 			loadVodGroups(vodGroup.getId(), vodSubGroups, null);
 			List<VODItem> vodItems = null;
-			for (VODGroup parentGroup: vodGroupItems.keySet())
+			for (VODGroup parentGroup : vodGroupItems.keySet())
 			{
 				if (isParentToGroup(parentGroup, vodGroup))
 				{
@@ -459,7 +483,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 					break;
 				}
 			}
-			assert(vodItems != null);
+			assert (vodItems != null);
 			if (maxItems == 0 || vodItems.size() < maxItems)
 			{
 				List<VODItem> items = _vodData.getVodItems(vodGroup);
@@ -483,11 +507,13 @@ public abstract class FeatureVOD extends FeatureScheduler
 	/**
 	 * Provide full text search in VOD items
 	 *
-	 * @param text the text to be searched in the VOD items
-	 * @param vodItems the result VOD items list
+	 * @param text
+	 *            the text to be searched in the VOD items
+	 * @param vodItems
+	 *            the result VOD items list
 	 * @param onResultReceived
-	 *
-	 * FIXME: the current implementation is not doing real search but returns some first 10 vod items
+	 *            FIXME: the current implementation is not doing real search but
+	 *            returns some first 10 vod items
 	 */
 	public void search(String text, List<VODItem> vodItems, OnResultReceived onResultReceived)
 	{

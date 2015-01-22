@@ -18,9 +18,9 @@ import com.aviq.tv.android.sdk.feature.vod.VODItem;
  */
 public class VodItemBulsat extends VODItem
 {
-	public VodItemBulsat(String id, String title, VODGroup parent, String poster)
+	public VodItemBulsat(String id, String title, VODGroup parent)
 	{
-		super(id, title, parent, poster);
+		super(id, title, parent);
 	}
 
 	@Override

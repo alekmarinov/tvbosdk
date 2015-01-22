@@ -92,6 +92,9 @@ public class Features
 		public FeatureState LOADING;
 		public FeatureState TV;
 		public FeatureState VOD;
+		public FeatureState VOD_ITEMS;
+		public FeatureState VOD_DETAILS;
+		public FeatureState VOD_PLAYER;
 		public FeatureState EPG;
 		public FeatureState MESSAGE_BOX;
 		public FeatureState PROGRAM_INFO;
