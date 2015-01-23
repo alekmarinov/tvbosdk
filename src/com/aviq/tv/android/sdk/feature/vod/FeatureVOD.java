@@ -35,7 +35,6 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
-import com.aviq.tv.android.sdk.feature.vod.VODItem.PosterSize;
 import com.aviq.tv.android.sdk.feature.vod.bulsat_v1.Vod;
 
 /**
@@ -77,12 +76,22 @@ public abstract class FeatureVOD extends FeatureScheduler
 		/**
 		 * VOD items url format
 		 */
-		VOD_ITEMS_URL("${SERVER}/v${VERSION}/vod/${PROVIDER}/*?attr=poster_small,poster_medium,poster_large"),
+		VOD_ITEMS_URL("${SERVER}/v${VERSION}/vod/${PROVIDER}/*"),
+
+		/**
+		 * VOD details url format
+		 */
+		VOD_DETAILS_URL("${SERVER}/v${VERSION}/vod/${PROVIDER}/${GROUP}/${ITEM}"),
 
 		/**
 		 * VOD image url format
 		 */
-		VOD_IMAGE_URL("${SERVER}/static/${PROVIDER}/vod/${IMAGE}");
+		VOD_IMAGE_URL("${SERVER}/static/${PROVIDER}/vod/${IMAGE}"),
+
+		/**
+		 * The maximum recommended VOD items
+		 */
+		MAX_RECOMMENDED(30);
 
 		Param(boolean value)
 		{
@@ -107,6 +116,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 	private String _vodProvider;
 	protected VodData _vodData;
 	protected VodData _vodDataBeingLoaded;
+	private int _maxRecommended;
 
 	public FeatureVOD() throws FeatureNotFoundException
 	{
@@ -122,6 +132,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 		_vodProvider = getPrefs().getString(Param.VOD_PROVIDER);
 		_vodVersion = getPrefs().getInt(Param.VOD_VERSION);
 		_vodServer = getPrefs().getString(Param.VOD_SERVER);
+		_maxRecommended = getPrefs().getInt(Param.MAX_RECOMMENDED);
 		_requestQueue = Environment.getInstance().getRequestQueue();
 		onSchedule(onFeatureInitialized);
 	}
@@ -230,6 +241,43 @@ public abstract class FeatureVOD extends FeatureScheduler
 		}
 	}
 
+	private class VodDetailsResponseCallback implements Response.Listener<JSONObject>, Response.ErrorListener
+	{
+		private VODItem _vodItem;
+		private OnResultReceived _onResultReceived;
+
+		public VodDetailsResponseCallback(VODItem vodItem, OnResultReceived onResultReceived)
+		{
+			_vodItem = vodItem;
+			_onResultReceived = onResultReceived;
+		}
+
+		@Override
+		public void onResponse(JSONObject response)
+		{
+			try
+			{
+				_vodItem.setDetails(response);
+				_onResultReceived.onReceiveResult(FeatureError.OK);
+			}
+			catch (JSONException e)
+			{
+				// Vod details load failed, notify error
+				Log.e(TAG, e.getMessage(), e);
+				_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, e));
+			}
+		}
+
+		@Override
+		public void onErrorResponse(VolleyError error)
+		{
+			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
+			        : ResultCode.GENERAL_FAILURE;
+			Log.e(TAG, "Error retrieving VOD details with code " + statusCode + ": " + error);
+			_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, statusCode, error));
+		}
+	}
+
 	protected VODGroup.MetaData createVodGroupMetaData()
 	{
 		return new VODGroup.MetaData();
@@ -258,18 +306,6 @@ public abstract class FeatureVOD extends FeatureScheduler
 	protected void indexVodItemMetaData(VODItem.MetaData metaData, String[] meta)
 	{
 		indexVodGroupMetaData(metaData, meta);
-
-		for (int j = 0; j < meta.length; j++)
-		{
-			String key = meta[j];
-
-			if ("poster_small".equals(key))
-				metaData.metaVodItemPosterSmall = j;
-			else if ("poster_medium".equals(key))
-				metaData.metaVodItemPosterMedium = j;
-			else if ("poster_large".equals(key))
-				metaData.metaVodItemPosterLarge = j;
-		}
 	}
 
 	private VodData parseVodGroupData(VODGroup.MetaData metaData, JSONArray data) throws JSONException
@@ -284,7 +320,10 @@ public abstract class FeatureVOD extends FeatureScheduler
 			for (int j = 0; j < jsonArr.length(); j++)
 			{
 				if (jsonArr.get(j) != null)
-					values[j] = jsonArr.get(j).toString();
+				{
+					if (!jsonArr.isNull(j))
+						values[j] = jsonArr.get(j).toString();
+				}
 			}
 
 			VODGroup parent = null;
@@ -315,8 +354,11 @@ public abstract class FeatureVOD extends FeatureScheduler
 			String[] values = new String[jsonArr.length()];
 			for (int j = 0; j < jsonArr.length(); j++)
 			{
-				if (jsonArr.get(j) != null)
-					values[j] = jsonArr.get(j).toString();
+				if (!jsonArr.isNull(j))
+				{
+					if (jsonArr.get(j) != null)
+						values[j] = jsonArr.get(j).toString();
+				}
 			}
 
 			String vodItemId = values[metaData.metaVodGroupId];
@@ -326,10 +368,6 @@ public abstract class FeatureVOD extends FeatureScheduler
 				VODGroup parent = vodData.getVodGroupById(parentId);
 				String vodItemTitle = values[metaData.metaVodGroupTitle];
 				VODItem vodItem = createVodItem(vodItemId, vodItemTitle, parent);
-				vodItem.setPoster(PosterSize.SMALL, values[metaData.metaVodItemPosterSmall]);
-				vodItem.setPoster(PosterSize.MEDIUM, values[metaData.metaVodItemPosterMedium]);
-				vodItem.setPoster(PosterSize.LARGE, values[metaData.metaVodItemPosterLarge]);
-
 				vodItem.setAttributes(metaData, values);
 
 				List<VODItem> vodItems = newVodGroupItemsMap.get(parent);
@@ -367,8 +405,6 @@ public abstract class FeatureVOD extends FeatureScheduler
 	 *            the VOD item title
 	 * @param parent
 	 *            the parent group of this VOD item
-	 * @param poster
-	 *            the poster image of this VOD item
 	 * @return new VodItem instance
 	 */
 	protected abstract VODItem createVodItem(String id, String title, VODGroup parent);
@@ -402,6 +438,17 @@ public abstract class FeatureVOD extends FeatureScheduler
 		return getPrefs().getString(Param.VOD_IMAGE_URL, bundle);
 	}
 
+	protected String getVodDetailsUrl(String vodGroupId, String vodItemId)
+	{
+		Bundle bundle = new Bundle();
+		bundle.putString("SERVER", _vodServer);
+		bundle.putInt("VERSION", _vodVersion);
+		bundle.putString("PROVIDER", _vodProvider);
+		bundle.putString("GROUP", vodGroupId);
+		bundle.putString("ITEM", vodItemId);
+		return getPrefs().getString(Param.VOD_DETAILS_URL, bundle);
+	}
+
 	@Override
 	public Scheduler getSchedulerName()
 	{
@@ -417,6 +464,17 @@ public abstract class FeatureVOD extends FeatureScheduler
 	public VODGroup getVodGroupById(String id)
 	{
 		return _vodData.getVodGroupById(id);
+	}
+
+	/**
+	 * Gets VODItem by ID
+	 *
+	 * @param id
+	 * @return VODItem
+	 */
+	public VODItem getVodItemById(String id)
+	{
+		return _vodData.getVodItemById(id);
 	}
 
 	/**
@@ -447,6 +505,58 @@ public abstract class FeatureVOD extends FeatureScheduler
 		vodGroups.addAll(_vodData.getVodGroups(vodGroup));
 		if (onResultReceived != null)
 			onResultReceived.onReceiveResult(FeatureError.OK);
+	}
+
+	/**
+	 * Loads recommended VOD items corresponding to specific VOD item
+	 *
+	 * @param vodItem
+	 * @param onResultReceived
+	 */
+	public void loadRecommendedVodItems(final VODItem vodItem, final List<VODItem> vodItems, final OnResultReceived onResultReceived)
+	{
+		// FIXME: send request to the MediaAdviser service when ready
+		// For now load the other VOD items from the same group of the specified VOD Item.
+
+		List<VODGroup> vodGroups = new ArrayList<VODGroup>();
+		vodGroups.add(vodItem.getParent());
+		final Map<VODGroup, List<VODItem>> vodGroupItems = new HashMap<VODGroup, List<VODItem>>();
+		loadVodItems(vodGroups, vodGroupItems, _maxRecommended, new OnResultReceived()
+		{
+			@Override
+			public void onReceiveResult(FeatureError error)
+			{
+				if (!error.isError())
+				{
+					vodItems.addAll(vodGroupItems.get(vodItem.getParent()));
+					vodItems.remove(vodItem);
+					onResultReceived.onReceiveResult(FeatureError.OK);
+				}
+				else
+				{
+					Log.e(TAG, error.getMessage(), error);
+					onResultReceived.onReceiveResult(error);
+				}
+			}
+		});
+	}
+
+	/**
+	 * Loads VOD item details
+	 *
+	 * @param vodItem
+	 *            VodItem reference to be filled up with additional detail attributes
+	 * @param onResultReceived response callback reference
+	 */
+	public void loadVodItemDetails(VODItem vodItem, OnResultReceived onResultReceived)
+	{
+		String vodDetailsUrl = getVodDetailsUrl(vodItem.getParent().getId(), vodItem.getId());
+
+		Log.i(TAG, "Retrieving VOD details for item " + vodItem);
+		VodDetailsResponseCallback responseCallback = new VodDetailsResponseCallback(vodItem, onResultReceived);
+		JsonObjectRequest vodDetailsRequest = new JsonObjectRequest(vodDetailsUrl, null, responseCallback,
+		        responseCallback);
+		_requestQueue.add(vodDetailsRequest);
 	}
 
 	/**
@@ -533,6 +643,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 						{
 							if (!error.isError())
 							{
+								// FIXME: not implemented
 							}
 						}
 					});

@@ -38,17 +38,68 @@ public class FeatureVODBulsat extends FeatureVOD
 	}
 
 	@Override
+	protected String getVodItemsUrl()
+	{
+		String url = super.getVodItemsUrl();
+		return url + "?attr=poster_small,poster_medium,poster_large,short_description,release,country,imdb_rating,duration";
+	}
+
+	@Override
+	protected VODItem.MetaData createVodItemMetaData()
+	{
+		return new VodItemBulsat.MetaData();
+	}
+
+	@Override
+	protected VODGroup.MetaData createVodGroupMetaData()
+	{
+		return new VodGroupBulsat.MetaData();
+	}
+
+	@Override
+	protected void indexVodItemMetaData(VODItem.MetaData metaData, String[] meta)
+	{
+		VodItemBulsat.MetaData bulsatMetaData = (VodItemBulsat.MetaData) metaData;
+		super.indexVodItemMetaData(metaData, meta);
+
+		for (int j = 0; j < meta.length; j++)
+		{
+			String key = meta[j];
+
+			if ("poster_small".equals(key))
+				bulsatMetaData.metaPosterSmall = j;
+			else if ("poster_medium".equals(key))
+				bulsatMetaData.metaPosterMedium = j;
+			else if ("poster_large".equals(key))
+				bulsatMetaData.metaPosterLarge = j;
+			else if ("short_description".equals(key))
+				bulsatMetaData.metaShortDescription = j;
+			else if ("release".equals(key))
+				bulsatMetaData.metaRelease = j;
+			else if ("country".equals(key))
+				bulsatMetaData.metaCountry = j;
+			else if ("duration".equals(key))
+				bulsatMetaData.metaDuration = j;
+			else if ("imdb_rating".equals(key))
+				bulsatMetaData.metaRatingImdb = j;
+		}
+	}
+
+	@Override
+	@Deprecated
 	public <T> T getVodData(boolean removeEmptyElements)
 	{
 		return null;
 	}
 
 	@Override
+	@Deprecated
 	public void loadVod(String id, OnVodLoaded onVodLoadedListener)
 	{
 	}
 
 	@Override
+	@Deprecated
 	public void search(String term, OnVodSearchResult onVodSearchResult)
 	{
 	}

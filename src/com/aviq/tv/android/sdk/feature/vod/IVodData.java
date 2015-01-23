@@ -18,6 +18,7 @@ import java.util.List;
 public interface IVodData
 {
 	VODGroup getVodGroupById(String id);
+	VODItem getVodItemById(String id);
 	List<VODGroup> getVodGroups(VODGroup vodGroup);
 	List<VODItem> getVodItems(VODGroup vodGroup);
 }

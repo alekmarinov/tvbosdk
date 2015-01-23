@@ -10,6 +10,8 @@
 
 package com.aviq.tv.android.sdk.feature.vod;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Encapsulates VOD group
@@ -34,20 +36,36 @@ public abstract class VODGroup
 		_parent = parent;
 	}
 
+	/**
+	 * @return group id
+	 */
 	public String getId()
 	{
 		return _id;
 	}
 
+	/**
+	 * @return group title
+	 */
 	public String getTitle()
 	{
 		return _title;
 	}
 
+	/**
+	 * @return parent group of this group
+	 */
 	public VODGroup getParent()
 	{
 		return _parent;
 	}
+
+	/**
+	 * Sets VOD details in JSON format
+	 *
+	 * @param details
+	 */
+	public abstract void setDetails(JSONObject details) throws JSONException;
 
 	/**
 	 * Sets provider's specific VodGroup attributes
@@ -59,4 +77,12 @@ public abstract class VODGroup
 	 *            meta data indices
 	 */
 	public abstract void setAttributes(MetaData metaData, String[] attributes);
+
+	/**
+	 * Get's VOD attribute value by standardized attribute name
+	 *
+	 * @param attribute
+	 *            VodAttribute enumeration
+	 */
+	public abstract String getAttribute(VodAttribute vodAttribute);
 }

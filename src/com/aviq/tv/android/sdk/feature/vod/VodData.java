@@ -22,12 +22,14 @@ public class VodData implements IVodData
 {
 	private List<VODGroup> _vodGroups;
 	private Map<String, VODGroup> _vodGroupsMap;
+	private Map<String, VODItem> _vodItemsMap;
 	private Map<VODGroup, List<VODItem>> _vodGroupItems;
 
 	public VodData(List<VODGroup> vodGroups)
 	{
 		_vodGroups = vodGroups;
 		_vodGroupsMap = new HashMap<String, VODGroup>();
+		_vodItemsMap = new HashMap<String, VODItem>();
 		for (VODGroup vodGroup : vodGroups)
 			_vodGroupsMap.put(vodGroup.getId(), vodGroup);
 	}
@@ -35,12 +37,23 @@ public class VodData implements IVodData
 	public void setVodGroupItems(Map<VODGroup, List<VODItem>> vodGroupItems)
 	{
 		_vodGroupItems = vodGroupItems;
+
+		// hashing vod items
+		for (List<VODItem> vodItems: vodGroupItems.values())
+			for (VODItem vodItem: vodItems)
+				_vodItemsMap.put(vodItem.getId(), vodItem);
 	}
 
 	@Override
 	public VODGroup getVodGroupById(String id)
 	{
 		return _vodGroupsMap.get(id);
+	}
+
+	@Override
+    public VODItem getVodItemById(String id)
+	{
+		return _vodItemsMap.get(id);
 	}
 
 	@Override
