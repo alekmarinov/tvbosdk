@@ -18,6 +18,7 @@ import com.aviq.tv.android.sdk.R;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
+import com.aviq.tv.android.sdk.feature.epg.bulsat.ProgramBulsat.ImageSize;
 
 /**
  * Bulsat specific channel data holder class
@@ -35,7 +36,8 @@ public class ChannelBulsat extends Channel implements Serializable
 	private boolean _recordable;
 	private String _thumbnailSelected;
 	private String _thumbnailFavorite;
-	private String _programImage;
+	private String _programImageMedium;
+	private String _programImageLarge;
 
 	public static enum Genre
 	{
@@ -48,9 +50,9 @@ public class ChannelBulsat extends Channel implements Serializable
 	{
 		String[] categoryNames = Environment.getInstance().getResources().getStringArray(R.array.categories);
 		Genre[] genreList = Genre.values();
-		for (int index = 1; index < genreList.length-1; index++)
+		for (int index = 1; index < genreList.length - 1; index++)
 		{
-			_genreMap.put(categoryNames[index-1], genreList[index]);
+			_genreMap.put(categoryNames[index - 1], genreList[index]);
 		}
 	}
 
@@ -78,7 +80,8 @@ public class ChannelBulsat extends Channel implements Serializable
 		public int metaChannelRecordable;
 		public int metaChannelThumbnailSelected;
 		public int metaChannelThumbnailFavorite;
-		public int metaChannelProgramImage;
+		public int metaChannelProgramImageMedium;
+		public int metaChannelProgramImageLarge;
 	}
 
 	public void setStreamUrl(String streamUrl)
@@ -161,14 +164,29 @@ public class ChannelBulsat extends Channel implements Serializable
 		return _thumbnailFavorite;
 	}
 
-	public void setProgramImage(String programImage)
+	public void setProgramImage(String programImage, ImageSize imageSize)
 	{
-		_programImage = programImage;
+		switch (imageSize)
+		{
+			case MEDIUM:
+				_programImageMedium = programImage;
+			break;
+			case LARGE:
+				_programImageLarge = programImage;
+			break;
+		}
 	}
 
-	public String getProgramImage()
+	public String getProgramImage(ImageSize imageSize)
 	{
-		return _programImage;
+		switch (imageSize)
+		{
+			case MEDIUM:
+				return _programImageMedium;
+			case LARGE:
+				return _programImageLarge;
+		}
+		return null;
 	}
 
 	@Override
@@ -214,7 +232,9 @@ public class ChannelBulsat extends Channel implements Serializable
 			setThumbnailSelected(new String(attributes[channelBulsatMetaData.metaChannelThumbnailSelected]));
 		if (attributes[channelBulsatMetaData.metaChannelThumbnailFavorite] != null)
 			setThumbnailFavorite(new String(attributes[channelBulsatMetaData.metaChannelThumbnailFavorite]));
-		if (attributes[channelBulsatMetaData.metaChannelProgramImage] != null)
-			setProgramImage(new String(attributes[channelBulsatMetaData.metaChannelProgramImage]));
+		if (attributes[channelBulsatMetaData.metaChannelProgramImageMedium] != null)
+			setProgramImage(new String(attributes[channelBulsatMetaData.metaChannelProgramImageMedium]), ImageSize.MEDIUM);
+		if (attributes[channelBulsatMetaData.metaChannelProgramImageLarge] != null)
+			setProgramImage(new String(attributes[channelBulsatMetaData.metaChannelProgramImageLarge]), ImageSize.LARGE);
 	}
 }

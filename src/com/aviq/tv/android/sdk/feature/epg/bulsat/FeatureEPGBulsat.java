@@ -88,15 +88,17 @@ public class FeatureEPGBulsat extends FeatureEPG
 				bulsatMetaData.metaChannelThumbnailSelected = j;
 			else if ("thumbnail_favorite".equals(key))
 				bulsatMetaData.metaChannelThumbnailFavorite = j;
-			else if ("program_image".equals(key))
-				bulsatMetaData.metaChannelProgramImage = j;
+			else if ("program_image_medium".equals(key))
+				bulsatMetaData.metaChannelProgramImageMedium = j;
+			else if ("program_image_large".equals(key))
+				bulsatMetaData.metaChannelProgramImageLarge = j;
 		}
 	}
 
 	@Override
 	protected String getProgramsUrl(String channelId)
 	{
-		String url = super.getProgramsUrl(channelId) + "?attr=description,image";
+		String url = super.getProgramsUrl(channelId) + "?attr=description,image_medium,image_large";
 		return url;
 	}
 
@@ -110,7 +112,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 	protected String getChannelsUrl()
 	{
 		String url = super.getChannelsUrl();
-		return url + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable,thumbnail_selected,thumbnail_favorite,program_image";
+		return url + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable,thumbnail_selected,thumbnail_favorite,program_image_medium,program_image_large";
 	}
 
 	@Override
@@ -136,8 +138,10 @@ public class FeatureEPGBulsat extends FeatureEPG
 			String key = meta[j];
 			if ("description".equals(key))
 				bulsatMetaData.metaDescription = j;
-			else if ("image".equals(key))
-				bulsatMetaData.metaImage = j;
+			else if ("image_medium".equals(key))
+				bulsatMetaData.metaImageMedium = j;
+			else if ("image_large".equals(key))
+				bulsatMetaData.metaImageLarge = j;
 		}
 	}
 

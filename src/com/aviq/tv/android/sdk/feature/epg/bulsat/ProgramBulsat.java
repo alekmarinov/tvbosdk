@@ -26,13 +26,20 @@ public class ProgramBulsat extends Program implements Serializable
 	private static final long serialVersionUID = 5914858738230945780L;
 	public static final String NO_EPG_DATA = "NO_EPG_DATA";
 
+	public static enum ImageSize
+	{
+		MEDIUM, LARGE
+	}
+
 	private String _description;
-	private String _image;
+	private String _imageMedium;
+	private String _imageLarge;
 
 	public static class MetaData extends Program.MetaData
 	{
 		public int metaDescription;
-		public int metaImage;
+		public int metaImageMedium;
+		public int metaImageLarge;
 	}
 
 	/**
@@ -48,8 +55,20 @@ public class ProgramBulsat extends Program implements Serializable
 		super(id, channel);
 	}
 
+	public String getImage(ImageSize imageSize)
+	{
+		switch (imageSize)
+		{
+			case MEDIUM:
+				return _imageMedium;
+			case LARGE:
+				return _imageLarge;
+		}
+		return null;
+	}
+
 	@Override
-	public boolean hasDetails()
+    public boolean hasDetails()
 	{
 		return true;
 	}
@@ -65,8 +84,10 @@ public class ProgramBulsat extends Program implements Serializable
 		MetaData programBulsatMetaData = (MetaData) programMetaData;
 		if (attributes[programBulsatMetaData.metaDescription] != null)
 			_description = new String(attributes[programBulsatMetaData.metaDescription]);
-		if (attributes[programBulsatMetaData.metaImage] != null)
-			_image = new String(attributes[programBulsatMetaData.metaImage]);
+		if (attributes[programBulsatMetaData.metaImageMedium] != null)
+			_imageMedium = new String(attributes[programBulsatMetaData.metaImageMedium]);
+		if (attributes[programBulsatMetaData.metaImageLarge] != null)
+			_imageLarge = new String(attributes[programBulsatMetaData.metaImageLarge]);
 	}
 
 	@Override
@@ -77,7 +98,7 @@ public class ProgramBulsat extends Program implements Serializable
 			case DESCRIPTION:
 				return _description;
 			case IMAGE:
-				return _image;
+				return _imageLarge;
 		}
 		return null;
 	}
