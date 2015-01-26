@@ -70,6 +70,7 @@ public class FeatureName
 		VOD_ITEMS,
 		VOD_DETAILS,
 		VOD_PLAYER,
+		VOD_SEARCH,
 		EPG,
 		MESSAGE_BOX,
 		PROGRAM_INFO,

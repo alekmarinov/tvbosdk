@@ -41,7 +41,8 @@ public class FeatureVODBulsat extends FeatureVOD
 	protected String getVodItemsUrl()
 	{
 		String url = super.getVodItemsUrl();
-		return url + "?attr=poster_small,poster_medium,poster_large,short_description,release,country,imdb_rating,duration,youtube_trailer_url";
+		return url
+		        + "?attr=poster_small,poster_medium,poster_large,short_description,release,country,imdb_rating,duration,youtube_trailer_url,cast.director.1.name";
 	}
 
 	@Override
@@ -84,25 +85,9 @@ public class FeatureVODBulsat extends FeatureVOD
 				bulsatMetaData.metaDuration = j;
 			else if ("youtube_trailer_url".equals(key))
 				bulsatMetaData.metaYouTubeTrailerUrl = j;
+			else if ("cast.director.1.name".equals(key))
+				bulsatMetaData.metaDirector = j;
+
 		}
-	}
-
-	@Override
-	@Deprecated
-	public <T> T getVodData(boolean removeEmptyElements)
-	{
-		return null;
-	}
-
-	@Override
-	@Deprecated
-	public void loadVod(String id, OnVodLoaded onVodLoadedListener)
-	{
-	}
-
-	@Override
-	@Deprecated
-	public void search(String term, OnVodSearchResult onVodSearchResult)
-	{
 	}
 }

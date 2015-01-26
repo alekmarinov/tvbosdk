@@ -35,6 +35,7 @@ public class VodItemBulsat extends VODItem
 	private int _duration;
 	private float[] _ratings = new float[RatingSystem.values().length];
 	private String _youTubeTrailerUrl;
+	private String _director;
 
 	// detail attributes
 	private String _description;
@@ -52,6 +53,7 @@ public class VodItemBulsat extends VODItem
 		public int metaRatingImdb;
 		public int metaDuration;
 		public int metaYouTubeTrailerUrl;
+		public int metaDirector;
 	}
 
 	public static enum RatingSystem
@@ -135,6 +137,11 @@ public class VodItemBulsat extends VODItem
 		return _youTubeTrailerUrl;
 	}
 
+	public String getDirector()
+	{
+		return _director;
+	}
+
 	@Override
     public void setDetails(JSONObject details) throws JSONException
     {
@@ -185,6 +192,9 @@ public class VodItemBulsat extends VODItem
 
 		if (attributes[vodItemBulsatMetaData.metaYouTubeTrailerUrl] != null)
 			_youTubeTrailerUrl = new String(attributes[vodItemBulsatMetaData.metaYouTubeTrailerUrl]);
+
+		if (attributes[vodItemBulsatMetaData.metaDirector] != null)
+			_director = new String(attributes[vodItemBulsatMetaData.metaDirector]);
 	}
 
 	@Override

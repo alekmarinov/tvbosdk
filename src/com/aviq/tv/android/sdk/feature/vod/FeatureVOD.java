@@ -35,7 +35,6 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
-import com.aviq.tv.android.sdk.feature.vod.bulsat_v1.Vod;
 
 /**
  * Feature providing VOD data
@@ -625,7 +624,8 @@ public abstract class FeatureVOD extends FeatureScheduler
 	 *            FIXME: the current implementation is not doing real search but
 	 *            returns some first 10 vod items
 	 */
-	public void search(String text, List<VODItem> vodItems, OnResultReceived onResultReceived)
+	// FIXME: not implemented
+	public void search(String text, List<VODItem> vodItems, final OnResultReceived onResultReceived)
 	{
 		final List<VODGroup> vodGroups = new ArrayList<VODGroup>();
 		loadVodGroups(null, vodGroups, new OnResultReceived()
@@ -641,37 +641,11 @@ public abstract class FeatureVOD extends FeatureScheduler
 						@Override
 						public void onReceiveResult(FeatureError error)
 						{
-							if (!error.isError())
-							{
-								// FIXME: not implemented
-							}
+							onResultReceived.onReceiveResult(error);
 						}
 					});
 				}
 			}
 		});
-	}
-
-	@Deprecated
-	public abstract <T> T getVodData(boolean removeEmptyElements);
-
-	@Deprecated
-	public abstract void loadVod(String id, OnVodLoaded onVodLoadedListener);
-
-	@Deprecated
-	public abstract void search(String term, OnVodSearchResult onVodSearchResult);
-
-	@Deprecated
-	public static interface OnVodLoaded
-	{
-		public void onVodLoaded(Vod vod);
-
-		public void onVodError(Exception error);
-	}
-
-	@Deprecated
-	public static interface OnVodSearchResult<E>
-	{
-		public void onVodSearchResult(List<E> resultList);
 	}
 }
