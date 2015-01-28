@@ -120,7 +120,7 @@ public class Environment extends Activity
 		/**
 		 * the main background color
 		 */
-		MAIN_BACKGROUND_COLOR(0xFF141b20),
+		MAIN_BACKGROUND_COLOR(0x00000000),
 
 		/**
 		 * Disk cache for images (1G)
