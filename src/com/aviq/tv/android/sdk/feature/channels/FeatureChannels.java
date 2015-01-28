@@ -315,7 +315,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 
 		if (_feature.Scheduler.EPG.getEpgData() == null)
 		{
-			Log.e(TAG, "No EPG data exists.");
+			Log.e(TAG, "getActiveChannels: EPG not loaded!");
 			return new ArrayList<Channel>();
 		}
 
@@ -581,7 +581,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	{
 		if (_feature.Scheduler.EPG.getEpgData() == null)
 		{
-			Log.e(TAG, "No EPG data exists.");
+			Log.e(TAG, "saveSyncedChannel: EPG not loaded!");
 			return;
 		}
 
@@ -628,7 +628,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		IEpgDataProvider epgData = _feature.Scheduler.EPG.getEpgData();
 		if (epgData == null)
 		{
-			Log.e(TAG, "No EPG data exists.");
+			Log.e(TAG, "loadFavoriteChannels: EPG not loaded!");
 			return channels;
 		}
 
