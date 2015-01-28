@@ -626,7 +626,7 @@ public class StateManager
 						ft.add(fragmentId, state);
 						// FIXME: make transition effect depending on state's
 						// StateLayer
-						ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+						ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
 						// ft.commit();
 						ft.commitAllowingStateLoss();
 					}
