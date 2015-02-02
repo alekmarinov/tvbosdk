@@ -84,7 +84,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	}
 
 	@SuppressLint("SimpleDateFormat")
-    public FeatureRecordingScheduler() throws FeatureNotFoundException
+	public FeatureRecordingScheduler() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.TIMEZONE);
 		_sdfUTC = new SimpleDateFormat("yyyyMMddHHmmss");
@@ -263,8 +263,11 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			String startTime = _sdfUTC.format(start.getTime());
 			navMap.remove(startTime);
 			int dayOffset = Calendars.getDayOffsetByDate(start);
-			Log.i(TAG, "Removing dayoffset " + dayOffset + " for " + channelID + "/" + Calendars.makeString(start));
-			_dayOffsets.remove(dayOffset);
+			if (getRecordsByDate(dayOffset).size() == 0)
+			{
+				Log.i(TAG, "Removing dayoffset " + dayOffset + " for " + channelID + "/" + Calendars.makeString(start));
+				_dayOffsets.remove(dayOffset);
+			}
 			return saveRecords();
 		}
 		return true;
@@ -448,6 +451,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			if (_userPrefs.has(UserParam.RECORDINGS))
 			{
 				String recordings = _userPrefs.getString(UserParam.RECORDINGS);
+				Log.i(TAG, "Load recordings: " + recordings);
 				String[] records = recordings.split(RECORD_DELIMITER);
 				for (String record : records)
 				{

@@ -17,7 +17,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -381,7 +380,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 		bundle.putString("CHANNEL", channelId);
 		bundle.putString("PROVIDER", _epgProvider);
 		bundle.putString("CHANNEL", channelId);
-		bundle.putString("IMAGE", URLEncoder.encode(imageName));
+		bundle.putString("IMAGE", imageName);
 		return getPrefs().getString(Param.EPG_CHANNEL_IMAGE_URL, bundle);
 	}
 
