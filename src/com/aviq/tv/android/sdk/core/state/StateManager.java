@@ -623,6 +623,11 @@ public class StateManager
 							throw new RuntimeException(
 							        "Set fragment layer resource ids with method setFragmentLayerResources");
 
+						if (state.isAdded())
+						{
+							Log.w(TAG, "Attempt to add state " + state + " more than once");
+							ft.remove(state);
+						}
 						ft.add(fragmentId, state);
 						// FIXME: make transition effect depending on state's
 						// StateLayer

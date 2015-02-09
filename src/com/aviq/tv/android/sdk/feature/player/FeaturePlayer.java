@@ -258,7 +258,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	}
 
 	/**
-	 * @return Returns media duration
+	 * @return Returns media duration in milliseconds
 	 */
 	public int getDuration()
 	{
