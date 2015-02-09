@@ -547,7 +547,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 		List<VODGroup> vodGroups = new ArrayList<VODGroup>();
 		vodGroups.add(vodItem.getParent());
 		final Map<VODGroup, List<VODItem>> vodGroupItems = new HashMap<VODGroup, List<VODItem>>();
-		loadVodItems(vodGroups, vodGroupItems, _maxRecommended, new OnResultReceived()
+		loadVodItemsIndirect(vodGroups, vodGroupItems, _maxRecommended, new OnResultReceived()
 		{
 			@Override
 			public void onReceiveResult(FeatureError error)
@@ -599,7 +599,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 	 *            maximum number of VOD items per VOD Group, 0 - unlimited
 	 * @param onResultReceived
 	 */
-	public void loadVodItems(List<VODGroup> vodGroups, Map<VODGroup, List<VODItem>> vodGroupItems, int maxItems,
+	public void loadVodItemsIndirect(List<VODGroup> vodGroups, Map<VODGroup, List<VODItem>> vodGroupItems, int maxItems,
 	        OnResultReceived onResultReceived)
 	{
 		if (vodGroupItems.keySet().size() == 0)
@@ -625,19 +625,36 @@ public abstract class FeatureVOD extends FeatureScheduler
 			if (maxItems == 0 || vodItems.size() < maxItems)
 			{
 				List<VODItem> items = _vodData.getVodItems(vodGroup);
-				if (items != null)
-					for (VODItem item : items)
+				if (items != null && items.size() > 0)
+				{
+					VODItem item = items.get(0);
+					if (vodItems.indexOf(item) < 0)
 					{
 						vodItems.add(item);
 						Log.d(TAG, "Add " + item.getTitle() + " in " + vodGroup.getTitle());
-						if (maxItems > 0 && vodItems.size() == maxItems)
-							break;
 					}
+				}
 			}
 			// recurse into the sub-groups
 			if (vodSubGroups.size() > 0)
-				loadVodItems(vodSubGroups, vodGroupItems, maxItems, null);
+				loadVodItemsIndirect(vodSubGroups, vodGroupItems, maxItems, null);
 		}
+		if (onResultReceived != null)
+			onResultReceived.onReceiveResult(FeatureError.OK);
+	}
+
+	/**
+	 * Loads all VOD items directly owned by the specified VodGroup
+	 *
+	 * @param vodGroup
+	 *            the parent VOD group of the requested items
+	 * @param vodItems
+	 *            out VODItem list
+	 * @param onResultReceived
+	 */
+	public void loadVodItems(VODGroup vodGroup, List<VODItem> vodItems, OnResultReceived onResultReceived)
+	{
+		vodItems.addAll(_vodData.getVodItems(vodGroup));
 		if (onResultReceived != null)
 			onResultReceived.onReceiveResult(FeatureError.OK);
 	}
@@ -662,8 +679,8 @@ public abstract class FeatureVOD extends FeatureScheduler
 			// returns the last search results immediately
 			vodItems.clear();
 			vodItems.addAll(_lastSearchResults);
-        	onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this));
-			return ;
+			onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this));
+			return;
 		}
 
 		String vodSearchUrl = getVodSearchUrl(text);
@@ -671,61 +688,60 @@ public abstract class FeatureVOD extends FeatureScheduler
 		Response.Listener<JSONObject> responseCallback = new Response.Listener<JSONObject>()
 		{
 			@Override
-            public void onResponse(JSONObject response)
-            {
+			public void onResponse(JSONObject response)
+			{
 				try
-                {
+				{
 					vodItems.clear();
-	                JSONArray arr = response.getJSONArray("meta");
-	                // get the index of vod id in data sub-arrays
-	                int idIdx = 0;
-	                for (int i = 0; i < arr.length(); i++)
-	                {
-	                	if ("id".equalsIgnoreCase(arr.getString(i)))
-	                	{
-	                		idIdx = i;
-	                		break;
-	                	}
-	                }
-	                arr = response.getJSONArray("data");
-	                for (int i = 0; i < arr.length(); i++)
-	                {
-	                	String vodId = arr.getJSONArray(i).getString(idIdx);
-	                	VODItem vodItem = getVodItemById(vodId);
-	                	if (vodItem == null)
-	                	{
-	                		Log.e(TAG, "Unknown VOD item received by the server " + vodItem);
-	                	}
-	                	else
-	                	{
-	                		vodItems.add(vodItem);
-	                	}
-	                }
-                	onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this));
+					JSONArray arr = response.getJSONArray("meta");
+					// get the index of vod id in data sub-arrays
+					int idIdx = 0;
+					for (int i = 0; i < arr.length(); i++)
+					{
+						if ("id".equalsIgnoreCase(arr.getString(i)))
+						{
+							idIdx = i;
+							break;
+						}
+					}
+					arr = response.getJSONArray("data");
+					for (int i = 0; i < arr.length(); i++)
+					{
+						String vodId = arr.getJSONArray(i).getString(idIdx);
+						VODItem vodItem = getVodItemById(vodId);
+						if (vodItem == null)
+						{
+							Log.e(TAG, "Unknown VOD item received by the server " + vodItem);
+						}
+						else
+						{
+							vodItems.add(vodItem);
+						}
+					}
+					onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this));
 
-                	_lastSearchTerm = text;
-                	_lastSearchResults.clear();
-                	_lastSearchResults.addAll(vodItems);
-                }
-                catch (JSONException e)
-                {
-                	Log.e(TAG, e.getMessage(), e);
-                	onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, e));
-                }
-            }
+					_lastSearchTerm = text;
+					_lastSearchResults.clear();
+					_lastSearchResults.addAll(vodItems);
+				}
+				catch (JSONException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+					onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, e));
+				}
+			}
 		};
 
 		Response.ErrorListener errorCallback = new Response.ErrorListener()
 		{
 			@Override
-            public void onErrorResponse(VolleyError err)
-            {
-            	onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, err));
-            }
+			public void onErrorResponse(VolleyError err)
+			{
+				onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, err));
+			}
 		};
 
-		JsonObjectRequest vodSearchRequest = new JsonObjectRequest(vodSearchUrl, null, responseCallback,
-				errorCallback);
+		JsonObjectRequest vodSearchRequest = new JsonObjectRequest(vodSearchUrl, null, responseCallback, errorCallback);
 
 		Log.i(TAG, ".search: " + vodSearchUrl);
 		_requestQueue.add(vodSearchRequest);
