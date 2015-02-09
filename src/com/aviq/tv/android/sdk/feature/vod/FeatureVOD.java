@@ -128,6 +128,8 @@ public abstract class FeatureVOD extends FeatureScheduler
 	protected VodData _vodData;
 	protected VodData _vodDataBeingLoaded;
 	private int _maxRecommended;
+	private String _lastSearchTerm;
+	private List<VODItem> _lastSearchResults = new ArrayList<VODItem>();
 
 	public FeatureVOD() throws FeatureNotFoundException
 	{
@@ -649,9 +651,20 @@ public abstract class FeatureVOD extends FeatureScheduler
 	 *            the result VOD items list
 	 * @param onResultReceived
 	 */
-	public void search(String text, final List<VODItem> vodItems, final OnResultReceived onResultReceived)
+	public void search(final String text, final List<VODItem> vodItems, final OnResultReceived onResultReceived)
 	{
 		Log.i(TAG, ".search: text = " + text);
+		if (text == null)
+			throw new NullPointerException("null text argument is not allowed");
+
+		if (text.equals(_lastSearchTerm))
+		{
+			// returns the last search results immediately
+			vodItems.clear();
+			vodItems.addAll(_lastSearchResults);
+        	onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this));
+			return ;
+		}
 
 		String vodSearchUrl = getVodSearchUrl(text);
 
@@ -689,6 +702,10 @@ public abstract class FeatureVOD extends FeatureScheduler
 	                	}
 	                }
                 	onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this));
+
+                	_lastSearchTerm = text;
+                	_lastSearchResults.clear();
+                	_lastSearchResults.addAll(vodItems);
                 }
                 catch (JSONException e)
                 {
