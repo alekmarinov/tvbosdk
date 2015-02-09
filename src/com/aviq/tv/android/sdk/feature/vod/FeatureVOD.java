@@ -18,6 +18,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.net.Uri;
 import android.os.Bundle;
 
 import com.android.volley.RequestQueue;
@@ -44,6 +45,12 @@ public abstract class FeatureVOD extends FeatureScheduler
 {
 	public static final String TAG = FeatureVOD.class.getSimpleName();
 	public static final int ON_VOD_UPDATED = EventMessenger.ID("ON_VOD_UPDATED");
+	public static final int ON_VOD_SEARCH = EventMessenger.ID("ON_VOD_SEARCH");
+
+	public enum OnVodSearchExtra
+	{
+		TEXT
+	}
 
 	public static enum Param
 	{
@@ -86,6 +93,11 @@ public abstract class FeatureVOD extends FeatureScheduler
 		 * VOD image url format
 		 */
 		VOD_IMAGE_URL("${SERVER}/static/${PROVIDER}/vod/${IMAGE}"),
+
+		/**
+		 * VOD search url format
+		 */
+		VOD_SEARCH_URL("${SERVER}/v${VERSION}/search/vod/${PROVIDER}?text=${TEXT}"),
 
 		/**
 		 * The maximum recommended VOD items
@@ -448,6 +460,17 @@ public abstract class FeatureVOD extends FeatureScheduler
 		return getPrefs().getString(Param.VOD_DETAILS_URL, bundle);
 	}
 
+	protected String getVodSearchUrl(String text)
+	{
+		Bundle bundle = new Bundle();
+		bundle.putString("SERVER", _vodServer);
+		bundle.putInt("VERSION", _vodVersion);
+		bundle.putString("PROVIDER", _vodProvider);
+		bundle.putString("TEXT", Uri.encode(text));
+
+		return getPrefs().getString(Param.VOD_SEARCH_URL, bundle);
+	}
+
 	@Override
 	public Scheduler getSchedulerName()
 	{
@@ -512,10 +535,12 @@ public abstract class FeatureVOD extends FeatureScheduler
 	 * @param vodItem
 	 * @param onResultReceived
 	 */
-	public void loadRecommendedVodItems(final VODItem vodItem, final List<VODItem> vodItems, final OnResultReceived onResultReceived)
+	public void loadRecommendedVodItems(final VODItem vodItem, final List<VODItem> vodItems,
+	        final OnResultReceived onResultReceived)
 	{
 		// FIXME: send request to the MediaAdviser service when ready
-		// For now load the other VOD items from the same group of the specified VOD Item.
+		// For now load the other VOD items from the same group of the specified
+		// VOD Item.
 
 		List<VODGroup> vodGroups = new ArrayList<VODGroup>();
 		vodGroups.add(vodItem.getParent());
@@ -544,8 +569,10 @@ public abstract class FeatureVOD extends FeatureScheduler
 	 * Loads VOD item details
 	 *
 	 * @param vodItem
-	 *            VodItem reference to be filled up with additional detail attributes
-	 * @param onResultReceived response callback reference
+	 *            VodItem reference to be filled up with additional detail
+	 *            attributes
+	 * @param onResultReceived
+	 *            response callback reference
 	 */
 	public void loadVodItemDetails(VODItem vodItem, OnResultReceived onResultReceived)
 	{
@@ -621,31 +648,73 @@ public abstract class FeatureVOD extends FeatureScheduler
 	 * @param vodItems
 	 *            the result VOD items list
 	 * @param onResultReceived
-	 *            FIXME: the current implementation is not doing real search but
-	 *            returns some first 10 vod items
 	 */
-	// FIXME: not implemented
-	public void search(String text, List<VODItem> vodItems, final OnResultReceived onResultReceived)
+	public void search(String text, final List<VODItem> vodItems, final OnResultReceived onResultReceived)
 	{
-		final List<VODGroup> vodGroups = new ArrayList<VODGroup>();
-		loadVodGroups(null, vodGroups, new OnResultReceived()
+		Log.i(TAG, ".search: text = " + text);
+
+		String vodSearchUrl = getVodSearchUrl(text);
+
+		Response.Listener<JSONObject> responseCallback = new Response.Listener<JSONObject>()
 		{
 			@Override
-			public void onReceiveResult(FeatureError error)
-			{
-				if (!error.isError())
-				{
-					Map<VODGroup, List<VODItem>> vodGroupItems = new HashMap<VODGroup, List<VODItem>>();
-					loadVodItems(vodGroups, vodGroupItems, 10, new OnResultReceived()
-					{
-						@Override
-						public void onReceiveResult(FeatureError error)
-						{
-							onResultReceived.onReceiveResult(error);
-						}
-					});
-				}
-			}
-		});
+            public void onResponse(JSONObject response)
+            {
+				try
+                {
+					vodItems.clear();
+	                JSONArray arr = response.getJSONArray("meta");
+	                // get the index of vod id in data sub-arrays
+	                int idIdx = 0;
+	                for (int i = 0; i < arr.length(); i++)
+	                {
+	                	if ("id".equalsIgnoreCase(arr.getString(i)))
+	                	{
+	                		idIdx = i;
+	                		break;
+	                	}
+	                }
+	                arr = response.getJSONArray("data");
+	                for (int i = 0; i < arr.length(); i++)
+	                {
+	                	String vodId = arr.getJSONArray(i).getString(idIdx);
+	                	VODItem vodItem = getVodItemById(vodId);
+	                	if (vodItem == null)
+	                	{
+	                		Log.e(TAG, "Unknown VOD item received by the server " + vodItem);
+	                	}
+	                	else
+	                	{
+	                		vodItems.add(vodItem);
+	                	}
+	                }
+                	onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this));
+                }
+                catch (JSONException e)
+                {
+                	Log.e(TAG, e.getMessage(), e);
+                	onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, e));
+                }
+            }
+		};
+
+		Response.ErrorListener errorCallback = new Response.ErrorListener()
+		{
+			@Override
+            public void onErrorResponse(VolleyError err)
+            {
+            	onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, err));
+            }
+		};
+
+		JsonObjectRequest vodSearchRequest = new JsonObjectRequest(vodSearchUrl, null, responseCallback,
+				errorCallback);
+
+		Log.i(TAG, ".search: " + vodSearchUrl);
+		_requestQueue.add(vodSearchRequest);
+
+		Bundle bundle = new Bundle();
+		bundle.putString(OnVodSearchExtra.TEXT.name(), text);
+		getEventMessenger().trigger(ON_VOD_SEARCH, bundle);
 	}
 }

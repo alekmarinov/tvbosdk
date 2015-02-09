@@ -456,6 +456,11 @@ public class FeatureRecordingScheduler extends FeatureComponent
 				for (String record : records)
 				{
 					String[] items = record.split(ITEM_DELIMITER);
+					if (items.length != 3)
+					{
+						Log.e(TAG, "Invalid recording format! Expected chnid,start,duration + got " + record);
+						continue;
+					}
 					String chnId = items[0];
 					String startTime = items[1];
 					int duration = Integer.parseInt(items[2]);

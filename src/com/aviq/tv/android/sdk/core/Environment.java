@@ -201,8 +201,8 @@ public class Environment extends Activity
 
 				_requestQueue = newRequestQueue();
 
-//				BitmapMemLruCache memCache = new BitmapMemLruCache(getPrefs().getInt(
-//				        Param.IMAGE_MEM_CACHE_SIZE));
+				BitmapMemLruCache memCache = new BitmapMemLruCache(getPrefs().getInt(
+				        Param.IMAGE_MEM_CACHE_SIZE));
 
 //				BitmapDiskLruCache diskCache = new BitmapDiskLruCache(getPrefs().getInt(
 //				        Param.IMAGE_DISK_CACHE_SIZE));
@@ -221,10 +221,10 @@ public class Environment extends Activity
 					}
 				};
 
-//				_imageLoader = new ImageLoader(_requestQueue, memCache);
+				_imageLoader = new ImageLoader(_requestQueue, memCache);
 //				_imageLoader = new ImageLoader(_requestQueue, diskCache);
 //				_imageLoader = new ImageLoader(_requestQueue, new BitmapMemDiskLruCache(memCache, diskCache));
-				_imageLoader = new ImageLoader(_requestQueue, noCache);
+//				_imageLoader = new ImageLoader(_requestQueue, noCache);
 
 				// initializes features
 				getEventMessenger().trigger(ON_INITIALIZE);
