@@ -13,6 +13,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -53,7 +55,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	/** key = chanelID; value = map between record endTime and schedule record */
 	private Map<String, NavigableMap<String, RecordingScheduler>> _channelToRecordsNavigableMap = null;
 
-	private Set<Integer> _dayOffsets = new TreeSet<Integer>();
+	private Set<Integer> _dayOffsets = new TreeSet<Integer>(Collections.reverseOrder());
 
 	/**
 	 * FIXME: Obtain from more general place
@@ -82,6 +84,15 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			Environment.getInstance().getFeaturePrefs(FeatureName.Component.RECORDING_SCHEDULER).put(name(), value);
 		}
 	}
+
+	private Comparator<RecordingScheduler> _recordingSchedulerComparator = new Comparator<RecordingScheduler>()
+	{
+		@Override
+		public int compare(RecordingScheduler lhs, RecordingScheduler rhs)
+		{
+			return lhs.getStartTime().compareTo(rhs.getStartTime());
+		}
+	};
 
 	@SuppressLint("SimpleDateFormat")
 	public FeatureRecordingScheduler() throws FeatureNotFoundException
@@ -281,7 +292,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 */
 	public List<RecordingScheduler> getRecordsByDate(int dateOffset)
 	{
-		List<RecordingScheduler> ls = new ArrayList<RecordingScheduler>();
+		List<RecordingScheduler> records = new ArrayList<RecordingScheduler>();
 		Calendar date = Calendars.getDateByDayOffsetFrom(
 		        Calendar.getInstance(_feature.Component.TIMEZONE.getTimeZone()), dateOffset);
 		// String strDate = String.format("%04d%02d%02d",
@@ -304,7 +315,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					                + Calendars.getDayOffsetByDate(programTime) + " with dateOffset = " + dateOffset);
 					if (Calendars.getDayOffsetByDate(programTime) == dateOffset)
 					{
-						ls.add(entry);
+						records.add(entry);
 					}
 				}
 				catch (ParseException e)
@@ -313,7 +324,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 				}
 			}
 		}
-		return ls;
+		Collections.sort(records, _recordingSchedulerComparator);
+		return records;
 	}
 
 	/**
