@@ -24,7 +24,7 @@ import com.aviq.tv.android.sdk.core.feature.annotation.Author;
  * Provides access to network adapters
  */
 @Author("alek")
-public abstract class FeatureNetwork extends FeatureComponent
+public class FeatureNetwork extends FeatureComponent
 {
 	private static final String TAG = FeatureNetwork.class.getSimpleName();
 

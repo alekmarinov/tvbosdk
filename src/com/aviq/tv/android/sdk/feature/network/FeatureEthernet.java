@@ -28,6 +28,7 @@ import android.net.DhcpInfo;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -40,7 +41,7 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
  * Ethernet Settings component
  */
 @Author("alek")
-public class FeatureEthernet extends FeatureNetwork
+public class FeatureEthernet extends FeatureComponent
 {
 	public static final String TAG = FeatureEthernet.class.getSimpleName();
 	private static final String ETH_SERVICE = "ethernet";
@@ -89,7 +90,6 @@ public class FeatureEthernet extends FeatureNetwork
 	{
 		require(FeatureName.Component.DEVICE);
 		_ethernetManagerWrapper = new EthernetManagerWrapper();
-
 	}
 
 	@Override
