@@ -10,19 +10,41 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.DefaultHandler;
+
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
+import android.os.Bundle;
+import android.text.TextUtils;
 
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageRequest;
+import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
+import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
@@ -37,14 +59,46 @@ import com.aviq.tv.android.sdk.feature.epg.Program;
 @Author("alek")
 public class FeatureEPGBulsat extends FeatureEPG
 {
+	public static final String TAG = FeatureEPGBulsat.class.getSimpleName();
 	private static final int DEFAULT_STREAM_PLAY_DURATION = 3600;
+
+	public static enum Param
+	{
+		/**
+		 * Direct url to Bulsatcom channels
+		 */
+		BULSAT_CHANNELS_URL("http://api.iptv.bulsat.com/?xml&tv");
+
+		Param(String value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.EPG).put(name(), value);
+		}
+	}
 
 	public FeatureEPGBulsat() throws FeatureNotFoundException
 	{
 		super();
 	}
 
-	public static final String TAG = FeatureEPGBulsat.class.getSimpleName();
+	@Override
+	public void initialize(final OnFeatureInitialized onFeatureInitialized)
+	{
+		getEventMessenger().register(this, ON_EPG_UPDATED);
+		super.initialize(onFeatureInitialized);
+	}
+
+	@Override
+	public void onEvent(int msgId, Bundle bundle)
+	{
+		super.onEvent(msgId, bundle);
+
+		if (ON_EPG_UPDATED == msgId)
+		{
+			// Load and parse channel streams directly from the Bulsatcom
+			// server as they are expiring
+			updateBulsatChannelStreams();
+		}
+	}
 
 	/**
 	 * @return Bulsat EPG provider name
@@ -112,7 +166,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 	protected String getChannelsUrl()
 	{
 		String url = super.getChannelsUrl();
-		return url + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable,thumbnail_selected,thumbnail_favorite,program_image_medium,program_image_large";
+		return url
+		        + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable,thumbnail_selected,thumbnail_favorite,program_image_medium,program_image_large";
 	}
 
 	@Override
@@ -215,18 +270,19 @@ public class FeatureEPGBulsat extends FeatureEPG
 		channelLogoUrl = getChannelImageUrl(channelId, channelBulsat.getThumbnailSelected());
 		Log.d(TAG, "Retrieving selected channel logo for index " + channelIndex + " from " + channelLogoUrl);
 		responseCallback = new LogoResponseCallback(channelId, channelIndex, IEpgDataProvider.ChannelLogoType.SELECTED);
-		imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth,
-		        _channelLogoHeight, Config.ARGB_8888, responseCallback);
+		imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth, _channelLogoHeight,
+		        Config.ARGB_8888, responseCallback);
 		_requestQueue.add(imageRequest);
 
 		// retrieves favorite channel logo
 		channelLogoUrl = getChannelImageUrl(channelId, channelBulsat.getThumbnailFavorite());
 		responseCallback = new LogoResponseCallback(channelId, channelIndex, IEpgDataProvider.ChannelLogoType.FAVORITE);
-		imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth,
-		        _channelLogoHeight, Config.ARGB_8888, responseCallback);
+		imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth, _channelLogoHeight,
+		        Config.ARGB_8888, responseCallback);
 		_requestQueue.add(imageRequest);
 
-		// FIXME: if the request of the selected or favorite logo finishes after the request
+		// FIXME: if the request of the selected or favorite logo finishes after
+		// the request
 		// of the normal logo, the last will not register in the EpgData
 
 		// retrieves normal channel logo
@@ -265,4 +321,122 @@ public class FeatureEPGBulsat extends FeatureEPG
 		}
 	};
 
+	private void updateBulsatChannelStreams()
+	{
+		Log.i(TAG, ".updateBulsatChannelStreams");
+
+		new Thread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				HttpUriRequest httpGet = new HttpGet(getPrefs().getString(Param.BULSAT_CHANNELS_URL));
+				Log.i(TAG, "Opening " + httpGet.getURI());
+
+				HttpClient httpClient = new DefaultHttpClient(httpGet.getParams());
+				try
+				{
+					HttpResponse response = httpClient.execute(httpGet);
+					HttpEntity entity = response.getEntity();
+					if (entity != null)
+					{
+						InputStream content = entity.getContent();
+
+						// Setup SAX parser
+						SAXParserFactory spf = SAXParserFactory.newInstance();
+						spf.setNamespaceAware(true);
+						SAXParser saxParser = spf.newSAXParser();
+
+						XMLReader xmlReader = saxParser.getXMLReader();
+						xmlReader.setContentHandler(new XMLTVContentHandler());
+						Log.i(TAG, "Parsing XML TV xml");
+						xmlReader.parse(new InputSource(content));
+					}
+				}
+				catch (ClientProtocolException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
+				catch (IOException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
+				catch (ParserConfigurationException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
+				catch (SAXException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
+			}
+		}).start();
+	}
+
+	private class XMLTVContentHandler extends DefaultHandler
+	{
+		static final String TAG_TV = "tv";
+		static final String TAG_EPG_NAME = "epg_name";
+		static final String TAG_SOURCES = "sources";
+		static final String TAG_NDVR = "ndvr";
+
+		private String _channelId;
+		private String _streamUrl;
+		private String _seekUrl;
+		private StringBuilder _buffer = new StringBuilder();
+
+		@Override
+		public void characters(char[] ch, int start, int length)
+		{
+			_buffer.append(ch, start, length);
+		}
+
+		@Override
+		public void endElement(String namespaceURI, String localName, String qName) throws SAXException
+		{
+			if (TAG_EPG_NAME.equals(localName))
+			{
+				_channelId = _buffer.toString().trim();
+			}
+			else if (TAG_SOURCES.equals(localName))
+			{
+				_streamUrl = _buffer.toString().trim();
+			}
+			else if (TAG_NDVR.equals(localName))
+			{
+				_seekUrl = _buffer.toString().trim();
+			}
+			else if (TAG_TV.equals(localName))
+			{
+				ChannelBulsat channel = (ChannelBulsat) _epgData.getChannel(_channelId);
+				if (channel == null)
+				{
+					Log.w(TAG,
+					        "Got channel " + _channelId + " on Bulsatcom server ("
+					                + getPrefs().getString(Param.BULSAT_CHANNELS_URL) + ") missing on AVTV server ( "
+					                + getPrefs().getString(FeatureEPG.Param.EPG_SERVER) + ")");
+				}
+				else
+				{
+					if (!TextUtils.equals(_streamUrl, channel.getStreamUrl()))
+					{
+						Log.d(TAG, "Updating " + channel.getChannelId() + " stream url from " + channel.getStreamUrl()
+						        + " to " + _streamUrl);
+						channel.setStreamUrl(_streamUrl);
+					}
+					if (!TextUtils.equals(_seekUrl, channel.getSeekUrl()))
+					{
+						Log.d(TAG, "Updating " + channel.getChannelId() + " seek url from " + channel.getSeekUrl()
+						        + " to " + _seekUrl);
+						channel.setSeekUrl(_seekUrl);
+					}
+				}
+
+				_channelId = _streamUrl = _seekUrl = null;
+			}
+
+			// clear buffer
+			_buffer.setLength(0);
+		}
+	}
 }
