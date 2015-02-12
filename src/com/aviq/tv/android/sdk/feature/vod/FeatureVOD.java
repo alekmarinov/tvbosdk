@@ -540,21 +540,13 @@ public abstract class FeatureVOD extends FeatureScheduler
 	public void loadRecommendedVodItems(final VODItem vodItem, final List<VODItem> vodItems,
 	        final OnResultReceived onResultReceived)
 	{
-		// FIXME: send request to the MediaAdviser service when ready
-		// For now load the other VOD items from the same group of the specified
-		// VOD Item.
-
-		List<VODGroup> vodGroups = new ArrayList<VODGroup>();
-		vodGroups.add(vodItem.getParent());
-		final Map<VODGroup, List<VODItem>> vodGroupItems = new HashMap<VODGroup, List<VODItem>>();
-		loadVodItemsIndirect(vodGroups, vodGroupItems, _maxRecommended, new OnResultReceived()
+		loadVodItems(vodItem.getParent(), vodItems, new OnResultReceived()
 		{
 			@Override
 			public void onReceiveResult(FeatureError error)
 			{
 				if (!error.isError())
 				{
-					vodItems.addAll(vodGroupItems.get(vodItem.getParent()));
 					vodItems.remove(vodItem);
 					onResultReceived.onReceiveResult(FeatureError.OK);
 				}
