@@ -75,7 +75,6 @@ public class FeatureWireless extends FeatureComponent
 	public FeatureWireless() throws FeatureNotFoundException
 	{
 		_wifiManager = (WifiManager) Environment.getInstance().getSystemService(Context.WIFI_SERVICE);
-		require(FeatureName.Component.ETHERNET);
 	}
 
 	@Override
@@ -130,7 +129,7 @@ public class FeatureWireless extends FeatureComponent
 				}
 			}
 		};
-		// FIXME: Environment.getInstance().registerReceiver(receiver, filter);
+		Environment.getInstance().registerReceiver(receiver, filter);
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -142,7 +141,10 @@ public class FeatureWireless extends FeatureComponent
 
 	public void setEnabled(boolean isEnabled)
 	{
-		_feature.Component.ETHERNET.setEnabledDirect(!isEnabled);
+		FeatureEthernet featureEthernet = (FeatureEthernet) Environment.getInstance().getFeatureComponent(
+		        FeatureName.Component.ETHERNET);
+		if (featureEthernet != null)
+			featureEthernet.setEnabledDirect(!isEnabled);
 		setEnabledDirect(isEnabled);
 	}
 
@@ -300,7 +302,8 @@ public class FeatureWireless extends FeatureComponent
 	public String getCurrentSsid()
 	{
 		String ssid = null;
-		ConnectivityManager connectivityManager = (ConnectivityManager) Environment.getInstance().getSystemService(Context.CONNECTIVITY_SERVICE);
+		ConnectivityManager connectivityManager = (ConnectivityManager) Environment.getInstance().getSystemService(
+		        Context.CONNECTIVITY_SERVICE);
 		NetworkInfo networkInfo = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
 		if (networkInfo.isConnected())
 		{
@@ -339,13 +342,10 @@ public class FeatureWireless extends FeatureComponent
 		WifiState wifiState = getWifiState();
 		Log.i(TAG, ".updateAccessPoints: wifi state = " + wifiState);
 
+		_accessPoints.clear();
 		if (WifiState.ENABLED.equals(wifiState))
 		{
-			_accessPoints = collectAccessPoints();
-		}
-		else
-		{
-			_accessPoints.clear();
+			collectAccessPoints(_accessPoints);
 		}
 
 		StringBuffer accessPointsBuffer = new StringBuffer();
@@ -410,10 +410,9 @@ public class FeatureWireless extends FeatureComponent
 	}
 
 	/** Returns sorted list of access points */
-	private List<AccessPoint> collectAccessPoints()
+	private void collectAccessPoints(List<AccessPoint> accessPoints)
 	{
 		Log.i(TAG, ".collectAccessPoints");
-		ArrayList<AccessPoint> accessPoints = new ArrayList<AccessPoint>();
 		/**
 		 * Lookup table to more quickly update AccessPoints by only considering
 		 * objects with the
@@ -462,6 +461,5 @@ public class FeatureWireless extends FeatureComponent
 
 		// Pre-sort accessPoints to speed preference insertion
 		Collections.sort(accessPoints);
-		return accessPoints;
 	}
 }

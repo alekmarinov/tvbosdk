@@ -33,7 +33,6 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
-import com.aviq.tv.android.sdk.feature.system.FeatureDevice.IStatusFieldGetter;
 import com.aviq.tv.android.sdk.utils.Files;
 import com.aviq.tv.android.sdk.utils.TextUtils;
 
@@ -88,7 +87,6 @@ public class FeatureEthernet extends FeatureComponent
 
 	public FeatureEthernet() throws FeatureNotFoundException
 	{
-		require(FeatureName.Component.DEVICE);
 		_ethernetManagerWrapper = new EthernetManagerWrapper();
 	}
 
@@ -97,14 +95,6 @@ public class FeatureEthernet extends FeatureComponent
 	{
 		Log.i(TAG, ".initialize");
 
-		_feature.Component.DEVICE.addStatusField("network", new IStatusFieldGetter()
-		{
-			@Override
-			public String getStatusField()
-			{
-				return getNetwork();
-			}
-		});
 		if (!_ethernetManagerWrapper.isSupported())
 		{
 			// FIXME: Should this be fatal error?
@@ -166,16 +156,18 @@ public class FeatureEthernet extends FeatureComponent
 
 	public void setEnabled(boolean isEnabled)
 	{
-		if (_feature.Component.WIRELESS.isEnabled() == isEnabled)
-			_feature.Component.WIRELESS.setEnabledDirect(!isEnabled);
+		FeatureWireless featureWireless = (FeatureWireless) Environment.getInstance().getFeatureComponent(
+		        FeatureName.Component.WIRELESS);
+		Log.d(TAG, ".setEnabled: isEnabled = " + isEnabled + ", featureWireless.isEnabled() = " + featureWireless.isEnabled());
+		if (featureWireless != null)
+			featureWireless.setEnabledDirect(!isEnabled);
 		setEnabledDirect(isEnabled);
 	}
 
 	void setEnabledDirect(boolean isEnabled)
 	{
 		Log.i(TAG, ".setEnabled: " + isEnabled);
-		// _ethernetManagerWrapper.setEnabled(isEnabled);
-		Log.w(TAG, ".setEnabled is currently commented out!");
+		_ethernetManagerWrapper.setEnabled(isEnabled);
 	}
 
 	private class EthernetManagerWrapper
@@ -482,7 +474,6 @@ public class FeatureEthernet extends FeatureComponent
 
 	private String getNetwork()
 	{
-
 		return "ethernet";
 	}
 }
