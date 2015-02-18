@@ -251,7 +251,7 @@ public class StateManager
 	 *            true if the view must be added at the bottom of the other
 	 *            views
 	 */
-	public void addViewLayer(View viewLayer, boolean isBottom)
+	public int addViewLayer(View viewLayer, boolean isBottom)
 	{
 		RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
 		        RelativeLayout.LayoutParams.MATCH_PARENT);
@@ -262,7 +262,26 @@ public class StateManager
 			_contentView.addView(viewLayer, 0, lp);
 		else
 			_contentView.addView(viewLayer, lp);
-		_viewLayerId++;
+		return _viewLayerId++;
+	}
+
+	/**
+	 * Add custom view to the main activity
+	 *
+	 * @param viewLayer
+	 * @param layoutParams
+	 * @param isBottom
+	 *            true if the view must be added at the bottom of the other
+	 *            views
+	 */
+	public int addViewLayer(View viewLayer, RelativeLayout.LayoutParams layoutParams, boolean isBottom)
+	{
+		viewLayer.setId(_viewLayerId);
+		if (isBottom)
+			_contentView.addView(viewLayer, 0, layoutParams);
+		else
+			_contentView.addView(viewLayer, layoutParams);
+		return _viewLayerId++;
 	}
 
 	private View createFrameLayout()

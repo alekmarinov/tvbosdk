@@ -20,6 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.os.Bundle;
+
 import com.aviq.tv.android.sdk.core.Log;
 
 public class TextUtils

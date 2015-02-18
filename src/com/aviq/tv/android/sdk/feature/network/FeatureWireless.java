@@ -51,12 +51,10 @@ public class FeatureWireless extends FeatureComponent
 	public static final int RESCAN_INTERVAL = 10000;
 	public static final int MAX_SCAN_RETRIES = 3;
 	public static final int ON_ACCESS_POINTS_UPDATE = EventMessenger.ID("ON_ACCESS_POINTS_UPDATE");
+	public static final int ON_ACCESS_POINT_CONNECTED = EventMessenger.ID("ON_ACCESS_POINT_CONNECTED");
 	public static final String EXTRA_WIFI_STATE = "EXTRA_WIFI_STATE";
 	public static final int ON_SCAN_ERROR = EventMessenger.ID("ON_SCAN_ERROR");
 	public static final int ON_REQUEST_PASSWORD = EventMessenger.ID("ON_REQUEST_PASSWORD");
-	public static final String EXTRA_SSID = "EXTRA_SSID";
-	public static final String EXTRA_LAST_PASSWORD = "EXTRA_LAST_PASSWORD";
-	public static final String EXTRA_WRONG_PASSWORD = "EXTRA_WRONG_PASSWORD";
 
 	// hidden by Android
 	private static final String CONFIGURED_NETWORKS_CHANGED_ACTION = "CONFIGURED_NETWORKS_CHANGE";
@@ -64,8 +62,20 @@ public class FeatureWireless extends FeatureComponent
 
 	private WifiManager _wifiManager;
 	private List<AccessPoint> _accessPoints = new ArrayList<AccessPoint>();
+
+	// FIXME: get rid of this state variable
 	private AccessPoint _currentAccessPoint;
 	private String _lastPassword;
+
+	public enum OnRequestPasswordExtras
+	{
+		SSID, LAST_PASSWORD, WRONG_PASSWORD
+	}
+
+	public enum OnAccessPointConnectedExtras
+	{
+		SSID
+	}
 
 	public enum WifiState
 	{
@@ -170,8 +180,6 @@ public class FeatureWireless extends FeatureComponent
 			@Override
 			public void run()
 			{
-				// FIXME: use reflector to either call startScan or
-				// startScanActive
 				Log.i(TAG, "scanning: _retry = " + (1 + _retry) + " of " + MAX_SCAN_RETRIES);
 				if (!_wifiManager.startScan())
 				{
@@ -367,16 +375,29 @@ public class FeatureWireless extends FeatureComponent
 		Log.i(TAG, ".onNetworkStateChanged: detailedState = " + detailedState + ", isWifiEnabled = " + isWifiEnabled);
 		if (isWifiEnabled)
 		{
+			WifiInfo wifiInfo = _wifiManager.getConnectionInfo();
 			for (AccessPoint ap : _accessPoints)
 			{
+				if (wifiInfo.getNetworkId() == ap.getNetworkId())
+				{
+					ap.updateWifiInfo(wifiInfo, detailedState);
+					if (DetailedState.CONNECTED.equals(ap.getState()))
+					{
+						Bundle bundle = new Bundle();
+						bundle.putString(OnAccessPointConnectedExtras.SSID.name(), ap.getSsid());
+						getEventMessenger().trigger(ON_ACCESS_POINT_CONNECTED, bundle);
+						break;
+					}
+				}
+
 				// find authentication failed reason
 				if (_currentAccessPoint != null && _currentAccessPoint.getSsid().equals(ap.getSsid())
 				        && ap.isAuthError())
 				{
 					Bundle bundle = new Bundle();
-					bundle.putString(EXTRA_SSID, ap.getSsid());
-					bundle.putString(EXTRA_LAST_PASSWORD, _lastPassword);
-					bundle.putBoolean(EXTRA_WRONG_PASSWORD, true);
+					bundle.putString(OnRequestPasswordExtras.SSID.name(), ap.getSsid());
+					bundle.putString(OnRequestPasswordExtras.LAST_PASSWORD.name(), _lastPassword);
+					bundle.putBoolean(OnRequestPasswordExtras.WRONG_PASSWORD.name(), true);
 					getEventMessenger().trigger(ON_REQUEST_PASSWORD, bundle);
 					return;
 				}

@@ -98,7 +98,7 @@ public class FeatureNetwork extends FeatureComponent
 		final ConnectivityManager connectivityManager = (ConnectivityManager) Environment.getInstance()
 		        .getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo networkInfo = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_ETHERNET);
-		if (networkInfo != null && networkInfo.isConnectedOrConnecting())
+		if (networkInfo != null && networkInfo.isConnected())
 			return NetworkType.ETHERNET;
 		networkInfo = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
 		if (networkInfo != null && networkInfo.isAvailable())

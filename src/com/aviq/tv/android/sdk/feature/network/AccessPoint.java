@@ -313,35 +313,35 @@ public class AccessPoint implements Comparable<AccessPoint>
 		return false;
 	}
 
-	void updateWifiInfo(WifiInfo info, DetailedState state)
+	/**
+	 *
+	 * @param info
+	 * @param state
+	 * @return true if hierarchy is changed
+	 */
+	boolean updateWifiInfo(WifiInfo info, DetailedState state)
 	{
-		boolean reorder = false;
+		Log.d(TAG, ".updateWifiInfo: info.networkId = " + info.getNetworkId() + " (_networkId = " + _networkId + ")"
+		        + ", state = " + state);
+		boolean isHierarchyChanged = false;
 		if (info != null && _networkId != INVALID_NETWORK_ID && _networkId == info.getNetworkId())
 		{
-			reorder = (_wifiInfo == null);
+			isHierarchyChanged = (_wifiInfo == null);
 			_rssi = info.getRssi();
 			_wifiInfo = info;
 			_state = state;
 		}
 		else if (_wifiInfo != null)
 		{
-			reorder = true;
+			isHierarchyChanged = true;
 			_wifiInfo = null;
 			_state = null;
 		}
-		if (reorder)
-		{
-			notifyHierarchyChanged();
-		}
+		return isHierarchyChanged;
 	}
 
 	private void notifyChanged()
 	{
 		Log.i(TAG, ".notifyChanged");
-	}
-
-	private void notifyHierarchyChanged()
-	{
-		Log.i(TAG, ".notifyHierarchyChanged");
 	}
 }

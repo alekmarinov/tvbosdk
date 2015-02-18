@@ -80,6 +80,8 @@ public class Environment extends Activity
 	public static final int ON_RESUME = EventMessenger.ID("ON_RESUME");
 	public static final int ON_PAUSE = EventMessenger.ID("ON_PAUSE");
 	public static final int ON_STATE_CHANGED = EventMessenger.ID("ON_STATE_CHANGED");
+	public static final int ON_WAIT_START = EventMessenger.ID("ON_WAIT_START");
+	public static final int ON_WAIT_STOP = EventMessenger.ID("ON_WAIT_STOP");
 
 	// FIXME: Convert EXTRA_KEY* to enum ExtraKey
 	public static final String EXTRA_KEY = "KEY";
@@ -89,6 +91,11 @@ public class Environment extends Activity
 	private static final String AVIQTV_XML_RESOURCE = "aviqtv";
 	private static final String ECLIPSE_XML_RESOURCE = "eclipse";
 	private static final String RELEASE_XML_RESOURCE = "release";
+
+	public enum OnWaitStartExtras
+	{
+		MESSAGE
+	}
 
 	public enum ExtraInitError
 	{
