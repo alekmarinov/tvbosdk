@@ -622,7 +622,6 @@ public abstract class FeatureVOD extends FeatureScheduler
 					if (vodItems.indexOf(item) < 0)
 					{
 						vodItems.add(item);
-						Log.d(TAG, "Add " + item.getTitle() + " in " + vodGroup.getTitle());
 					}
 				}
 			}
@@ -633,6 +632,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 
 		// reduce the number of items per group up to maxItems
 		if (maxItems > 0)
+		{
 			for (List<VODItem> vodItems : vodGroupItems.values())
 			{
 				while (vodItems.size() > maxItems)
@@ -661,6 +661,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 					}
 				}
 			}
+		}
 
 		if (onResultReceived != null)
 			onResultReceived.onReceiveResult(FeatureError.OK);
@@ -677,7 +678,10 @@ public abstract class FeatureVOD extends FeatureScheduler
 	 */
 	public void loadVodItems(VODGroup vodGroup, List<VODItem> vodItems, OnResultReceived onResultReceived)
 	{
-		vodItems.addAll(_vodData.getVodItems(vodGroup));
+		List<VODItem> items = _vodData.getVodItems(vodGroup);
+		if (items != null)
+			vodItems.addAll(items);
+
 		if (onResultReceived != null)
 			onResultReceived.onReceiveResult(FeatureError.OK);
 	}
