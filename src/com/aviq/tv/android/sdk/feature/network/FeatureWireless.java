@@ -480,6 +480,17 @@ public class FeatureWireless extends FeatureComponent
 			}
 		}
 
+		WifiInfo wifiInfo = _wifiManager.getConnectionInfo();
+		if (wifiInfo != null)
+		{
+			Log.i(TAG, ".collectAccessPoints: _wifiManager.getConnectionInfo() -> " + wifiInfo.getSSID() + ", "
+			        + wifiInfo.getSupplicantState() + ", " + WifiInfo.getDetailedStateOf(wifiInfo.getSupplicantState()));
+			for (AccessPoint ap : accessPoints)
+			{
+				ap.updateWifiInfo(wifiInfo, WifiInfo.getDetailedStateOf(wifiInfo.getSupplicantState()));
+			}
+		}
+
 		// Pre-sort accessPoints to speed preference insertion
 		Collections.sort(accessPoints);
 	}
