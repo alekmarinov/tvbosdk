@@ -591,8 +591,8 @@ public abstract class FeatureVOD extends FeatureScheduler
 	 *            maximum number of VOD items per VOD Group, 0 - unlimited
 	 * @param onResultReceived
 	 */
-	public void loadVodItemsIndirect(List<VODGroup> vodGroups, Map<VODGroup, List<VODItem>> vodGroupItems, int maxItems,
-	        OnResultReceived onResultReceived)
+	public void loadVodItemsIndirect(List<VODGroup> vodGroups, Map<VODGroup, List<VODItem>> vodGroupItems,
+	        int maxItems, OnResultReceived onResultReceived)
 	{
 		if (vodGroupItems.keySet().size() == 0)
 		{
@@ -614,12 +614,11 @@ public abstract class FeatureVOD extends FeatureScheduler
 				}
 			}
 			assert (vodItems != null);
-			if (maxItems == 0 || vodItems.size() < maxItems)
+			List<VODItem> items = _vodData.getVodItems(vodGroup);
+			if (items != null && items.size() > 0)
 			{
-				List<VODItem> items = _vodData.getVodItems(vodGroup);
-				if (items != null && items.size() > 0)
+				for (VODItem item : items)
 				{
-					VODItem item = items.get(0);
 					if (vodItems.indexOf(item) < 0)
 					{
 						vodItems.add(item);
@@ -631,6 +630,38 @@ public abstract class FeatureVOD extends FeatureScheduler
 			if (vodSubGroups.size() > 0)
 				loadVodItemsIndirect(vodSubGroups, vodGroupItems, maxItems, null);
 		}
+
+		// reduce the number of items per group up to maxItems
+		if (maxItems > 0)
+			for (List<VODItem> vodItems : vodGroupItems.values())
+			{
+				while (vodItems.size() > maxItems)
+				{
+					VODItem lastItem = null;
+					List<VODItem> removeItems = new ArrayList<VODItem>();
+					for (VODItem item : vodItems)
+					{
+						if (lastItem != null && lastItem.getParent() == item.getParent())
+						{
+							removeItems.add(item);
+						}
+						lastItem = item;
+						if (vodItems.size() - removeItems.size() == maxItems)
+							break;
+					}
+					if (removeItems.size() > 0)
+					{
+						for (VODItem item: removeItems)
+							vodItems.remove(item);
+					}
+					else
+					{
+						while (vodItems.size() > maxItems)
+							vodItems.remove(vodItems.size() - 1);
+					}
+				}
+			}
+
 		if (onResultReceived != null)
 			onResultReceived.onReceiveResult(FeatureError.OK);
 	}
