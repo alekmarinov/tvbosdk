@@ -243,7 +243,7 @@ public class AccessPoint implements Comparable<AccessPoint>
 		{
 			return -1;
 		}
-		return WifiManager.calculateSignalLevel(_rssi, 6);
+		return WifiManager.calculateSignalLevel(_rssi, 5);
 	}
 
 	@Override
