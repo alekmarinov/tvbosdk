@@ -82,6 +82,7 @@ public class Environment extends Activity
 	public static final int ON_STATE_CHANGED = EventMessenger.ID("ON_STATE_CHANGED");
 	public static final int ON_WAIT_START = EventMessenger.ID("ON_WAIT_START");
 	public static final int ON_WAIT_STOP = EventMessenger.ID("ON_WAIT_STOP");
+	public static final int ON_WAIT_CANCELED = EventMessenger.ID("ON_WAIT_CANCELED");
 
 	// FIXME: Convert EXTRA_KEY* to enum ExtraKey
 	public static final String EXTRA_KEY = "KEY";
