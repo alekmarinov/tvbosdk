@@ -13,12 +13,15 @@ package com.aviq.tv.android.sdk.feature.system;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Method;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.PowerManager;
+import android.os.SystemClock;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
@@ -122,7 +125,6 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".initialize");
 
 		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
-		_feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
 
 		// RcuIMEService will broadcast BROADCAST_ACTION_SLEEP in response to
 		// sleep button pressed. This event may occur at any time even when the
@@ -190,12 +192,14 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 
 	/**
 	 * Sets new auto-standby timeout and postpone standby with the new period
+	 *
 	 * @param autoStandbyTimeout
 	 */
 	public void setAutoStandByTimeout(long autoStandbyTimeout)
 	{
 		Log.i(TAG, ".setAutoStandByTimeout: autoStandbyTimeout = " + (autoStandbyTimeout / 1000) + " secs");
 		_autoStandbyTimeout = autoStandbyTimeout;
+		postponeAutoStandBy();
 	}
 
 	/**
@@ -239,7 +243,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	}
 
 	/**
-	 * @return true if HDMI is enabled or false otherwise
+	 * @return true if HDMI is disabled or false otherwise
 	 */
 	public boolean isHDMIOff()
 	{
@@ -353,7 +357,20 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	protected void doStandBy()
 	{
 		// Send device to standby by emulating a key press for key 26
+		// FIXME: either of the two methods doesn't work
 		sendSystemCommand("input keyevent 26");
+
+		try
+		{
+			// Sending the device to sleep with android power manager
+			PowerManager pm = (PowerManager) Environment.getInstance().getSystemService(Context.POWER_SERVICE);
+			Method goToSleep = pm.getClass().getMethod("goToSleep", Long.class);
+			goToSleep.invoke(pm, SystemClock.uptimeMillis());
+		}
+		catch (Exception e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
 	}
 
 	// Runnable callback executed when the auto standby timeout elapses which
@@ -397,12 +414,13 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	private void sendSystemCommand(String cmd)
 	{
 		try
-        {
-	        Runtime.getRuntime().exec(cmd);
-        }
-        catch (IOException e)
-        {
-        	Log.e(TAG, e.getMessage(), e);
-        }
+		{
+			Log.i(TAG, ".sendSystemCommand: " + cmd);
+			Runtime.getRuntime().exec(cmd);
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
 	}
 }

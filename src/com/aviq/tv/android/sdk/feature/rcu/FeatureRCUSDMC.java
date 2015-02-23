@@ -115,6 +115,7 @@ public class FeatureRCUSDMC extends FeatureRCUKeyboard
 			case 313:
 				return Key.FAVORITE;
 			case 314:
+			case 26:
 				return Key.SLEEP;
 		}
 		return super.getKey(keyCode);
