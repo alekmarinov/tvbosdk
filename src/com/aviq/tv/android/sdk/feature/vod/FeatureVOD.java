@@ -25,6 +25,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.aviq.tv.android.sdk.R;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Log;
@@ -131,6 +132,9 @@ public abstract class FeatureVOD extends FeatureScheduler
 	private String _lastSearchTerm;
 	private List<VODItem> _lastSearchResults = new ArrayList<VODItem>();
 
+	private static String CYRILLIC_CHARS = null;
+	private static String LATIN_CHARS = null;
+
 	public FeatureVOD() throws FeatureNotFoundException
 	{
 		require(FeatureName.Scheduler.INTERNET);
@@ -147,6 +151,10 @@ public abstract class FeatureVOD extends FeatureScheduler
 		_vodServer = getPrefs().getString(Param.VOD_SERVER);
 		_maxRecommended = getPrefs().getInt(Param.MAX_RECOMMENDED);
 		_requestQueue = Environment.getInstance().getRequestQueue();
+
+		CYRILLIC_CHARS = Environment.getInstance().getResources().getString(R.string.cyrillic_chars);
+		LATIN_CHARS = Environment.getInstance().getResources().getString(R.string.latin_chars);
+
 		onSchedule(onFeatureInitialized);
 	}
 
@@ -651,7 +659,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 					}
 					if (removeItems.size() > 0)
 					{
-						for (VODItem item: removeItems)
+						for (VODItem item : removeItems)
 							vodItems.remove(item);
 					}
 					else
@@ -774,7 +782,21 @@ public abstract class FeatureVOD extends FeatureScheduler
 		_requestQueue.add(vodSearchRequest);
 
 		Bundle bundle = new Bundle();
-		bundle.putString(OnVodSearchExtra.TEXT.name(), text);
+		bundle.putString(OnVodSearchExtra.TEXT.name(), textToLatin(text));
 		getEventMessenger().trigger(ON_VOD_SEARCH, bundle);
+	}
+
+	private String textToLatin(String text)
+	{
+		StringBuilder latin = new StringBuilder();
+		for (int i = 0; i < text.length(); i++)
+		{
+			int idx = CYRILLIC_CHARS.indexOf(text.substring(i, i + 1));
+			if (idx > -1)
+				latin.append(LATIN_CHARS.charAt(idx));
+			else
+				latin.append(text.substring(i, i + 1));
+		}
+		return latin.toString();
 	}
 }

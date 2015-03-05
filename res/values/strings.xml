@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cyrillic_chars">абвгдежзийклмнопрстуфхцчшщъьюяАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯ</string>
+    <string name="latin_chars">abvgdejziyklmnoprstufhccstu_uaABVGDEJZIYKLMNOPRSTUFHCCSTU_UA</string>
+</resources>
