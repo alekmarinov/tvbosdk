@@ -442,7 +442,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				if (error.isError())
 				{
 					Bundle bundle = new Bundle();
-					bundle.putInt(EXTRA_GET_STREAM_ERROR_CODE, error.getErrorCode());
+					bundle.putInt(EXTRA_GET_STREAM_ERROR_CODE, error.getCode());
 					getEventMessenger().trigger(ON_GET_STREAM_ERROR, bundle);
 				}
 				else

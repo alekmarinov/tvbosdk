@@ -10,7 +10,7 @@
 		<item>Радио</item>
 		<item>Детски</item>
     </string-array>  
-  <string-array name="files">
+  <string-array name="weather_files">
        	<item>image0</item>
 		<item>image1</item>
 		<item>image0</item>

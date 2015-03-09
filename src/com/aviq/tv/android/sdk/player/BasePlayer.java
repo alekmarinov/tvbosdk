@@ -109,7 +109,7 @@ public abstract class BasePlayer implements IPlayer
 	}
 
 	/**
-	 * Seeks in stream position at the specified offset in seconds
+	 * Seeks in stream position at the specified offset in milliseconds
 	 *
 	 * @see com.aviq.tv.android.sdk.player.IPlayer#seekTo(int)
 	 */

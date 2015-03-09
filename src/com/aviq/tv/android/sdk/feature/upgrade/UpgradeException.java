@@ -31,7 +31,7 @@ public class UpgradeException extends FeatureError
 		_feature = feature;
 		if (ParserConfigurationException.class.isInstance(e) || SAXException.class.isInstance(e)
 		        || NumberFormatException.class.isInstance(e))
-			_errCode = ResultCode.PROTOCOL_ERROR;
+			_resCode = ResultCode.PROTOCOL_ERROR;
 
 	}
 

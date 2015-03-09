@@ -16,12 +16,17 @@ package com.aviq.tv.android.sdk.core;
 public class ResultCode
 {
 	public static final int OK = 0;
-	public static final int NOT_FOUND_404 = 404;
+	public static final int NOT_FOUND_404 = -404;
 
 	/**
 	 * Subscription error
 	 */
-	public static final int SUBSCRIPTION_ERROR = -10;
+	public static final int SUBSCRIPTION_ERROR = -11;
+
+	/**
+	 * I/O space error
+	 */
+	public static final int IO_SPACE_ERROR = -10;
 
 	/**
 	 * I/O error

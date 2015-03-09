@@ -201,19 +201,21 @@ public class Environment extends Activity
 
 				// Setup Volley request queue
 
-				_volleyNetwork = new BasicNetwork(new HttpClientStack(AndroidHttpClient.newInstance("aviqtvsdk/volley")));
+				_volleyNetwork = new BasicNetwork(
+				        new HttpClientStack(AndroidHttpClient.newInstance("tvbosdk/volley")));
 
-				// Use 1/8th of the available memory for caching the global request queue
+				// Use 1/8th of the available memory for caching the global
+				// request queue
 				int cacheSize = 1024 * 1024 * memClass / 8;
 				_volleyCache = new DiskBasedCache(getCacheDir(), cacheSize / 2);
 
 				_requestQueue = newRequestQueue();
 
-				BitmapMemLruCache memCache = new BitmapMemLruCache(getPrefs().getInt(
-				        Param.IMAGE_MEM_CACHE_SIZE));
+				BitmapMemLruCache memCache = new BitmapMemLruCache(getPrefs().getInt(Param.IMAGE_MEM_CACHE_SIZE));
 
-//				BitmapDiskLruCache diskCache = new BitmapDiskLruCache(getPrefs().getInt(
-//				        Param.IMAGE_DISK_CACHE_SIZE));
+				// BitmapDiskLruCache diskCache = new
+				// BitmapDiskLruCache(getPrefs().getInt(
+				// Param.IMAGE_DISK_CACHE_SIZE));
 
 				ImageCache noCache = new ImageCache()
 				{
@@ -230,9 +232,10 @@ public class Environment extends Activity
 				};
 
 				_imageLoader = new ImageLoader(_requestQueue, memCache);
-//				_imageLoader = new ImageLoader(_requestQueue, diskCache);
-//				_imageLoader = new ImageLoader(_requestQueue, new BitmapMemDiskLruCache(memCache, diskCache));
-//				_imageLoader = new ImageLoader(_requestQueue, noCache);
+				// _imageLoader = new ImageLoader(_requestQueue, diskCache);
+				// _imageLoader = new ImageLoader(_requestQueue, new
+				// BitmapMemDiskLruCache(memCache, diskCache));
+				// _imageLoader = new ImageLoader(_requestQueue, noCache);
 
 				// initializes features
 				getEventMessenger().trigger(ON_INITIALIZE);
@@ -245,7 +248,7 @@ public class Environment extends Activity
 						if (error.isError())
 						{
 							Bundle bundle = new Bundle();
-							bundle.putInt(ExtraInitError.ERROR_CODE.name(), error.getErrorCode());
+							bundle.putInt(ExtraInitError.ERROR_CODE.name(), error.getCode());
 							bundle.putBundle(ExtraInitError.ERROR_DATA.name(), error.getBundle());
 							bundle.putString(ExtraInitError.FEATURE_NAME.name(), error.getFeature().getName());
 							bundle.putString(ExtraInitError.FEATURE_CLASS.name(), error.getFeature().getClass()
@@ -572,7 +575,6 @@ public class Environment extends Activity
 		return requestQueue;
 	}
 
-
 	//
 	// public void setRequestQueue(RequestQueue requestQueue)
 	// {
@@ -851,9 +853,9 @@ public class Environment extends Activity
 	public class BitmapMemLruCache extends LruCache<String, Bitmap> implements ImageCache
 	{
 		public BitmapMemLruCache(int cacheSize)
-        {
-	        super(cacheSize);
-        }
+		{
+			super(cacheSize);
+		}
 
 		@Override
 		protected int sizeOf(String key, Bitmap value)
@@ -887,9 +889,11 @@ public class Environment extends Activity
 			{
 				/**
 				 * FIXME: causes silent exception as described bellow:
-				 *
-				 * A resource was acquired at attached stack trace but never released. See java.io.Closeable for information on avoiding resource leaks.
-				 * java.lang.Throwable: Explicit termination method 'close' not called
+				 * A resource was acquired at attached stack trace but never
+				 * released. See java.io.Closeable for information on avoiding
+				 * resource leaks.
+				 * java.lang.Throwable: Explicit termination method 'close' not
+				 * called
 				 */
 				_lruCache = DiskLruCache.open(new File(getCacheDir(), "images"), getVersionCode(), 1, cacheSize);
 			}
@@ -973,17 +977,17 @@ public class Environment extends Activity
 		}
 
 		@Override
-        public Bitmap getBitmap(String key)
-        {
+		public Bitmap getBitmap(String key)
+		{
 			Bitmap value = _memCache.get(key);
 			if (value == null)
 				value = _diskCache.getBitmap(key);
 			return value;
-        }
+		}
 
 		@Override
-        public void putBitmap(final String key, final Bitmap bitmap)
-        {
+		public void putBitmap(final String key, final Bitmap bitmap)
+		{
 			_memCache.put(key, bitmap);
 
 			_executorService.submit(new Runnable()
@@ -994,6 +998,6 @@ public class Environment extends Activity
 					_diskCache.putBitmap(key, bitmap);
 				}
 			});
-        }
+		}
 	}
 }

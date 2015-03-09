@@ -291,6 +291,9 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		_isFullscreen = false;
 	}
 
+	/**
+	 * Seeks in stream position at the specified offset in seconds
+	 */
 	public void seekTo(int offset)
 	{
 		_player.seekTo(offset);

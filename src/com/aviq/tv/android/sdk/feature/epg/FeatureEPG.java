@@ -49,6 +49,7 @@ import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
@@ -58,6 +59,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Scheduler;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.FeatureScheduler;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
+import com.aviq.tv.android.sdk.feature.system.FeatureStandBy;
 import com.aviq.tv.android.sdk.feature.system.FeatureTimeZone;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
@@ -238,10 +240,23 @@ public abstract class FeatureEPG extends FeatureScheduler
 		_epgServer = getPrefs().getString(Param.EPG_SERVER);
 		_channelLogoWidth = getPrefs().getInt(Param.CHANNEL_LOGO_WIDTH);
 		_channelLogoHeight = getPrefs().getInt(Param.CHANNEL_LOGO_HEIGHT);
-
 		_requestQueue = Environment.getInstance().getRequestQueue();
-
 		_maxChannels = getPrefs().getInt(Param.MAX_CHANNELS);
+
+		// update epg on exiting standby
+		// FIXME: ...
+		FeatureStandBy featureStandBy = (FeatureStandBy)Environment.getInstance().getFeatureComponent(FeatureName.Component.STANDBY);
+		if (featureStandBy != null)
+		{
+			featureStandBy.getEventMessenger().register(new EventReceiver()
+			{
+				@Override
+				public void onEvent(int msgId, Bundle bundle)
+				{
+					getEventMessenger().trigger(ON_SCHEDULE);
+				}
+			}, FeatureStandBy.ON_STANDBY_LEAVE);
+		}
 
 		boolean loadedFromCache = uncacheEpgData();
 		Log.i(TAG, "Is EPG loaded from cache: " + loadedFromCache);

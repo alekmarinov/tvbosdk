@@ -190,7 +190,7 @@ public class UploadService extends BaseService
 	        String username, String password)
 	{
 		Bundle resultData = new Bundle();
-		int statusCode;
+		int resultCode;
 		try
 		{
 			HttpPut httpPut = new HttpPut(url);
@@ -202,19 +202,19 @@ public class UploadService extends BaseService
 			((AbstractHttpClient) httpClient).getCredentialsProvider().setCredentials(new AuthScope(null, -1), creds);
 
 			HttpResponse response = httpClient.execute(httpPut);
-			statusCode = response.getStatusLine().getStatusCode();
-			if (statusCode == 201 || statusCode == 204)
-				statusCode = ResultCode.OK;
+			resultCode = response.getStatusLine().getStatusCode();
+			if (resultCode == 201 || resultCode == 204)
+				resultCode = ResultCode.OK;
 		}
 		catch (Exception e)
 		{
 			FeatureError fe = new FeatureError(e);
 			Log.e(TAG, "Cannot send data to " + url, fe);
-			statusCode = fe.getErrorCode();
+			resultCode = fe.getCode();
 			resultData.putSerializable(ResultExtras.EXCEPTION.name(), fe);
 		}
 		if (resultReceiver != null)
-			resultReceiver.send(statusCode, resultData);
+			resultReceiver.send(resultCode, resultData);
 	}
 
 	protected void sendFile(ResultReceiver resultReceiver, File file, String url, String caCertPath, String username,

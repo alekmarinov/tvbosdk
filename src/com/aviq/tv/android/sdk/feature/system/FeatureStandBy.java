@@ -13,15 +13,12 @@ package com.aviq.tv.android.sdk.feature.system;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.Method;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.os.PowerManager;
-import android.os.SystemClock;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
@@ -33,7 +30,6 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
-import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.rcu.FeatureRCU;
 import com.aviq.tv.android.sdk.feature.rcu.ime.RcuIMEService;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -124,7 +120,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 
-		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
+		_feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
 
 		// RcuIMEService will broadcast BROADCAST_ACTION_SLEEP in response to
 		// sleep button pressed. This event may occur at any time even when the
@@ -184,8 +180,9 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		}, intentFilter);
 
 		_isStandByHDMI = getPrefs().getBool(Param.IS_STANDBY_HDMI);
-		setAutoStandByTimeout(getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT));
-		postponeAutoStandBy();
+		int autoStandByTimeout = getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT);
+		if (autoStandByTimeout > 0)
+			setAutoStandByTimeout(autoStandByTimeout);
 
 		super.initialize(onFeatureInitialized);
 	}
@@ -294,29 +291,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	public void onEvent(int msgId, Bundle bundle)
 	{
 		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
-		if (FeatureEasterEgg.ON_KEY_SEQUENCE == msgId)
-		{
-			String keySeq = bundle.getString(FeatureEasterEgg.EXTRA_KEY_SEQUENCE);
-			// FIXME: declare key sequences as constants
-			if ("RR272RR".equals(keySeq) || "YGRB11".equals(keySeq))
-			{
-				if (_autoStandbyTimeout > 0)
-				{
-					Log.i(TAG, "Auto standby disabled.");
-					_autoStandbyTimeout = 0;
-					getEventMessenger().removeCallbacks(_autoStandByRunnable);
-					getEventMessenger().trigger(ON_STANDBY_AUTO_DISABLED);
-				}
-				else
-				{
-					Log.i(TAG, "Auto standby enabled.");
-					_autoStandbyTimeout = getPrefs().getInt(Param.AUTO_STANDBY_TIMEOUT);
-					postponeAutoStandBy();
-					getEventMessenger().trigger(ON_STANDBY_AUTO_ENABLED);
-				}
-			}
-		}
-		else if (FeatureRCU.ON_KEY_PRESSED == msgId)
+		if (FeatureRCU.ON_KEY_PRESSED == msgId)
 		{
 			postponeAutoStandBy();
 		}
@@ -333,6 +308,11 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 
 			// remove warnings trigger
 			getEventMessenger().removeCallbacks(_autoStandByWarningRunnable);
+		}
+		else
+		{
+			// cancels standby
+			getEventMessenger().removeCallbacks(_autoStandByRunnable);
 		}
 	}
 
@@ -357,20 +337,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	protected void doStandBy()
 	{
 		// Send device to standby by emulating a key press for key 26
-		// FIXME: either of the two methods doesn't work
 		sendSystemCommand("input keyevent 26");
-
-		try
-		{
-			// Sending the device to sleep with android power manager
-			PowerManager pm = (PowerManager) Environment.getInstance().getSystemService(Context.POWER_SERVICE);
-			Method goToSleep = pm.getClass().getMethod("goToSleep", Long.class);
-			goToSleep.invoke(pm, SystemClock.uptimeMillis());
-		}
-		catch (Exception e)
-		{
-			Log.e(TAG, e.getMessage(), e);
-		}
 	}
 
 	// Runnable callback executed when the auto standby timeout elapses which

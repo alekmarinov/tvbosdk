@@ -303,7 +303,7 @@ public class FeatureInternet extends FeatureScheduler
 	{
 		Log.i(TAG, ".downloadFile: " + TextUtils.implodeBundle(params));
 		ServiceController serviceController = Environment.getInstance().getServiceController();
-		serviceController.startService(DownloadService.class, params).then(onResultReceived);
+		serviceController.startService(this, DownloadService.class, params).then(onResultReceived);
 	}
 
 	/**
@@ -318,7 +318,7 @@ public class FeatureInternet extends FeatureScheduler
 	{
 		Log.i(TAG, ".uploadFile: " + TextUtils.implodeBundle(params));
 		ServiceController serviceController = Environment.getInstance().getServiceController();
-		serviceController.startService(UploadService.class, params).then(onResultReceived);
+		serviceController.startService(this, UploadService.class, params).then(onResultReceived);
 	}
 
 	public void stopFileDownload()

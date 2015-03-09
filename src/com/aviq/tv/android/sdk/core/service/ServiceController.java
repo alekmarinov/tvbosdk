@@ -20,6 +20,7 @@ import android.os.ResultReceiver;
 
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
+import com.aviq.tv.android.sdk.core.feature.IFeature;
 
 /**
  * Controls service starting and result handling
@@ -46,6 +47,7 @@ public class ServiceController
 	{
 		private OnResultReceived _then;
 		private Intent _intentService;
+		private IFeature _feature;
 
 		/**
 		 * Creates the promise object
@@ -56,9 +58,10 @@ public class ServiceController
 		 *            the looper shared by the ResultReceiver and target
 		 *            intentService
 		 */
-		public Promise(Intent intentService, Handler handler)
+		public Promise(IFeature feature, Intent intentService, Handler handler)
 		{
 			super(handler);
+			_feature = feature;
 			_intentService = intentService;
 		}
 
@@ -147,7 +150,7 @@ public class ServiceController
 		{
 			if (_then != null)
 			{
-				_then.onReceiveResult(new FeatureError(null, resultCode, resultData));
+				_then.onReceiveResult(new FeatureError(_feature, resultCode, resultData));
 			}
 		}
 	}
@@ -167,16 +170,18 @@ public class ServiceController
 	/**
 	 * Starts an intent service specified by its class
 	 *
+	 * @param feature
+	 *            the calling feature
 	 * @param serviceClass
 	 *            the class of the IntentService
 	 * @param params
 	 *            Bundle
 	 * @return Promise
 	 */
-	public Promise startService(Class<?> serviceClass, Bundle params)
+	public Promise startService(IFeature feature, Class<?> serviceClass, Bundle params)
 	{
 		Intent intent = new Intent(_context, serviceClass);
-		Promise onServiceComplete = new Promise(intent, _handler);
+		Promise onServiceComplete = new Promise(feature, intent, _handler);
 		intent.putExtra(BaseService.EXTRA_RESULT_RECEIVER, onServiceComplete);
 		if (params != null)
 			intent.putExtras(params);
@@ -186,12 +191,14 @@ public class ServiceController
 	/**
 	 * Starts an intent service specified by its class
 	 *
+	 * @param feature
+	 *            the calling feature
 	 * @param serviceClass
 	 *            the class of the IntentService
 	 * @return Promise
 	 */
-	public Promise startService(Class<?> serviceClass)
+	public Promise startService(IFeature feature, Class<?> serviceClass)
 	{
-		return startService(serviceClass, null);
+		return startService(feature, serviceClass, null);
 	}
 }

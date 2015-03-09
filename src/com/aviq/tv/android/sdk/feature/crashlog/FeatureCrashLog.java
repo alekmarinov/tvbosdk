@@ -316,6 +316,7 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 	@Override
 	public void uncaughtException(Thread thread, final Throwable ex)
 	{
+		Log.e(TAG, ex.getMessage(), ex);
 		fatal(TAG, "uncaught exception: " + ex.getMessage(), ex);
 	}
 

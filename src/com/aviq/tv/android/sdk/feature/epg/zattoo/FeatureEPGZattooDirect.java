@@ -300,10 +300,10 @@ public class FeatureEPGZattooDirect extends FeatureEPG
 			Log.i(TAG, ".onEPGLoadFinished: _onFeatureInitialized = " + _onFeatureInitialized);
 			_onFeatureInitialized.onInitialized(error);
 		}
-		else if (error.getErrorCode() == 402)
+		else if (error.getCode() == 402)
 		{
 			// translates HTTP 402 error code to SUBSCRIPTION_ERROR
-			error.setErrorCode(ResultCode.SUBSCRIPTION_ERROR);
+			error.setCode(ResultCode.SUBSCRIPTION_ERROR);
 			_onFeatureInitialized.onInitialized(error);
 		}
 		else

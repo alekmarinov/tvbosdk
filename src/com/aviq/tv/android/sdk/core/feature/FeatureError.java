@@ -27,8 +27,8 @@ public class FeatureError extends Exception
 {
 	private static final long serialVersionUID = 1L;
 	protected IFeature _feature;
-	protected int _errCode;
-	protected Bundle _errData;
+	protected int _resCode;
+	protected Bundle _resData;
 
 	public static FeatureError OK = OK(null);
 
@@ -59,28 +59,28 @@ public class FeatureError extends Exception
 		// attempt to detect error code
 		if (FeatureNotFoundException.class.isInstance(e))
 		{
-			_errCode = ResultCode.FEATURE_NOT_FOUND;
+			_resCode = ResultCode.FEATURE_NOT_FOUND;
 		}
 		else if (IOException.class.isInstance(e))
 		{
-			_errCode = ResultCode.IO_ERROR;
+			_resCode = ResultCode.IO_ERROR;
 		}
 		else if (UnknownHostException.class.isInstance(e) || NoConnectionError.class.isInstance(e))
 		{
-			_errCode = ResultCode.COMMUNICATION_ERROR;
+			_resCode = ResultCode.COMMUNICATION_ERROR;
 		}
 		else if (VolleyError.class.isInstance(e))
 		{
 			VolleyError ve = (VolleyError) e;
 			if (ve.networkResponse != null)
 			{
-				_errCode = ve.networkResponse.statusCode;
-				_errData = new Bundle();
+				_resCode = -ve.networkResponse.statusCode;
+				_resData = new Bundle();
 
 				for (String key : ve.networkResponse.headers.keySet())
 				{
 					String value = ve.networkResponse.headers.get(key);
-					_errData.putString(key, value);
+					_resData.putString(key, value);
 				}
 			}
 		}
@@ -182,8 +182,8 @@ public class FeatureError extends Exception
 	{
 		super(detailMessage, throwable);
 		_feature = feature;
-		_errCode = errCode;
-		_errData = errData;
+		_resCode = errCode;
+		_resData = errData;
 	}
 
 	/**
@@ -205,17 +205,17 @@ public class FeatureError extends Exception
 	/**
 	 * @return result code describing the feature failure
 	 */
-	public int getErrorCode()
+	public int getCode()
 	{
-		return _errCode;
+		return _resCode;
 	}
 
 	/**
-	 * @param errCode set error code
+	 * @param set result code
 	 */
-	public void setErrorCode(int errCode)
+	public void setCode(int code)
 	{
-		_errCode = errCode;
+		_resCode = code;
 	}
 
 	/**
@@ -223,7 +223,7 @@ public class FeatureError extends Exception
 	 */
 	public Bundle getBundle()
 	{
-		return _errData;
+		return _resData;
 	}
 
 	/**
@@ -231,7 +231,7 @@ public class FeatureError extends Exception
 	 */
 	public void setBundle(Bundle errData)
 	{
-		_errData = errData;
+		_resData = errData;
 	}
 
 	/**
@@ -239,7 +239,7 @@ public class FeatureError extends Exception
 	 */
 	public boolean isError()
 	{
-		return _errCode != ResultCode.OK;
+		return _resCode < 0;
 	}
 
 	/**
@@ -253,13 +253,13 @@ public class FeatureError extends Exception
 		{
 			sb.append(_feature.getName()).append(' ');
 		}
-		sb.append("error ").append(_errCode);
+		sb.append("error ").append(_resCode);
 		if (getMessage() != null)
 			sb.append(": ").append(getMessage());
 
-		if (_errData != null)
+		if (_resData != null)
 		{
-			sb.append(' ').append(TextUtils.implodeBundle(_errData));
+			sb.append(' ').append(TextUtils.implodeBundle(_resData));
 		}
 		return sb.toString();
 	}

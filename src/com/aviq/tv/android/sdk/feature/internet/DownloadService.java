@@ -37,6 +37,7 @@ import android.os.StatFs;
 
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.service.BaseService;
 import com.aviq.tv.android.sdk.utils.Files;
 
@@ -53,9 +54,7 @@ public class DownloadService extends BaseService
 
 	public static final int DOWNLOAD_PROGRESS = EventMessenger.ID("DOWNLOAD_PROGRESS");
 	public static final int DOWNLOAD_SUCCESS = EventMessenger.ID("DOWNLOAD_SUCCESS");
-	public static final int DOWNLOAD_FAILED = EventMessenger.ID("DOWNLOAD_FAILED");
 	public static final int DOWNLOAD_CANCELLED = EventMessenger.ID("DOWNLOAD_CANCELLED");
-	public static final int DOWNLOAD_OUT_OF_FREE_SPACE = EventMessenger.ID("DOWNLOAD_OUT_OF_FREE_SPACE");
 
 	/**
 	 * Service extras
@@ -92,7 +91,7 @@ public class DownloadService extends BaseService
 		BufferedInputStream inputStream = null;
 		HttpURLConnection conn = null;
 		FileOutputStream outputStream = null;
-		int result = DOWNLOAD_FAILED;
+		int result = ResultCode.IO_ERROR;
 		Bundle resultData = new Bundle();
 		try
 		{
@@ -149,8 +148,7 @@ public class DownloadService extends BaseService
 			// do connect
 			conn.connect();
 
-			int responseCode = conn.getResponseCode();
-			Log.i(TAG, "`" + url + "' -> HTTP " + responseCode);
+			Log.i(TAG, "`" + url + "' -> HTTP " + conn.getResponseCode());
 
 			int contentLength = conn.getHeaderFieldInt("Content-Length", -1);
 
@@ -245,7 +243,7 @@ public class DownloadService extends BaseService
 							Bundle outOfSpaceData = new Bundle();
 							outOfSpaceData.putLong(ResultExtras.FREE_SPACE.name(), freeSpace);
 							outOfSpaceData.putLong(ResultExtras.REQUIRED_SPACE.name(), requiredSpace);
-							resultReceiver.send(DOWNLOAD_OUT_OF_FREE_SPACE, outOfSpaceData);
+							resultReceiver.send(ResultCode.IO_SPACE_ERROR, outOfSpaceData);
 
 							_cancelService = true;
 						}

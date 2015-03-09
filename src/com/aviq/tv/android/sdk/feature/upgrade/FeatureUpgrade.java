@@ -157,7 +157,8 @@ public class FeatureUpgrade extends FeatureScheduler
 		UPGRADE_VERSION_PREV,
 
 		/**
-		 * Keeps when the upgrade was started in order to measure the upgrade duration.
+		 * Keeps when the upgrade was started in order to measure the upgrade
+		 * duration.
 		 */
 		UPGRADE_START_TIME_MILLIS;
 	}
@@ -287,7 +288,8 @@ public class FeatureUpgrade extends FeatureScheduler
 	{
 		if (!isUpgradeReady())
 		{
-			throw new UpgradeException(this, ResultCode.GENERAL_FAILURE, "rebootToInstall: Not ready for software upgrade");
+			throw new UpgradeException(this, ResultCode.GENERAL_FAILURE,
+			        "rebootToInstall: Not ready for software upgrade");
 		}
 
 		int delay = getPrefs().getInt(Param.UPGRADE_REBOOT_DELAY);
@@ -316,7 +318,8 @@ public class FeatureUpgrade extends FeatureScheduler
 				}
 				catch (IOException e)
 				{
-					setStatus(new UpgradeException(FeatureUpgrade.this, ResultCode.IO_ERROR, "rebootToInstall: failed", e), null);
+					setStatus(new UpgradeException(FeatureUpgrade.this, ResultCode.IO_ERROR, "rebootToInstall: failed",
+					        e), null);
 				}
 			}
 		}, delay);
@@ -501,12 +504,15 @@ public class FeatureUpgrade extends FeatureScheduler
 							{
 								if (isUpgradeReady())
 								{
-									if (isVersionsDiffer(_userPrefs.getString(UserParam.UPGRADE_VERSION), _userPrefs.getString(UserParam.UPGRADE_BRAND), updateData.Version, updateData.Brand))
+									if (isVersionsDiffer(_userPrefs.getString(UserParam.UPGRADE_VERSION),
+									        _userPrefs.getString(UserParam.UPGRADE_BRAND), updateData.Version,
+									        updateData.Brand))
 									{
 										_userPrefs.remove(UserParam.UPGRADE_VERSION);
 										_userPrefs.remove(UserParam.UPGRADE_BRAND);
 
-										// The old upgrade file will be deleted before new downloading starts
+										// The old upgrade file will be deleted
+										// before new downloading starts
 										_userPrefs.remove(UserParam.UPGRADE_FILE);
 									}
 								}
@@ -529,7 +535,7 @@ public class FeatureUpgrade extends FeatureScheduler
 				}
 				else
 				{
-					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, result.getErrorCode(), result.getBundle());
+					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, result.getCode(), result.getBundle());
 				}
 				getEventMessenger().trigger(ON_UPDATE_CHECKED);
 			}
@@ -564,7 +570,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		else
 			Log.e(TAG, exception.toString(), exception);
 		_exception = exception;
-		setStatus(Status.ERROR, ErrorReason.EXCEPTION, exception.getErrorCode(), extraData);
+		setStatus(Status.ERROR, ErrorReason.EXCEPTION, exception.getCode(), extraData);
 	}
 
 	// returns the last downloaded and verified with checksum firmware file
@@ -619,7 +625,8 @@ public class FeatureUpgrade extends FeatureScheduler
 					downloadParams.putString(DownloadService.Extras.URL.name(), updateUrl);
 					downloadParams.putString(DownloadService.Extras.LOCAL_FILE.name(), updateFile);
 					downloadParams.putBoolean(DownloadService.Extras.IS_COMPUTE_MD5.name(), true);
-					downloadParams.putLong(DownloadService.Extras.DOWNLOAD_DELAY.name(), getPrefs().getInt(Param.DOWNLOAD_DELAY));
+					downloadParams.putLong(DownloadService.Extras.DOWNLOAD_DELAY.name(),
+					        getPrefs().getInt(Param.DOWNLOAD_DELAY));
 					// FIXME: Add other params like proxy, connection timeouts
 					// etc.
 
@@ -655,21 +662,24 @@ public class FeatureUpgrade extends FeatureScheduler
 						@Override
 						public void onReceiveResult(FeatureError result)
 						{
-							if (DownloadService.DOWNLOAD_PROGRESS == result.getErrorCode())
+							if (DownloadService.DOWNLOAD_PROGRESS == result.getCode())
 							{
-								float progress = result.getBundle().getFloat(DownloadService.ResultExtras.PROGRESS.name());
+								float progress = result.getBundle().getFloat(
+								        DownloadService.ResultExtras.PROGRESS.name());
 								Log.v(TAG, "File download progress " + progress);
 								getEventMessenger().trigger(ON_UPDATE_PROGRESS, result.getBundle());
 							}
-							else if (DownloadService.DOWNLOAD_SUCCESS == result.getErrorCode())
+							else if (DownloadService.DOWNLOAD_SUCCESS == result.getCode())
 							{
 								Log.i(TAG, ".downloadUpdate: download success");
 								// Download finished, checking md5
-								String downloadedMd5 = result.getBundle().getString(DownloadService.ResultExtras.MD5.name());
+								String downloadedMd5 = result.getBundle().getString(
+								        DownloadService.ResultExtras.MD5.name());
 								if (!md5.equalsIgnoreCase(downloadedMd5))
 								{
 									// md5 check failed
-									setStatus(Status.ERROR, ErrorReason.MD5_CHECK_FAILED, ResultCode.GENERAL_FAILURE, result.getBundle());
+									setStatus(Status.ERROR, ErrorReason.MD5_CHECK_FAILED, ResultCode.GENERAL_FAILURE,
+									        result.getBundle());
 								}
 								else
 								{
@@ -681,20 +691,24 @@ public class FeatureUpgrade extends FeatureScheduler
 									setOkStatus(result.getBundle());
 								}
 							}
-							else if (DownloadService.DOWNLOAD_FAILED == result.getErrorCode())
-							{
-								Log.e(TAG, ".downloadUpdate: download failed");
-								Throwable exception = (Throwable) result.getBundle()
-								        .getSerializable(DownloadService.ResultExtras.EXCEPTION.name());
-								setStatus(new UpgradeException(FeatureUpgrade.this, exception), result.getBundle());
-							}
-							else if (DownloadService.DOWNLOAD_CANCELLED == result.getErrorCode())
+							else if (DownloadService.DOWNLOAD_CANCELLED == result.getCode())
 							{
 								setStatus(Status.ERROR, ErrorReason.CANCELLED, ResultCode.IO_ERROR, result.getBundle());
 							}
-							else if (DownloadService.DOWNLOAD_OUT_OF_FREE_SPACE == result.getErrorCode())
+							else if (result.isError())
 							{
-								setStatus(Status.ERROR, ErrorReason.OUT_OF_FREE_SPACE, ResultCode.IO_ERROR, result.getBundle());
+								if (result.getCode() == ResultCode.IO_SPACE_ERROR)
+								{
+									setStatus(Status.ERROR, ErrorReason.OUT_OF_FREE_SPACE, ResultCode.IO_SPACE_ERROR,
+									        result.getBundle());
+								}
+								else
+								{
+									Log.e(TAG, ".downloadUpdate: download failed");
+									Throwable exception = (Throwable) result.getBundle().getSerializable(
+									        DownloadService.ResultExtras.EXCEPTION.name());
+									setStatus(new UpgradeException(FeatureUpgrade.this, exception), result.getBundle());
+								}
 							}
 						}
 					});
@@ -702,7 +716,7 @@ public class FeatureUpgrade extends FeatureScheduler
 				else
 				{
 					Log.e(TAG, "Error retrieving md5 file " + updateUrlMd5);
-					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, result.getErrorCode(), result.getBundle());
+					setStatus(Status.ERROR, ErrorReason.CONNECTION_ERROR, result.getCode(), result.getBundle());
 				}
 			}
 		});
@@ -711,7 +725,8 @@ public class FeatureUpgrade extends FeatureScheduler
 	private boolean isVersionsDiffer(String version1, String brand1, String version2, String brand2)
 	{
 		if (version1 == null || brand1 == null || version2 == null || brand2 == null)
-			throw new IllegalArgumentException("Arguments cannot be null: " + version1 + ", " + brand1 + ", " + version2 + ", " + brand2);
+			throw new IllegalArgumentException("Arguments cannot be null: " + version1 + ", " + brand1 + ", "
+			        + version2 + ", " + brand2);
 
 		boolean isNewBrand = !(TextUtils.isEmpty(brand2) || brand2.equalsIgnoreCase(brand1));
 		if (isNewBrand)
@@ -721,8 +736,8 @@ public class FeatureUpgrade extends FeatureScheduler
 		String[] version2Parts = version2.split("\\.");
 		if (version1Parts.length != version2Parts.length)
 		{
-			Log.i(TAG, ".isVersionsDiffer: No compatible versions formats current=" + version1 + ", other="
-			        + version2 + ". Assuming new version!");
+			Log.i(TAG, ".isVersionsDiffer: No compatible versions formats current=" + version1 + ", other=" + version2
+			        + ". Assuming new version!");
 			return true;
 		}
 
@@ -748,13 +763,13 @@ public class FeatureUpgrade extends FeatureScheduler
 		}
 		catch (NumberFormatException e)
 		{
-			Log.i(TAG, ".isVersionsDiffer: Invalid version component in current=" + version1 + " or other="
-			        + version2 + ". Assuming new version!");
+			Log.i(TAG, ".isVersionsDiffer: Invalid version component in current=" + version1 + " or other=" + version2
+			        + ". Assuming new version!");
 			return true;
 		}
 
-		Log.i(TAG, ".isVersionsDiffer: Current version " + version1 + " is the same as the new reported "
-		        + version2 + ". No new software version!");
+		Log.i(TAG, ".isVersionsDiffer: Current version " + version1 + " is the same as the new reported " + version2
+		        + ". No new software version!");
 		return false;
 	}
 
