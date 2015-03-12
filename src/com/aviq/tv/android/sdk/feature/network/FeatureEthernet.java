@@ -158,7 +158,9 @@ public class FeatureEthernet extends FeatureComponent
 	{
 		FeatureWireless featureWireless = (FeatureWireless) Environment.getInstance().getFeatureComponent(
 		        FeatureName.Component.WIRELESS);
-		Log.d(TAG, ".setEnabled: isEnabled = " + isEnabled + ", featureWireless.isEnabled() = " + featureWireless.isEnabled());
+		Log.d(TAG,
+		        ".setEnabled: isEnabled = " + isEnabled + ", featureWireless.isEnabled() = "
+		                + featureWireless.isEnabled());
 		if (featureWireless != null)
 			featureWireless.setEnabledDirect(!isEnabled);
 		setEnabledDirect(isEnabled);
@@ -388,11 +390,18 @@ public class FeatureEthernet extends FeatureComponent
 					if (networkConfig.IsDHCP)
 					{
 						DhcpInfo dhcpInfo = (DhcpInfo) _getDhcpInfo.invoke(_ethernetManager);
-						networkConfig.Addr = NetworkConfig.IntToIP(dhcpInfo.ipAddress);
-						networkConfig.Mask = NetworkConfig.IntToIP(dhcpInfo.netmask);
-						networkConfig.Gateway = NetworkConfig.IntToIP(dhcpInfo.gateway);
-						networkConfig.Dns1 = NetworkConfig.IntToIP(dhcpInfo.dns1);
-						networkConfig.Dns2 = NetworkConfig.IntToIP(dhcpInfo.dns2);
+						if (dhcpInfo != null)
+						{
+							networkConfig.Addr = NetworkConfig.IntToIP(dhcpInfo.ipAddress);
+							networkConfig.Mask = NetworkConfig.IntToIP(dhcpInfo.netmask);
+							networkConfig.Gateway = NetworkConfig.IntToIP(dhcpInfo.gateway);
+							networkConfig.Dns1 = NetworkConfig.IntToIP(dhcpInfo.dns1);
+							networkConfig.Dns2 = NetworkConfig.IntToIP(dhcpInfo.dns2);
+						}
+						else
+						{
+							Log.w(TAG, "Unexpected null value by EthernetManager.getDhcpInfo");
+						}
 					}
 					else
 					{
