@@ -22,6 +22,8 @@ public abstract class Program implements Comparable<Program>, Serializable
     private static final long serialVersionUID = 7712628341257180116L;
 
 	// Bean properties
+
+	// FIXME: Make id as long type in order to be used natively for recommendation without conversions
 	private String _id;
 	private Channel _channel;
 	private String _title;

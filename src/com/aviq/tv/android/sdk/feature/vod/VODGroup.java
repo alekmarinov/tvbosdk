@@ -18,6 +18,7 @@ import org.json.JSONObject;
  */
 public abstract class VODGroup
 {
+	// FIXME: Make id as long type in order to be used natively for recommendation without conversions
 	protected String _id;
 	protected String _title;
 	protected VODGroup _parent;
