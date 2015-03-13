@@ -37,7 +37,6 @@ import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
 import android.net.http.AndroidHttpClient;
 import android.os.Bundle;
-import android.os.StrictMode;
 import android.util.DisplayMetrics;
 import android.util.LruCache;
 import android.view.KeyEvent;
@@ -338,8 +337,8 @@ public class Environment extends Activity
 			// enter strict mode in non release builds
 			if (isDevel())
 			{
-				StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().detectAll().build());
-				StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder().detectAll().build());
+//				StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().detectAll().build());
+//				StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder().detectAll().build());
 			}
 
 			int appDebugXmlId = getResources().getIdentifier(ECLIPSE_XML_RESOURCE, "raw", getPackageName());
