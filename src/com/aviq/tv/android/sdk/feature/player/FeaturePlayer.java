@@ -54,6 +54,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	private boolean _isError;
 	private int _errWhat;
 	private int _errExtra;
+	private long _playTimeElapsed;
 	private boolean _playPauseEnabled;
 	private boolean _isFullscreen;
 
@@ -162,6 +163,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	{
 		Log.i(TAG, ".play: url = " + url);
 		_isError = false;
+		_playTimeElapsed = System.currentTimeMillis();
 
 		Environment.getInstance().getUserPrefs().put(UserParam.LAST_URL, url);
 		_player.play(url);
@@ -562,6 +564,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		Bundle bundle = new Bundle();
 		bundle.putInt(Extras.WHAT.name(), what);
 		bundle.putInt(Extras.EXTRA.name(), extra);
+		bundle.putInt(Extras.TIME_ELAPSED.name(), (int)(System.currentTimeMillis() - _playTimeElapsed));
+		bundle.putString(Extras.URL.name(), Environment.getInstance().getUserPrefs().getString(UserParam.LAST_URL));
 		getEventMessenger().trigger(ON_PLAY_ERROR, bundle);
 		_errWhat = what;
 		_errExtra = extra;
