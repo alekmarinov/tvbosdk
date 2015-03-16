@@ -32,6 +32,7 @@ import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG.OnStreamURLReceived;
 import com.aviq.tv.android.sdk.feature.epg.IEpgDataProvider;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
+import com.aviq.tv.android.sdk.feature.player.FeaturePlayer.MediaType;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice.IStatusFieldGetter;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -133,6 +134,9 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		{
 			Log.i(TAG, ".PLAYER:onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
 
+			if (!MediaType.TV.equals(_feature.Component.PLAYER.getMediaType()))
+				// avoid handling non TV player events
+				return ;
 			if (msgId == FeaturePlayer.ON_PLAY_STARTED)
 			{
 				if (_channelId == null || !_channelId.equals(_channel.getChannelId()))
@@ -162,11 +166,6 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 			{
 				if (_featureTimeshift != null)
 					_featureTimeshift.seekLive();
-			}
-			else if (msgId == FeaturePlayer.ON_PLAY_ERROR || msgId == FeaturePlayer.ON_PLAY_STOP
-			        || msgId == FeaturePlayer.ON_PLAY_TIMEOUT)
-			{
-				_feature.Component.PLAYER.getEventMessenger().unregister(this, EventMessenger.ON_ANY);
 			}
 		}
 	}
@@ -210,7 +209,6 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		        FeatureName.Component.TIMESHIFT);
 		if (_featureTimeshift != null)
 		{
-			_featureTimeshift.getEventMessenger().register(this, FeatureTimeshift.ON_SEEK);
 			int lastChannelIndex = getLastChannelIndex();
 			if (lastChannelIndex < 0)
 				// can't find channel index, default to 1st channel
@@ -226,6 +224,13 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_RESUME);
 		Environment.getInstance().getEventMessenger().register(this, Environment.ON_PAUSE);
+
+		// register on player events
+		_feature.Component.PLAYER.getEventMessenger().register(_playEventsReceiver, FeaturePlayer.ON_PLAY_ERROR);
+		_feature.Component.PLAYER.getEventMessenger().register(_playEventsReceiver, FeaturePlayer.ON_PLAY_PAUSE);
+		_feature.Component.PLAYER.getEventMessenger().register(_playEventsReceiver, FeaturePlayer.ON_PLAY_STOP);
+		_feature.Component.PLAYER.getEventMessenger().register(_playEventsReceiver, FeaturePlayer.ON_PLAY_TIMEOUT);
+		_feature.Component.PLAYER.getEventMessenger().register(_playEventsReceiver, FeaturePlayer.ON_PLAY_STARTED);
 
 		if (getPrefs().getBool(Param.AUTOPLAY))
 		{
@@ -450,14 +455,10 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 					if (streamUrl != null)
 					{
 						// play stream
-						_feature.Component.PLAYER.play(streamUrl);
+						_feature.Component.PLAYER.play(streamUrl, MediaType.TV);
 
 						// avoid register leaks
 						_playEventsReceiver._channel = channel;
-						_feature.Component.PLAYER.getEventMessenger().unregister(_playEventsReceiver,
-						        EventMessenger.ON_ANY);
-						_feature.Component.PLAYER.getEventMessenger().register(_playEventsReceiver,
-						        EventMessenger.ON_ANY);
 					}
 					else
 					{
@@ -608,15 +609,23 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 			if (Environment.getInstance().isInitialized())
 			{
 				// restart playing on app resume
-				playLast();
+				if (MediaType.TV.equals(_feature.Component.PLAYER.getMediaType()))
+				{
+					// restore last channel
+					playLast();
+				}
 			}
 		}
 		else if (Environment.ON_PAUSE == msgId)
 		{
 			if (Environment.getInstance().isInitialized())
 			{
-				// stop playing on app pause
-				_feature.Component.PLAYER.stop();
+				// stop tv playing on app pause
+				if (MediaType.TV.equals(_feature.Component.PLAYER.getMediaType()))
+				{
+					// stop player
+					_feature.Component.PLAYER.stop();
+				}
 			}
 		}
 	}

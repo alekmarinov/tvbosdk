@@ -57,6 +57,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	private long _playTimeElapsed;
 	private boolean _playPauseEnabled;
 	private boolean _isFullscreen;
+	private MediaType _mediaType;
 
 	public enum Extras
 	{
@@ -64,6 +65,12 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		TIME_ELAPSED,
 		WHAT,
 		EXTRA
+	}
+
+	public enum MediaType
+	{
+		TV,
+		VIDEO // VOD, WebTV, YouTube, etc.
 	}
 
 	public static enum Param
@@ -159,9 +166,10 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		return FeatureName.Component.PLAYER;
 	}
 
-	public void play(String url)
+	public void play(String url, MediaType mediaType)
 	{
-		Log.i(TAG, ".play: url = " + url);
+		Log.i(TAG, ".play: url = " + url + ", mediaType = " + mediaType);
+		_mediaType = mediaType;
 		_isError = false;
 		_playTimeElapsed = System.currentTimeMillis();
 
@@ -183,6 +191,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	public void stop()
 	{
 		Log.i(TAG, ".stop");
+		// set undetermined media type
+		_mediaType = null;
 		getEventMessenger().trigger(ON_PLAY_STOPPING);
 		_player.stop();
 		// start polling for stopped status
@@ -205,6 +215,14 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		_player.resume();
 		// start polling for resumed status
 		_playerResumePoller.start();
+	}
+
+	/**
+	 * @return the media type of last played url
+	 */
+	public MediaType getMediaType()
+	{
+		return _mediaType;
 	}
 
 	/**
