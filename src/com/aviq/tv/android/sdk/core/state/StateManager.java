@@ -355,9 +355,9 @@ public class StateManager
 					else
 					{
 						if (!replaceMainState)
-							removeState(_activeStates.pop());
+							postRemoveState(_activeStates.pop());
 						else
-							removeState(_activeStates.remove(0));
+							postRemoveState(_activeStates.remove(0));
 						if (newState != null)
 						{
 							if (!replaceMainState)
@@ -930,7 +930,7 @@ public class StateManager
 	 */
 	private boolean removeState(BaseState state)
 	{
-		Log.i(TAG, ".hideState: " + state.getClass().getSimpleName());
+		Log.i(TAG, ".removeState: " + state.getClass().getSimpleName());
 
 		if (state.isAdded())
 		{
@@ -949,7 +949,29 @@ public class StateManager
 			state.onHide(false);
 			return true;
 		}
+		else
+		{
+			Log.w(TAG, ".removeState: can't remove state " + state + " as it's not added");
+		}
 		return false;
+	}
+
+	/**
+	 * Post removing state fragment from screen
+	 *
+	 * @param state
+	 *            to be removed from screen
+	 */
+	private void postRemoveState(final BaseState state)
+	{
+		_handler.post(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				removeState(state);
+			}
+		});
 	}
 
 	public void setMessageState(BaseState messageState)
