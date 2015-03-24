@@ -74,13 +74,16 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		STANDBY_DELAY(2500),
 
 		/**
-		 * Put the box in standby automatically after the specified time without
+		 * Put the box in standby automatically after the specified time (milliseconds) without
 		 * user activity. Set 0 to disable auto-standby
 		 */
 		AUTO_STANDBY_TIMEOUT(0),
 
 		/** Time to keep sending auto-standby warning events */
-		AUTO_STANDBY_WARN_TIMEOUT(60 * 1000);
+		AUTO_STANDBY_WARN_TIMEOUT(60 * 1000),
+
+		/** Automatically postpone standby on user activity (key pressed) */
+		AUTO_POSTPONE_STANDBY(true);
 
 		Param(boolean value)
 		{
@@ -120,7 +123,8 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 
-		_feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
+		if (getPrefs().getBool(Param.AUTO_POSTPONE_STANDBY))
+			_feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
 
 		// RcuIMEService will broadcast BROADCAST_ACTION_SLEEP in response to
 		// sleep button pressed. This event may occur at any time even when the

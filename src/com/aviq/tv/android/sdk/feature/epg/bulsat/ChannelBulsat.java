@@ -206,9 +206,33 @@ public class ChannelBulsat extends Channel implements Serializable
 		Genre genre = _genreMap.get(genreTitle);
 		if (genre == null)
 		{
-			Log.w(TAG, "Can't find genre mapping of " + genreTitle + ", mapping to " + Genre.OTHER + " in channel "
-			        + getChannelId());
-			genre = Genre.OTHER;
+			if (Environment.getInstance().getResources().getString(R.string.channel_category_alias_national)
+			        .equals(genreTitle))
+			{
+				Log.i(TAG, "Assigning " + genreTitle + " to its alias " + Genre.NATIONAL + " for channel "
+				        + getChannelId());
+				genre = Genre.NATIONAL;
+			}
+			else if (Environment.getInstance().getResources().getString(R.string.channel_category_alias_erotic)
+			        .equals(genreTitle))
+			{
+				Log.i(TAG, "Assigning " + genreTitle + " to its alias " + Genre.EROTIC + " for channel "
+				        + getChannelId());
+				genre = Genre.EROTIC;
+			}
+			else if (Environment.getInstance().getResources().getString(R.string.channel_category_alias_other)
+			        .equals(genreTitle))
+			{
+				Log.i(TAG, "Assigning " + genreTitle + " to its alias " + Genre.OTHER + " for channel "
+				        + getChannelId());
+				genre = Genre.OTHER;
+			}
+			else
+			{
+				Log.w(TAG, "Can't find genre mapping of " + genreTitle + ", mapping to " + Genre.OTHER + " in channel "
+				        + getChannelId());
+				genre = Genre.OTHER;
+			}
 		}
 		setGenre(genre);
 
@@ -233,7 +257,8 @@ public class ChannelBulsat extends Channel implements Serializable
 		if (attributes[channelBulsatMetaData.metaChannelThumbnailFavorite] != null)
 			setThumbnailFavorite(new String(attributes[channelBulsatMetaData.metaChannelThumbnailFavorite]));
 		if (attributes[channelBulsatMetaData.metaChannelProgramImageMedium] != null)
-			setProgramImage(new String(attributes[channelBulsatMetaData.metaChannelProgramImageMedium]), ImageSize.MEDIUM);
+			setProgramImage(new String(attributes[channelBulsatMetaData.metaChannelProgramImageMedium]),
+			        ImageSize.MEDIUM);
 		if (attributes[channelBulsatMetaData.metaChannelProgramImageLarge] != null)
 			setProgramImage(new String(attributes[channelBulsatMetaData.metaChannelProgramImageLarge]), ImageSize.LARGE);
 	}

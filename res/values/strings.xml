@@ -2,4 +2,7 @@
 <resources>
     <string name="cyrillic_chars">абвгдежзийклмнопрстуфхцчшщъьюяАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯ</string>
     <string name="latin_chars">abvgdejziyklmnoprstufhccstu_uaABVGDEJZIYKLMNOPRSTUFHCCSTU_UA</string>
+    <string name="channel_category_alias_national">ЕФИРНИ</string>
+    <string name="channel_category_alias_other">ДРУГИ</string>
+    <string name="channel_category_alias_erotic">18+</string>
 </resources>

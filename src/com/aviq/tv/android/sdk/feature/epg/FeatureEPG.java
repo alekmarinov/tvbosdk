@@ -34,6 +34,7 @@ import org.json.JSONObject;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
@@ -299,6 +300,8 @@ public abstract class FeatureEPG extends FeatureScheduler
 
 		// schedule update later
 		scheduleDelayed(getPrefs().getInt(Param.UPDATE_INTERVAL));
+
+		Toast.makeText(Environment.getInstance(), "EPG update started", Toast.LENGTH_SHORT).show();
 	}
 
 	public IEpgDataProvider getEpgData()
@@ -638,6 +641,7 @@ public abstract class FeatureEPG extends FeatureScheduler
 				resetMinMaxDates();
 			}
 			super.initialize(_onFeatureInitialized);
+			Toast.makeText(Environment.getInstance(), "EPG update finished", Toast.LENGTH_SHORT).show();
 		}
 		else
 		{
