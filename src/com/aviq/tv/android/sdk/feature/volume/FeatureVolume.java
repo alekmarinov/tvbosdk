@@ -13,10 +13,10 @@ package com.aviq.tv.android.sdk.feature.volume;
 import android.content.Context;
 import android.media.AudioManager;
 import android.os.Bundle;
-import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
@@ -38,6 +38,7 @@ public class FeatureVolume extends FeatureComponent
 
 	private AudioManager _audioManager;
 	private int _maxVolume;
+	private boolean _muted;
 
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
@@ -46,6 +47,24 @@ public class FeatureVolume extends FeatureComponent
 		_audioManager = (AudioManager) Environment.getInstance().getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
 		_maxVolume = _audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
 		super.initialize(onFeatureInitialized);
+	}
+
+	/**
+	 * mute/unmute
+	 */
+	public void mute(boolean isMute)
+	{
+		Log.i(TAG, ".mute: isMute = " + isMute);
+		_audioManager.setStreamMute(AudioManager.STREAM_MUSIC, isMute);
+		_muted = isMute;
+	}
+
+	/**
+	 * @return true if audio is set to mute
+	 */
+	public boolean isMute()
+	{
+		return _muted;
 	}
 
 	/**
