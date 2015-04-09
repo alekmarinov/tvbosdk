@@ -24,7 +24,7 @@ public class Log
 	public static final int ERROR = 6;
 	public static final int ASSERT = 7;
 
-	private static int logLevel = ASSERT;
+	private static int logLevel = DEBUG;
 
 	private Log()
 	{
