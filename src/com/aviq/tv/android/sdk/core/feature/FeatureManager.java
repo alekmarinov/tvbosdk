@@ -35,10 +35,10 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.TriggerRoute;
