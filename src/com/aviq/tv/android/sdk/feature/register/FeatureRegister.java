@@ -107,7 +107,7 @@ public class FeatureRegister extends FeatureComponent
 				_feature.Scheduler.INTERNET.getUrlContent(registrationUrl, new OnResultReceived()
 				{
 					@Override
-					public void onReceiveResult(FeatureError error)
+					public void onReceiveResult(FeatureError error, Object object)
 					{
 						Log.d(TAG, ".initialize:onReceiveResult: " + error);
 					}

@@ -17,6 +17,7 @@ import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.channels.FeatureChannels;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
+import com.aviq.tv.android.sdk.feature.epg.FeatureEPGCompat;
 import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.language.FeatureLanguage;
@@ -56,6 +57,7 @@ public class Features
 		public FeatureRCU RCU;
 		public FeaturePlayer PLAYER;
 		public FeatureTimeshift TIMESHIFT;
+		public FeatureEPG EPG;
 		public FeatureHttpServer HTTP_SERVER;
 		public FeatureRegister REGISTER;
 		public FeatureWatchlist WATCHLIST;
@@ -79,7 +81,7 @@ public class Features
 	public class Schedulers
 	{
 		public FeatureInternet INTERNET;
-		public FeatureEPG EPG;
+		public FeatureEPGCompat EPG;
 		public FeatureUpgrade UPGRADE;
 		public FeatureScheduler EVENT_COLLECTOR;
 		public FeatureVOD VOD;

@@ -266,7 +266,7 @@ public class FeatureEventCollector extends FeatureScheduler
 			_feature.Scheduler.INTERNET.uploadFile(uploadParams, new OnResultReceived()
 			{
 				@Override
-				public void onReceiveResult(FeatureError result)
+				public void onReceiveResult(FeatureError result, Object object)
 				{
 					if (result.isError())
 						Log.e(TAG, ".uploadFile:onReceiveResult: " + result);

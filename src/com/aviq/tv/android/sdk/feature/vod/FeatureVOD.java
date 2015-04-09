@@ -294,13 +294,13 @@ public abstract class FeatureVOD extends FeatureScheduler
 			try
 			{
 				_vodItem.setDetails(response);
-				_onResultReceived.onReceiveResult(FeatureError.OK);
+				_onResultReceived.onReceiveResult(FeatureError.OK, null);
 			}
 			catch (JSONException e)
 			{
 				// Vod details load failed, notify error
 				Log.e(TAG, e.getMessage(), e);
-				_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, e));
+				_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, e), null);
 			}
 		}
 
@@ -310,7 +310,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
 			Log.e(TAG, "Error retrieving VOD details with code " + statusCode + ": " + error);
-			_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, statusCode, error));
+			_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, statusCode, error), null);
 		}
 	}
 
@@ -573,7 +573,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 		VODGroup vodGroup = _vodData.getVodGroupById(vodGroupId);
 		vodGroups.addAll(_vodData.getVodGroups(vodGroup));
 		if (onResultReceived != null)
-			onResultReceived.onReceiveResult(FeatureError.OK);
+			onResultReceived.onReceiveResult(FeatureError.OK, null);
 	}
 
 	/**
@@ -650,7 +650,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
 			Log.e(TAG, "Error retrieving VOD details with code " + statusCode + ": " + error);
-			_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, statusCode, error));
+			_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, statusCode, error), null);
 		}
 
 		@Override
@@ -668,12 +668,12 @@ public abstract class FeatureVOD extends FeatureScheduler
 				{
 					result.setCode(0);
 				}
-				_onResultReceived.onReceiveResult(result);
+				_onResultReceived.onReceiveResult(result, null);
 			}
 			catch (JSONException e)
 			{
 				Log.e(TAG, e.getMessage(), e);
-				_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, ResultCode.PROTOCOL_ERROR, e));
+				_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, ResultCode.PROTOCOL_ERROR, e), null);
 			}
 		}
 	}
@@ -693,13 +693,13 @@ public abstract class FeatureVOD extends FeatureScheduler
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
 			Log.e(TAG, "Error retrieving VOD details with code " + statusCode + ": " + error);
-			_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, statusCode, error));
+			_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, statusCode, error), null);
 		}
 
 		@Override
 		public void onResponse(String response)
 		{
-			_onResultReceived.onReceiveResult(FeatureError.OK);
+			_onResultReceived.onReceiveResult(FeatureError.OK, null);
 		}
 	}
 
@@ -761,7 +761,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 				{
 					loadNoRecommendedItems();
 				}
-				_onResultReceived.onReceiveResult(FeatureError.OK);
+				_onResultReceived.onReceiveResult(FeatureError.OK, null);
 			}
 			catch (JSONException e)
 			{
@@ -776,17 +776,17 @@ public abstract class FeatureVOD extends FeatureScheduler
 			loadVodItems(_vodItem.getParent(), _vodItems, new OnResultReceived()
 			{
 				@Override
-				public void onReceiveResult(FeatureError error)
+				public void onReceiveResult(FeatureError error, Object object)
 				{
 					if (!error.isError())
 					{
 						_vodItems.remove(_vodItem);
-						_onResultReceived.onReceiveResult(FeatureError.OK);
+						_onResultReceived.onReceiveResult(FeatureError.OK, object);
 					}
 					else
 					{
 						Log.e(TAG, error.getMessage(), error);
-						_onResultReceived.onReceiveResult(error);
+						_onResultReceived.onReceiveResult(error, object);
 					}
 				}
 			});
@@ -898,7 +898,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 		}
 
 		if (onResultReceived != null)
-			onResultReceived.onReceiveResult(FeatureError.OK);
+			onResultReceived.onReceiveResult(FeatureError.OK, null);
 	}
 
 	/**
@@ -917,7 +917,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 			vodItems.addAll(items);
 
 		if (onResultReceived != null)
-			onResultReceived.onReceiveResult(FeatureError.OK);
+			onResultReceived.onReceiveResult(FeatureError.OK, null);
 	}
 
 	/**
@@ -940,7 +940,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 			// returns the last search results immediately
 			vodItems.clear();
 			vodItems.addAll(_lastSearchResults);
-			onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this));
+			onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this), null);
 			return;
 		}
 
@@ -979,7 +979,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 							vodItems.add(vodItem);
 						}
 					}
-					onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this));
+					onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this), null);
 
 					_lastSearchTerm = text;
 					_lastSearchResults.clear();
@@ -988,7 +988,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 				catch (JSONException e)
 				{
 					Log.e(TAG, e.getMessage(), e);
-					onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, e));
+					onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, e), null);
 				}
 			}
 		};
@@ -998,7 +998,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 			@Override
 			public void onErrorResponse(VolleyError err)
 			{
-				onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, err));
+				onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, err), null);
 			}
 		};
 

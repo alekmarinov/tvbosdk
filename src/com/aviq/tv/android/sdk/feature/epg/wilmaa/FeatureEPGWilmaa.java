@@ -13,13 +13,13 @@ package com.aviq.tv.android.sdk.feature.epg.wilmaa;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
-import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
+import com.aviq.tv.android.sdk.feature.epg.FeatureEPGCompat;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 
 /**
  * RayV specific extension of EPG feature
  */
-public class FeatureEPGWilmaa extends FeatureEPG
+public class FeatureEPGWilmaa extends FeatureEPGCompat
 {
 	public static final String TAG = FeatureEPGWilmaa.class.getSimpleName();
 
@@ -31,9 +31,9 @@ public class FeatureEPGWilmaa extends FeatureEPG
 	 * @return wilmaa EPG provider name
 	 */
 	@Override
-    protected FeatureEPG.Provider getEPGProvider()
+    protected FeatureEPGCompat.Provider getEPGProvider()
 	{
-		return FeatureEPG.Provider.wilmaa;
+		return FeatureEPGCompat.Provider.wilmaa;
 	}
 
 	@Override

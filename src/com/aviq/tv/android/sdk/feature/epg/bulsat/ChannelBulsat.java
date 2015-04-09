@@ -27,6 +27,8 @@ public class ChannelBulsat extends Channel implements Serializable
 {
 	private static final String TAG = ChannelBulsat.class.getSimpleName();
 	private static final long serialVersionUID = -8718850662391176233L;
+	public static final int LOGO_SELECTED = LOGO_NORMAL + 1;
+	public static final int LOGO_FAVORITE = LOGO_NORMAL + 2;
 	private static final String PG18 = "PG18";
 	private int _channelNo;
 	private Genre _genre;
@@ -34,8 +36,8 @@ public class ChannelBulsat extends Channel implements Serializable
 	private String _seekUrl;
 	private boolean _parentControl;
 	private boolean _recordable;
-	private String _thumbnailSelected;
-	private String _thumbnailFavorite;
+	private String _logoSelected;
+	private String _logoFavorite;
 	private String _programImageMedium;
 	private String _programImageLarge;
 
@@ -78,8 +80,8 @@ public class ChannelBulsat extends Channel implements Serializable
 		public int metaChannelSeekUrl;
 		public int metaChannelPG;
 		public int metaChannelRecordable;
-		public int metaChannelThumbnailSelected;
-		public int metaChannelThumbnailFavorite;
+		public int metaChannelLogoSelected;
+		public int metaChannelLogoFavorite;
 		public int metaChannelProgramImageMedium;
 		public int metaChannelProgramImageLarge;
 	}
@@ -144,24 +146,33 @@ public class ChannelBulsat extends Channel implements Serializable
 		return _recordable;
 	}
 
-	public void setThumbnailSelected(String thumbnailSelected)
+	@Override
+	public String getLogo(int logoType)
 	{
-		_thumbnailSelected = thumbnailSelected;
+		switch (logoType)
+		{
+			case LOGO_SELECTED:
+				return _logoSelected;
+			case LOGO_FAVORITE:
+				return _logoFavorite;
+		}
+		return super.getLogo(logoType);
 	}
 
-	public String getThumbnailSelected()
+	@Override
+	public void setLogo(int logoType, String logo)
 	{
-		return _thumbnailSelected;
-	}
-
-	public void setThumbnailFavorite(String thumbnailFavorite)
-	{
-		_thumbnailFavorite = thumbnailFavorite;
-	}
-
-	public String getThumbnailFavorite()
-	{
-		return _thumbnailFavorite;
+		switch (logoType)
+		{
+			case LOGO_SELECTED:
+				_logoSelected = logo;
+			break;
+			case LOGO_FAVORITE:
+				_logoFavorite = logo;
+			break;
+			default:
+				super.setLogo(logoType, logo);
+		}
 	}
 
 	public void setProgramImage(String programImage, ImageSize imageSize)
@@ -252,10 +263,10 @@ public class ChannelBulsat extends Channel implements Serializable
 			setParentControl(PG18.equals(attributes[channelBulsatMetaData.metaChannelPG]));
 		if (attributes[channelBulsatMetaData.metaChannelRecordable] != null)
 			setRecordable(!"0".equals(attributes[channelBulsatMetaData.metaChannelRecordable]));
-		if (attributes[channelBulsatMetaData.metaChannelThumbnailSelected] != null)
-			setThumbnailSelected(new String(attributes[channelBulsatMetaData.metaChannelThumbnailSelected]));
-		if (attributes[channelBulsatMetaData.metaChannelThumbnailFavorite] != null)
-			setThumbnailFavorite(new String(attributes[channelBulsatMetaData.metaChannelThumbnailFavorite]));
+		if (attributes[channelBulsatMetaData.metaChannelLogoSelected] != null)
+			setLogo(LOGO_SELECTED, new String(attributes[channelBulsatMetaData.metaChannelLogoSelected]));
+		if (attributes[channelBulsatMetaData.metaChannelLogoFavorite] != null)
+			setLogo(LOGO_FAVORITE, new String(attributes[channelBulsatMetaData.metaChannelLogoFavorite]));
 		if (attributes[channelBulsatMetaData.metaChannelProgramImageMedium] != null)
 			setProgramImage(new String(attributes[channelBulsatMetaData.metaChannelProgramImageMedium]),
 			        ImageSize.MEDIUM);

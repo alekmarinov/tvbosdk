@@ -14,11 +14,11 @@ import android.graphics.Bitmap;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.utils.Calendars;
 
-public class EpgData implements IEpgDataProvider, Serializable
+public class EpgDataCompat implements IEpgDataProvider, Serializable
 {
 	private static final long serialVersionUID = -1450062885594378941L;
 
-	private static final String TAG = EpgData.class.getSimpleName();
+	private static final String TAG = EpgDataCompat.class.getSimpleName();
 
 	private List<Channel> _channelList;
 	private transient Bitmap[] _channelLogos;
@@ -35,11 +35,11 @@ public class EpgData implements IEpgDataProvider, Serializable
 	 * No-arg constructor added for Kryo serialization. Do not use for anything
 	 * else.
 	 */
-	public EpgData()
+	public EpgDataCompat()
 	{
 	}
 
-	public EpgData(List<Channel> newChannelList)
+	public EpgDataCompat(List<Channel> newChannelList)
 	{
 		// Keep first value far in the past
 		_maxEpgStopTime = Calendar.getInstance();

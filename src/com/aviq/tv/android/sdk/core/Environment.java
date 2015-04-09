@@ -175,7 +175,7 @@ public class Environment extends Activity
 	private OnResultReceived _onFeaturesReceived = new OnResultReceived()
 	{
 		@Override
-		public void onReceiveResult(FeatureError error)
+		public void onReceiveResult(FeatureError error, Object object)
 		{
 			try
 			{
@@ -230,11 +230,11 @@ public class Environment extends Activity
 					}
 				};
 
-				_imageLoader = new ImageLoader(_requestQueue, memCache);
+//				_imageLoader = new ImageLoader(_requestQueue, memCache);
 				// _imageLoader = new ImageLoader(_requestQueue, diskCache);
 				// _imageLoader = new ImageLoader(_requestQueue, new
 				// BitmapMemDiskLruCache(memCache, diskCache));
-				// _imageLoader = new ImageLoader(_requestQueue, noCache);
+				 _imageLoader = new ImageLoader(_requestQueue, noCache);
 
 				// initializes features
 				getEventMessenger().trigger(ON_INITIALIZE);
@@ -363,7 +363,7 @@ public class Environment extends Activity
 				_featureManager.addFeaturesFromXml(inputStream, new OnResultReceived()
 				{
 					@Override
-					public void onReceiveResult(FeatureError error)
+					public void onReceiveResult(FeatureError error, Object object)
 					{
 						// initialize environment by app's raw/release.xml
 						Log.i(TAG, "Parsing " + RELEASE_XML_RESOURCE + " xml definition");
@@ -387,7 +387,7 @@ public class Environment extends Activity
 						else
 						{
 							Log.d(TAG, "No " + RELEASE_XML_RESOURCE + ".xml to parse");
-							_onFeaturesReceived.onReceiveResult(error);
+							_onFeaturesReceived.onReceiveResult(error, null);
 						}
 					}
 				});

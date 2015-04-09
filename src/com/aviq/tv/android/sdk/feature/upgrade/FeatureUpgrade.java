@@ -461,7 +461,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		_feature.Scheduler.INTERNET.getUrlContent(abmpUpdateCheckUrl, new OnResultReceived()
 		{
 			@Override
-			public void onReceiveResult(FeatureError result)
+			public void onReceiveResult(FeatureError result, Object object)
 			{
 				if (!result.isError())
 				{
@@ -609,7 +609,7 @@ public class FeatureUpgrade extends FeatureScheduler
 		_feature.Scheduler.INTERNET.getUrlContent(updateUrlMd5, new ServiceController.OnResultReceived()
 		{
 			@Override
-			public void onReceiveResult(FeatureError result)
+			public void onReceiveResult(FeatureError result, Object object)
 			{
 				if (!result.isError())
 				{
@@ -660,7 +660,7 @@ public class FeatureUpgrade extends FeatureScheduler
 					_feature.Scheduler.INTERNET.downloadFile(downloadParams, new OnResultReceived()
 					{
 						@Override
-						public void onReceiveResult(FeatureError result)
+						public void onReceiveResult(FeatureError result, Object object)
 						{
 							if (DownloadService.DOWNLOAD_PROGRESS == result.getCode())
 							{

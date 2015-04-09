@@ -37,7 +37,7 @@ public class ServiceController
 	 */
 	public interface OnResultReceived
 	{
-		void onReceiveResult(FeatureError error);
+		void onReceiveResult(FeatureError error, Object object);
 	}
 
 	/**
@@ -150,7 +150,7 @@ public class ServiceController
 		{
 			if (_then != null)
 			{
-				_then.onReceiveResult(new FeatureError(_feature, resultCode, resultData));
+				_then.onReceiveResult(new FeatureError(_feature, resultCode, resultData), null);
 			}
 		}
 	}

@@ -566,7 +566,7 @@ public class FeatureManager
 		new OnResultReceived()
 		{
 			@Override
-			public void onReceiveResult(FeatureError error)
+			public void onReceiveResult(FeatureError error, Object object)
 			{
 				if (aviqtvXMLHandler.getIncludeUrls().size() > 0)
 				{
@@ -597,13 +597,13 @@ public class FeatureManager
 										{
 											Log.e(TAG, e.getMessage(), e);
 											resultReceived.onReceiveResult(new FeatureError(null,
-											        ResultCode.PROTOCOL_ERROR, e));
+											        ResultCode.PROTOCOL_ERROR, e), null);
 										}
 										catch (IOException e)
 										{
 											Log.e(TAG, e.getMessage(), e);
 											resultReceived.onReceiveResult(new FeatureError(null, ResultCode.IO_ERROR,
-											        e));
+											        e), null);
 										}
 									}
 								});
@@ -622,7 +622,7 @@ public class FeatureManager
 								@Override
 								public void run()
 								{
-									resultReceived.onReceiveResult(error);
+									resultReceived.onReceiveResult(error, null);
 								}
 							});
 						}
@@ -631,10 +631,10 @@ public class FeatureManager
 				}
 				else
 				{
-					resultReceived.onReceiveResult(FeatureError.OK);
+					resultReceived.onReceiveResult(FeatureError.OK, null);
 				}
 			}
-		}.onReceiveResult(FeatureError.OK);
+		}.onReceiveResult(FeatureError.OK, null);
 	}
 
 	/**
@@ -656,7 +656,7 @@ public class FeatureManager
 					@Override
 					public void run()
 					{
-						resultReceived.onReceiveResult(error);
+						resultReceived.onReceiveResult(error, null);
 					}
 				});
 			}

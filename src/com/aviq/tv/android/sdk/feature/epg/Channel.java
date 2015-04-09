@@ -15,17 +15,19 @@ public abstract class Channel implements Serializable
 {
 	private static final long serialVersionUID = 6801678500699483646L;
 
+	public static final int LOGO_NORMAL = 0;
+
 	private int _index;
 	private String _channelId;
 	private String _title;
-	private String _thumbnail;
 	private int _ndvr;
+	private String _logo;
 
 	public static class MetaData
 	{
 		public int metaChannelId;
 		public int metaChannelTitle;
-		public int metaChannelThumbnail;
+		public int metaChannelLogo;
 	}
 
 	/**
@@ -72,16 +74,6 @@ public abstract class Channel implements Serializable
 		_title = title;
 	}
 
-	public String getThumbnail()
-	{
-		return _thumbnail;
-	}
-
-	public void setThumbnail(String thumbnail)
-	{
-		_thumbnail = thumbnail;
-	}
-
 	public void setNDVR(int ndvr)
 	{
 		_ndvr = ndvr;
@@ -90,6 +82,20 @@ public abstract class Channel implements Serializable
 	public int getNDVR()
 	{
 		return _ndvr;
+	}
+
+	public String getLogo(int logoType)
+	{
+		if (logoType != LOGO_NORMAL)
+			throw new IllegalArgumentException("Expected logoType " + LOGO_NORMAL + ", got " + logoType);
+		return _logo;
+	}
+
+	public void setLogo(int logoType, String logo)
+	{
+		if (logoType != LOGO_NORMAL)
+			throw new IllegalArgumentException("Expected logoType " + LOGO_NORMAL + ", got " + logoType);
+		_logo = logo;
 	}
 
 	/**

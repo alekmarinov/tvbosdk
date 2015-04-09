@@ -137,7 +137,7 @@ public class FeatureInternet extends FeatureScheduler
 			private int _checkAttempts = 0;
 
 			@Override
-			public void onReceiveResult(FeatureError error)
+			public void onReceiveResult(FeatureError error, Object object)
 			{
 				Log.i(TAG, ".onSchedule:onReceiveResult: #" + _checkAttempts + ", error = " + error);
 				final OnResultReceived _this = this;
@@ -165,7 +165,7 @@ public class FeatureInternet extends FeatureScheduler
 						retrieveGeoIP(new OnResultReceived()
 						{
 							@Override
-							public void onReceiveResult(FeatureError error)
+							public void onReceiveResult(FeatureError error, Object object)
 							{
 								if (!error.isError())
 								{
@@ -284,7 +284,7 @@ public class FeatureInternet extends FeatureScheduler
 					resultData.putString(key, response.headers.get(key));
 				}
 				onResultReceived
-				        .onReceiveResult(new FeatureError(FeatureInternet.this, response.statusCode, resultData));
+				        .onReceiveResult(new FeatureError(FeatureInternet.this, response.statusCode, resultData), null);
 				return super.parseNetworkResponse(response);
 			}
 		};
@@ -362,7 +362,7 @@ public class FeatureInternet extends FeatureScheduler
 			Bundle resultData = new Bundle();
 			resultData.putString(ResultExtras.URL.name(), _url);
 			resultData.putString(ResultExtras.CONTENT.name(), response);
-			_onResultReceived.onReceiveResult(new FeatureError(FeatureInternet.this, ResultCode.OK, resultData));
+			_onResultReceived.onReceiveResult(new FeatureError(FeatureInternet.this, ResultCode.OK, resultData), null);
 		}
 
 		/**
@@ -371,7 +371,7 @@ public class FeatureInternet extends FeatureScheduler
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			_onResultReceived.onReceiveResult(new FeatureError(FeatureInternet.this, error));
+			_onResultReceived.onReceiveResult(new FeatureError(FeatureInternet.this, error), null);
 		}
 	}
 
@@ -391,7 +391,7 @@ public class FeatureInternet extends FeatureScheduler
 			checkInternet(networkInfo.getType(), new OnResultReceived()
 			{
 				@Override
-				public void onReceiveResult(FeatureError error)
+				public void onReceiveResult(FeatureError error, Object object)
 				{
 					if (error.isError())
 					{
@@ -408,7 +408,7 @@ public class FeatureInternet extends FeatureScheduler
 						checkInternet(netType, onResultReceived);
 					}
 					else
-						onResultReceived.onReceiveResult(noError);
+						onResultReceived.onReceiveResult(noError, null);
 				}
 			});
 		}
@@ -417,12 +417,12 @@ public class FeatureInternet extends FeatureScheduler
 			checkInternet(ConnectivityManager.TYPE_ETHERNET, new OnResultReceived()
 			{
 				@Override
-				public void onReceiveResult(FeatureError error)
+				public void onReceiveResult(FeatureError error, Object object)
 				{
 					if (error.isError())
 						checkInternet(ConnectivityManager.TYPE_WIFI, onResultReceived);
 					else
-						onResultReceived.onReceiveResult(noError);
+						onResultReceived.onReceiveResult(noError, null);
 				}
 			});
 		}
@@ -536,7 +536,7 @@ public class FeatureInternet extends FeatureScheduler
 					@Override
 					public void run()
 					{
-						onResultReceived.onReceiveResult(result);
+						onResultReceived.onReceiveResult(result, null);
 					}
 				});
 			}
@@ -565,7 +565,7 @@ public class FeatureInternet extends FeatureScheduler
 			}
 
 			@Override
-			public void onReceiveResult(FeatureError result)
+			public void onReceiveResult(FeatureError result, Object object)
 			{
 				Bundle resultData = result.getBundle();
 				if (result.isError())
@@ -607,7 +607,7 @@ public class FeatureInternet extends FeatureScheduler
 						Log.e(TAG, e.getMessage(), e);
 					}
 				}
-				onResultReceived.onReceiveResult(result);
+				onResultReceived.onReceiveResult(result, null);
 			}
 		}
 		getEventMessenger().post(new GeoIPCheckResponse());

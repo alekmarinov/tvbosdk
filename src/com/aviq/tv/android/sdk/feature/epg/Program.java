@@ -35,6 +35,7 @@ public abstract class Program implements Comparable<Program>, Serializable
 
 	public static class MetaData
 	{
+		public int metaChannel;
 		public int metaStart;
 		public int metaStop;
 		public int metaTitle;

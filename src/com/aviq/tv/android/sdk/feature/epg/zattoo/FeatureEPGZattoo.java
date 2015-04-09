@@ -20,14 +20,14 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
-import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
+import com.aviq.tv.android.sdk.feature.epg.FeatureEPGCompat;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
 
 /**
  * Zattoo specific extension of EPG feature
  */
-public class FeatureEPGZattoo extends FeatureEPG
+public class FeatureEPGZattoo extends FeatureEPGCompat
 {
 	public static final String TAG = FeatureEPGZattoo.class.getSimpleName();
 
@@ -129,7 +129,7 @@ public class FeatureEPGZattoo extends FeatureEPG
 		        Param.ZATTOO_STREAM_MINRATE_ETH), getPrefs().getInt(Param.ZATTOO_STREAM_MAXRATE_ETH), getPrefs()
 		        .getInt(Param.ZATTOO_STREAM_INITRATE_ETH), getPrefs().getInt(Param.ZATTOO_STREAM_MINRATE_WIFI),
 		        getPrefs().getInt(Param.ZATTOO_STREAM_MAXRATE_WIFI), getPrefs().getInt(
-		                Param.ZATTOO_STREAM_INITRATE_WIFI), getPrefs().getInt(FeatureEPG.Param.MAX_CHANNELS));
+		                Param.ZATTOO_STREAM_INITRATE_WIFI), getPrefs().getInt(FeatureEPGCompat.Param.MAX_CHANNELS));
 
 		Prefs userPrefs = Environment.getInstance().getUserPrefs();
 		String mac = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.MAC);
@@ -157,7 +157,7 @@ public class FeatureEPGZattoo extends FeatureEPG
 		        new OnResultReceived()
 		        {
 			        @Override
-			        public void onReceiveResult(FeatureError result)
+			        public void onReceiveResult(FeatureError result, Object object)
 			        {
 				        if (!result.isError())
 				        {
@@ -166,7 +166,7 @@ public class FeatureEPGZattoo extends FeatureEPG
 					        		password, new OnResultReceived()
 					                {
 						                @Override
-						                public void onReceiveResult(FeatureError result)
+						                public void onReceiveResult(FeatureError result, Object object)
 						                {
 							                Log.i(TAG, "login response: " + result);
 							                FeatureEPGZattoo.super.initialize(onFeatureInitialized);
@@ -185,9 +185,9 @@ public class FeatureEPGZattoo extends FeatureEPG
 	 * @return rayv EPG provider name
 	 */
 	@Override
-	protected FeatureEPG.Provider getEPGProvider()
+	protected FeatureEPGCompat.Provider getEPGProvider()
 	{
-		return FeatureEPG.Provider.zattoo;
+		return FeatureEPGCompat.Provider.zattoo;
 	}
 
 	@Override
@@ -210,7 +210,7 @@ public class FeatureEPGZattoo extends FeatureEPG
 		_clientZAPI.watch(channel.getChannelId(), "hls", isEthernet, new OnResultReceived()
 		{
 			@Override
-			public void onReceiveResult(FeatureError error)
+			public void onReceiveResult(FeatureError error, Object object)
 			{
 				String url = null;
 				if (!error.isError())

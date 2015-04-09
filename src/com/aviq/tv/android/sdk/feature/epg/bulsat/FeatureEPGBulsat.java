@@ -48,7 +48,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
-import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
+import com.aviq.tv.android.sdk.feature.epg.FeatureEPGCompat;
 import com.aviq.tv.android.sdk.feature.epg.IEpgDataProvider;
 import com.aviq.tv.android.sdk.feature.epg.IEpgDataProvider.ChannelLogoType;
 import com.aviq.tv.android.sdk.feature.epg.Program;
@@ -57,7 +57,7 @@ import com.aviq.tv.android.sdk.feature.epg.Program;
  * RayV specific extension of EPG feature
  */
 @Author("alek")
-public class FeatureEPGBulsat extends FeatureEPG
+public class FeatureEPGBulsat extends FeatureEPGCompat
 {
 	public static final String TAG = FeatureEPGBulsat.class.getSimpleName();
 	private static final int DEFAULT_STREAM_PLAY_DURATION = 3600;
@@ -81,13 +81,6 @@ public class FeatureEPGBulsat extends FeatureEPG
 	}
 
 	@Override
-	public void initialize(final OnFeatureInitialized onFeatureInitialized)
-	{
-		getEventMessenger().register(this, ON_EPG_UPDATED);
-		super.initialize(onFeatureInitialized);
-	}
-
-	@Override
 	public void onEvent(int msgId, Bundle bundle)
 	{
 		super.onEvent(msgId, bundle);
@@ -104,9 +97,9 @@ public class FeatureEPGBulsat extends FeatureEPG
 	 * @return Bulsat EPG provider name
 	 */
 	@Override
-	protected FeatureEPG.Provider getEPGProvider()
+	protected FeatureEPGCompat.Provider getEPGProvider()
 	{
-		return FeatureEPG.Provider.bulsat;
+		return FeatureEPGCompat.Provider.bulsat;
 	}
 
 	@Override
@@ -139,9 +132,9 @@ public class FeatureEPGBulsat extends FeatureEPG
 			else if ("recordable".equals(key))
 				bulsatMetaData.metaChannelRecordable = j;
 			else if ("thumbnail_selected".equals(key))
-				bulsatMetaData.metaChannelThumbnailSelected = j;
+				bulsatMetaData.metaChannelLogoSelected = j;
 			else if ("thumbnail_favorite".equals(key))
-				bulsatMetaData.metaChannelThumbnailFavorite = j;
+				bulsatMetaData.metaChannelLogoFavorite = j;
 			else if ("program_image_medium".equals(key))
 				bulsatMetaData.metaChannelProgramImageMedium = j;
 			else if ("program_image_large".equals(key))
@@ -152,8 +145,14 @@ public class FeatureEPGBulsat extends FeatureEPG
 	@Override
 	protected String getProgramsUrl(String channelId)
 	{
-		String url = super.getProgramsUrl(channelId) + "?attr=description,image_medium,image_large";
-		return url;
+		String baseUrl = super.getProgramsUrl(channelId);
+		StringBuffer url = new StringBuffer(baseUrl);
+		if (baseUrl.indexOf('?') > 0)
+			url.append('&');
+		else
+			url.append('?');
+		url.append("attr=description,image_medium,image_large");
+		return url.toString();
 	}
 
 	@Override
@@ -267,7 +266,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
 
 		// retrieves selected channel logo
-		channelLogoUrl = getChannelImageUrl(channelId, channelBulsat.getThumbnailSelected());
+		channelLogoUrl = getChannelImageUrl(channelId, channelBulsat.getLogo(ChannelBulsat.LOGO_SELECTED));
 		Log.d(TAG, "Retrieving selected channel logo for index " + channelIndex + " from " + channelLogoUrl);
 		responseCallback = new LogoResponseCallback(channelId, channelIndex, IEpgDataProvider.ChannelLogoType.SELECTED);
 		imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth, _channelLogoHeight,
@@ -275,7 +274,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		_requestQueue.add(imageRequest);
 
 		// retrieves favorite channel logo
-		channelLogoUrl = getChannelImageUrl(channelId, channelBulsat.getThumbnailFavorite());
+		channelLogoUrl = getChannelImageUrl(channelId, channelBulsat.getLogo(ChannelBulsat.LOGO_FAVORITE));
 		responseCallback = new LogoResponseCallback(channelId, channelIndex, IEpgDataProvider.ChannelLogoType.FAVORITE);
 		imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth, _channelLogoHeight,
 		        Config.ARGB_8888, responseCallback);
@@ -283,7 +282,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 
 		// FIXME: if the request of the selected or favorite logo finishes after
 		// the request
-		// of the normal logo, the last will not register in the EpgData
+		// of the normal logo, the last will not register in the EpgDataCompat
 
 		// retrieves normal channel logo
 		super.retrieveChannelLogo(channel, channelIndex);
@@ -414,7 +413,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 					Log.w(TAG,
 					        "Got channel " + _channelId + " on Bulsatcom server ("
 					                + getPrefs().getString(Param.BULSAT_CHANNELS_URL) + ") missing on AVTV server ( "
-					                + getPrefs().getString(FeatureEPG.Param.EPG_SERVER) + ")");
+					                + getPrefs().getString(FeatureEPGCompat.Param.EPG_SERVER) + ")");
 				}
 				else
 				{

@@ -15,9 +15,9 @@ import java.util.TimeZone;
 
 import android.app.AlarmManager;
 import android.content.Context;
-import com.aviq.tv.android.sdk.core.Log;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
@@ -79,5 +79,25 @@ public class FeatureTimeZone extends FeatureComponent
 	public Calendar getCurrentTime()
 	{
 		return Calendar.getInstance(_timeZone);
+	}
+
+	/**
+	 * Converts local time to GMT
+	 */
+	public Calendar getGMTTime(Calendar localTime)
+	{
+		Calendar gmt = Calendar.getInstance();
+		gmt.setTimeInMillis(localTime.getTimeInMillis() - localTime.getTimeZone().getRawOffset());
+		return gmt;
+	}
+
+	/**
+	 * Converts GMT to local time
+	 */
+	public Calendar getLocalTime(Calendar gmtTime)
+	{
+		Calendar local = Calendar.getInstance();
+		local.setTimeInMillis(gmtTime.getTimeInMillis() + _timeZone.getRawOffset());
+		return local;
 	}
 }

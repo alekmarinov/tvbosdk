@@ -18,7 +18,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
-import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
+import com.aviq.tv.android.sdk.feature.epg.FeatureEPGCompat;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice.DeviceAttribute;
 import com.rayv.StreamingAgent.Loader;
@@ -26,7 +26,7 @@ import com.rayv.StreamingAgent.Loader;
 /**
  * RayV specific extension of EPG feature
  */
-public class FeatureEPGRayV extends FeatureEPG
+public class FeatureEPGRayV extends FeatureEPGCompat
 {
 	public static final String TAG = FeatureEPGRayV.class.getSimpleName();
 	public static final int DEFAULT_STREAM_PORT = 1234;
@@ -126,9 +126,9 @@ public class FeatureEPGRayV extends FeatureEPG
 	 * @return rayv EPG provider name
 	 */
 	@Override
-	protected FeatureEPG.Provider getEPGProvider()
+	protected FeatureEPGCompat.Provider getEPGProvider()
 	{
-		return FeatureEPG.Provider.rayv;
+		return FeatureEPGCompat.Provider.rayv;
 	}
 
 	@Override

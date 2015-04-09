@@ -47,7 +47,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.IFeature;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
-import com.aviq.tv.android.sdk.feature.epg.EpgData;
+import com.aviq.tv.android.sdk.feature.epg.EpgDataCompat;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.feature.system.FeatureTimeZone;
 import com.aviq.tv.android.sdk.utils.Calendars;
@@ -73,7 +73,7 @@ public class ClientZAPI
 	private RequestQueue _requestQueue;
 	private IFeature _ownerFeature;
 	private Map<String, Channel> _channelsMap = new HashMap<String, Channel>();
-	private EpgData _epgData;
+	private EpgDataCompat _epgData;
 	private int _countChannelLogos;
 	private int _maxChannels;
 
@@ -92,7 +92,7 @@ public class ClientZAPI
 		_maxChannels = maxChannels;
 	}
 
-	public EpgData getEpgData()
+	public EpgDataCompat getEpgData()
 	{
 		return _epgData;
 	}
@@ -161,12 +161,12 @@ public class ClientZAPI
 				JSONObject jsonObj = new JSONObject(response);
 				JSONObject jsonSesstion = jsonObj.getJSONObject("session");
 				_pghash = (String) jsonSesstion.get("power_guide_hash");
-				_onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature));
+				_onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature), null);
 			}
 			catch (JSONException e)
 			{
 				Log.e(TAG, e.getMessage(), e);
-				_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, ResultCode.PROTOCOL_ERROR, e));
+				_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, ResultCode.PROTOCOL_ERROR, e), null);
 			}
 		}
 
@@ -176,7 +176,7 @@ public class ClientZAPI
 			Log.i(TAG, ".onErrorResponse: " + error);
 			if (error.networkResponse != null)
 				Log.e(TAG, ".onErrorResponse: data = " + new String(error.networkResponse.data));
-			_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, error));
+			_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, error), null);
 		}
 	}
 
@@ -278,18 +278,18 @@ public class ClientZAPI
 					ChannelZattoo channel = new ChannelZattoo(i);
 					JSONObject jsonChannel = (JSONObject) jsonChannels.get(i);
 					channel.setChannelId((String) jsonChannel.get("cid"));
-					channel.setThumbnail((String) jsonChannel.get("logo_84"));
+					channel.setLogo(Channel.LOGO_NORMAL, (String) jsonChannel.get("logo_84"));
 					channel.setTitle((String) jsonChannel.get("title"));
 					channels.add(channel);
 					_channelsMap.put(channel.getChannelId(), channel);
 				}
-				_epgData = new EpgData(channels);
+				_epgData = new EpgDataCompat(channels);
 				retrieveChannelLogos(_epgData, _onResultReceived);
 			}
 			catch (JSONException e)
 			{
 				Log.e(TAG, e.getMessage(), e);
-				_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, ResultCode.PROTOCOL_ERROR, e));
+				_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, ResultCode.PROTOCOL_ERROR, e), null);
 			}
 		}
 
@@ -300,25 +300,25 @@ public class ClientZAPI
 			if (error.networkResponse != null)
 				Log.e(TAG, ".onErrorResponse: data = " + new String(error.networkResponse.data));
 			_onResultReceived.onReceiveResult(new FeatureError(Environment.getInstance().getFeatureScheduler(
-			        FeatureName.Scheduler.EPG), error));
+			        FeatureName.Scheduler.EPG), error), null);
 		}
 	}
 
-	public void retrieveChannelLogos(final EpgData epgData, final OnResultReceived onResultReceived)
+	public void retrieveChannelLogos(final EpgDataCompat epgDataCompat, final OnResultReceived onResultReceived)
 	{
 		// retrieve channel logos
 		_countChannelLogos = 0;
-		for (final Channel channel : epgData.getChannels())
+		for (final Channel channel : epgDataCompat.getChannels())
 		{
-			ImageRequest imageRequest = new ImageRequest(channel.getThumbnail(), new Response.Listener<Bitmap>()
+			ImageRequest imageRequest = new ImageRequest(channel.getLogo(Channel.LOGO_NORMAL), new Response.Listener<Bitmap>()
 			{
 				@Override
 				public void onResponse(Bitmap bitmap)
 				{
-					epgData.setChannelLogo(channel.getIndex(), bitmap);
+					epgDataCompat.setChannelLogo(channel.getIndex(), bitmap);
 					_countChannelLogos++;
-					if (_countChannelLogos == epgData.getChannels().size())
-						onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature));
+					if (_countChannelLogos == epgDataCompat.getChannels().size())
+						onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature), null);
 				}
 			}, 0, 0, Config.ARGB_8888, new Response.ErrorListener()
 			{
@@ -328,8 +328,8 @@ public class ClientZAPI
 					FeatureError error = new FeatureError(_ownerFeature, volleyError);
 					Log.e(TAG, error.getMessage(), error);
 					_countChannelLogos++;
-					if (_countChannelLogos == epgData.getChannels().size())
-						onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature));
+					if (_countChannelLogos == epgDataCompat.getChannels().size())
+						onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature), null);
 				}
 			})
 			{
@@ -359,7 +359,7 @@ public class ClientZAPI
 
 			@SuppressWarnings("unchecked")
 			@Override
-			public void onReceiveResult(FeatureError error)
+			public void onReceiveResult(FeatureError error, Object object)
 			{
 				_ndays++;
 				if (!error.isError())
@@ -405,7 +405,7 @@ public class ClientZAPI
 						}
 						_epgData.addProgramData(channelId, programMap, allProgramsList);
 					}
-					onResultReceived.onReceiveResult(error);
+					onResultReceived.onReceiveResult(error, null);
 				}
 			}
 		};
@@ -527,12 +527,12 @@ public class ClientZAPI
 				}
 				Bundle bundle = new Bundle();
 				bundle.putInt("day", _day);
-				_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, ResultCode.OK, bundle));
+				_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, ResultCode.OK, bundle), null);
 			}
 			catch (JSONException e)
 			{
 				Log.e(TAG, e.getMessage(), e);
-				_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, ResultCode.PROTOCOL_ERROR, e));
+				_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, ResultCode.PROTOCOL_ERROR, e), null);
 			}
 		}
 
@@ -542,7 +542,7 @@ public class ClientZAPI
 			Log.i(TAG, ".onErrorResponse: " + error);
 			if (error.networkResponse != null)
 				Log.e(TAG, ".onErrorResponse: data = " + new String(error.networkResponse.data));
-			_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, error));
+			_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, error), null);
 		}
 
 		public Map<String, List<Program>> getChannelsToPrograms()
@@ -626,7 +626,7 @@ public class ClientZAPI
 		public void onResponse(String response)
 		{
 			Log.i(TAG, ".onResponse: response = " + response);
-			_onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature));
+			_onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature), null);
 		}
 
 		@Override
@@ -636,7 +636,7 @@ public class ClientZAPI
 			if (error.networkResponse != null)
 				Log.e(TAG, ".onErrorResponse: data = " + new String(error.networkResponse.data));
 			_onResultReceived.onReceiveResult(new FeatureError(Environment.getInstance().getFeatureScheduler(
-			        FeatureName.Scheduler.EPG), error));
+			        FeatureName.Scheduler.EPG), error), null);
 		}
 	}
 
@@ -658,7 +658,7 @@ public class ClientZAPI
 				Bundle bundle = new Bundle();
 				bundle.putString(EXTRA_URL, stream.getString("url"));
 				bundle.putString(EXTRA_STOP_URL, stream.getString("stop_url"));
-				_onResultReceived.onReceiveResult(new FeatureError(null, ResultCode.OK, bundle));
+				_onResultReceived.onReceiveResult(new FeatureError(null, ResultCode.OK, bundle), null);
 			}
 			catch (JSONException e)
 			{
@@ -672,7 +672,7 @@ public class ClientZAPI
 			Log.i(TAG, ".onErrorResponse: " + error);
 			if (error.networkResponse != null)
 				Log.e(TAG, ".onErrorResponse: data = " + new String(error.networkResponse.data));
-			_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, error));
+			_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, error), null);
 		}
 	}
 
@@ -726,7 +726,7 @@ public class ClientZAPI
 			catch (JSONException e)
 			{
 				Log.e(TAG, e.getMessage(), e);
-				_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, e));
+				_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, e), null);
 			}
 		}
 
@@ -736,7 +736,7 @@ public class ClientZAPI
 			Log.i(TAG, ".onErrorResponse: " + error);
 			if (error.networkResponse != null)
 				Log.e(TAG, ".onErrorResponse: data = " + new String(error.networkResponse.data));
-			_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, error));
+			_onResultReceived.onReceiveResult(new FeatureError(_ownerFeature, error), null);
 		}
 	}
 
