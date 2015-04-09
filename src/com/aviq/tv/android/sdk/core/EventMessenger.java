@@ -16,7 +16,6 @@ import java.util.List;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 import android.util.SparseArray;
 
 import com.aviq.tv.android.sdk.utils.TextUtils;

@@ -16,7 +16,7 @@ import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 public class Log
 {
 	private static final String TAG = Log.class.getSimpleName();
-	public static final int NONE = -1;
+	public static final int ANY = -1;
 	public static final int VERBOSE = 2;
 	public static final int DEBUG = 3;
 	public static final int INFO = 4;
@@ -24,7 +24,7 @@ public class Log
 	public static final int ERROR = 6;
 	public static final int ASSERT = 7;
 
-	private static int logLevel = NONE;
+	private static int logLevel = ASSERT;
 
 	private Log()
 	{
