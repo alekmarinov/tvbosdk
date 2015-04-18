@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -167,6 +168,7 @@ public class Environment extends Activity
 	private FeatureRCU _featureRCU;
 	private boolean _keyEventsEnabled = true;
 	private ExceptKeysList _exceptKeys = new ExceptKeysList();
+	private ConcurrentLinkedQueue<AVKeyEvent> _keysQueue = new ConcurrentLinkedQueue<AVKeyEvent>();
 	private Context _context;
 	private boolean _isPause;
 	private Cache _volleyCache;
@@ -200,8 +202,7 @@ public class Environment extends Activity
 
 				// Setup Volley request queue
 
-				_volleyNetwork = new BasicNetwork(
-				        new HttpClientStack(AndroidHttpClient.newInstance("tvbosdk/volley")));
+				_volleyNetwork = new BasicNetwork(new HttpClientStack(AndroidHttpClient.newInstance("tvbosdk/volley")));
 
 				// Use 1/8th of the available memory for caching the global
 				// request queue
@@ -337,8 +338,10 @@ public class Environment extends Activity
 			// enter strict mode in non release builds
 			if (isDevel())
 			{
-//				StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().detectAll().build());
-//				StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder().detectAll().build());
+				// StrictMode.setThreadPolicy(new
+				// StrictMode.ThreadPolicy.Builder().detectAll().build());
+				// StrictMode.setVmPolicy(new
+				// StrictMode.VmPolicy.Builder().detectAll().build());
 			}
 
 			int appDebugXmlId = getResources().getIdentifier(ECLIPSE_XML_RESOURCE, "raw", getPackageName());
@@ -414,6 +417,8 @@ public class Environment extends Activity
 		Log.i(TAG, ".onResume");
 		_isPause = false;
 		getEventMessenger().trigger(ON_RESUME);
+		if (!_keysProcessorThread.isAlive())
+			_keysProcessorThread.start();
 	}
 
 	@Override
@@ -423,6 +428,7 @@ public class Environment extends Activity
 		Log.i(TAG, ".onPause");
 		_isPause = true;
 		getEventMessenger().trigger(ON_PAUSE);
+		_keysProcessorThread.interrupt();
 	}
 
 	@Override
@@ -446,7 +452,9 @@ public class Environment extends Activity
 		if (_featureRCU != null)
 		{
 			Key key = _featureRCU.getKey(keyCode);
-			return onKeyDown(new AVKeyEvent(event, key));
+			_keysQueue.add(new AVKeyEvent(event, key));
+			// return onKeyDown(new AVKeyEvent(event, key));
+			return true;
 		}
 		Log.w(TAG, ".onKeyDown: two early call before feature RCU is ready.");
 		return false;
@@ -458,7 +466,9 @@ public class Environment extends Activity
 		if (_featureRCU != null)
 		{
 			Key key = _featureRCU.getKey(keyCode);
-			return onKeyUp(new AVKeyEvent(event, key));
+			// return onKeyUp(new AVKeyEvent(event, key));
+			_keysQueue.add(new AVKeyEvent(event, key));
+			return true;
 		}
 		Log.w(TAG, ".onKeyUp: two early call before feature RCU is ready.");
 		return false;
@@ -849,7 +859,7 @@ public class Environment extends Activity
 		return new Prefs(name, _context.getSharedPreferences(name, Activity.MODE_PRIVATE), false);
 	}
 
-	public class BitmapMemLruCache extends LruCache<String, Bitmap> implements ImageCache
+	private class BitmapMemLruCache extends LruCache<String, Bitmap> implements ImageCache
 	{
 		public BitmapMemLruCache(int cacheSize)
 		{
@@ -878,7 +888,7 @@ public class Environment extends Activity
 		}
 	}
 
-	public class BitmapDiskLruCache implements ImageCache
+	private class BitmapDiskLruCache implements ImageCache
 	{
 		private DiskLruCache _lruCache;
 
@@ -962,7 +972,7 @@ public class Environment extends Activity
 		}
 	}
 
-	public class BitmapMemDiskLruCache implements ImageCache
+	private class BitmapMemDiskLruCache implements ImageCache
 	{
 		private BitmapMemLruCache _memCache;
 		private BitmapDiskLruCache _diskCache;
@@ -997,6 +1007,44 @@ public class Environment extends Activity
 					_diskCache.putBitmap(key, bitmap);
 				}
 			});
+		}
+	}
+
+	private class KeysProcessor implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			AVKeyEvent keyEvent = _keysQueue.poll();
+			if (keyEvent != null)
+			{
+				if (keyEvent.Event.getAction() == KeyEvent.ACTION_DOWN)
+					onKeyDown(keyEvent);
+				else if (keyEvent.Event.getAction() == KeyEvent.ACTION_UP)
+					onKeyUp(keyEvent);
+			}
+		}
+	}
+
+	private KeysProcessor _keysProcessor = new KeysProcessor();
+	private Thread _keysProcessorThread = new Thread(new KeysProcessorThread());
+
+	private class KeysProcessorThread implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			while (!Thread.currentThread().isInterrupted())
+			{
+				getEventMessenger().post(_keysProcessor);
+				try
+				{
+					Thread.sleep(50);
+				}
+				catch (InterruptedException e)
+				{
+				}
+			}
 		}
 	}
 }

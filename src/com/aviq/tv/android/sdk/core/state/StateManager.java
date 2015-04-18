@@ -597,6 +597,8 @@ public class StateManager
 			TextUtils.implodeBundle(logMsg, params, '=', ',').append("), layer=").append(stateLayer.name());
 			Log.i(TAG, logMsg.toString());
 
+			state.setCreated(false);
+
 			// Workaround of setting fragment arguments when the fragment is
 			// already
 			// added
@@ -662,6 +664,9 @@ public class StateManager
 							setStateBackground(stateLayer);
 							// notify state is shown
 							state.onShow(false);
+
+							// set created status
+							state.setCreated(true);
 
 							if (FeatureState.class.isAssignableFrom(state.getClass()))
 							{
@@ -773,7 +778,7 @@ public class StateManager
 		}
 		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", states = " + statesDump);
 
-		if (_messageState.isAdded())
+		if (_messageState.isAdded() && _messageState.getView() != null)
 		{
 			if (_messageState.onKeyDown(keyEvent))
 				return true;
@@ -781,7 +786,9 @@ public class StateManager
 		if (_activeStates.size() > 0)
 		{
 			Log.i(TAG, ".onKeyDown: delegating " + keyEvent + " to " + _activeStates.get(_activeStates.size() - 1));
-			return _activeStates.get(_activeStates.size() - 1).onKeyDown(keyEvent);
+			BaseState topState = _activeStates.get(_activeStates.size() - 1);
+			if (topState.isAdded() && topState.getView() != null)
+				return topState.onKeyDown(keyEvent);
 		}
 
 		return false;
@@ -947,6 +954,7 @@ public class StateManager
 
 			// notify state is hidden
 			state.onHide(false);
+			state.setCreated(false);
 			return true;
 		}
 		else
