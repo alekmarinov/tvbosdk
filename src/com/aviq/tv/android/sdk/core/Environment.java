@@ -179,6 +179,7 @@ public class Environment extends Activity
 	private Cache _volleyCache;
 	private Network _volleyNetwork;
 	private int _maxKeysInQueue;
+	private boolean _isKeyQueueEnabled;
 
 	private OnResultReceived _onFeaturesReceived = new OnResultReceived()
 	{
@@ -461,15 +462,19 @@ public class Environment extends Activity
 		{
 			Key key = _featureRCU.getKey(keyCode);
 
-			// limit the number of keys in the queue discarding oldest keys
-			// FIXME: alek: consider replacing while to if
-			while (_keysQueue.size() > _maxKeysInQueue)
+			if (_isKeyQueueEnabled)
 			{
-				_keysQueue.remove();
-			}
+				// limit the number of keys in the queue discarding oldest keys
+				// FIXME: alek: consider replacing while to if
+				while (_keysQueue.size() > _maxKeysInQueue)
+				{
+					_keysQueue.remove();
+				}
 
-			_keysQueue.add(new AVKeyEvent(event, key));
-			// return onKeyDown(new AVKeyEvent(event, key));
+				_keysQueue.add(new AVKeyEvent(event, key));
+			}
+			else
+				return onKeyDown(new AVKeyEvent(event, key));
 			return true;
 		}
 		Log.w(TAG, ".onKeyDown: two early call before feature RCU is ready.");
@@ -820,6 +825,25 @@ public class Environment extends Activity
 	{
 		_keyEventsEnabled = false;
 		return _exceptKeys;
+	}
+
+	/**
+	 * Enable key handling mode in which all keys are pushed in a limited queue
+	 * and a background thread is sending the keys to the app sequentially
+	 *
+	 * @param isKeyQueueEnabled
+	 */
+	public void setKeyQueueEnabled(boolean isKeyQueueEnabled)
+	{
+		_isKeyQueueEnabled = isKeyQueueEnabled;
+	}
+
+	/**
+	 * @return true if the keys queue mode is enabled
+	 */
+	public boolean isKeyQueueEnabled()
+	{
+		return _isKeyQueueEnabled;
 	}
 
 	/**
