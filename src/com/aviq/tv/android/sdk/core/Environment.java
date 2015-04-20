@@ -138,7 +138,12 @@ public class Environment extends Activity
 		/**
 		 * Memory cache for images (50 MB)
 		 */
-		IMAGE_MEM_CACHE_SIZE(50 * 1024 * 1024);
+		IMAGE_MEM_CACHE_SIZE(50 * 1024 * 1024),
+
+		/**
+		 * Maximum keys to keep in queue, remaining will be discarded
+		 */
+		MAX_KEYS_IN_QUEUE(3);
 
 		Param(int value)
 		{
@@ -173,6 +178,7 @@ public class Environment extends Activity
 	private boolean _isPause;
 	private Cache _volleyCache;
 	private Network _volleyNetwork;
+	private int _maxKeysInQueue;
 
 	private OnResultReceived _onFeaturesReceived = new OnResultReceived()
 	{
@@ -335,6 +341,8 @@ public class Environment extends Activity
 			_userPrefs = createUserPrefs();
 			_prefs = createPrefs(SYSTEM_PREFS);
 
+			_maxKeysInQueue = _prefs.getInt(Param.MAX_KEYS_IN_QUEUE);
+
 			// enter strict mode in non release builds
 			if (isDevel())
 			{
@@ -452,6 +460,14 @@ public class Environment extends Activity
 		if (_featureRCU != null)
 		{
 			Key key = _featureRCU.getKey(keyCode);
+
+			// limit the number of keys in the queue discarding oldest keys
+			// FIXME: alek: consider replacing while to if
+			while (_keysQueue.size() > _maxKeysInQueue)
+			{
+				_keysQueue.remove();
+			}
+
 			_keysQueue.add(new AVKeyEvent(event, key));
 			// return onKeyDown(new AVKeyEvent(event, key));
 			return true;
@@ -1012,17 +1028,15 @@ public class Environment extends Activity
 
 	private class KeysProcessor implements Runnable
 	{
+		AVKeyEvent _keyEvent;
+
 		@Override
 		public void run()
 		{
-			AVKeyEvent keyEvent = _keysQueue.poll();
-			if (keyEvent != null)
-			{
-				if (keyEvent.Event.getAction() == KeyEvent.ACTION_DOWN)
-					onKeyDown(keyEvent);
-				else if (keyEvent.Event.getAction() == KeyEvent.ACTION_UP)
-					onKeyUp(keyEvent);
-			}
+			if (_keyEvent.Event.getAction() == KeyEvent.ACTION_DOWN)
+				onKeyDown(_keyEvent);
+			else if (_keyEvent.Event.getAction() == KeyEvent.ACTION_UP)
+				onKeyUp(_keyEvent);
 		}
 	}
 
@@ -1036,13 +1050,21 @@ public class Environment extends Activity
 		{
 			while (!Thread.currentThread().isInterrupted())
 			{
-				getEventMessenger().post(_keysProcessor);
-				try
+				AVKeyEvent keyEvent = _keysQueue.poll();
+				if (keyEvent != null)
 				{
-					Thread.sleep(50);
+					_keysProcessor._keyEvent = keyEvent;
+					getEventMessenger().post(_keysProcessor);
 				}
-				catch (InterruptedException e)
+				else
 				{
+					try
+					{
+						Thread.sleep(50);
+					}
+					catch (InterruptedException e)
+					{
+					}
 				}
 			}
 		}
