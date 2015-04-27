@@ -136,7 +136,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 
 			if (!MediaType.TV.equals(_feature.Component.PLAYER.getMediaType()))
 				// avoid handling non TV player events
-				return ;
+				return;
 			if (msgId == FeaturePlayer.ON_PLAY_STARTED)
 			{
 				if (_channelId == null || !_channelId.equals(_channel.getChannelId()))
@@ -213,9 +213,16 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 			if (lastChannelIndex < 0)
 				// can't find channel index, default to 1st channel
 				lastChannelIndex = 0;
-			Channel lastChannel = getActiveChannels().get(lastChannelIndex);
-			long bufferSize = _feature.Scheduler.EPG.getStreamBufferSize(lastChannel);
-			_featureTimeshift.setTimeshiftDuration(bufferSize);
+			if (lastChannelIndex < getActiveChannels().size())
+			{
+				Channel lastChannel = getActiveChannels().get(lastChannelIndex);
+				long bufferSize = _feature.Scheduler.EPG.getStreamBufferSize(lastChannel);
+				_featureTimeshift.setTimeshiftDuration(bufferSize);
+			}
+			else
+			{
+				Log.w(TAG, "No active channels while initiailizing FeatureChannels");
+			}
 		}
 		else
 		{
