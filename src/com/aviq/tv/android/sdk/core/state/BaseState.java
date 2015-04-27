@@ -68,8 +68,7 @@ public class BaseState extends Fragment
 		Log.i(getClass().getSimpleName(), ".show: " + super.getView());
 		if (super.getView() != null)
 		{
-//			super.getView().setVisibility(View.VISIBLE);
-			super.getView().setX(0);
+			super.getView().setVisibility(View.VISIBLE);
 		}
 	}
 
@@ -81,8 +80,7 @@ public class BaseState extends Fragment
 		Log.i(getClass().getSimpleName(), ".hide: " + super.getView());
 		if (super.getView() != null)
 		{
-			// super.getView().setVisibility(View.INVISIBLE);
-			super.getView().setX(1920);
+			super.getView().setVisibility(View.INVISIBLE);
 		}
 	}
 
@@ -170,6 +168,7 @@ public class BaseState extends Fragment
 
 	/**
 	 * Used by StateManager to control the creation status of the state
+	 *
 	 * @param isCreated
 	 */
 	void setCreated(boolean isCreated)

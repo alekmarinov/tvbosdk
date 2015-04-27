@@ -179,7 +179,7 @@ public class Environment extends Activity
 	private Cache _volleyCache;
 	private Network _volleyNetwork;
 	private int _maxKeysInQueue;
-	private boolean _isKeyQueueEnabled;
+	private boolean _isKeyQueueEnabled = false;
 
 	private OnResultReceived _onFeaturesReceived = new OnResultReceived()
 	{
