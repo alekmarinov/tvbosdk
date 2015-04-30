@@ -220,6 +220,13 @@ public class ChannelBulsat extends Channel implements Serializable
 				        + getChannelId());
 				genre = Genre.EROTIC;
 			}
+			else if (Environment.getInstance().getResources().getString(R.string.channel_category_alias_radio)
+			        .equals(genreTitle))
+			{
+				Log.i(TAG, "Assigning " + genreTitle + " to its alias " + Genre.RADIO + " for channel "
+				        + getChannelId());
+				genre = Genre.RADIO;
+			}
 			else if (Environment.getInstance().getResources().getString(R.string.channel_category_alias_other)
 			        .equals(genreTitle))
 			{
