@@ -851,12 +851,11 @@ public class Environment extends Activity
 	 */
 	/* package */boolean onKeyDown(AVKeyEvent keyEvent)
 	{
-		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", keyEventsEnabled = " + _keyEventsEnabled);
-
 		Bundle bundle = new Bundle();
 		bundle.putString(EXTRA_KEY, keyEvent.Code.name());
 		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
 		boolean consumed = _stateManager.onKeyDown(keyEvent);
+		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", keyEventsEnabled = " + _keyEventsEnabled + " -> consumed = " + consumed);
 
 		if (_keyEventsEnabled || _exceptKeys.contains(keyEvent.Code))
 		{

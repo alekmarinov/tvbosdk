@@ -15,6 +15,7 @@ import java.lang.reflect.Field;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.channels.FeatureChannels;
+import com.aviq.tv.android.sdk.feature.display.FeatureDisplay;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
@@ -61,6 +62,7 @@ public class Features
 		public FeatureWatchlist WATCHLIST;
 		public FeatureChannels CHANNELS;
 		public FeatureNetwork NETWORK;
+		public FeatureDisplay DISPLAY;
 		public FeatureEthernet ETHERNET;
 		public FeatureWireless WIRELESS;
 		public FeatureLanguage LANGUAGE;
