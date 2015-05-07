@@ -26,6 +26,7 @@ import com.aviq.tv.android.sdk.core.Log;
 public class BaseState extends Fragment
 {
 	private static final String TAG = BaseState.class.getSimpleName();
+	private boolean _isCreated;
 
 	@Override
 	public void onSaveInstanceState(Bundle outState)
@@ -64,9 +65,11 @@ public class BaseState extends Fragment
 	 */
 	public void show()
 	{
-		Log.i(getClass().getSimpleName(), ".show");
+		Log.i(getClass().getSimpleName(), ".show: " + super.getView());
 		if (super.getView() != null)
+		{
 			super.getView().setVisibility(View.VISIBLE);
+		}
 	}
 
 	/**
@@ -74,9 +77,11 @@ public class BaseState extends Fragment
 	 */
 	public void hide()
 	{
-		Log.i(getClass().getSimpleName(), ".hide");
+		Log.i(getClass().getSimpleName(), ".hide: " + super.getView());
 		if (super.getView() != null)
+		{
 			super.getView().setVisibility(View.INVISIBLE);
+		}
 	}
 
 	/**
@@ -159,5 +164,23 @@ public class BaseState extends Fragment
 	public String toString()
 	{
 		return getClass().getSimpleName();
+	}
+
+	/**
+	 * Used by StateManager to control the creation status of the state
+	 *
+	 * @param isCreated
+	 */
+	void setCreated(boolean isCreated)
+	{
+		_isCreated = isCreated;
+	}
+
+	/**
+	 * Returns true if the state is created and ready to use
+	 */
+	public boolean isCreated()
+	{
+		return _isCreated && isAdded();
 	}
 }

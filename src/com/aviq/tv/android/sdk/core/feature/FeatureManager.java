@@ -901,6 +901,8 @@ public class FeatureManager
 				Log.i(TAG, ">" + _featureNumber + ". Initializing " + feature + " (" + feature.getClass().getName()
 				        + ") with timeout " + _timeout + " secs");
 
+				onInitializeProgress(feature, 0.0f);
+
 				startTimeout();
 
 				// initializing next feature

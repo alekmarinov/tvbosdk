@@ -43,8 +43,8 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
-import com.aviq.tv.android.sdk.feature.epg.FeatureEPGCompat.OnStreamURLReceived;
 import com.aviq.tv.android.sdk.feature.system.FeatureTimeZone;
+import com.aviq.tv.android.sdk.utils.Calendars;
 
 /**
  * Component feature providing EPG data
@@ -64,7 +64,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		/**
 		 * The EPG service version
 		 */
-		EPG_VERSION(2),
+		EPG_VERSION(1),
 
 		/**
 		 * EPG channels url format
@@ -130,17 +130,18 @@ public abstract class FeatureEPG extends FeatureComponent
 
 		Param(boolean value)
 		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.EPG).put(name(), value);
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.EPG).put(name(), value);
 		}
 
 		Param(int value)
 		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.EPG).put(name(), value);
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.EPG).put(name(), value);
 		}
 
 		Param(String value)
 		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.EPG).put(name(), value);
+			Log.w(TAG, "put " + name() + " -> " + value);
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.EPG).put(name(), value);
 		}
 	}
 
@@ -155,6 +156,70 @@ public abstract class FeatureEPG extends FeatureComponent
 	private FeatureTimeZone _featureTimeZone;
 	private int _maxChannels = 0;
 	private ChannelsResponse _channelsResponse;
+	private ProgramsCache _programsCache = new ProgramsCache();
+
+	private class ProgramsCache
+	{
+		private String _channelId;
+		private Calendar _when;
+		private int _offset;
+		private int _count;
+		private List<Program> _programs;
+
+		List<Program> getPrograms(String channelId, Calendar when, int offset, int count)
+		{
+			if (_channelId == null || !_channelId.equals(channelId) || _offset != offset || _count != count)
+			{
+				Log.i(TAG, ".getPrograms: _channelId = " + _channelId + ", channelId = " + channelId + ", _offset = "
+				        + _offset + ", offset = " + offset + ", _count= " + _count + ", count = " + count);
+				return null;
+			}
+
+			if (_programs != null)
+			{
+				Log.i(TAG, ".getPrograms: _programs.size() = " + _programs.size() + ", count = " + count
+				        + ", _offset = " + _offset);
+
+				if (_programs.size() == count && _offset < 0 && -_offset < count)
+				{
+					Program currentProgram = _programs.get(-_offset);
+					Log.i(TAG, ".getPrograms: currentProgram = " + currentProgram);
+					if (currentProgram != null)
+					{
+						if (currentProgram.getStartTime().before(when) && currentProgram.getStopTime().after(when))
+						{
+							Log.i(TAG, ".getPrograms: RETURN " + _programs);
+							return _programs;
+						}
+						else
+						{
+							Log.i(TAG,
+							        ".getPrograms: getStartTime() = "
+							                + Calendars.makeString(currentProgram.getStartTime())
+							                + ", getStopTime() = " + Calendars.makeString(currentProgram.getStopTime())
+							                + ", when = " + Calendars.makeString(when));
+						}
+					}
+				}
+			}
+			else
+			{
+				Log.i(TAG, ".getPrograms: null programs");
+			}
+			return null;
+		}
+
+		void putPrograms(String channelId, Calendar when, int offset, int count, List<Program> programs)
+		{
+			Log.i(TAG, ".putPrograms: channelId = " + channelId + ", when = " + Calendars.makeString(when)
+			        + ", offset = " + offset + ", count= " + count + ", programs = " + programs);
+			_channelId = channelId;
+			_when = when;
+			_offset = offset;
+			_count = count;
+			_programs = programs;
+		}
+	}
 
 	public FeatureEPG() throws FeatureNotFoundException
 	{
@@ -187,7 +252,7 @@ public abstract class FeatureEPG extends FeatureComponent
 	}
 
 	/**
-	 * FIXME: comment this method
+	 * Retrieve channels list
 	 *
 	 * @param onResultReceived
 	 */
@@ -312,11 +377,23 @@ public abstract class FeatureEPG extends FeatureComponent
 
 	public void getPrograms(Channel channel, Calendar when, int offset, int count, OnResultReceived onResultReceived)
 	{
+		// check cache
+		List<Program> cachedPrograms = _programsCache.getPrograms(channel != null ? channel.getChannelId() : null,
+		        when, offset, count);
+		if (cachedPrograms != null)
+		{
+			// return programs from cache
+			onResultReceived.onReceiveResult(FeatureError.OK(this), cachedPrograms);
+			return;
+		}
+
 		// retrieve desired programs from server
 		ProgramsResponse programsResponse = new ProgramsResponse(channel.getChannelId(), when, offset, count,
 		        onResultReceived);
-		JsonObjectRequest request = new JsonObjectRequest(getProgramsUrl(channel.getChannelId(), when, offset, count),
-		        null, programsResponse, programsResponse);
+		String programsUrl = getProgramsUrl(channel.getChannelId(), when, offset, count);
+		Log.i(TAG, ".getPrograms: channel = " + channel + ", when = " + Calendars.makeString(when) + ", offset = "
+		        + offset + ", count = " + count + " -> " + programsUrl);
+		JsonObjectRequest request = new JsonObjectRequest(programsUrl, null, programsResponse, programsResponse);
 		_requestQueue.add(request);
 	}
 
@@ -361,6 +438,9 @@ public abstract class FeatureEPG extends FeatureComponent
 				List<Program> programs = parseProgramData(metaData, _channelId, _when, _offset, _count,
 				        response.getJSONArray("data"));
 				_onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPG.this), programs);
+
+				// add programs to cache
+				_programsCache.putPrograms(_channelId, _when, _offset, _count, programs);
 			}
 			catch (JSONException e)
 			{
@@ -406,7 +486,7 @@ public abstract class FeatureEPG extends FeatureComponent
 	 *            callback interface where the stream will be returned
 	 */
 	public abstract void getStreamUrl(Channel channel, long playTime, long playDuration,
-	        OnStreamURLReceived onStreamURLReceived);
+	        OnResultReceived onResultReceived);
 
 	/**
 	 * Return stream buffer size by channel
@@ -556,12 +636,12 @@ public abstract class FeatureEPG extends FeatureComponent
 					continue;
 				}
 
-				if (_minDate.after(startTime))
+				if (_minDate != null && _minDate.after(startTime))
 				{
 					_minDate = startTime;
 				}
 
-				if (_maxDate.before(startTime))
+				if (_maxDate != null && _maxDate.before(startTime))
 				{
 					_maxDate = startTime;
 				}
@@ -626,7 +706,6 @@ public abstract class FeatureEPG extends FeatureComponent
 		bundle.putString("SERVER", _epgServer);
 		bundle.putInt("VERSION", _epgVersion);
 		bundle.putString("PROVIDER", _epgProvider);
-		bundle.putString("CHANNEL", channelId);
 
 		StringBuffer sb = new StringBuffer(getPrefs().getString(Param.EPG_PROGRAMS_URL, bundle));
 		if (channelId != null)
@@ -635,7 +714,6 @@ public abstract class FeatureEPG extends FeatureComponent
 		}
 		if (when != null)
 		{
-			sb.append('/').append(channelId);
 			sb.append("?when=");
 
 			// format when and convert to GMT

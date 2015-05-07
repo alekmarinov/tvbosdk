@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -137,7 +138,12 @@ public class Environment extends Activity
 		/**
 		 * Memory cache for images (50 MB)
 		 */
-		IMAGE_MEM_CACHE_SIZE(50 * 1024 * 1024);
+		IMAGE_MEM_CACHE_SIZE(50 * 1024 * 1024),
+
+		/**
+		 * Maximum keys to keep in queue, remaining will be discarded
+		 */
+		MAX_KEYS_IN_QUEUE(3);
 
 		Param(int value)
 		{
@@ -167,10 +173,13 @@ public class Environment extends Activity
 	private FeatureRCU _featureRCU;
 	private boolean _keyEventsEnabled = true;
 	private ExceptKeysList _exceptKeys = new ExceptKeysList();
+	private ConcurrentLinkedQueue<AVKeyEvent> _keysQueue = new ConcurrentLinkedQueue<AVKeyEvent>();
 	private Context _context;
 	private boolean _isPause;
 	private Cache _volleyCache;
 	private Network _volleyNetwork;
+	private int _maxKeysInQueue;
+	private boolean _isKeyQueueEnabled = false;
 
 	private OnResultReceived _onFeaturesReceived = new OnResultReceived()
 	{
@@ -200,8 +209,7 @@ public class Environment extends Activity
 
 				// Setup Volley request queue
 
-				_volleyNetwork = new BasicNetwork(
-				        new HttpClientStack(AndroidHttpClient.newInstance("tvbosdk/volley")));
+				_volleyNetwork = new BasicNetwork(new HttpClientStack(AndroidHttpClient.newInstance("tvbosdk/volley")));
 
 				// Use 1/8th of the available memory for caching the global
 				// request queue
@@ -259,8 +267,6 @@ public class Environment extends Activity
 							_eventMessenger.trigger(ON_LOADED);
 							_isInitialized = true;
 						}
-
-						System.gc();
 					}
 
 					@Override
@@ -269,8 +275,6 @@ public class Environment extends Activity
 						Bundle bundle = new Bundle();
 						bundle.putFloat("progress", progress);
 						bundle.putString("featureName", feature.getType().name() + " " + feature.getName());
-
-						Log.i(TAG, "ON_LOADING: progress = " + progress);
 						_eventMessenger.triggerDirect(ON_LOADING, bundle);
 					}
 				});
@@ -334,11 +338,15 @@ public class Environment extends Activity
 			_userPrefs = createUserPrefs();
 			_prefs = createPrefs(SYSTEM_PREFS);
 
+			_maxKeysInQueue = _prefs.getInt(Param.MAX_KEYS_IN_QUEUE);
+
 			// enter strict mode in non release builds
 			if (isDevel())
 			{
-//				StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().detectAll().build());
-//				StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder().detectAll().build());
+				// StrictMode.setThreadPolicy(new
+				// StrictMode.ThreadPolicy.Builder().detectAll().build());
+				// StrictMode.setVmPolicy(new
+				// StrictMode.VmPolicy.Builder().detectAll().build());
 			}
 
 			int appDebugXmlId = getResources().getIdentifier(ECLIPSE_XML_RESOURCE, "raw", getPackageName());
@@ -414,6 +422,8 @@ public class Environment extends Activity
 		Log.i(TAG, ".onResume");
 		_isPause = false;
 		getEventMessenger().trigger(ON_RESUME);
+		if (!_keysProcessorThread.isAlive())
+			_keysProcessorThread.start();
 	}
 
 	@Override
@@ -423,6 +433,7 @@ public class Environment extends Activity
 		Log.i(TAG, ".onPause");
 		_isPause = true;
 		getEventMessenger().trigger(ON_PAUSE);
+		_keysProcessorThread.interrupt();
 	}
 
 	@Override
@@ -446,7 +457,21 @@ public class Environment extends Activity
 		if (_featureRCU != null)
 		{
 			Key key = _featureRCU.getKey(keyCode);
-			return onKeyDown(new AVKeyEvent(event, key));
+
+			if (_isKeyQueueEnabled)
+			{
+				// limit the number of keys in the queue discarding oldest keys
+				// FIXME: alek: consider replacing while to if
+				while (_keysQueue.size() > _maxKeysInQueue)
+				{
+					_keysQueue.remove();
+				}
+
+				_keysQueue.add(new AVKeyEvent(event, key));
+			}
+			else
+				return onKeyDown(new AVKeyEvent(event, key));
+			return true;
 		}
 		Log.w(TAG, ".onKeyDown: two early call before feature RCU is ready.");
 		return false;
@@ -458,7 +483,9 @@ public class Environment extends Activity
 		if (_featureRCU != null)
 		{
 			Key key = _featureRCU.getKey(keyCode);
-			return onKeyUp(new AVKeyEvent(event, key));
+			// return onKeyUp(new AVKeyEvent(event, key));
+			_keysQueue.add(new AVKeyEvent(event, key));
+			return true;
 		}
 		Log.w(TAG, ".onKeyUp: two early call before feature RCU is ready.");
 		return false;
@@ -797,16 +824,34 @@ public class Environment extends Activity
 	}
 
 	/**
+	 * Enable key handling mode in which all keys are pushed in a limited queue
+	 * and a background thread is sending the keys to the app sequentially
+	 *
+	 * @param isKeyQueueEnabled
+	 */
+	public void setKeyQueueEnabled(boolean isKeyQueueEnabled)
+	{
+		_isKeyQueueEnabled = isKeyQueueEnabled;
+	}
+
+	/**
+	 * @return true if the keys queue mode is enabled
+	 */
+	public boolean isKeyQueueEnabled()
+	{
+		return _isKeyQueueEnabled;
+	}
+
+	/**
 	 * Inject key press in the environment
 	 */
 	/* package */boolean onKeyDown(AVKeyEvent keyEvent)
 	{
-		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", keyEventsEnabled = " + _keyEventsEnabled);
-
 		Bundle bundle = new Bundle();
 		bundle.putString(EXTRA_KEY, keyEvent.Code.name());
 		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
 		boolean consumed = _stateManager.onKeyDown(keyEvent);
+		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", keyEventsEnabled = " + _keyEventsEnabled + " -> consumed = " + consumed);
 
 		if (_keyEventsEnabled || _exceptKeys.contains(keyEvent.Code))
 		{
@@ -849,7 +894,7 @@ public class Environment extends Activity
 		return new Prefs(name, _context.getSharedPreferences(name, Activity.MODE_PRIVATE), false);
 	}
 
-	public class BitmapMemLruCache extends LruCache<String, Bitmap> implements ImageCache
+	private class BitmapMemLruCache extends LruCache<String, Bitmap> implements ImageCache
 	{
 		public BitmapMemLruCache(int cacheSize)
 		{
@@ -878,7 +923,7 @@ public class Environment extends Activity
 		}
 	}
 
-	public class BitmapDiskLruCache implements ImageCache
+	private class BitmapDiskLruCache implements ImageCache
 	{
 		private DiskLruCache _lruCache;
 
@@ -962,7 +1007,7 @@ public class Environment extends Activity
 		}
 	}
 
-	public class BitmapMemDiskLruCache implements ImageCache
+	private class BitmapMemDiskLruCache implements ImageCache
 	{
 		private BitmapMemLruCache _memCache;
 		private BitmapDiskLruCache _diskCache;
@@ -997,6 +1042,50 @@ public class Environment extends Activity
 					_diskCache.putBitmap(key, bitmap);
 				}
 			});
+		}
+	}
+
+	private class KeysProcessor implements Runnable
+	{
+		AVKeyEvent _keyEvent;
+
+		@Override
+		public void run()
+		{
+			if (_keyEvent.Event.getAction() == KeyEvent.ACTION_DOWN)
+				onKeyDown(_keyEvent);
+			else if (_keyEvent.Event.getAction() == KeyEvent.ACTION_UP)
+				onKeyUp(_keyEvent);
+		}
+	}
+
+	private KeysProcessor _keysProcessor = new KeysProcessor();
+	private Thread _keysProcessorThread = new Thread(new KeysProcessorThread());
+
+	private class KeysProcessorThread implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			while (!Thread.currentThread().isInterrupted())
+			{
+				AVKeyEvent keyEvent = _keysQueue.poll();
+				if (keyEvent != null)
+				{
+					_keysProcessor._keyEvent = keyEvent;
+					getEventMessenger().post(_keysProcessor);
+				}
+				else
+				{
+					try
+					{
+						Thread.sleep(50);
+					}
+					catch (InterruptedException e)
+					{
+					}
+				}
+			}
 		}
 	}
 }

@@ -10,54 +10,29 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.DefaultHandler;
-
-import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
 import android.os.Bundle;
-import android.text.TextUtils;
 
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.ImageRequest;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
+import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
-import com.aviq.tv.android.sdk.feature.epg.FeatureEPGCompat;
-import com.aviq.tv.android.sdk.feature.epg.IEpgDataProvider;
-import com.aviq.tv.android.sdk.feature.epg.IEpgDataProvider.ChannelLogoType;
+import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 
 /**
  * RayV specific extension of EPG feature
  */
 @Author("alek")
-public class FeatureEPGBulsat extends FeatureEPGCompat
+public class FeatureEPGBulsat extends FeatureEPG
 {
 	public static final String TAG = FeatureEPGBulsat.class.getSimpleName();
 	private static final int DEFAULT_STREAM_PLAY_DURATION = 3600;
@@ -67,13 +42,21 @@ public class FeatureEPGBulsat extends FeatureEPGCompat
 		/**
 		 * Direct url to Bulsatcom channels
 		 */
-		BULSAT_CHANNELS_URL("http://api.iptv.bulsat.com/?xml&tv");
+		BULSAT_CHANNELS_URL("http://api.iptv.bulsat.com/?xml&tv"),
+
+		/**
+		 * EPG provider name
+		 */
+		EPG_PROVIDER("bulsat");
 
 		Param(String value)
 		{
-			Environment.getInstance().getFeaturePrefs(FeatureName.Scheduler.EPG).put(name(), value);
+			Log.w(TAG, "put " + name() + " -> " + value);
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.EPG).put(name(), value);
 		}
 	}
+
+	public static Param ParamIniter = Param.EPG_PROVIDER;
 
 	public FeatureEPGBulsat() throws FeatureNotFoundException
 	{
@@ -85,21 +68,15 @@ public class FeatureEPGBulsat extends FeatureEPGCompat
 	{
 		super.onEvent(msgId, bundle);
 
+		// FIXME: refactor
+/*
 		if (ON_EPG_UPDATED == msgId)
 		{
 			// Load and parse channel streams directly from the Bulsatcom
 			// server as they are expiring
 			updateBulsatChannelStreams();
 		}
-	}
-
-	/**
-	 * @return Bulsat EPG provider name
-	 */
-	@Override
-	protected FeatureEPGCompat.Provider getEPGProvider()
-	{
-		return FeatureEPGCompat.Provider.bulsat;
+		*/
 	}
 
 	@Override
@@ -143,9 +120,9 @@ public class FeatureEPGBulsat extends FeatureEPGCompat
 	}
 
 	@Override
-	protected String getProgramsUrl(String channelId)
+	protected String getProgramsUrl(String channelId, Calendar when, int offset, int count)
 	{
-		String baseUrl = super.getProgramsUrl(channelId);
+		String baseUrl = super.getProgramsUrl(channelId, when, offset, count);
 		StringBuffer url = new StringBuffer(baseUrl);
 		if (baseUrl.indexOf('?') > 0)
 			url.append('&');
@@ -212,7 +189,7 @@ public class FeatureEPGBulsat extends FeatureEPGCompat
 	 *            callback interface where the stream will be returned
 	 */
 	@Override
-	public void getStreamUrl(Channel channel, long playTime, long playDuration, OnStreamURLReceived onStreamURLReceived)
+	public void getStreamUrl(Channel channel, long playTime, long playDuration, OnResultReceived onResultReceived)
 	{
 		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
 		long playTimeDelta = System.currentTimeMillis() / 1000 - playTime;
@@ -244,7 +221,7 @@ public class FeatureEPGBulsat extends FeatureEPGCompat
 		}
 		Log.d(TAG, ".getStreamUrl: channel = " + channel.getChannelId() + ", playTime = " + playTime
 		        + ", playDuration = " + playDuration + " -> " + streamUrl);
-		onStreamURLReceived.onStreamURL(FeatureError.OK, streamUrl);
+		onResultReceived.onReceiveResult(FeatureError.OK, streamUrl);
 	}
 
 	@Override
@@ -254,6 +231,8 @@ public class FeatureEPGBulsat extends FeatureEPGCompat
 		return channelBulsat.getNDVR();
 	}
 
+	// FIXME: refactor consideration
+	/*
 	@Override
 	protected void retrieveChannelLogo(Channel channel, int channelIndex)
 	{
@@ -371,7 +350,10 @@ public class FeatureEPGBulsat extends FeatureEPGCompat
 			}
 		}).start();
 	}
+	*/
 
+	// FIXME: refactor
+	/*
 	private class XMLTVContentHandler extends DefaultHandler
 	{
 		static final String TAG_TV = "tv";
@@ -438,4 +420,5 @@ public class FeatureEPGBulsat extends FeatureEPGCompat
 			_buffer.setLength(0);
 		}
 	}
+	*/
 }

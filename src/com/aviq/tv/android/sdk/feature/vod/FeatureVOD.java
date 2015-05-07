@@ -649,7 +649,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 		{
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving VOD details with code " + statusCode + ": " + error);
+			Log.e(TAG, "Error retrieving VOD rate with code " + statusCode + ": " + error);
 			_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, statusCode, error), null);
 		}
 

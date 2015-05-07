@@ -184,6 +184,11 @@ public class FeatureError extends Exception
 		_feature = feature;
 		_resCode = errCode;
 		_resData = errData;
+
+		if (throwable != null && _resCode > 0)
+		{
+			_resCode = -_resCode;
+		}
 	}
 
 	/**

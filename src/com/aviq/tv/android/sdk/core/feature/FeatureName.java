@@ -28,6 +28,7 @@ public class FeatureName
 		WATCHLIST,
 		CHANNELS,
 		NETWORK,
+		DISPLAY,
 		ETHERNET,
 		WIRELESS,
 		LANGUAGE,
