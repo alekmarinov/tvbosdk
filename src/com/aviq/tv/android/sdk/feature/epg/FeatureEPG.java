@@ -29,6 +29,8 @@ import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Base64;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -157,6 +159,7 @@ public abstract class FeatureEPG extends FeatureComponent
 	private int _maxChannels = 0;
 	private ChannelsResponse _channelsResponse;
 	private ProgramsCache _programsCache = new ProgramsCache();
+	private JsonObjectRequest _programDetailsRequest;
 
 	private class ProgramsCache
 	{
@@ -378,8 +381,10 @@ public abstract class FeatureEPG extends FeatureComponent
 	public void getPrograms(Channel channel, Calendar when, int offset, int count, OnResultReceived onResultReceived)
 	{
 		// check cache
-		List<Program> cachedPrograms = _programsCache.getPrograms(channel != null ? channel.getChannelId() : null,
-		        when, offset, count);
+		String channelId = null;
+		if (channel != null)
+			channelId = channel.getChannelId();
+		List<Program> cachedPrograms = _programsCache.getPrograms(channelId, when, offset, count);
 		if (cachedPrograms != null)
 		{
 			// return programs from cache
@@ -388,9 +393,8 @@ public abstract class FeatureEPG extends FeatureComponent
 		}
 
 		// retrieve desired programs from server
-		ProgramsResponse programsResponse = new ProgramsResponse(channel.getChannelId(), when, offset, count,
-		        onResultReceived);
-		String programsUrl = getProgramsUrl(channel.getChannelId(), when, offset, count);
+		ProgramsResponse programsResponse = new ProgramsResponse(channelId, when, offset, count, onResultReceived);
+		String programsUrl = getProgramsUrl(channelId, when, offset, count);
 		Log.i(TAG, ".getPrograms: channel = " + channel + ", when = " + Calendars.makeString(when) + ", offset = "
 		        + offset + ", count = " + count + " -> " + programsUrl);
 		JsonObjectRequest request = new JsonObjectRequest(programsUrl, null, programsResponse, programsResponse);
@@ -725,5 +729,83 @@ public abstract class FeatureEPG extends FeatureComponent
 			sb.append("&count=").append(count);
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * Fill program details in program object
+	 *
+	 * @param channelId
+	 * @param program
+	 * @param onProgramDetails
+	 */
+	public void getProgramDetails(Program program, OnResultReceived onResultReceived)
+	{
+		if (program.hasDetails())
+		{
+			onResultReceived.onReceiveResult(FeatureError.OK, program);
+			return;
+		}
+
+		String programDetailsUrl = getProgramDetailsUrl(program.getChannel().getChannelId(), program.getId());
+		Log.i(TAG, "Retrieving program details of " + program.getTitle() + ", id = " + program.getId() + " from "
+		        + programDetailsUrl);
+
+		ProgramDetailsResponseCallback responseCallback = new ProgramDetailsResponseCallback(program, onResultReceived);
+
+		if (_programDetailsRequest != null)
+			_programDetailsRequest.cancel();
+		_programDetailsRequest = new JsonObjectRequest(Request.Method.GET, programDetailsUrl, null, responseCallback,
+		        responseCallback)
+		{
+			@Override
+			public Map<String, String> getHeaders() throws AuthFailureError
+			{
+				Map<String, String> headers = new HashMap<String, String>();
+				headers.put("Connection", "close");
+				return headers;
+			}
+		};
+
+		// retrieves program details from the global request queue
+		_requestQueue.add(_programDetailsRequest);
+	}
+
+	private String getProgramDetailsUrl(String channelId, String programId)
+	{
+		Bundle bundle = new Bundle();
+		bundle.putString("SERVER", _epgServer);
+		bundle.putInt("VERSION", _epgVersion);
+		bundle.putString("PROVIDER", _epgProvider);
+		bundle.putString("CHANNEL", channelId);
+		bundle.putString("ID", programId);
+
+		return getPrefs().getString(Param.EPG_PROGRAM_DETAILS_URL, bundle);
+	}
+
+	private class ProgramDetailsResponseCallback implements Response.Listener<JSONObject>, Response.ErrorListener
+	{
+		private OnResultReceived _onResultReceived;
+		private Program _program;
+
+		ProgramDetailsResponseCallback(Program program, OnResultReceived onResultReceived)
+		{
+			_program = program;
+			_onResultReceived = onResultReceived;
+		}
+
+		@Override
+		public void onResponse(JSONObject response)
+		{
+			_program.setDetails(response);
+			_onResultReceived.onReceiveResult(FeatureError.OK, _program);
+			_programDetailsRequest = null;
+		}
+
+		@Override
+		public void onErrorResponse(VolleyError error)
+		{
+			_onResultReceived.onReceiveResult(new FeatureError(error), null);
+			_programDetailsRequest = null;
+		}
 	}
 }
