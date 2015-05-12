@@ -769,9 +769,7 @@ public abstract class FeatureEPG extends FeatureComponent
 			final String programId = programIds.get(i);
 
 			String programDetailsUrl = getProgramDetailsUrl(channelId, programId);
-
 			Channel channel = getChannelById(channelId);
-
 			ProgramDetailsResponseCallback responseCallback = new ProgramDetailsResponseCallback(channel, programId, new OnResultReceived()
 			{
 				@Override
@@ -793,7 +791,7 @@ public abstract class FeatureEPG extends FeatureComponent
 						{
 							programs.add(programsMap.get(channelIds.get(j) + programIds.get(j)));
 						}
-						onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPG.this), object);
+						onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPG.this), programs);
 					}
 				}
 			});

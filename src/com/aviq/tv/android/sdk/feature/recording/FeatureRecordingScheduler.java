@@ -97,6 +97,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	public FeatureRecordingScheduler() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.TIMEZONE);
+		require(FeatureName.Component.EPG);
+
 		_sdfUTC = new SimpleDateFormat("yyyyMMddHHmmss");
 		_utc = TimeZone.getTimeZone("UTC");
 	}
@@ -333,7 +335,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 				}
 				buffer.append(program.getChannel().getChannelId());
 				buffer.append(ITEM_DELIMITER);
-				buffer.append(program.getStartTime());
+				buffer.append(_sdfUTC.format(program.getStartTime().getTime()));
 				buffer.append(ITEM_DELIMITER);
 				buffer.append(Integer.toString((int)(program.getLengthMillis() / 1000)));
 				buffer.append(RECORD_DELIMITER);
