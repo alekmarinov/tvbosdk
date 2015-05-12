@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -37,6 +36,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
+import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.utils.Calendars;
@@ -50,10 +50,9 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	private static final String TAG = FeatureRecordingScheduler.class.getSimpleName();
 	private static final String RECORD_DELIMITER = ";";
 	private static final String ITEM_DELIMITER = ",";
-	private static final int DATE_FORMAT_LEN = 8;
 
 	/** key = chanelID; value = map between record endTime and schedule record */
-	private Map<String, NavigableMap<String, RecordingScheduler>> _channelToRecordsNavigableMap = null;
+	private Map<String, NavigableMap<Calendar, Program>> _channelToRecordsNavigableMap = null;
 
 	private Set<Integer> _dayOffsets = new TreeSet<Integer>(Collections.reverseOrder());
 
@@ -85,10 +84,10 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		}
 	}
 
-	private Comparator<RecordingScheduler> _recordingSchedulerComparator = new Comparator<RecordingScheduler>()
+	private Comparator<Program> _recordingSchedulerComparator = new Comparator<Program>()
 	{
 		@Override
-		public int compare(RecordingScheduler lhs, RecordingScheduler rhs)
+		public int compare(Program lhs, Program rhs)
 		{
 			return lhs.getStartTime().compareTo(rhs.getStartTime());
 		}
@@ -108,13 +107,14 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		_userPrefs = Environment.getInstance().getUserPrefs();
 		_sdfUTC.setTimeZone(_utc);
 
-		loadRecordFromDataProvider(new OnLoadRecordings()
+		loadRecordFromDataProvider(new OnResultReceived()
 		{
+			@SuppressWarnings("unchecked")
 			@Override
-			public void onRecordingLoaded(FeatureError error,
-			        Map<String, NavigableMap<String, RecordingScheduler>> channelToRecordsNavigableMap)
+			public void onReceiveResult(FeatureError error, Object object)
 			{
-				_channelToRecordsNavigableMap = channelToRecordsNavigableMap;
+				if (!error.isError())
+					_channelToRecordsNavigableMap = (Map<String, NavigableMap<Calendar, Program>>) object;
 				onFeatureInitialized.onInitialized(error);
 			}
 		});
@@ -127,123 +127,54 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	}
 
 	/**
-	 * Add new schedule record for given time range
+	 * Add new program recording
 	 *
-	 * @param channelID
-	 *            channel ID
-	 * @param start
-	 *            range start in UTC
-	 * @param duration
-	 *            range duration in seconds
+	 * @param program
+	 *            for recording
 	 * @return true if record is added successfully, otherwise false
 	 */
-	public boolean addRecord(String channelID, Calendar start, int duration)
+	public boolean addRecord(Program program)
 	{
-		if (duration <= 0)
+		if (isDateInFuture(program.getStartTime()))
 		{
-			Log.w(TAG, "Try to record schedule with invalid duration " + duration);
-			return false;
-		}
-
-		String startTime = _sdfUTC.format(start.getTime());
-		Calendar calTime = Calendar.getInstance();
-		calTime.setTime(start.getTime());
-		calTime.add(Calendar.SECOND, duration);
-		String endTime = _sdfUTC.format(calTime.getTime());
-
-		if (isDateInFuture(start))
-		{
-			NavigableMap<String, RecordingScheduler> navMap = _channelToRecordsNavigableMap.get(channelID);
-			String nextRecord = null;
+			String channelId = program.getChannel().getChannelId();
+			NavigableMap<Calendar, Program> navMap = _channelToRecordsNavigableMap.get(channelId);
+			Calendar nextRecord = null;
 			if (navMap == null)
 			{
-				navMap = new TreeMap<String, RecordingScheduler>();
-				_channelToRecordsNavigableMap.put(channelID, navMap);
+				navMap = new TreeMap<Calendar, Program>();
+				_channelToRecordsNavigableMap.put(channelId, navMap);
 			}
 
 			// get record with least start time great than record's start time
-			nextRecord = navMap.ceilingKey(startTime);
+			nextRecord = navMap.ceilingKey(program.getStartTime());
 
 			// check if such record doen't exist or it starts after newly added
-			// record
-			// has finished
-			if ((nextRecord == null) || (nextRecord.compareTo(endTime) >= 0))
+			// record has finished
+			if ((nextRecord == null) || (nextRecord.after(program.getStopTime())))
 			{
-				try
-				{
-					// get record with greatest start time less than newly added
-					// record's start time
-					String prevRecord = navMap.floorKey(startTime);
-					boolean isRecordValid = false;
-
-					// check if such prevRecord () doen't exist
-					if (prevRecord != null)
-					{
-						calTime.setTime(_sdfUTC.parse(prevRecord));
-						int secDuration = navMap.get(prevRecord).getDuration();
-						calTime.add(Calendar.SECOND, secDuration);
-						String prevEndTime = _sdfUTC.format(calTime.getTime());
-						// check if newly added record start after prevRecord
-						// has finished
-						isRecordValid = (startTime.compareTo(prevEndTime) >= 0);
-					}
-					else
-					{
-						isRecordValid = true;
-					}
-					if (isRecordValid)
-					{
-						RecordingScheduler rc = new RecordingScheduler(channelID, startTime, duration);
-						navMap.put(startTime, rc);
-						int dayOffset = Calendars.getDayOffsetByDate(start);
-						Log.i(TAG,
-						        "Adding dayoffset " + dayOffset + " for " + channelID + "/"
-						                + Calendars.makeString(start));
-						_dayOffsets.add(dayOffset);
-					}
-					else
-					{
-						Log.w(TAG, "Overlapped channel intervals. Impossible to add interval " + startTime);
-						return false;
-					}
-				}
-				catch (ParseException e)
-				{
-					Log.e(TAG, e.getMessage(), e);
-					return false;
-
-				}
+				navMap.put(program.getStartTime(), program);
+				int dayOffset = Calendars.getDayOffsetByDate(program.getStartTime());
+				Log.i(TAG, "Adding dayoffset " + dayOffset + " for " + program.getChannel().getChannelId() + "/"
+				        + Calendars.makeString(program.getStartTime()));
+				_dayOffsets.add(dayOffset);
 			}
 			else
 			{
-				Log.w(TAG, "Overlapped channel intervals.Impossible to add interval " + startTime);
+				Log.w(TAG,
+				        "Overlapped channel intervals. Impossible to add interval at "
+				                + Calendars.makeString(program.getStartTime()));
 				return false;
 			}
 		}
 		else
 		{
-			Log.w(TAG, "Try to record schedule in the past " + start + "on channel " + channelID);
+			Log.w(TAG, "Try to record schedule in the past " + Calendars.makeString(program.getStartTime())
+			        + "on channel " + program.getChannel().getChannelId());
 			return false;
 		}
 
 		return saveRecords();
-	}
-
-	/**
-	 * Add new schedule record for given program
-	 *
-	 * @param program
-	 * @return true if record is added successfully, otherwise false
-	 */
-	public boolean addRecord(Program program)
-	{
-		if (program == null)
-		{
-			Log.e(TAG, ".addRecord(null) is not allowed");
-			return false;
-		}
-		int duration = program.getLengthMin() * 60;
-		return addRecord(program.getChannel().getChannelId(), program.getStartTime(), duration);
 	}
 
 	/**
@@ -254,29 +185,14 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 */
 	public boolean removeRecord(Program program)
 	{
-		int duration = program.getLengthMin() * 60;
-		return removeRecord(program.getChannel().getChannelId(), program.getStartTime(), duration);
-	}
-
-	/**
-	 * Remove record by channel Id and start time
-	 *
-	 * @param channelID
-	 * @param start
-	 * @param duration
-	 * @return
-	 */
-	public boolean removeRecord(String channelID, Calendar start, int duration)
-	{
-		NavigableMap<String, RecordingScheduler> navMap = _channelToRecordsNavigableMap.get(channelID);
+		NavigableMap<Calendar, Program> navMap = _channelToRecordsNavigableMap.get(program.getChannel().getChannelId());
 		if (navMap != null)
 		{
-			String startTime = _sdfUTC.format(start.getTime());
-			navMap.remove(startTime);
-			int dayOffset = Calendars.getDayOffsetByDate(start);
+			navMap.remove(program.getStartTime());
+			int dayOffset = Calendars.getDayOffsetByDate(program.getStartTime());
 			if (getRecordsByDate(dayOffset).size() == 0)
 			{
-				Log.i(TAG, "Removing dayoffset " + dayOffset + " for " + channelID + "/" + Calendars.makeString(start));
+				Log.i(TAG, "Removing dayoffset " + dayOffset + " for " + program.getChannel().getChannelId() + "/" + Calendars.makeString(program.getStartTime()));
 				_dayOffsets.remove(dayOffset);
 			}
 			return saveRecords();
@@ -285,14 +201,14 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	}
 
 	/**
-	 * Return all records by date
+	 * Return all programs for recording by date
 	 *
 	 * @param dateOffset
 	 *            - offset to current day, ex: 0 - current day, +1 (next day)
 	 */
-	public List<RecordingScheduler> getRecordsByDate(int dateOffset)
+	public List<Program> getRecordsByDate(int dateOffset)
 	{
-		List<RecordingScheduler> records = new ArrayList<RecordingScheduler>();
+		List<Program> programs = new ArrayList<Program>();
 		Calendar date = Calendars.getDateByDayOffsetFrom(
 		        Calendar.getInstance(_feature.Component.TIMEZONE.getTimeZone()), dateOffset);
 		// String strDate = String.format("%04d%02d%02d",
@@ -300,32 +216,22 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		// date.get(Calendar.DAY_OF_MONTH));
 		Log.d(TAG, ".getRecordsByDate: dateOffset = " + dateOffset + " -> " + Calendars.makeString(date));
 
-		for (NavigableMap<String, RecordingScheduler> map : _channelToRecordsNavigableMap.values())
+		for (NavigableMap<Calendar, Program> map : _channelToRecordsNavigableMap.values())
 		{
-			for (RecordingScheduler entry : map.values())
+			for (Program program : map.values())
 			{
-				String startTime = entry.getStartTime();
-				try
+				Calendar programTime = program.getStartTime();
+				Log.d(TAG,
+				        "Comparing entry offset " + Calendars.makeString(programTime) + " - "
+				                + Calendars.getDayOffsetByDate(programTime) + " with dateOffset = " + dateOffset);
+				if (Calendars.getDayOffsetByDate(programTime) == dateOffset)
 				{
-					Date programDate = _sdfUTC.parse(startTime);
-					Calendar programTime = Calendar.getInstance(_feature.Component.TIMEZONE.getTimeZone());
-					programTime.setTime(programDate);
-					Log.d(TAG,
-					        "Comparing entry offset " + Calendars.makeString(programTime) + " - "
-					                + Calendars.getDayOffsetByDate(programTime) + " with dateOffset = " + dateOffset);
-					if (Calendars.getDayOffsetByDate(programTime) == dateOffset)
-					{
-						records.add(entry);
-					}
-				}
-				catch (ParseException e)
-				{
-					Log.e(TAG, e.getMessage(), e);
+					programs.add(program);
 				}
 			}
 		}
-		Collections.sort(records, _recordingSchedulerComparator);
-		return records;
+		Collections.sort(programs, _recordingSchedulerComparator);
+		return programs;
 	}
 
 	/**
@@ -348,13 +254,12 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		}
 
 		Channel channel = program.getChannel();
-		NavigableMap<String, RecordingScheduler> navMap = _channelToRecordsNavigableMap.get(channel.getChannelId());
+		NavigableMap<Calendar, Program> navMap = _channelToRecordsNavigableMap.get(channel.getChannelId());
 		if (navMap == null)
 		{
 			return false;
 		}
-		String progId = program.getId();
-		return navMap.containsKey(progId);
+		return navMap.containsKey(program.getStartTime());
 	}
 
 	/**
@@ -393,7 +298,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 */
 	public boolean isAvailableRecordOnChannel(Channel channel)
 	{
-		NavigableMap<String, RecordingScheduler> navMap = _channelToRecordsNavigableMap.get(channel.getChannelId());
+		NavigableMap<Calendar, Program> navMap = _channelToRecordsNavigableMap.get(channel.getChannelId());
 		if (navMap == null)
 		{
 			return false;
@@ -418,31 +323,20 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	private boolean saveRecords()
 	{
 		StringBuilder buffer = new StringBuilder();
-		Calendar calStartTime = _feature.Component.TIMEZONE.getCurrentTime();
-
-		for (NavigableMap<String, RecordingScheduler> map : _channelToRecordsNavigableMap.values())
+		for (NavigableMap<Calendar, Program> map : _channelToRecordsNavigableMap.values())
 		{
-			for (RecordingScheduler entry : map.values())
+			for (Program program : map.values())
 			{
-				try
+				if (isDateExpiredForRecordings(program.getStartTime(), null))
 				{
-					calStartTime.setTime(_sdfUTC.parse(entry.getStartTime()));
-					if (isDateExpiredForRecordings(calStartTime, null))
-					{
-						continue;
-					}
-					buffer.append(entry.getChannelID());
-					buffer.append(ITEM_DELIMITER);
-					buffer.append(entry.getStartTime());
-					buffer.append(ITEM_DELIMITER);
-					buffer.append(Integer.toString(entry.getDuration()));
-					buffer.append(RECORD_DELIMITER);
+					continue;
 				}
-				catch (ParseException e)
-				{
-					Log.e(TAG, e.getMessage(), e);
-					return false;
-				}
+				buffer.append(program.getChannel().getChannelId());
+				buffer.append(ITEM_DELIMITER);
+				buffer.append(program.getStartTime());
+				buffer.append(ITEM_DELIMITER);
+				buffer.append(Integer.toString((int)(program.getLengthMillis() / 1000)));
+				buffer.append(RECORD_DELIMITER);
 			}
 		}
 		return saveRecordsToDataProvider(buffer.toString());
@@ -454,64 +348,91 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 * @param onLoadRecordings
 	 *            - OnLoadRecordings callback
 	 */
-	protected void loadRecordFromDataProvider(OnLoadRecordings onLoadRecordings)
+	protected void loadRecordFromDataProvider(final OnResultReceived onResultReceived)
 	{
-		FeatureError error = FeatureError.OK(this);
-		HashMap<String, NavigableMap<String, RecordingScheduler>> channelToRecordsNavigableMap = new HashMap<String, NavigableMap<String, RecordingScheduler>>();
-		try
+		final HashMap<String, NavigableMap<String, Program>> channelToRecordsNavigableMap = new HashMap<String, NavigableMap<String, Program>>();
+		if (!_userPrefs.has(UserParam.RECORDINGS))
 		{
-			if (_userPrefs.has(UserParam.RECORDINGS))
+			onResultReceived.onReceiveResult(FeatureError.OK(this), channelToRecordsNavigableMap);
+			return;
+		}
+
+		List<String> channelIds = new ArrayList<String>();
+		List<String> programIds = new ArrayList<String>();
+		String recordings = _userPrefs.getString(UserParam.RECORDINGS);
+		Log.i(TAG, "Load recordings: " + recordings);
+		String[] records = recordings.split(RECORD_DELIMITER);
+		for (String record : records)
+		{
+			String[] items = record.split(ITEM_DELIMITER);
+			if (items.length != 3)
 			{
-				String recordings = _userPrefs.getString(UserParam.RECORDINGS);
-				Log.i(TAG, "Load recordings: " + recordings);
-				String[] records = recordings.split(RECORD_DELIMITER);
-				for (String record : records)
+				Log.e(TAG, "Invalid recording format! Expected chnid,start,duration + got " + record);
+				continue;
+			}
+			final String channelId = items[0];
+			final String programId = items[1];
+
+			Calendar calStartTime = Calendar.getInstance(_utc);
+			try
+			{
+				calStartTime.setTime(_sdfUTC.parse(programId));
+			}
+			catch (ParseException e)
+			{
+				Log.e(TAG, e.getMessage(), e);
+				continue;
+			}
+
+			if (isDateExpiredForRecordings(calStartTime, null))
+			{
+				Log.i(TAG, "Record since " + Calendars.makeString(calStartTime) + " has expired date");
+				continue;
+			}
+
+			channelIds.add(channelId);
+			programIds.add(programId);
+		}
+
+		_feature.Component.EPG.getMultiplePrograms(channelIds, programIds, new OnResultReceived()
+		{
+			@Override
+			public void onReceiveResult(FeatureError error, Object object)
+			{
+				if (!error.isError())
 				{
-					String[] items = record.split(ITEM_DELIMITER);
-					if (items.length != 3)
+					@SuppressWarnings("unchecked")
+					List<Program> programs = (List<Program>) object;
+					for (Program program : programs)
 					{
-						Log.e(TAG, "Invalid recording format! Expected chnid,start,duration + got " + record);
-						continue;
+						String channelId = program.getChannel().getChannelId();
+						NavigableMap<String, Program> navigableMap = null;
+						if (!channelToRecordsNavigableMap.containsKey(channelId))
+						{
+							navigableMap = new TreeMap<String, Program>();
+							channelToRecordsNavigableMap.put(channelId, navigableMap);
+						}
+						else
+						{
+							navigableMap = channelToRecordsNavigableMap.get(channelId);
+						}
+						navigableMap.put(program.getId(), program);
+
+						int dayOffset = Calendars.getDayOffsetByDate(program.getStartTime());
+						Log.i(TAG,
+						        "Adding dayOffset = " + dayOffset + " from "
+						                + Calendars.makeString(program.getStartTime()) + " into the set");
+						_dayOffsets.add(dayOffset);
 					}
-					String chnId = items[0];
-					String startTime = items[1];
-					int duration = Integer.parseInt(items[2]);
-
-					Calendar calStartTime = Calendar.getInstance(_utc);
-					calStartTime.setTime(_sdfUTC.parse(startTime));
-
-					if (isDateExpiredForRecordings(calStartTime, null))
-					{
-						Log.i(TAG, "Record since " + Calendars.makeString(calStartTime) + " has expired date");
-						continue;
-					}
-
-					NavigableMap<String, RecordingScheduler> navigableMap = null;
-					RecordingScheduler rc = new RecordingScheduler(chnId, startTime, duration);
-
-					if (!channelToRecordsNavigableMap.containsKey(chnId))
-					{
-						navigableMap = new TreeMap<String, RecordingScheduler>();
-						channelToRecordsNavigableMap.put(chnId, navigableMap);
-					}
-					else
-					{
-						navigableMap = channelToRecordsNavigableMap.get(chnId);
-					}
-
-					navigableMap.put(startTime, rc);
-					int dayOffset = Calendars.getDayOffsetByDate(calStartTime);
-					Log.i(TAG, "Adding dayOffset = " + dayOffset + " from " + Calendars.makeString(calStartTime)
-					        + " into the set");
-					_dayOffsets.add(dayOffset);
+					onResultReceived.onReceiveResult(FeatureError.OK(FeatureRecordingScheduler.this),
+					        channelToRecordsNavigableMap);
+				}
+				else
+				{
+					onResultReceived.onReceiveResult(error, channelToRecordsNavigableMap);
 				}
 			}
-		}
-		catch (ParseException e)
-		{
-			error = new FeatureError(this, e);
-		}
-		onLoadRecordings.onRecordingLoaded(error, channelToRecordsNavigableMap);
+		});
 	}
 
 	protected boolean saveRecordsToDataProvider(String recordings)
@@ -525,6 +446,6 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 */
 	protected interface OnLoadRecordings
 	{
-		public void onRecordingLoaded(FeatureError error, Map<String, NavigableMap<String, RecordingScheduler>> map);
+		public void onRecordingLoaded(FeatureError error, Map<String, NavigableMap<String, Program>> map);
 	}
 }

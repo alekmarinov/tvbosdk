@@ -10,10 +10,10 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
-import java.io.Serializable;
-
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
@@ -21,9 +21,9 @@ import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
 /**
  * Bulsat specific program data holder class
  */
-public class ProgramBulsat extends Program implements Serializable
+public class ProgramBulsat extends Program
 {
-	private static final long serialVersionUID = 5914858738230945780L;
+	public static final String TAG = ProgramBulsat.class.getSimpleName();
 	public static final String NO_EPG_DATA = "NO_EPG_DATA";
 
 	public static enum ImageSize
@@ -70,12 +70,23 @@ public class ProgramBulsat extends Program implements Serializable
 	@Override
     public boolean hasDetails()
 	{
-		return true;
+		return _description != null;
 	}
 
 	@Override
 	public void setDetails(JSONObject detailsResponse)
 	{
+		try
+        {
+			if (detailsResponse.has("description"))
+				_description = detailsResponse.getString("description");
+			else
+				_description = "";
+        }
+        catch (JSONException e)
+        {
+        	Log.e(TAG, e.getMessage(), e);
+        }
 	}
 
 	@Override

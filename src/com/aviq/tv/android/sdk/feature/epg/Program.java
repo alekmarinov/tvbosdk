@@ -9,7 +9,6 @@
  */
 package com.aviq.tv.android.sdk.feature.epg;
 
-import java.io.Serializable;
 import java.util.Calendar;
 
 import org.json.JSONObject;
@@ -17,7 +16,7 @@ import org.json.JSONObject;
 /**
  * Program data holder class
  */
-public abstract class Program implements Comparable<Program>, Serializable
+public abstract class Program implements Comparable<Program>
 {
     private static final long serialVersionUID = 7712628341257180116L;
 

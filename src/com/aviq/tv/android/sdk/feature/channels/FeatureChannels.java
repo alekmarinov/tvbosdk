@@ -12,9 +12,7 @@ package com.aviq.tv.android.sdk.feature.channels;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import android.os.Bundle;
 
@@ -123,14 +121,8 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	// Reference to optional timeshift feature
 	private FeatureTimeshift _featureTimeshift;
 
-	// List of all channels from the EPG provider
-	private List<Channel> _allChannels = new ArrayList<Channel>();
-
 	// List of favorite channels
 	private List<Channel> _favoriteChannels = new ArrayList<Channel>();
-
-	// Maps channel id to channel object
-	private Map<String, Channel> _allChannelsMap = new HashMap<String, Channel>();
 
 	// The last played channel
 	private Channel _lastPlayChannel;
@@ -149,87 +141,67 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".initialize");
 		_userPrefs = Environment.getInstance().getUserPrefs();
 
-		// load all EPG channels
-		_feature.Component.EPG.getChannels(new OnResultReceived()
+		List<Channel> channels = _feature.Component.EPG.getChannels();
+		// set last channel to the first channel if not set
+		if (channels.size() > 0 && !_userPrefs.has(UserParam.LAST_CHANNEL_ID))
 		{
-			@SuppressWarnings("unchecked")
-            @Override
-			public void onReceiveResult(FeatureError error, Object object)
+			_userPrefs.put(UserParam.LAST_CHANNEL_ID, channels.get(0).getChannelId());
+		}
+
+		loadFavoriteChannels();
+
+		_featureTimeshift = (FeatureTimeshift) Environment.getInstance().getFeatureComponent(
+		        FeatureName.Component.TIMESHIFT);
+
+		if (_featureTimeshift != null)
+		{
+			Channel lastChannel = getLastChannel();
+			if (lastChannel != null)
 			{
-				if (!error.isError())
-				{
-					_allChannels = (List<Channel>) object;
+				long bufferSize = _feature.Component.EPG.getStreamBufferSize(lastChannel);
+				_featureTimeshift.setTimeshiftDuration(bufferSize);
+			}
+			else
+			{
+				Log.w(TAG, "No last channel while initiailizing FeatureChannels");
+			}
+		}
+		else
+		{
+			Log.i(TAG, "Timeshift support is disabled");
+		}
 
-					// set last channel to the first channel if not set
-					if (_allChannels.size() > 0 && !_userPrefs.has(UserParam.LAST_CHANNEL_ID))
-					{
-						_userPrefs.put(UserParam.LAST_CHANNEL_ID, _allChannels.get(0).getChannelId());
-					}
+		Environment.getInstance().getEventMessenger().register(FeatureChannels.this, Environment.ON_RESUME);
+		Environment.getInstance().getEventMessenger().register(FeatureChannels.this, Environment.ON_PAUSE);
 
-					// index all channels to map
-					_allChannelsMap.clear();
-					for (Channel channel : _allChannels)
-					{
-						_allChannelsMap.put(channel.getChannelId(), channel);
-					}
+		// register on player events
+		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
+		        FeaturePlayer.ON_PLAY_ERROR);
+		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
+		        FeaturePlayer.ON_PLAY_PAUSE);
+		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
+		        FeaturePlayer.ON_PLAY_STOP);
+		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
+		        FeaturePlayer.ON_PLAY_TIMEOUT);
+		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
+		        FeaturePlayer.ON_PLAY_STARTED);
 
-					loadFavoriteChannels();
+		if (getPrefs().getBool(Param.AUTOPLAY))
+		{
+			playLast();
+		}
 
-					_featureTimeshift = (FeatureTimeshift) Environment.getInstance().getFeatureComponent(
-					        FeatureName.Component.TIMESHIFT);
-
-					if (_featureTimeshift != null)
-					{
-						Channel lastChannel = getLastChannel();
-						if (lastChannel != null)
-						{
-							long bufferSize = _feature.Component.EPG.getStreamBufferSize(lastChannel);
-							_featureTimeshift.setTimeshiftDuration(bufferSize);
-						}
-						else
-						{
-							Log.w(TAG, "No last channel while initiailizing FeatureChannels");
-						}
-					}
-					else
-					{
-						Log.i(TAG, "Timeshift support is disabled");
-					}
-
-					Environment.getInstance().getEventMessenger().register(FeatureChannels.this, Environment.ON_RESUME);
-					Environment.getInstance().getEventMessenger().register(FeatureChannels.this, Environment.ON_PAUSE);
-
-					// register on player events
-					_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
-					        FeaturePlayer.ON_PLAY_ERROR);
-					_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
-					        FeaturePlayer.ON_PLAY_PAUSE);
-					_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
-					        FeaturePlayer.ON_PLAY_STOP);
-					_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
-					        FeaturePlayer.ON_PLAY_TIMEOUT);
-					_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
-					        FeaturePlayer.ON_PLAY_STARTED);
-
-					if (getPrefs().getBool(Param.AUTOPLAY))
-					{
-						playLast();
-					}
-
-					_feature.Component.DEVICE.addStatusField("channel", new IStatusFieldGetter()
-					{
-						@Override
-						public String getStatusField()
-						{
-							if (MediaType.TV.equals(_feature.Component.PLAYER.getMediaType()) && _feature.Component.PLAYER.isPlaying())
-								return getLastChannelId();
-							return null;
-						}
-					});
-					FeatureChannels.super.initialize(onFeatureInitialized);
-				}
+		_feature.Component.DEVICE.addStatusField("channel", new IStatusFieldGetter()
+		{
+			@Override
+			public String getStatusField()
+			{
+				if (MediaType.TV.equals(_feature.Component.PLAYER.getMediaType()) && _feature.Component.PLAYER.isPlaying())
+					return getLastChannelId();
+				return null;
 			}
 		});
+		FeatureChannels.super.initialize(onFeatureInitialized);
 	}
 
 	@Override
@@ -278,7 +250,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	 */
 	public Channel getFavoriteChannel(String channelId)
 	{
-		Channel channel = _allChannelsMap.get(channelId);
+		Channel channel = _feature.Component.EPG.getChannelById(channelId);
 		if (channel != null && _favoriteChannels.indexOf(channel) >= 0)
 		{
 			return channel;
@@ -305,7 +277,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		}
 		else
 		{
-			return _allChannels;
+			return _feature.Component.EPG.getChannels();
 		}
 	}
 
@@ -377,21 +349,22 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	public void play(final int index, final long playTime, final long playDuration)
 	{
 		Log.i(TAG, ".play: index = " + index + ", playTime = " + playTime + ", playDuration = " + playDuration);
-		if (_allChannels.size() == 0)
+		int nChannels = _feature.Component.EPG.getChannels().size();
+		if (nChannels == 0)
 		{
 			Log.w(TAG, ".play: channels list is empty");
 			return ;
 		}
 		int playIndex = 0;
-		if (index < 0 || index >= _allChannels.size())
+		if (index < 0 || index >= nChannels)
 		{
-			Log.w(TAG, ".play: channel index exceeds limits [0:" + _allChannels.size() + "), setting the index to 0");
+			Log.w(TAG, ".play: channel index exceeds limits [0:" + nChannels + "), setting the index to 0");
 		}
 		else
 		{
 			playIndex = index;
 		}
-		final Channel channel = _allChannels.get(playIndex);
+		final Channel channel = _feature.Component.EPG.getChannels().get(playIndex);
 		Channel lastChannel = getLastChannel();
 		if (lastChannel != null && lastChannel.getIndex() != channel.getIndex())
 		{
@@ -470,18 +443,11 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	 */
 	public void play(String channelId)
 	{
-		_feature.Component.EPG.getChannelById(channelId, new OnResultReceived()
-		{
-			@Override
-			public void onReceiveResult(FeatureError error, Object object)
-			{
-				if (!error.isError())
-				{
-					Channel channel = (Channel) object;
-					play(channel.getIndex());
-				}
-			}
-		});
+		Channel channel = _feature.Component.EPG.getChannelById(channelId);
+		if (channel != null)
+			play(channel.getIndex());
+		else
+			Log.w(TAG, "Channel id = " + channelId + " is not found");
 	}
 
 	/**
@@ -528,7 +494,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		String lastChannelId = getLastChannelId();
 		if (lastChannelId != null)
 		{
-			return _allChannelsMap.get(lastChannelId);
+			return _feature.Component.EPG.getChannelById(lastChannelId);
 		}
 		return null;
 	}
@@ -541,7 +507,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		String previousChannelId = getPreviousChannelId();
 		if (previousChannelId != null)
 		{
-			return _allChannelsMap.get(previousChannelId);
+			return _feature.Component.EPG.getChannelById(previousChannelId);
 		}
 		return null;
 	}
@@ -586,7 +552,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	public void saveSyncedChannel()
 	{
 		StringBuffer buffer = new StringBuffer();
-		for (Channel channel : _allChannels)
+		for (Channel channel : _feature.Component.EPG.getChannels())
 		{
 			if (buffer.length() > 0)
 				buffer.append(',');
@@ -676,7 +642,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 			String[] channelIds = buffer.split(",");
 			for (String channelId : channelIds)
 			{
-				Channel channel = _allChannelsMap.get(channelId);
+				Channel channel = _feature.Component.EPG.getChannelById(channelId);
 				if (channel != null)
 					_favoriteChannels.add(channel);
 			}
@@ -685,7 +651,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		        && getPrefs().getBool(Param.DEFAULT_ALL_CHANNELS_FAVORITE))
 		{
 			Log.i(TAG, "No favorite channels after update. Adding all channels as favorites");
-			_favoriteChannels.addAll(_allChannels);
+			_favoriteChannels.addAll(_feature.Component.EPG.getChannels());
 		}
 
 		Log.i(TAG, "Loaded " + _favoriteChannels.size() + " favorite channels");
