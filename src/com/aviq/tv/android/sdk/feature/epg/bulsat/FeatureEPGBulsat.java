@@ -10,12 +10,30 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import android.os.Bundle;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.DefaultHandler;
+
+import android.text.TextUtils;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
@@ -45,13 +63,24 @@ public class FeatureEPGBulsat extends FeatureEPG
 		BULSAT_CHANNELS_URL("http://api.iptv.bulsat.com/?xml&tv"),
 
 		/**
+		 * Update interval for updating channel streams directly from bulsat
+		 * server
+		 */
+		// STREAMS_UPDATE_INTERVAL(3600 * 1000),
+		STREAMS_UPDATE_INTERVAL(60 * 1000),
+
+		/**
 		 * EPG provider name
 		 */
 		EPG_PROVIDER("bulsat");
 
+		Param(long value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.EPG).put(name(), value);
+		}
+
 		Param(String value)
 		{
-			Log.w(TAG, "put " + name() + " -> " + value);
 			Environment.getInstance().getFeaturePrefs(FeatureName.Component.EPG).put(name(), value);
 		}
 	}
@@ -64,19 +93,21 @@ public class FeatureEPGBulsat extends FeatureEPG
 	}
 
 	@Override
-	public void onEvent(int msgId, Bundle bundle)
+	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-		super.onEvent(msgId, bundle);
+		super.initialize(onFeatureInitialized);
 
-		// FIXME: refactor
-/*
-		if (ON_EPG_UPDATED == msgId)
+		// update channel streams periodically directly from the bulsat server
+		final long updateInterval = getPrefs().getLong(Param.STREAMS_UPDATE_INTERVAL);
+		getEventMessenger().postDelayed(new Runnable()
 		{
-			// Load and parse channel streams directly from the Bulsatcom
-			// server as they are expiring
-			updateBulsatChannelStreams();
-		}
-		*/
+			@Override
+			public void run()
+			{
+				updateBulsatChannelStreams();
+				getEventMessenger().postDelayed(this, updateInterval);
+			}
+		}, updateInterval);
 	}
 
 	@Override
@@ -108,9 +139,11 @@ public class FeatureEPGBulsat extends FeatureEPG
 				bulsatMetaData.metaChannelPG = j;
 			else if ("recordable".equals(key))
 				bulsatMetaData.metaChannelRecordable = j;
-			else if ("thumbnail_selected".equals(key))
+			else if ("thumbnail_base64".equals(key))
+				bulsatMetaData.metaChannelLogo = j;
+			else if ("thumbnail_selected_base64".equals(key))
 				bulsatMetaData.metaChannelLogoSelected = j;
-			else if ("thumbnail_favorite".equals(key))
+			else if ("thumbnail_favorite_base64".equals(key))
 				bulsatMetaData.metaChannelLogoFavorite = j;
 			else if ("program_image_medium".equals(key))
 				bulsatMetaData.metaChannelProgramImageMedium = j;
@@ -143,7 +176,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 	{
 		String url = super.getChannelsUrl();
 		return url
-		        + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable,thumbnail_selected,thumbnail_favorite,program_image_medium,program_image_large";
+		        + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable,thumbnail_base64,thumbnail_selected_base64,thumbnail_favorite_base64,program_image_medium,program_image_large";
 	}
 
 	@Override
@@ -231,74 +264,6 @@ public class FeatureEPGBulsat extends FeatureEPG
 		return channelBulsat.getNDVR();
 	}
 
-	// FIXME: refactor consideration
-	/*
-	@Override
-	protected void retrieveChannelLogo(Channel channel, int channelIndex)
-	{
-		ImageRequest imageRequest;
-		LogoResponseCallback responseCallback;
-		String channelLogoUrl;
-
-		// download selected channel logo
-		String channelId = channel.getChannelId();
-		ChannelBulsat channelBulsat = (ChannelBulsat) channel;
-
-		// retrieves selected channel logo
-		channelLogoUrl = getChannelImageUrl(channelId, channelBulsat.getLogo(ChannelBulsat.LOGO_SELECTED));
-		Log.d(TAG, "Retrieving selected channel logo for index " + channelIndex + " from " + channelLogoUrl);
-		responseCallback = new LogoResponseCallback(channelId, channelIndex, IEpgDataProvider.ChannelLogoType.SELECTED);
-		imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth, _channelLogoHeight,
-		        Config.ARGB_8888, responseCallback);
-		_requestQueue.add(imageRequest);
-
-		// retrieves favorite channel logo
-		channelLogoUrl = getChannelImageUrl(channelId, channelBulsat.getLogo(ChannelBulsat.LOGO_FAVORITE));
-		responseCallback = new LogoResponseCallback(channelId, channelIndex, IEpgDataProvider.ChannelLogoType.FAVORITE);
-		imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth, _channelLogoHeight,
-		        Config.ARGB_8888, responseCallback);
-		_requestQueue.add(imageRequest);
-
-		// FIXME: if the request of the selected or favorite logo finishes after
-		// the request
-		// of the normal logo, the last will not register in the EpgDataCompat
-
-		// retrieves normal channel logo
-		super.retrieveChannelLogo(channel, channelIndex);
-	}
-
-	private class LogoResponseCallback implements Response.Listener<Bitmap>, Response.ErrorListener
-	{
-		private int _index;
-		private String _channelId;
-		private ChannelLogoType _logoType;
-
-		LogoResponseCallback(String channelId, int index, ChannelLogoType logoType)
-		{
-			_channelId = channelId;
-			_index = index;
-			_logoType = logoType;
-		}
-
-		@Override
-		public void onResponse(Bitmap response)
-		{
-			Log.d(TAG,
-			        "Received selected logo for _index = " + _index + " " + response.getWidth() + "x"
-			                + response.getHeight() + ", _epgDataBeingLoaded = " + _epgDataBeingLoaded);
-			if (_epgDataBeingLoaded != null)
-			{
-				_epgDataBeingLoaded.setChannelLogo(_index, response, _logoType);
-			}
-		}
-
-		@Override
-		public void onErrorResponse(VolleyError error)
-		{
-			Log.d(TAG, "Retrieve channel logo " + _channelId + " with error: " + error);
-		}
-	};
-
 	private void updateBulsatChannelStreams()
 	{
 		Log.i(TAG, ".updateBulsatChannelStreams");
@@ -350,10 +315,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 			}
 		}).start();
 	}
-	*/
 
-	// FIXME: refactor
-	/*
 	private class XMLTVContentHandler extends DefaultHandler
 	{
 		static final String TAG_TV = "tv";
@@ -389,13 +351,13 @@ public class FeatureEPGBulsat extends FeatureEPG
 			}
 			else if (TAG_TV.equals(localName))
 			{
-				ChannelBulsat channel = (ChannelBulsat) _epgData.getChannel(_channelId);
+				ChannelBulsat channel = (ChannelBulsat) getChannelById(_channelId);
 				if (channel == null)
 				{
 					Log.w(TAG,
 					        "Got channel " + _channelId + " on Bulsatcom server ("
 					                + getPrefs().getString(Param.BULSAT_CHANNELS_URL) + ") missing on AVTV server ( "
-					                + getPrefs().getString(FeatureEPGCompat.Param.EPG_SERVER) + ")");
+					                + getPrefs().getString(FeatureEPG.Param.EPG_SERVER) + ")");
 				}
 				else
 				{
@@ -420,5 +382,4 @@ public class FeatureEPGBulsat extends FeatureEPG
 			_buffer.setLength(0);
 		}
 	}
-	*/
 }

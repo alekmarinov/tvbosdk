@@ -80,8 +80,9 @@ public class ChannelBulsat extends Channel implements Serializable
 		public int metaChannelSeekUrl;
 		public int metaChannelPG;
 		public int metaChannelRecordable;
-		public int metaChannelLogoSelected;
-		public int metaChannelLogoFavorite;
+		public int metaChannelLogo; // base64 image
+		public int metaChannelLogoSelected; // base64 image
+		public int metaChannelLogoFavorite; // base64 image
 		public int metaChannelProgramImageMedium;
 		public int metaChannelProgramImageLarge;
 	}
@@ -270,6 +271,8 @@ public class ChannelBulsat extends Channel implements Serializable
 			setParentControl(PG18.equals(attributes[channelBulsatMetaData.metaChannelPG]));
 		if (attributes[channelBulsatMetaData.metaChannelRecordable] != null)
 			setRecordable(!"0".equals(attributes[channelBulsatMetaData.metaChannelRecordable]));
+		if (attributes[channelBulsatMetaData.metaChannelLogo] != null)
+			setLogo(LOGO_NORMAL, new String(attributes[channelBulsatMetaData.metaChannelLogo]));
 		if (attributes[channelBulsatMetaData.metaChannelLogoSelected] != null)
 			setLogo(LOGO_SELECTED, new String(attributes[channelBulsatMetaData.metaChannelLogoSelected]));
 		if (attributes[channelBulsatMetaData.metaChannelLogoFavorite] != null)

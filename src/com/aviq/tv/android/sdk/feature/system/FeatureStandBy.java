@@ -108,7 +108,6 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	public FeatureStandBy() throws FeatureNotFoundException
 	{
 		require(FeatureName.Scheduler.INTERNET);
-		require(FeatureName.Component.EASTER_EGG);
 		require(FeatureName.Component.RCU);
 	}
 

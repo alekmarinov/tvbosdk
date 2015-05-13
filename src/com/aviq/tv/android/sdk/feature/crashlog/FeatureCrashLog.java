@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import android.os.Bundle;
 import android.text.format.Time;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
@@ -63,7 +64,6 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 
 	public FeatureCrashLog() throws FeatureNotFoundException
 	{
-		require(FeatureName.Component.EASTER_EGG);
 		require(FeatureName.Component.DEVICE);
 	}
 
@@ -105,7 +105,10 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 	{
 		Log.i(TAG, ".initialize");
 		Thread.currentThread().setUncaughtExceptionHandler(this);
-		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
+
+		FeatureEasterEgg featureEasterEgg = (FeatureEasterEgg)Environment.getInstance().getFeatureComponent(FeatureName.Component.EASTER_EGG);
+		if (featureEasterEgg != null)
+			featureEasterEgg.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
 
 		Environment.getInstance().getEventMessenger().register(new EventReceiver()
 		{
@@ -181,16 +184,19 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 
 						fatal(TAG, reason, null, bundleEx);
 
+						final String sReason = reason;
 						Environment.getInstance().runOnUiThread(new Runnable()
 						{
 							@Override
 							public void run()
 							{
-								FeatureCrashLog.super.initialize(onFeatureInitialized);
+								Toast.makeText(Environment.getInstance().getApplicationContext(), "Crash: " + sReason,
+								        Toast.LENGTH_LONG).show();
 							}
 						});
 					}
 				}).start();
+				FeatureCrashLog.super.initialize(onFeatureInitialized);
 			}
 		}
 		else

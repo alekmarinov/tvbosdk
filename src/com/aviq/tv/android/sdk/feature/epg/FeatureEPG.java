@@ -168,7 +168,6 @@ public abstract class FeatureEPG extends FeatureComponent
 	private class ProgramsCache
 	{
 		private String _channelId;
-		private Calendar _when;
 		private int _offset;
 		private int _count;
 		private List<Program> _programs;
@@ -216,12 +215,10 @@ public abstract class FeatureEPG extends FeatureComponent
 			return null;
 		}
 
-		void putPrograms(String channelId, Calendar when, int offset, int count, List<Program> programs)
+		void putPrograms(String channelId, int offset, int count, List<Program> programs)
 		{
-			Log.i(TAG, ".putPrograms: channelId = " + channelId + ", when = " + Calendars.makeString(when)
-			        + ", offset = " + offset + ", count= " + count + ", programs = " + programs);
+			Log.i(TAG, ".putPrograms: channelId = " + channelId + ", offset = " + offset + ", count= " + count + ", programs = " + programs);
 			_channelId = channelId;
-			_when = when;
 			_offset = offset;
 			_count = count;
 			_programs = programs;
@@ -431,7 +428,7 @@ public abstract class FeatureEPG extends FeatureComponent
 				_onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPG.this), programs);
 
 				// add programs to cache
-				_programsCache.putPrograms(_channelId, _when, _offset, _count, programs);
+				_programsCache.putPrograms(_channelId, _offset, _count, programs);
 			}
 			catch (JSONException e)
 			{
@@ -544,7 +541,7 @@ public abstract class FeatureEPG extends FeatureComponent
 				metaData.metaChannelId = j;
 			else if ("title".equals(key))
 				metaData.metaChannelTitle = j;
-			else if ("thumbnail".equals(key))
+			else if ("thumbnail_base64".equals(key))
 				metaData.metaChannelLogo = j;
 		}
 	}
