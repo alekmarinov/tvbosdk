@@ -32,7 +32,7 @@ public class FeatureDisplay extends FeatureComponent
 
 	private final static String DISPLAY_MODE_SYSFS = "/sys/class/display/mode";
 	private static final String[] ALL_HDMI_MODE_VALUE_LIST =
-	{ "1080p", "1080p50hz", "1080p24hz", "720p", "720p50hz", "576p", "480p", "1080i", "1080i50hz", "576i", "480i" };
+	{ "1080p", "1080p50hz", "1080p24hz", "720p", "720p50hz", "1080i", "1080i50hz" };
 	// "4k2k24hz", "4k2k25hz", "4k2k30hz", "4k2ksmpte"
 
 	private MboxOutputModeManager _mboxOutputModeManager;
