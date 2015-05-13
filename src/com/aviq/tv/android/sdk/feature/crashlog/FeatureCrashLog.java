@@ -23,7 +23,6 @@ import java.util.regex.Pattern;
 import android.os.Bundle;
 import android.text.format.Time;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
@@ -183,17 +182,6 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 							reason = "Restart without reason. Check logcat " + logcatFileName;
 
 						fatal(TAG, reason, null, bundleEx);
-
-						final String sReason = reason;
-						Environment.getInstance().runOnUiThread(new Runnable()
-						{
-							@Override
-							public void run()
-							{
-								Toast.makeText(Environment.getInstance().getApplicationContext(), "Crash: " + sReason,
-								        Toast.LENGTH_LONG).show();
-							}
-						});
 					}
 				}).start();
 				FeatureCrashLog.super.initialize(onFeatureInitialized);

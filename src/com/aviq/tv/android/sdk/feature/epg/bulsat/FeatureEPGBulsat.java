@@ -40,6 +40,7 @@ import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.core.feature.IFeature;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
@@ -66,8 +67,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		 * Update interval for updating channel streams directly from bulsat
 		 * server
 		 */
-		// STREAMS_UPDATE_INTERVAL(3600 * 1000),
-		STREAMS_UPDATE_INTERVAL(60 * 1000),
+		STREAMS_UPDATE_INTERVAL(3600 * 1000),
 
 		/**
 		 * EPG provider name
@@ -95,19 +95,39 @@ public class FeatureEPGBulsat extends FeatureEPG
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-		super.initialize(onFeatureInitialized);
-
-		// update channel streams periodically directly from the bulsat server
-		final long updateInterval = getPrefs().getLong(Param.STREAMS_UPDATE_INTERVAL);
-		getEventMessenger().postDelayed(new Runnable()
+		super.initialize(new OnFeatureInitialized()
 		{
 			@Override
-			public void run()
+			public void onInitialized(final FeatureError error)
 			{
-				updateBulsatChannelStreams();
-				getEventMessenger().postDelayed(this, updateInterval);
+				updateBulsatChannelStreams(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						onFeatureInitialized.onInitialized(error);
+
+						// update channel streams periodically directly from the bulsat server
+						final long updateInterval = getPrefs().getLong(Param.STREAMS_UPDATE_INTERVAL);
+						getEventMessenger().postDelayed(new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								updateBulsatChannelStreams(null);
+								getEventMessenger().postDelayed(this, updateInterval);
+							}
+						}, updateInterval);
+
+					}
+				});
 			}
-		}, updateInterval);
+
+			@Override
+			public void onInitializeProgress(IFeature feature, float progress)
+			{
+			}
+		});
 	}
 
 	@Override
@@ -264,7 +284,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		return channelBulsat.getNDVR();
 	}
 
-	private void updateBulsatChannelStreams()
+	private void updateBulsatChannelStreams(final Runnable onFinish)
 	{
 		Log.i(TAG, ".updateBulsatChannelStreams");
 
@@ -311,6 +331,18 @@ public class FeatureEPGBulsat extends FeatureEPG
 				catch (SAXException e)
 				{
 					Log.e(TAG, e.getMessage(), e);
+				}
+
+				if (onFinish != null)
+				{
+					Environment.getInstance().runOnUiThread(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							onFinish.run();
+						}
+					});
 				}
 			}
 		}).start();
