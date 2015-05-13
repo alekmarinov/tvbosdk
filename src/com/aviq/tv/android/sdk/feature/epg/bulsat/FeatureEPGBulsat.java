@@ -10,20 +10,17 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -37,6 +34,7 @@ import android.text.TextUtils;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -100,32 +98,40 @@ public class FeatureEPGBulsat extends FeatureEPG
 			@Override
 			public void onInitialized(final FeatureError error)
 			{
-				updateBulsatChannelStreams(new Runnable()
+				if (!error.isError())
 				{
-					@Override
-					public void run()
+					updateBulsatChannelStreams(new OnResultReceived()
 					{
-						onFeatureInitialized.onInitialized(error);
+						@Override
+                        public void onReceiveResult(FeatureError error, Object object)
+                        {
+							onFeatureInitialized.onInitialized(error);
 
-						// update channel streams periodically directly from the bulsat server
-						final long updateInterval = getPrefs().getLong(Param.STREAMS_UPDATE_INTERVAL);
-						getEventMessenger().postDelayed(new Runnable()
-						{
-							@Override
-							public void run()
+							// update channel streams periodically directly from
+							// the bulsat server
+							final long updateInterval = getPrefs().getLong(Param.STREAMS_UPDATE_INTERVAL);
+							getEventMessenger().postDelayed(new Runnable()
 							{
-								updateBulsatChannelStreams(null);
-								getEventMessenger().postDelayed(this, updateInterval);
-							}
-						}, updateInterval);
-
-					}
-				});
+								@Override
+								public void run()
+								{
+									updateBulsatChannelStreams(null);
+									getEventMessenger().postDelayed(this, updateInterval);
+								}
+							}, updateInterval);
+                        }
+					});
+				}
+				else
+				{
+					onFeatureInitialized.onInitialized(error);
+				}
 			}
 
 			@Override
 			public void onInitializeProgress(IFeature feature, float progress)
 			{
+				onFeatureInitialized.onInitializeProgress(feature, progress);
 			}
 		});
 	}
@@ -284,7 +290,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		return channelBulsat.getNDVR();
 	}
 
-	private void updateBulsatChannelStreams(final Runnable onFinish)
+	private void updateBulsatChannelStreams(final OnResultReceived onResultReceived)
 	{
 		Log.i(TAG, ".updateBulsatChannelStreams");
 
@@ -293,6 +299,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 			@Override
 			public void run()
 			{
+				FeatureError error = null;
 				HttpUriRequest httpGet = new HttpGet(getPrefs().getString(Param.BULSAT_CHANNELS_URL));
 				Log.i(TAG, "Opening " + httpGet.getURI());
 
@@ -314,33 +321,28 @@ public class FeatureEPGBulsat extends FeatureEPG
 						xmlReader.setContentHandler(new XMLTVContentHandler());
 						Log.i(TAG, "Parsing XML TV xml");
 						xmlReader.parse(new InputSource(content));
+						error = FeatureError.OK(FeatureEPGBulsat.this);
+					}
+					else
+					{
+						error = new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR, "No entity returned by " + httpGet.getURI());
 					}
 				}
-				catch (ClientProtocolException e)
+				catch (Exception e)
 				{
 					Log.e(TAG, e.getMessage(), e);
-				}
-				catch (IOException e)
-				{
-					Log.e(TAG, e.getMessage(), e);
-				}
-				catch (ParserConfigurationException e)
-				{
-					Log.e(TAG, e.getMessage(), e);
-				}
-				catch (SAXException e)
-				{
-					Log.e(TAG, e.getMessage(), e);
+					error = new FeatureError(FeatureEPGBulsat.this, e);
 				}
 
-				if (onFinish != null)
+				if (onResultReceived != null)
 				{
+					final FeatureError fError = error;
 					Environment.getInstance().runOnUiThread(new Runnable()
 					{
 						@Override
 						public void run()
 						{
-							onFinish.run();
+							onResultReceived.onReceiveResult(fError, null);
 						}
 					});
 				}
