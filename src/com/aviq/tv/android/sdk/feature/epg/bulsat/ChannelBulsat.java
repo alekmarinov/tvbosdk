@@ -10,9 +10,12 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Base64;
 
 import com.aviq.tv.android.sdk.R;
 import com.aviq.tv.android.sdk.core.Environment;
@@ -23,10 +26,9 @@ import com.aviq.tv.android.sdk.feature.epg.bulsat.ProgramBulsat.ImageSize;
 /**
  * Bulsat specific channel data holder class
  */
-public class ChannelBulsat extends Channel implements Serializable
+public class ChannelBulsat extends Channel
 {
 	private static final String TAG = ChannelBulsat.class.getSimpleName();
-	private static final long serialVersionUID = -8718850662391176233L;
 	public static final int LOGO_SELECTED = LOGO_NORMAL + 1;
 	public static final int LOGO_FAVORITE = LOGO_NORMAL + 2;
 	private static final String PG18 = "PG18";
@@ -36,10 +38,10 @@ public class ChannelBulsat extends Channel implements Serializable
 	private String _seekUrl;
 	private boolean _parentControl;
 	private boolean _recordable;
-	private String _logoSelected;
-	private String _logoFavorite;
-	private String _programImageMedium;
-	private String _programImageLarge;
+	private Bitmap _logoSelected;
+	private Bitmap _logoFavorite;
+	private String _programImageMediumUrl;
+	private String _programImageLargeUrl;
 
 	public static enum Genre
 	{
@@ -83,8 +85,8 @@ public class ChannelBulsat extends Channel implements Serializable
 		public int metaChannelLogo; // base64 image
 		public int metaChannelLogoSelected; // base64 image
 		public int metaChannelLogoFavorite; // base64 image
-		public int metaChannelProgramImageMedium;
-		public int metaChannelProgramImageLarge;
+		public int metaChannelProgramImageMedium; // image url
+		public int metaChannelProgramImageLarge; // image url
 	}
 
 	public void setStreamUrl(String streamUrl)
@@ -148,57 +150,59 @@ public class ChannelBulsat extends Channel implements Serializable
 	}
 
 	@Override
-	public String getLogo(int logoType)
+	public Bitmap getChannelImage(int imageType)
 	{
-		switch (logoType)
+		switch (imageType)
 		{
 			case LOGO_SELECTED:
 				return _logoSelected;
 			case LOGO_FAVORITE:
 				return _logoFavorite;
 		}
-		return super.getLogo(logoType);
+		return super.getChannelImage(imageType);
 	}
 
 	@Override
-	public void setLogo(int logoType, String logo)
+	public void setChannelImage(int imageType, Bitmap image)
 	{
-		switch (logoType)
+		switch (imageType)
 		{
 			case LOGO_SELECTED:
-				_logoSelected = logo;
+				_logoSelected = image;
 			break;
 			case LOGO_FAVORITE:
-				_logoFavorite = logo;
+				_logoFavorite = image;
 			break;
 			default:
-				super.setLogo(logoType, logo);
+				super.setChannelImage(imageType, image);
 		}
 	}
 
-	public void setProgramImage(String programImage, ImageSize imageSize)
+	public void setProgramImageUrl(String programImageUrl, ImageSize imageSize)
 	{
 		switch (imageSize)
 		{
 			case MEDIUM:
-				_programImageMedium = programImage;
+				_programImageMediumUrl = programImageUrl;
 			break;
 			case LARGE:
-				_programImageLarge = programImage;
+				_programImageLargeUrl = programImageUrl;
 			break;
+			default:
+				throw new IllegalArgumentException("Image size " + imageSize + " is not supported");
 		}
 	}
 
-	public String getProgramImage(ImageSize imageSize)
+	public String getProgramImageUrl(ImageSize imageSize)
 	{
 		switch (imageSize)
 		{
 			case MEDIUM:
-				return _programImageMedium;
+				return _programImageMediumUrl;
 			case LARGE:
-				return _programImageLarge;
+				return _programImageLargeUrl;
 		}
-		return null;
+		throw new IllegalArgumentException("Image size " + imageSize + " is not supported");
 	}
 
 	@Override
@@ -271,16 +275,20 @@ public class ChannelBulsat extends Channel implements Serializable
 			setParentControl(PG18.equals(attributes[channelBulsatMetaData.metaChannelPG]));
 		if (attributes[channelBulsatMetaData.metaChannelRecordable] != null)
 			setRecordable(!"0".equals(attributes[channelBulsatMetaData.metaChannelRecordable]));
-		if (attributes[channelBulsatMetaData.metaChannelLogo] != null)
-			setLogo(LOGO_NORMAL, new String(attributes[channelBulsatMetaData.metaChannelLogo]));
 		if (attributes[channelBulsatMetaData.metaChannelLogoSelected] != null)
-			setLogo(LOGO_SELECTED, new String(attributes[channelBulsatMetaData.metaChannelLogoSelected]));
+		{
+			byte[] decodedString = Base64.decode(attributes[channelBulsatMetaData.metaChannelLogoSelected], Base64.DEFAULT);
+			setChannelImage(LOGO_SELECTED, BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
+		}
 		if (attributes[channelBulsatMetaData.metaChannelLogoFavorite] != null)
-			setLogo(LOGO_FAVORITE, new String(attributes[channelBulsatMetaData.metaChannelLogoFavorite]));
+		{
+			byte[] decodedString = Base64.decode(attributes[channelBulsatMetaData.metaChannelLogoFavorite], Base64.DEFAULT);
+			setChannelImage(LOGO_FAVORITE, BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
+		}
 		if (attributes[channelBulsatMetaData.metaChannelProgramImageMedium] != null)
-			setProgramImage(new String(attributes[channelBulsatMetaData.metaChannelProgramImageMedium]),
+			setProgramImageUrl(new String(attributes[channelBulsatMetaData.metaChannelProgramImageMedium]),
 			        ImageSize.MEDIUM);
 		if (attributes[channelBulsatMetaData.metaChannelProgramImageLarge] != null)
-			setProgramImage(new String(attributes[channelBulsatMetaData.metaChannelProgramImageLarge]), ImageSize.LARGE);
+			setProgramImageUrl(new String(attributes[channelBulsatMetaData.metaChannelProgramImageLarge]), ImageSize.LARGE);
 	}
 }

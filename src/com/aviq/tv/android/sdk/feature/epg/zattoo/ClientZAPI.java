@@ -278,7 +278,7 @@ public class ClientZAPI
 					ChannelZattoo channel = new ChannelZattoo(i);
 					JSONObject jsonChannel = (JSONObject) jsonChannels.get(i);
 					channel.setChannelId((String) jsonChannel.get("cid"));
-					channel.setLogo(Channel.LOGO_NORMAL, (String) jsonChannel.get("logo_84"));
+					channel.setChannelImageUrl(Channel.LOGO_NORMAL, (String) jsonChannel.get("logo_84"));
 					channel.setTitle((String) jsonChannel.get("title"));
 					channels.add(channel);
 					_channelsMap.put(channel.getChannelId(), channel);
@@ -310,12 +310,12 @@ public class ClientZAPI
 		_countChannelLogos = 0;
 		for (final Channel channel : epgDataCompat.getChannels())
 		{
-			ImageRequest imageRequest = new ImageRequest(channel.getLogo(Channel.LOGO_NORMAL), new Response.Listener<Bitmap>()
+			ImageRequest imageRequest = new ImageRequest(channel.getChannelImageUrl(Channel.LOGO_NORMAL), new Response.Listener<Bitmap>()
 			{
 				@Override
 				public void onResponse(Bitmap bitmap)
 				{
-					epgDataCompat.setChannelLogo(channel.getIndex(), bitmap);
+					channel.setChannelImage(Channel.LOGO_NORMAL, bitmap);
 					_countChannelLogos++;
 					if (_countChannelLogos == epgDataCompat.getChannels().size())
 						onResultReceived.onReceiveResult(FeatureError.OK(_ownerFeature), null);

@@ -31,9 +31,9 @@ import java.util.TreeMap;
 
 import org.json.JSONObject;
 
-import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.util.Base64;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
@@ -45,7 +45,6 @@ import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.HttpHeaderParser;
-import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
@@ -258,26 +257,7 @@ public abstract class FeatureEPGCompat extends FeatureScheduler
 			}, FeatureStandBy.ON_STANDBY_LEAVE);
 		}
 
-		boolean loadedFromCache = uncacheEpgData();
-		Log.i(TAG, "Is EPG loaded from cache: " + loadedFromCache);
-		if (!loadedFromCache)
-		{
-			onSchedule(onFeatureInitialized);
-		}
-		else
-		{
-			// Download bitmaps
-			int nChannels = _epgData.getChannelCount();
-			_retrievedChannelPrograms = nChannels;
-			for (int i = 0; i < nChannels; i++)
-			{
-				Channel channel = _epgData.getChannel(i);
-				retrieveChannelLogo(channel, i);
-			}
-
-			_onFeatureInitialized = onFeatureInitialized;
-			scheduleDelayed(getPrefs().getInt(Param.UPDATE_INTERVAL));
-		}
+		onSchedule(onFeatureInitialized);
 	}
 
 	@Override
@@ -415,31 +395,6 @@ public abstract class FeatureEPGCompat extends FeatureScheduler
 	 */
 	protected abstract Program createProgram(String id, Channel channel);
 
-	protected void retrieveChannelLogo(Channel channel, int channelIndex)
-	{
-		String channelId = channel.getChannelId();
-		String channelLogo = channel.getLogo(Channel.LOGO_NORMAL);
-
-		String channelLogoUrl = getChannelImageUrl(channelId, channelLogo);
-		Log.d(TAG, "Retrieving channel logo from " + channelLogoUrl);
-
-		LogoResponseCallback responseCallback = new LogoResponseCallback(channelId, channelIndex);
-
-		ImageRequest imageRequest = new ImageRequest(channelLogoUrl, responseCallback, _channelLogoWidth,
-		        _channelLogoHeight, Config.ARGB_8888, responseCallback)
-		{
-			@Override
-			public Map<String, String> getHeaders() throws AuthFailureError
-			{
-				Map<String, String> headers = new HashMap<String, String>();
-				headers.put("Connection", "close");
-				return headers;
-			}
-		};
-
-		_requestQueue.add(imageRequest);
-	}
-
 	private void retrievePrograms(Channel channel)
 	{
 		String channelId = channel.getChannelId();
@@ -476,7 +431,6 @@ public abstract class FeatureEPGCompat extends FeatureScheduler
 			for (int i = 0; i < nChannels; i++)
 			{
 				Channel channel = _epgDataBeingLoaded.getChannel(i);
-				retrieveChannelLogo(channel, i);
 				retrievePrograms(channel);
 			}
 		}
@@ -492,44 +446,6 @@ public abstract class FeatureEPGCompat extends FeatureScheduler
 			_onFeatureInitialized.onInitialized(new FeatureError(FeatureEPGCompat.this, statusCode, error));
 		}
 	}
-
-	private class LogoResponseCallback implements Response.Listener<Bitmap>, Response.ErrorListener
-	{
-		private int _index;
-		private String _channelId;
-
-		LogoResponseCallback(String channelId, int index)
-		{
-			_channelId = channelId;
-			_index = index;
-		}
-
-		@Override
-		public void onResponse(Bitmap response)
-		{
-			Log.d(TAG, "Received bitmap " + response.getWidth() + "x" + response.getHeight());
-			if (_epgDataBeingLoaded == null)
-			{
-				Log.w(TAG, "LogoResponseCallback.onResponse: _epgDataBeingLoaded is null, that should not happens!");
-				return;
-			}
-			_epgDataBeingLoaded.setChannelLogo(_index, response);
-			logoProcessed();
-		}
-
-		@Override
-		public void onErrorResponse(VolleyError error)
-		{
-			Log.d(TAG, "Retrieve channel logo " + _channelId + " with error: " + error);
-			logoProcessed();
-		}
-
-		private void logoProcessed()
-		{
-			_retrievedChannelLogos++;
-			checkInitializeFinished();
-		}
-	};
 
 	private class ProgramsResponseCallback implements Response.Listener<ProgramsResponse>, Response.ErrorListener
 	{
@@ -691,7 +607,11 @@ public abstract class FeatureEPGCompat extends FeatureScheduler
 			Channel channel = createChannel(i);
 			channel.setChannelId(new String(data[i][metaData.metaChannelId]));
 			channel.setTitle(new String(data[i][metaData.metaChannelTitle]));
-			channel.setLogo(Channel.LOGO_NORMAL, new String(data[i][metaData.metaChannelLogo]));
+			if (data[i][metaData.metaChannelLogo] != null)
+			{
+				byte[] decodedString = Base64.decode(data[i][metaData.metaChannelLogo], Base64.DEFAULT);
+				channel.setChannelImage(Channel.LOGO_NORMAL, BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
+			}
 			channel.setAttributes(metaData, data[i]);
 			newChannelList.add(channel);
 		}

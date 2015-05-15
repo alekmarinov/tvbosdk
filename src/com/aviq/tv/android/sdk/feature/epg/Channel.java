@@ -9,19 +9,18 @@
  */
 package com.aviq.tv.android.sdk.feature.epg;
 
-import java.io.Serializable;
+import android.graphics.Bitmap;
 
-public abstract class Channel implements Serializable
+public abstract class Channel
 {
-	private static final long serialVersionUID = 6801678500699483646L;
-
 	public static final int LOGO_NORMAL = 0;
 
 	private int _index;
 	private String _channelId;
 	private String _title;
 	private int _ndvr;
-	private String _logo;
+	private String _logoNormalUrl;
+	private Bitmap _logoNormal;
 
 	public static class MetaData
 	{
@@ -84,18 +83,32 @@ public abstract class Channel implements Serializable
 		return _ndvr;
 	}
 
-	public String getLogo(int logoType)
+	public Bitmap getChannelImage(int imageType)
 	{
-		if (logoType != LOGO_NORMAL)
-			throw new IllegalArgumentException("Expected logoType " + LOGO_NORMAL + ", got " + logoType);
-		return _logo;
+		if (imageType != LOGO_NORMAL)
+			throw new IllegalArgumentException("Expected imageType " + LOGO_NORMAL + ", got " + imageType);
+		return _logoNormal;
 	}
 
-	public void setLogo(int logoType, String logo)
+	public void setChannelImage(int imageType, Bitmap image)
 	{
-		if (logoType != LOGO_NORMAL)
-			throw new IllegalArgumentException("Expected logoType " + LOGO_NORMAL + ", got " + logoType);
-		_logo = logo;
+		if (imageType != LOGO_NORMAL)
+			throw new IllegalArgumentException("Expected imageType " + LOGO_NORMAL + ", got " + imageType);
+		_logoNormal = image;
+	}
+
+	public String getChannelImageUrl(int imageType)
+	{
+		if (imageType != LOGO_NORMAL)
+			throw new IllegalArgumentException("Expected imageType " + LOGO_NORMAL + ", got " + imageType);
+		return _logoNormalUrl;
+	}
+
+	public void setChannelImageUrl(int imageType, String imageUrl)
+	{
+		if (imageType != LOGO_NORMAL)
+			throw new IllegalArgumentException("Expected imageType " + LOGO_NORMAL + ", got " + imageType);
+		_logoNormalUrl = imageUrl;
 	}
 
 	/**

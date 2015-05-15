@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 
-import android.graphics.Bitmap;
-
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.utils.Calendars;
 
@@ -21,7 +19,6 @@ public class EpgDataCompat implements IEpgDataProvider, Serializable
 	private static final String TAG = EpgDataCompat.class.getSimpleName();
 
 	private List<Channel> _channelList;
-	private transient Bitmap[] _channelLogos;
 	private Calendar _maxEpgStopTime;
 	private Calendar _minEpgStartTime;
 
@@ -50,31 +47,6 @@ public class EpgDataCompat implements IEpgDataProvider, Serializable
 		_minEpgStartTime.add(Calendar.YEAR, 1);
 
 		_channelList = newChannelList;
-		_channelLogos = new Bitmap[ChannelLogoType.values().length * _channelList.size()];
-	}
-
-	public synchronized boolean setChannelLogo(int channelIndex, Bitmap newLogo)
-	{
-		return setChannelLogo(channelIndex, newLogo, ChannelLogoType.NORMAL);
-	}
-
-	public synchronized boolean setChannelLogo(int channelIndex, Bitmap newLogo, ChannelLogoType logoType)
-	{
-		// Added for Kryo's serialization since the Bitmap array is transient
-		if (_channelLogos == null)
-			_channelLogos = new Bitmap[ChannelLogoType.values().length * _channelList.size()];
-
-		if (newLogo == null || channelIndex < 0 || channelIndex > _channelList.size())
-		{
-			Log.w(TAG, ".setChannelLogo: newLogo = " + newLogo + ", channelIndex = " + channelIndex + ", _channelList size = " + _channelList.size());
-			return false;
-		}
-
-		int arrindex = logoType.ordinal() * _channelList.size() + channelIndex;
-		Log.d(TAG, ".setChannelLogo: newLogo = " + newLogo + ", logoType = " + logoType + ", channelIndex = " + channelIndex + ", _channelList size = " + _channelList.size() + ", arrindex = " + arrindex);
-		_channelLogos[arrindex] = newLogo;
-
-		return true;
 	}
 
 	public synchronized boolean addProgramData(String channelId, NavigableMap<Calendar, Integer> newProgramNavigableMap,
@@ -147,21 +119,6 @@ public class EpgDataCompat implements IEpgDataProvider, Serializable
 	public int getChannelCount()
 	{
 		return _channelList.size();
-	}
-
-	@Override
-	public Bitmap getChannelLogoBitmap(int index)
-	{
-		return getChannelLogoBitmap(index, ChannelLogoType.NORMAL);
-	}
-
-	@Override
-	public Bitmap getChannelLogoBitmap(int index, ChannelLogoType logoType)
-	{
-		int arrindex = logoType.ordinal() * _channelList.size() + index;
-		Bitmap bmp = _channelLogos[arrindex];
-		Log.i(TAG, ".getChannelLogoBitmap: index = " + index + ", arrindex = " + arrindex + ", logoType = " + logoType + " -> " + bmp);
-		return bmp;
 	}
 
 	/**

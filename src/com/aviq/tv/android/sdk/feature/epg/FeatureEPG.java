@@ -24,7 +24,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Base64;
@@ -148,9 +147,9 @@ public abstract class FeatureEPG extends FeatureComponent
 	}
 
 	protected RequestQueue _requestQueue;
-	private String _epgProvider;
-	private int _epgVersion;
-	private String _epgServer;
+	protected String _epgProvider;
+	protected int _epgVersion;
+	protected String _epgServer;
 	protected int _channelLogoWidth;
 	protected int _channelLogoHeight;
 	private Calendar _minDate;
@@ -176,8 +175,9 @@ public abstract class FeatureEPG extends FeatureComponent
 		{
 			if (_channelId == null || !_channelId.equals(channelId) || _offset != offset || _count != count)
 			{
-				Log.i(TAG, "ProgramsCache.getPrograms: _channelId = " + _channelId + ", channelId = " + channelId + ", _offset = "
-				        + _offset + ", offset = " + offset + ", _count= " + _count + ", count = " + count);
+				Log.i(TAG, "ProgramsCache.getPrograms: _channelId = " + _channelId + ", channelId = " + channelId
+				        + ", _offset = " + _offset + ", offset = " + offset + ", _count= " + _count + ", count = "
+				        + count);
 				return null;
 			}
 
@@ -217,7 +217,8 @@ public abstract class FeatureEPG extends FeatureComponent
 
 		void putPrograms(String channelId, int offset, int count, List<Program> programs)
 		{
-			Log.i(TAG, ".putPrograms: channelId = " + channelId + ", offset = " + offset + ", count= " + count + ", programs = " + programs);
+			Log.i(TAG, ".putPrograms: channelId = " + channelId + ", offset = " + offset + ", count= " + count
+			        + ", programs = " + programs);
 			_channelId = channelId;
 			_offset = offset;
 			_count = count;
@@ -253,7 +254,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		loadChannels(new OnResultReceived()
 		{
 			@SuppressWarnings("unchecked")
-            @Override
+			@Override
 			public void onReceiveResult(FeatureError error, Object object)
 			{
 				if (!error.isError())
@@ -292,8 +293,7 @@ public abstract class FeatureEPG extends FeatureComponent
 	{
 		// retrieve new channels from server
 		ChannelsResponse channelsResponse = new ChannelsResponse(onResultReceived);
-		JsonObjectRequest request = new JsonObjectRequest(getChannelsUrl(), null, channelsResponse,
-				channelsResponse);
+		JsonObjectRequest request = new JsonObjectRequest(getChannelsUrl(), null, channelsResponse, channelsResponse);
 		_requestQueue.add(request);
 	}
 
@@ -351,15 +351,10 @@ public abstract class FeatureEPG extends FeatureComponent
 
 	public void getChannelLogoBitmap(Channel channel, int logoType, OnResultReceived onResultReceived)
 	{
-		onResultReceived.onReceiveResult(FeatureError.OK(this), getChannelLogoBitmap(channel, logoType));
-	}
-
-	public Bitmap getChannelLogoBitmap(Channel channel, int logoType)
-	{
-		Log.i(TAG, ".getChannelLogoBitmap: channel = " + channel + ", logoType = " + logoType);
-		String logoBase64 = channel.getLogo(logoType);
-		byte[] decodedString = Base64.decode(logoBase64, Base64.DEFAULT);
-		return BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+		// FIXME:
+		// onResultReceived.onReceiveResult(FeatureError.OK(this),
+		// getChannelLogoBitmap(channel, logoType));
+		throw new RuntimeException("FIXME:");
 	}
 
 	public void getPrograms(Channel channel, Calendar when, int offset, int count, OnResultReceived onResultReceived)
@@ -546,8 +541,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		}
 	}
 
-	private List<Channel> parseChannelData(Channel.MetaData metaData, JSONArray data)
-	        throws JSONException
+	private List<Channel> parseChannelData(Channel.MetaData metaData, JSONArray data) throws JSONException
 	{
 		List<Channel> channels = new ArrayList<Channel>();
 		int nChannels = (_maxChannels > 0) ? _maxChannels : data.length();
@@ -567,7 +561,13 @@ public abstract class FeatureEPG extends FeatureComponent
 			Channel channel = createChannel(i);
 			channel.setChannelId(values[metaData.metaChannelId]);
 			channel.setTitle(values[metaData.metaChannelTitle]);
-			channel.setLogo(Channel.LOGO_NORMAL, values[metaData.metaChannelLogo]);
+
+			if (values[metaData.metaChannelLogo] != null)
+			{
+				byte[] decodedString = Base64.decode(values[metaData.metaChannelLogo], Base64.DEFAULT);
+				channel.setChannelImage(Channel.LOGO_NORMAL,
+				        BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
+			}
 			channel.setAttributes(metaData, values);
 			channels.add(channel);
 		}
@@ -720,11 +720,11 @@ public abstract class FeatureEPG extends FeatureComponent
 	public void getProgramDetails(String channelId, String programId, OnResultReceived onResultReceived)
 	{
 		String programDetailsUrl = getProgramDetailsUrl(channelId, programId);
-		Log.i(TAG, "Retrieving program details of " + channelId + "/" + programId + " from "
-		        + programDetailsUrl);
+		Log.i(TAG, "Retrieving program details of " + channelId + "/" + programId + " from " + programDetailsUrl);
 
 		Channel channel = getChannelById(channelId);
-		ProgramDetailsResponseCallback responseCallback = new ProgramDetailsResponseCallback(channel, programId, onResultReceived);
+		ProgramDetailsResponseCallback responseCallback = new ProgramDetailsResponseCallback(channel, programId,
+		        onResultReceived);
 
 		if (_programDetailsRequest != null)
 			_programDetailsRequest.cancel();
@@ -747,11 +747,14 @@ public abstract class FeatureEPG extends FeatureComponent
 	/**
 	 * Load multiple detailed programs
 	 *
-	 * @param channelIds String array with corresponding channel ids
-	 * @param programIds String array with corresponding program ids
+	 * @param channelIds
+	 *            String array with corresponding channel ids
+	 * @param programIds
+	 *            String array with corresponding program ids
 	 * @param onResultReceived
 	 */
-	public void getMultiplePrograms(final List<String> channelIds, final List<String> programIds, final OnResultReceived onResultReceived)
+	public void getMultiplePrograms(final List<String> channelIds, final List<String> programIds,
+	        final OnResultReceived onResultReceived)
 	{
 		if (channelIds.size() != programIds.size())
 			throw new IllegalArgumentException("Number of channel ids must be equal to the number of program ids");
@@ -767,34 +770,35 @@ public abstract class FeatureEPG extends FeatureComponent
 
 			String programDetailsUrl = getProgramDetailsUrl(channelId, programId);
 			Channel channel = getChannelById(channelId);
-			ProgramDetailsResponseCallback responseCallback = new ProgramDetailsResponseCallback(channel, programId, new OnResultReceived()
-			{
-				@Override
-				public void onReceiveResult(FeatureError error, Object object)
-				{
-					if (!error.isError())
-					{
-						programsMap.put(channelId + programId, (Program)object);
-					}
-					else
-					{
-						Log.e(TAG, error.getMessage(), error);
-					}
-					responseCount[0]++;
-					if (responseCount[0] == nPrograms)
-					{
-						List<Program> programs = new ArrayList<Program>();
-						for (int j = 0; j < nPrograms; j++ )
-						{
-							programs.add(programsMap.get(channelIds.get(j) + programIds.get(j)));
-						}
-						onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPG.this), programs);
-					}
-				}
-			});
+			ProgramDetailsResponseCallback responseCallback = new ProgramDetailsResponseCallback(channel, programId,
+			        new OnResultReceived()
+			        {
+				        @Override
+				        public void onReceiveResult(FeatureError error, Object object)
+				        {
+					        if (!error.isError())
+					        {
+						        programsMap.put(channelId + programId, (Program) object);
+					        }
+					        else
+					        {
+						        Log.e(TAG, error.getMessage(), error);
+					        }
+					        responseCount[0]++;
+					        if (responseCount[0] == nPrograms)
+					        {
+						        List<Program> programs = new ArrayList<Program>();
+						        for (int j = 0; j < nPrograms; j++)
+						        {
+							        programs.add(programsMap.get(channelIds.get(j) + programIds.get(j)));
+						        }
+						        onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPG.this), programs);
+					        }
+				        }
+			        });
 
-			JsonObjectRequest programDetailsRequest = new JsonObjectRequest(Request.Method.GET, programDetailsUrl, null, responseCallback,
-			        responseCallback)
+			JsonObjectRequest programDetailsRequest = new JsonObjectRequest(Request.Method.GET, programDetailsUrl,
+			        null, responseCallback, responseCallback)
 			{
 				@Override
 				public Map<String, String> getHeaders() throws AuthFailureError
@@ -840,22 +844,22 @@ public abstract class FeatureEPG extends FeatureComponent
 		{
 			Program program = createProgram(_programId, _channel);
 			try
-            {
+			{
 				program.setTitle(response.getString("title"));
 				Calendar startTime = Calendar.getInstance();
 				startTime.setTime(_sdfUTC.parse(_programId));
 				program.setStartTime(startTime);
 				Calendar stopTime = Calendar.getInstance();
-	            stopTime.setTime(_sdfUTC.parse(response.getString("stop")));
-	            program.setStopTime(stopTime);
+				stopTime.setTime(_sdfUTC.parse(response.getString("stop")));
+				program.setStopTime(stopTime);
 				program.setDetails(response);
 				_onResultReceived.onReceiveResult(FeatureError.OK, program);
-            }
-            catch (Exception e)
-            {
-            	Log.e(TAG, e.getMessage(), e);
+			}
+			catch (Exception e)
+			{
+				Log.e(TAG, e.getMessage(), e);
 				_onResultReceived.onReceiveResult(new FeatureError(FeatureEPG.this, e), null);
-            }
+			}
 			_programDetailsRequest = null;
 		}
 

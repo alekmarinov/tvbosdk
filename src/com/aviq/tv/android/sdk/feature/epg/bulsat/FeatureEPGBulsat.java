@@ -12,7 +12,9 @@ package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -25,13 +27,23 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Base64;
 
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
@@ -85,6 +97,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 
 	public static Param ParamIniter = Param.EPG_PROVIDER;
 
+	private List<Bitmap> _programImages = null;
+
 	public FeatureEPGBulsat() throws FeatureNotFoundException
 	{
 		super();
@@ -103,8 +117,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 					updateBulsatChannelStreams(new OnResultReceived()
 					{
 						@Override
-                        public void onReceiveResult(FeatureError error, Object object)
-                        {
+						public void onReceiveResult(FeatureError error, Object object)
+						{
 							onFeatureInitialized.onInitialized(error);
 
 							// update channel streams periodically directly from
@@ -119,7 +133,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 									getEventMessenger().postDelayed(this, updateInterval);
 								}
 							}, updateInterval);
-                        }
+						}
 					});
 				}
 				else
@@ -290,6 +304,91 @@ public class FeatureEPGBulsat extends FeatureEPG
 		return channelBulsat.getNDVR();
 	}
 
+	private String getProgramImagesUrl()
+	{
+		Bundle bundle = new Bundle();
+		bundle.putString("SERVER", _epgServer);
+		bundle.putInt("VERSION", _epgVersion);
+		bundle.putString("PROVIDER", _epgProvider);
+
+		StringBuffer sb = new StringBuffer(getPrefs().getString(FeatureEPG.Param.EPG_CHANNELS_URL, bundle));
+		sb.append("?attr=program_image_medium_base64");
+		return sb.toString();
+	}
+
+	public void getProgramImages(OnResultReceived onResultReceived)
+	{
+		if (_programImages != null)
+		{
+			onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPGBulsat.this), _programImages);
+		}
+		else
+		{
+			String programImagesUrl = getProgramImagesUrl();
+			// retrieve program images from server
+			ProgramImagesResponse programImagesResponse = new ProgramImagesResponse(onResultReceived);
+			JsonObjectRequest request = new JsonObjectRequest(programImagesUrl, null, programImagesResponse,
+			        programImagesResponse);
+			_requestQueue.add(request);
+		}
+	}
+
+	private class ProgramImagesResponse implements Response.Listener<JSONObject>, Response.ErrorListener
+	{
+		private OnResultReceived _onResultReceived;
+
+		ProgramImagesResponse(OnResultReceived onResultReceived)
+		{
+			_onResultReceived = onResultReceived;
+		}
+
+		@Override
+		public void onResponse(JSONObject response)
+		{
+			try
+			{
+				JSONArray meta = response.getJSONArray("meta");
+				int programImageIndex = -1;
+				for (int i = 0; i < meta.length(); i++)
+				{
+					if ("program_image_medium_base64".equals(meta.getString(i)))
+					{
+						programImageIndex = i;
+						break;
+					}
+				}
+				if (programImageIndex >= 0)
+				{
+					JSONArray data = response.getJSONArray("data");
+					_programImages = new ArrayList<Bitmap>();
+					for (int i = 0; i < data.length(); i++)
+					{
+						JSONArray jsonArr = data.getJSONArray(i);
+						byte[] decodedString = Base64.decode(jsonArr.getString(programImageIndex), Base64.DEFAULT);
+						_programImages.add(BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
+					}
+				}
+				_onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPGBulsat.this), _programImages);
+			}
+			catch (JSONException e)
+			{
+				// Load channels failed, notify error
+				Log.e(TAG, e.getMessage(), e);
+				_onResultReceived.onReceiveResult(
+				        new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR, e), null);
+			}
+		}
+
+		@Override
+		public void onErrorResponse(VolleyError error)
+		{
+			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
+			        : ResultCode.GENERAL_FAILURE;
+			Log.e(TAG, "Error retrieving EPG channels with code " + statusCode + ": " + error);
+			_onResultReceived.onReceiveResult(new FeatureError(FeatureEPGBulsat.this, statusCode, error), null);
+		}
+	}
+
 	private void updateBulsatChannelStreams(final OnResultReceived onResultReceived)
 	{
 		Log.i(TAG, ".updateBulsatChannelStreams");
@@ -325,7 +424,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 					}
 					else
 					{
-						error = new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR, "No entity returned by " + httpGet.getURI());
+						error = new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR,
+						        "No entity returned by " + httpGet.getURI());
 					}
 				}
 				catch (Exception e)
