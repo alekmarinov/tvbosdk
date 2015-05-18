@@ -59,6 +59,9 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	public static final int ON_STANDBY_AUTO_ENABLED = EventMessenger.ID("ON_STANDBY_AUTO_ENABLED");
 	public static final int ON_STANDBY_AUTO_DISABLED = EventMessenger.ID("ON_STANDBY_AUTO_DISABLED");
 
+	// Triggered when the standby is canceled by user
+	public static final int ON_STANDBY_CANCEL = EventMessenger.ID("ON_STANDBY_CANCEL");
+
 	private static final String ACTION_HDMI_HW_PLUGGED = "android.intent.action.HDMI_HW_PLUGGED";
 	private static final String EXTRA_HDMI_HW_PLUGGED_STATE = "state";
 
@@ -71,10 +74,11 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		IS_STANDBY_HDMI(false),
 
 		/** Time delay before sending the box to real StandBy on standby request */
-		STANDBY_DELAY(2500),
+		STANDBY_DELAY(1500),
 
 		/**
-		 * Put the box in standby automatically after the specified time (milliseconds) without
+		 * Put the box in standby automatically after the specified time
+		 * (milliseconds) without
 		 * user activity. Set 0 to disable auto-standby
 		 */
 		AUTO_STANDBY_TIMEOUT(0),
@@ -101,6 +105,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		}
 	}
 
+	private boolean _isWarningProgress;
 	private int _autoStandByWarnTimeout;
 	private long _autoStandbyTimeout;
 	private boolean _isStandByHDMI;
@@ -122,8 +127,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 
-		if (getPrefs().getBool(Param.AUTO_POSTPONE_STANDBY))
-			_feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
+		_feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
 
 		// RcuIMEService will broadcast BROADCAST_ACTION_SLEEP in response to
 		// sleep button pressed. This event may occur at any time even when the
@@ -174,6 +178,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 				else if (Intent.ACTION_SCREEN_ON.equals(action))
 				{
 					getEventMessenger().trigger(ON_STANDBY_LEAVE);
+					postponeAutoStandBy();
 				}
 				else if (Intent.ACTION_SCREEN_OFF.equals(action))
 				{
@@ -219,6 +224,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 
 		getEventMessenger().removeCallbacks(_autoStandByRunnable);
 		getEventMessenger().removeCallbacks(_autoStandByWarningRunnable);
+		_isWarningProgress = false;
 		getEventMessenger().removeCallbacks(_enterStandByRunnable);
 		getEventMessenger().postDelayed(_enterStandByRunnable, getPrefs().getInt(Param.STANDBY_DELAY));
 	}
@@ -240,6 +246,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 
 		// remove warnings trigger
 		getEventMessenger().removeCallbacks(_autoStandByWarningRunnable);
+		_isWarningProgress = false;
 	}
 
 	/**
@@ -293,24 +300,33 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	@Override
 	public void onEvent(int msgId, Bundle bundle)
 	{
+		super.onEvent(msgId, bundle);
 		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
 		if (FeatureRCU.ON_KEY_PRESSED == msgId)
 		{
-			postponeAutoStandBy();
+			Log.i(TAG, "AUTO_POSTPONE_STANDBY -> " + getPrefs().getBool(Param.AUTO_POSTPONE_STANDBY)
+			        + ", _isWarningProgress -> " + _isWarningProgress);
+			if (getPrefs().getBool(Param.AUTO_POSTPONE_STANDBY) || _isWarningProgress)
+			{
+				getEventMessenger().trigger(ON_STANDBY_CANCEL);
+				postponeAutoStandBy();
+			}
 		}
 	}
 
 	public void postponeAutoStandBy()
 	{
+		Log.i(TAG, ".postponeAutoStandBy: timeout = " + (_autoStandbyTimeout / 1000)
+		        + " secs, _isWarningProgress = " + _isWarningProgress);
 		if (_autoStandbyTimeout > 0)
 		{
 			// postpones auto standby
 			getEventMessenger().removeCallbacks(_autoStandByRunnable);
 			getEventMessenger().postDelayed(_autoStandByRunnable, _autoStandbyTimeout);
-			Log.i(TAG, ".postponeAutoStandBy: timeout = " + (_autoStandbyTimeout / 1000) + " secs");
 
 			// remove warnings trigger
 			getEventMessenger().removeCallbacks(_autoStandByWarningRunnable);
+			_isWarningProgress = false;
 		}
 		else
 		{
@@ -368,6 +384,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			Bundle bundle = new Bundle();
 			bundle.putInt(EXTRA_TIME_TO_STANDBY, _autoStandByWarnTimeout);
 			getEventMessenger().trigger(ON_STANDBY_AUTO_WARNING, bundle);
+			_isWarningProgress = true;
 
 			_autoStandByWarnTimeout -= 1000;
 			if (_autoStandByWarnTimeout >= 0)
@@ -377,6 +394,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 			else
 			{
 				startStandBy(true);
+				_isWarningProgress = false;
 			}
 		}
 	};

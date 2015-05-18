@@ -138,7 +138,6 @@ public class AndroidPlayer extends BasePlayer implements OnCompletionListener, O
 	@Override
 	public boolean isPlaying()
 	{
-		Log.i(TAG, "isPlaying -> " + _videoView.isPlaying());
 		return _videoView.isPlaying();
 	}
 

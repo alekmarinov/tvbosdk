@@ -47,10 +47,14 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	public static final int ON_PLAY_STARTED = EventMessenger.ID("ON_PLAY_STARTED");
 	public static final int ON_PLAY_TIMEOUT = EventMessenger.ID("ON_PLAY_TIMEOUT");
 	public static final int ON_PLAY_ERROR = EventMessenger.ID("ON_PLAY_ERROR");
+	public static final int ON_PLAY_FREEZE = EventMessenger.ID("ON_PLAY_FREEZE");
+	protected BasePlayer _player;
+	protected VideoView _videoView;
 	private PlayerStatusPoller _playerStartPoller = new PlayerStatusPoller(new PlayerStartVerifier());
 	private PlayerStatusPoller _playerStopPoller = new PlayerStatusPoller(new PlayerStopVerifier());
 	private PlayerStatusPoller _playerPausePoller = new PlayerStatusPoller(new PlayerPauseVerifier());
 	private PlayerStatusPoller _playerResumePoller = new PlayerStatusPoller(new PlayerResumeVerifier());
+	private PlayerStatusPoller _playerPlayingPoller = new PlayerStatusPoller(new PlayerPlayingVerifier());
 	private boolean _isError;
 	private int _errWhat;
 	private int _errExtra;
@@ -58,19 +62,16 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	private boolean _playPauseEnabled;
 	private boolean _isFullscreen;
 	private MediaType _mediaType;
+	private long _playFreezeTimeout;
 
 	public enum Extras
 	{
-		URL,
-		TIME_ELAPSED,
-		WHAT,
-		EXTRA
+		URL, TIME_ELAPSED, WHAT, EXTRA
 	}
 
 	public enum MediaType
 	{
-		TV,
-		VIDEO // VOD, WebTV, YouTube, etc.
+		TV, VIDEO // VOD, WebTV, YouTube, etc.
 	}
 
 	public static enum Param
@@ -89,7 +90,12 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		 * True when the player will be able to switch between play and pause
 		 * features. False otherwise.
 		 */
-		PLAY_PAUSE_ENABLED(true);
+		PLAY_PAUSE_ENABLED(true),
+
+		/**
+		 * Duration in not playing status considering freezed playback
+		 */
+		PLAY_FREEZE_TIMEOUT(5000);
 
 		Param(int value)
 		{
@@ -110,9 +116,6 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		LAST_URL
 	}
 
-	protected BasePlayer _player;
-	protected VideoView _videoView;
-
 	public FeaturePlayer() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.RCU);
@@ -124,7 +127,9 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		_feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
 		_player = createPlayer();
 
-		_playPauseEnabled = getPrefs().has(Param.PLAY_PAUSE_ENABLED) ? getPrefs().getBool(Param.PLAY_PAUSE_ENABLED) : true;
+		_playPauseEnabled = getPrefs().has(Param.PLAY_PAUSE_ENABLED) ? getPrefs().getBool(Param.PLAY_PAUSE_ENABLED)
+		        : true;
+		_playFreezeTimeout = getPrefs().getInt(Param.PLAY_FREEZE_TIMEOUT);
 
 		super.initialize(onFeatureInitialized);
 	}
@@ -135,7 +140,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	 *
 	 * @return BasePlayer
 	 */
-    protected BasePlayer createPlayer()
+	protected BasePlayer createPlayer()
 	{
 		_videoView = new VideoView(Environment.getInstance());
 		Environment.getInstance().getStateManager().addViewLayer(_videoView, true);
@@ -144,7 +149,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	}
 
 	/**
-	 * Creates backend player instance with attached VideoView. Override this method to create custom
+	 * Creates backend player instance with attached VideoView. Override this
+	 * method to create custom
 	 * player implementation.
 	 */
 	public void useVideoView(VideoView videoView)
@@ -389,12 +395,13 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		{
 			// Call only once to prevent multiple triggering of events
 			long timeElapsed = System.currentTimeMillis() - _startPolling;
-			boolean isPlaying = _playerStatusVerifier.checkStatus(timeElapsed);
-			Log.v(TAG, "waiting player for status: " + _playerStatusVerifier + " -> " + isPlaying);
+			boolean isStatus = _playerStatusVerifier.checkStatus(timeElapsed);
+			Log.v(TAG, "waiting player for status: " + _playerStatusVerifier + " -> " + isStatus);
 
-			if (!isPlaying)
+			if (!isStatus)
 			{
-				if (System.currentTimeMillis() - _startPolling > _playerStatusVerifier.getTimeout())
+				if (_playerStatusVerifier.getTimeout() > 0
+				        && System.currentTimeMillis() - _startPolling > _playerStatusVerifier.getTimeout())
 				{
 					// on timeout
 					_playerStatusVerifier.onTimeout(timeElapsed);
@@ -419,6 +426,10 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 				Bundle bundle = new Bundle();
 				bundle.putLong(Extras.TIME_ELAPSED.name(), timeElapsed);
 				getEventMessenger().trigger(ON_PLAY_STARTED, bundle);
+
+				// start verifying of resistant playback
+				_playerPlayingPoller.start();
+
 				return true;
 			}
 			return false;
@@ -443,6 +454,73 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		public String toString()
 		{
 			return "playing";
+		}
+	};
+
+	private class PlayerPlayingVerifier implements PlayerStatusVerifier
+	{
+		private boolean _hasPlayed;
+		private long _timeSinceLastPlay;
+		private long _positionSinceLastPlay;
+
+		@Override
+		public boolean checkStatus(long timeElapsed)
+		{
+			// eliminate player statuses not considered by this verifier
+			if (!_player.isPlaying() || _player.isPaused() || _player.getPosition() == 0)
+			{
+				_timeSinceLastPlay = _positionSinceLastPlay = 0;
+				_hasPlayed = false;
+				Log.v(TAG, "PlayerPlayingVerifier.checkStatus: reset counting");
+				return false;
+			}
+
+			if (_hasPlayed)
+			{
+				long elapsedTimeSinceLastPlay = System.currentTimeMillis() - _timeSinceLastPlay;
+				Log.v(TAG, "PlayerPlayingVerifier.checkStatus: elapsedTimeSinceLastPlay = " + elapsedTimeSinceLastPlay
+				        + ", _positionSinceLastPlay = " + _positionSinceLastPlay + ", _player.getPosition() = "
+				        + _player.getPosition());
+				if (elapsedTimeSinceLastPlay > _playFreezeTimeout)
+				{
+					if (_positionSinceLastPlay == _player.getPosition())
+					{
+						// trigger player freeze event
+						getEventMessenger().trigger(ON_PLAY_FREEZE);
+					}
+					else
+					{
+						_timeSinceLastPlay = System.currentTimeMillis();
+						_positionSinceLastPlay = _player.getPosition();
+					}
+				}
+			}
+			else
+			{
+				Log.i(TAG, "PlayerPlayingVerifier.checkStatus: start counting");
+				_timeSinceLastPlay = System.currentTimeMillis();
+				_positionSinceLastPlay = _player.getPosition();
+			}
+			_hasPlayed = true;
+
+			return false;
+		}
+
+		@Override
+		public int getTimeout()
+		{
+			return 0;
+		}
+
+		@Override
+		public void onTimeout(long timeElapsed)
+		{
+		}
+
+		@Override
+		public String toString()
+		{
+			return "smooth playing";
 		}
 	};
 
@@ -582,7 +660,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		Bundle bundle = new Bundle();
 		bundle.putInt(Extras.WHAT.name(), what);
 		bundle.putInt(Extras.EXTRA.name(), extra);
-		bundle.putInt(Extras.TIME_ELAPSED.name(), (int)(System.currentTimeMillis() - _playTimeElapsed));
+		bundle.putInt(Extras.TIME_ELAPSED.name(), (int) (System.currentTimeMillis() - _playTimeElapsed));
 		bundle.putString(Extras.URL.name(), Environment.getInstance().getUserPrefs().getString(UserParam.LAST_URL));
 		getEventMessenger().trigger(ON_PLAY_ERROR, bundle);
 		_errWhat = what;

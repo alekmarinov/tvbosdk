@@ -120,33 +120,17 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		{
 			String channelId = program.getChannel().getChannelId();
 			NavigableMap<Calendar, Program> navMap = _channelToRecordsNavigableMap.get(channelId);
-			Calendar nextRecord = null;
 			if (navMap == null)
 			{
 				navMap = new TreeMap<Calendar, Program>();
 				_channelToRecordsNavigableMap.put(channelId, navMap);
 			}
 
-			// get record with least start time great than record's start time
-			nextRecord = navMap.ceilingKey(program.getStartTime());
-
-			// check if such record doen't exist or it starts after newly added
-			// record has finished
-			if ((nextRecord == null) || (nextRecord.after(program.getStopTime())))
-			{
-				navMap.put(program.getStartTime(), program);
-				int dayOffset = Calendars.getDayOffsetByDate(program.getStartTime());
-				Log.i(TAG, "Adding dayoffset " + dayOffset + " for " + program.getChannel().getChannelId() + "/"
-				        + Calendars.makeString(program.getStartTime()));
-				_dayOffsets.add(dayOffset);
-			}
-			else
-			{
-				Log.w(TAG,
-				        "Overlapped channel intervals. Impossible to add interval at "
-				                + Calendars.makeString(program.getStartTime()));
-				return false;
-			}
+			navMap.put(program.getStartTime(), program);
+			int dayOffset = Calendars.getDayOffsetByDate(program.getStartTime());
+			Log.i(TAG, "Adding dayoffset " + dayOffset + " for " + program.getChannel().getChannelId() + "/"
+			        + Calendars.makeString(program.getStartTime()));
+			_dayOffsets.add(dayOffset);
 		}
 		else
 		{

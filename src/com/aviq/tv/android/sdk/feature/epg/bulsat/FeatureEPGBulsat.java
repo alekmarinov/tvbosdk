@@ -77,7 +77,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		 * Update interval for updating channel streams directly from bulsat
 		 * server
 		 */
-		STREAMS_UPDATE_INTERVAL(3600 * 1000),
+		STREAMS_UPDATE_INTERVAL(60 * 1000),
 
 		/**
 		 * EPG provider name
@@ -95,6 +95,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		}
 	}
 
+	// hack to trigger reference to Param enum and force java to initialize it
 	public static Param ParamIniter = Param.EPG_PROVIDER;
 
 	private List<Bitmap> _programImages = null;
