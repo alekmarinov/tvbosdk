@@ -783,15 +783,22 @@ public class StateManager
 			if (_messageState.onKeyDown(keyEvent))
 				return true;
 		}
+		boolean handled = false;
 		if (_activeStates.size() > 0)
 		{
-			Log.i(TAG, ".onKeyDown: delegating " + keyEvent + " to " + _activeStates.get(_activeStates.size() - 1));
-			BaseState topState = _activeStates.get(_activeStates.size() - 1);
-			if (topState.isAdded() && topState.getView() != null)
-				return topState.onKeyDown(keyEvent);
+			for (int i = _activeStates.size() - 1; i >= 0; i--)
+			{
+				Log.i(TAG, ".onKeyDown: delegating " + keyEvent + " to " + _activeStates.get(i));
+				BaseState topState = _activeStates.get(i);
+				if (topState.isAdded() && topState.getView() != null)
+				{
+					handled = topState.onKeyDown(keyEvent);
+					if (handled) break;
+				}
+			}
 		}
 
-		return false;
+		return handled;
 	}
 
 	/**
