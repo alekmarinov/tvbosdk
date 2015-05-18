@@ -14,6 +14,6 @@ public class Version
 {
 	public static final int MAJOR = 1;
 	public static final int MINOR = 4;
-	public static final int REVISION = 0;
+	public static final int REVISION = 69;
 	public static final String NAME = MAJOR + "." + MINOR + "." + REVISION;
 }

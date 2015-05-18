@@ -127,7 +127,8 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 
-		_feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
+		// FIXME: ON_KEY_PRESSED is not guaranteed in every case
+		// _feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
 
 		// RcuIMEService will broadcast BROADCAST_ACTION_SLEEP in response to
 		// sleep button pressed. This event may occur at any time even when the
