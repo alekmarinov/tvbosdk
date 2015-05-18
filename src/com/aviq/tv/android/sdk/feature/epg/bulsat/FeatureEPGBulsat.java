@@ -77,7 +77,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		 * Update interval for updating channel streams directly from bulsat
 		 * server
 		 */
-		STREAMS_UPDATE_INTERVAL(60 * 1000),
+		STREAMS_UPDATE_INTERVAL(2 * 3600 * 1000),
 
 		/**
 		 * EPG provider name
