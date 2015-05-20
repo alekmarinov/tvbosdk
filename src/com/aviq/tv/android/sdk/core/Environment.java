@@ -189,8 +189,7 @@ public class Environment extends Activity
 			try
 			{
 				// Log target device parameters
-				DisplayMetrics metrics = new DisplayMetrics();
-				getWindowManager().getDefaultDisplay().getMetrics(metrics);
+				DisplayMetrics metrics = getDisplayMetrics();
 				int memClass = ((ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE))
 				        .getMemoryClass();
 				Log.i(TAG, "Initializing environment: version (app = " + getBuildVersion() + ", sdk = " + Version.NAME
@@ -496,6 +495,13 @@ public class Environment extends Activity
 	{
 		Log.i(TAG, ".onConfigurationChanged: new language = " + newConfig.locale.getLanguage());
 		super.onConfigurationChanged(newConfig);
+	}
+
+	public DisplayMetrics getDisplayMetrics()
+	{
+		DisplayMetrics metrics = new DisplayMetrics();
+		getWindowManager().getDefaultDisplay().getMetrics(metrics);
+		return metrics;
 	}
 
 	/**
