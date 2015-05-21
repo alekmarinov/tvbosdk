@@ -597,11 +597,11 @@ public class StateManager
 			TextUtils.implodeBundle(logMsg, params, '=', ',').append("), layer=").append(stateLayer.name());
 			Log.i(TAG, logMsg.toString());
 
-			state.setCreated(false);
+			// set created status
+			state.setCreated(true);
 
 			// Workaround of setting fragment arguments when the fragment is
-			// already
-			// added
+			// already added
 			Runnable showFragmentChunk = new Runnable()
 			{
 				@Override
@@ -656,6 +656,7 @@ public class StateManager
 						// ft.commit();
 						ft.commitAllowingStateLoss();
 					}
+
 					_handler.post(new Runnable()
 					{
 						@Override
@@ -664,9 +665,6 @@ public class StateManager
 							setStateBackground(stateLayer);
 							// notify state is shown
 							state.onShow(false);
-
-							// set created status
-							state.setCreated(true);
 
 							if (FeatureState.class.isAssignableFrom(state.getClass()))
 							{
@@ -946,6 +944,7 @@ public class StateManager
 	{
 		Log.i(TAG, ".removeState: " + state.getClass().getSimpleName());
 
+		state.setCreated(false);
 		if (state.isAdded())
 		{
 			try
@@ -961,7 +960,6 @@ public class StateManager
 
 			// notify state is hidden
 			state.onHide(false);
-			state.setCreated(false);
 			return true;
 		}
 		else
