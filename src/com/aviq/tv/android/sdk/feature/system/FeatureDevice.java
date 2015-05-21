@@ -337,6 +337,14 @@ public class FeatureDevice extends FeatureComponent
 		Log.i(TAG, ".suicide: reason = " + reason);
 		Environment.getInstance().getUserPrefs().put(UserParam.SUICIDE_REASON, reason);
 		Environment.getInstance().finish();
+		try
+		{
+			Runtime.getRuntime().exec("killall " + Environment.getInstance().getPackageName());
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
 	}
 
 	/**
