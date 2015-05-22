@@ -87,6 +87,7 @@ public class Environment extends Activity
 	// FIXME: Convert EXTRA_KEY* to enum ExtraKey
 	public static final String EXTRA_KEY = "KEY";
 	public static final String EXTRA_KEYCODE = "KEYCODE";
+	public static final String EXTRA_KEYREPEAT = "KEYREPEAT";
 	public static final String EXTRA_KEYCONSUMED = "KEYCONSUMED";
 	public static final String SYSTEM_PREFS = "system";
 	private static final String AVIQTV_XML_RESOURCE = "aviqtv";
@@ -237,11 +238,11 @@ public class Environment extends Activity
 					}
 				};
 
-//				_imageLoader = new ImageLoader(_requestQueue, memCache);
+				// _imageLoader = new ImageLoader(_requestQueue, memCache);
 				// _imageLoader = new ImageLoader(_requestQueue, diskCache);
 				// _imageLoader = new ImageLoader(_requestQueue, new
 				// BitmapMemDiskLruCache(memCache, diskCache));
-				 _imageLoader = new ImageLoader(_requestQueue, noCache);
+				_imageLoader = new ImageLoader(_requestQueue, noCache);
 
 				// initializes features
 				getEventMessenger().trigger(ON_INITIALIZE);
@@ -853,11 +854,15 @@ public class Environment extends Activity
 	 */
 	/* package */boolean onKeyDown(AVKeyEvent keyEvent)
 	{
+		keyEvent.Event.startTracking();
 		Bundle bundle = new Bundle();
 		bundle.putString(EXTRA_KEY, keyEvent.Code.name());
 		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
+		bundle.putInt(EXTRA_KEYREPEAT, keyEvent.Event.getRepeatCount());
+
 		boolean consumed = _stateManager.onKeyDown(keyEvent);
-		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", keyEventsEnabled = " + _keyEventsEnabled + " -> consumed = " + consumed);
+		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", repeat = " + keyEvent.Event.getRepeatCount() + ", keyEventsEnabled = "
+		        + _keyEventsEnabled + " -> consumed = " + consumed);
 
 		if (_keyEventsEnabled || _exceptKeys.contains(keyEvent.Code))
 		{

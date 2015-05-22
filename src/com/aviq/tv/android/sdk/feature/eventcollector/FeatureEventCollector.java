@@ -243,8 +243,13 @@ public class FeatureEventCollector extends FeatureScheduler
 	protected void processCollectedEvents()
 	{
 		Log.v(TAG, "Process " + _eventList.size() + " collected events");
-		String data = parseEventListToString(_eventList);
-		_eventList.clear();
+
+		String data = null;
+		synchronized (_eventList)
+        {
+			data = parseEventListToString(_eventList);
+			_eventList.clear();
+        }
 
 		if (data != null && data.length() > 0)
 		{
@@ -305,7 +310,10 @@ public class FeatureEventCollector extends FeatureScheduler
 	 */
 	protected void addEvent(Bundle eventParams)
 	{
-		_eventList.add(eventParams);
+		synchronized (_eventList)
+        {
+			_eventList.add(eventParams);
+        }
 	}
 
 	/**
