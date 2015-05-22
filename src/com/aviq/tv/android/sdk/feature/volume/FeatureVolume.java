@@ -36,7 +36,6 @@ public class FeatureVolume extends FeatureComponent
 		MAX_LEVEL
 	}
 
-	private AudioManager _audioManager;
 	private int _maxVolume;
 	private boolean _muted;
 
@@ -44,9 +43,13 @@ public class FeatureVolume extends FeatureComponent
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
-		_audioManager = (AudioManager) Environment.getInstance().getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
-		_maxVolume = _audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+		_maxVolume = getAudioManager().getStreamMaxVolume(AudioManager.STREAM_MUSIC);
 		super.initialize(onFeatureInitialized);
+	}
+
+	private AudioManager getAudioManager()
+	{
+		return (AudioManager) Environment.getInstance().getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
 	}
 
 	/**
@@ -55,7 +58,7 @@ public class FeatureVolume extends FeatureComponent
 	public void mute(boolean isMute)
 	{
 		Log.i(TAG, ".mute: isMute = " + isMute);
-		_audioManager.setStreamMute(AudioManager.STREAM_MUSIC, isMute);
+		getAudioManager().setStreamMute(AudioManager.STREAM_MUSIC, isMute);
 		_muted = isMute;
 	}
 
@@ -72,7 +75,10 @@ public class FeatureVolume extends FeatureComponent
 	 */
 	public void raise()
 	{
-		_audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0);
+		Log.i(TAG, ".raise");
+		if (_muted)
+			mute(false);
+		getAudioManager().adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0);
 		volumeChanged();
 	}
 
@@ -81,7 +87,8 @@ public class FeatureVolume extends FeatureComponent
 	 */
 	public void lower()
 	{
-		_audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0);
+		Log.i(TAG, ".lower");
+		getAudioManager().adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0);
 		volumeChanged();
 	}
 
@@ -90,7 +97,7 @@ public class FeatureVolume extends FeatureComponent
 	 */
 	public int getCurrentLevel()
 	{
-		return _audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+		return getAudioManager().getStreamVolume(AudioManager.STREAM_MUSIC);
 	}
 
 	/**
