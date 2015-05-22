@@ -400,7 +400,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 			public void run()
 			{
 				FeatureError error = null;
-				HttpUriRequest httpGet = new HttpGet(getPrefs().getString(Param.BULSAT_CHANNELS_URL));
+				String url = getPrefs().getString(Param.BULSAT_CHANNELS_URL);
+				HttpUriRequest httpGet = new HttpGet(url);
 				Log.i(TAG, "Opening " + httpGet.getURI());
 
 				HttpClient httpClient = new DefaultHttpClient(httpGet.getParams());
@@ -418,16 +419,26 @@ public class FeatureEPGBulsat extends FeatureEPG
 						SAXParser saxParser = spf.newSAXParser();
 
 						XMLReader xmlReader = saxParser.getXMLReader();
-						xmlReader.setContentHandler(new XMLTVContentHandler());
+						XMLTVContentHandler contentHandler = new XMLTVContentHandler();
+						xmlReader.setContentHandler(contentHandler);
 						Log.i(TAG, "Parsing XML TV xml");
 						xmlReader.parse(new InputSource(content));
-						error = FeatureError.OK(FeatureEPGBulsat.this);
+						if (!contentHandler.isValid())
+							error = new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR,
+							        "Unexpected XML format by EPG service at " + url);
+						else
+							error = FeatureError.OK(FeatureEPGBulsat.this);
 					}
 					else
 					{
 						error = new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR,
 						        "No entity returned by " + httpGet.getURI());
 					}
+				}
+				catch (SAXException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+					error = new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR, e);
 				}
 				catch (Exception e)
 				{
@@ -462,6 +473,15 @@ public class FeatureEPGBulsat extends FeatureEPG
 		private String _streamUrl;
 		private String _seekUrl;
 		private StringBuilder _buffer = new StringBuilder();
+		private boolean _valid;
+
+		/**
+		 * @return true if the xml is valid
+		 */
+		boolean isValid()
+		{
+			return _valid;
+		}
 
 		@Override
 		public void characters(char[] ch, int start, int length)
@@ -486,6 +506,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 			}
 			else if (TAG_TV.equals(localName))
 			{
+				_valid = true;
 				ChannelBulsat channel = (ChannelBulsat) getChannelById(_channelId);
 				if (channel == null)
 				{
