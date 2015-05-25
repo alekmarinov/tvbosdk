@@ -141,7 +141,6 @@ public abstract class FeatureEPG extends FeatureComponent
 
 		Param(String value)
 		{
-			Log.w(TAG, "put " + name() + " -> " + value);
 			Environment.getInstance().getFeaturePrefs(FeatureName.Component.EPG).put(name(), value);
 		}
 	}
