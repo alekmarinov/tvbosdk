@@ -265,9 +265,9 @@ public class FeatureDisplay extends FeatureComponent
 
 	public class VideoMode
 	{
+		public int width;
+		public int height;
 		String modeId;
-		int width;
-		int height;
 		boolean isProgressive;
 		int hz;
 		boolean isSmpte;
