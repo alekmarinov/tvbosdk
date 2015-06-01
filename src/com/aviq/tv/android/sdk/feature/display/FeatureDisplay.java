@@ -20,6 +20,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
+import com.aviq.tv.android.sdk.feature.system.SystemProperties;
 import com.aviq.tv.android.sdk.utils.Files;
 
 /**
@@ -169,6 +170,97 @@ public class FeatureDisplay extends FeatureComponent
 	public VideoMode getBestVideoMode()
 	{
 		return parseVideoModeId(_mboxOutputModeManager.getBestMatchResolution());
+	}
+
+	private void saveFile(String text, String fileName) throws IOException
+	{
+		Log.i(TAG, "save `" + text + "' -> " + fileName);
+        Files.saveToFile(text, fileName);
+	}
+
+	private void setProp(String name, String value)
+	{
+		Log.i(TAG, "setprop " + name + "=" + value);
+		SystemProperties.set(name, value);
+	}
+
+	public void setScreenPosition(ScreenPosition screenPosition)
+	{
+		int right = screenPosition.x + screenPosition.w - 1;
+		int bottom = screenPosition.y + screenPosition.h - 1;
+
+		try
+        {
+			saveFile(String.format("%d %d %d %d", screenPosition.x, screenPosition.y, right, bottom), "/sys/class/graphics/fb0/window_axis");
+			saveFile("0x10001", "/sys/class/graphics/fb0/free_scale");
+        }
+        catch (IOException e)
+        {
+        	Log.e(TAG, e.getMessage(), e);
+        }
+	}
+
+	public void saveScreenPosition(ScreenPosition screenPosition)
+	{
+		VideoMode videoMode = getVideoMode();
+
+		setProp(String.format("ubootenv.var.%soutputx", videoMode.modeId), String.valueOf(screenPosition.x));
+		setProp(String.format("ubootenv.var.%soutputy", videoMode.modeId), String.valueOf(screenPosition.y));
+		setProp(String.format("ubootenv.var.%soutputwidth", videoMode.modeId), String.valueOf(screenPosition.w));
+		setProp(String.format("ubootenv.var.%soutputheight", videoMode.modeId), String.valueOf(screenPosition.h));
+
+		int right = screenPosition.x + screenPosition.w - 1;
+		int bottom = screenPosition.y + screenPosition.h - 1;
+
+		try
+        {
+			saveFile(String.format("%d %d %d %d %d %d 18 18", screenPosition.x, screenPosition.y, screenPosition.w, screenPosition.h, screenPosition.x, screenPosition.y), "/sys/class/display/axis");
+			saveFile(String.format("%d %d %d %d", screenPosition.x, screenPosition.y, right, bottom), "/sys/class/video/axis");
+        }
+        catch (IOException e)
+        {
+        	Log.e(TAG, e.getMessage(), e);
+        }
+	}
+
+	public ScreenPosition getScreenPosition()
+	{
+		ScreenPosition screenPosition = new ScreenPosition();
+       	VideoMode videoMode = getVideoMode();
+    	screenPosition.x = screenPosition.y = 0;
+    	screenPosition.w = videoMode.width;
+    	screenPosition.h = videoMode.height;
+		try
+        {
+	        String displayAxis = Files.loadToString("/sys/class/display/axis");
+	        String[] parts = displayAxis.split(" ");
+	        if (parts.length >= 4)
+	        {
+	        	screenPosition.x = Integer.valueOf(parts[0]);
+	        	screenPosition.y = Integer.valueOf(parts[1]);
+	        	screenPosition.w = Integer.valueOf(parts[2]);
+	        	screenPosition.h = Integer.valueOf(parts[3]);
+	        }
+        }
+        catch (Exception e)
+        {
+        	Log.w(TAG, e.getMessage(), e);
+        }
+		return screenPosition;
+	}
+
+	public class ScreenPosition
+	{
+		public int x;
+		public int y;
+		public int w;
+		public int h;
+
+		@Override
+		public String toString()
+		{
+			return String.format("%d %d %d %d", x, y, w, h);
+		}
 	}
 
 	public class VideoMode
