@@ -353,6 +353,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					List<Program> programs = (List<Program>) object;
 					for (Program program : programs)
 					{
+						if (program == null)
+							continue;
 						String channelId = program.getChannel().getChannelId();
 						NavigableMap<Calendar, Program> navigableMap = null;
 						if (!channelToRecordsNavigableMap.containsKey(channelId))
