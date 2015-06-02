@@ -239,8 +239,8 @@ public class FeatureDisplay extends FeatureComponent
 	        	// part[0] is empty string, starting from parts[1]
 	        	screenPosition.x = Integer.valueOf(parts[1]);
 	        	screenPosition.y = Integer.valueOf(parts[2]);
-	        	screenPosition.w = Integer.valueOf(parts[3]);
-	        	screenPosition.h = Integer.valueOf(parts[4]);
+	        	screenPosition.w = Integer.valueOf(parts[3]) - screenPosition.x;
+	        	screenPosition.h = Integer.valueOf(parts[4]) - screenPosition.y;
 	        }
         }
         catch (Exception e)
