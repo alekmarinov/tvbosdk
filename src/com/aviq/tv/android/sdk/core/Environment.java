@@ -173,7 +173,9 @@ public class Environment extends Activity
 	private static boolean _isCreated = false;
 	private FeatureRCU _featureRCU;
 	private boolean _keyEventsEnabled = true;
-	private ExceptKeysList _exceptKeys = new ExceptKeysList();
+	private boolean _keyRepetitionEnabled = true;
+	private ExceptKeysList _exceptKeysDisabled = new ExceptKeysList();
+	private ExceptKeysList _exceptKeysRepetition = new ExceptKeysList();
 	private ConcurrentLinkedQueue<AVKeyEvent> _keysQueue = new ConcurrentLinkedQueue<AVKeyEvent>();
 	private Context _context;
 	private boolean _isPause;
@@ -815,6 +817,7 @@ public class Environment extends Activity
 	 */
 	public void setKeyEventsEnabled()
 	{
+		Log.i(TAG, ".setKeyEventsEnabled");
 		_keyEventsEnabled = true;
 	}
 
@@ -826,8 +829,31 @@ public class Environment extends Activity
 	 */
 	public ExceptKeysList setKeyEventsDisabled()
 	{
+		Log.i(TAG, ".setKeyEventsDisabled");
 		_keyEventsEnabled = false;
-		return _exceptKeys;
+		return _exceptKeysDisabled;
+	}
+
+	/**
+	 * Enable key repetition
+	 */
+	public void setKeyRepetitionEnabled()
+	{
+		Log.i(TAG, ".setKeyRepetitionEnabled");
+		_keyRepetitionEnabled = true;
+	}
+
+	/**
+	 * Disable key repetition
+	 *
+	 * @param enabled
+	 *            true to enable key events, false to disable key events
+	 */
+	public ExceptKeysList setKeyRepetitionDisabled()
+	{
+		Log.i(TAG, ".setKeyRepetitionDisabled");
+		_keyRepetitionEnabled = false;
+		return _exceptKeysRepetition;
 	}
 
 	/**
@@ -861,10 +887,18 @@ public class Environment extends Activity
 		bundle.putInt(EXTRA_KEYREPEAT, keyEvent.Event.getRepeatCount());
 
 		boolean consumed = _stateManager.onKeyDown(keyEvent);
-		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", repeat = " + keyEvent.Event.getRepeatCount() + ", keyEventsEnabled = "
-		        + _keyEventsEnabled + " -> consumed = " + consumed);
+		Log.i(TAG, ".onKeyDown: key = " + keyEvent + ", repeat = " + keyEvent.Event.getRepeatCount()
+		        + ", keyEventsEnabled = " + _keyEventsEnabled + ", _keyRepetitionEnabled = " + _keyRepetitionEnabled
+		        + " -> consumed = " + consumed);
 
-		if (_keyEventsEnabled || _exceptKeys.contains(keyEvent.Code))
+		if (!_keyRepetitionEnabled && keyEvent.Event.getRepeatCount() > 0
+		        && !_exceptKeysRepetition.contains(keyEvent.Code))
+		{
+			Log.i(TAG, ".onKeyDown: key = " + keyEvent + " disabled by repetition rule");
+			return true;
+		}
+
+		if (_keyEventsEnabled || _exceptKeysDisabled.contains(keyEvent.Code))
 		{
 			bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
 			_featureRCU.getEventMessenger().trigger(FeatureRCU.ON_KEY_PRESSED, bundle);
@@ -884,7 +918,7 @@ public class Environment extends Activity
 		bundle.putInt(EXTRA_KEYCODE, keyEvent.Event.getKeyCode());
 		boolean consumed = _stateManager.onKeyUp(keyEvent);
 
-		if (_keyEventsEnabled || _exceptKeys.contains(keyEvent.Code))
+		if (_keyEventsEnabled || _exceptKeysDisabled.contains(keyEvent.Code))
 		{
 			bundle.putBoolean(EXTRA_KEYCONSUMED, consumed);
 			_featureRCU.getEventMessenger().trigger(FeatureRCU.ON_KEY_RELEASED, bundle);
