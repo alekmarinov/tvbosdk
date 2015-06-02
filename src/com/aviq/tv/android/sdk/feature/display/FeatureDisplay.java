@@ -249,7 +249,7 @@ public class FeatureDisplay extends FeatureComponent
 		return screenPosition;
 	}
 
-	public class ScreenPosition
+	public static class ScreenPosition
 	{
 		public int x;
 		public int y;
@@ -263,7 +263,7 @@ public class FeatureDisplay extends FeatureComponent
 		}
 	}
 
-	public class VideoMode
+	public static class VideoMode
 	{
 		public int width;
 		public int height;
