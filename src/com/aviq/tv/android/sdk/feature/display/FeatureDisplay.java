@@ -232,14 +232,15 @@ public class FeatureDisplay extends FeatureComponent
     	screenPosition.h = videoMode.height;
 		try
         {
-	        String displayAxis = Files.loadToString("/sys/class/display/axis");
-	        String[] parts = displayAxis.split(" ");
-	        if (parts.length >= 4)
+	        String windowAxis = Files.loadToString("/sys/class/graphics/fb0/window_axis");
+	        String[] parts = windowAxis.split("[^0-9]+");
+	        if (parts.length >= 5)
 	        {
-	        	screenPosition.x = Integer.valueOf(parts[0]);
-	        	screenPosition.y = Integer.valueOf(parts[1]);
-	        	screenPosition.w = Integer.valueOf(parts[2]);
-	        	screenPosition.h = Integer.valueOf(parts[3]);
+	        	// part[0] is empty string, starting from parts[1]
+	        	screenPosition.x = Integer.valueOf(parts[1]);
+	        	screenPosition.y = Integer.valueOf(parts[2]);
+	        	screenPosition.w = Integer.valueOf(parts[3]);
+	        	screenPosition.h = Integer.valueOf(parts[4]);
 	        }
         }
         catch (Exception e)
