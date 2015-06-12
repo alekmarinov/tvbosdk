@@ -78,17 +78,19 @@ public class StateManager
 
 	public static class MessageParams
 	{
-		public static final String PARAM_TYPE = "PARAM_TYPE";
-		public static final String PARAM_TITLE = "PARAM_TITLE";
-		public static final String PARAM_TEXT = "PARAM_TEXT";
-		public static final String PARAM_SKIP_BTN_IMAGE = "PARAM_SKIP_BTN_IMAGE";
-		public static final String PARAM_AUTO_HIDE_DELAY = "PARAM_AUTO_HIDE_DELAY";
-		public static final String PARAM_AUTO_HIDE_DEFAULT_BUTTON = "PARAM_AUTO_HIDE_DEFAULT_BUTTON";
-		public static final String PARAM_POSITIVE_BUTTON_LABEL = "PARAM_POSITIVE_BUTTON_LABEL";
-		public static final String PARAM_NEGATIVE_BUTTON_LABEL = "PARAM_NEGATIVE_BUTTON_LABEL";
-		public static final String PARAM_IMAGE_URL = "PARAM_IMAGE_URL";
-		public static final String PARAM_CUSTOM_BUTTON_LABEL = "PARAM_CUSTOM_BUTTON_LABEL";
-		public static final String PARAM_CUSTOM_BUTTON_ACTION_CODE = "PARAM_CUSTOM_BUTTON_ACTION_CODE";
+		public static final String PARAM_TYPE = "TYPE";
+		public static final String PARAM_TITLE = "TITLE";
+		public static final String PARAM_TEXT = "TEXT";
+		public static final String PARAM_AUTO_ANSWER_TIMEOUT = "AUTO_ANSWER_TIMEOUT";
+		public static final String PARAM_AUTO_ANSWER_INDEX = "AUTO_ANSWER_INDEX";
+		public static final String PARAM_SKIP_BTN_IMAGE = "SKIP_BTN_IMAGE";
+		public static final String PARAM_AUTO_HIDE_DELAY = "AUTO_HIDE_DELAY";
+		public static final String PARAM_AUTO_HIDE_DEFAULT_BUTTON = "AUTO_HIDE_DEFAULT_BUTTON";
+		public static final String PARAM_POSITIVE_BUTTON_LABEL = "POSITIVE_BUTTON_LABEL";
+		public static final String PARAM_NEGATIVE_BUTTON_LABEL = "NEGATIVE_BUTTON_LABEL";
+		public static final String PARAM_IMAGE_URL = "IMAGE_URL";
+		public static final String PARAM_CUSTOM_BUTTON_LABEL = "CUSTOM_BUTTON_LABEL";
+		public static final String PARAM_CUSTOM_BUTTON_ACTION_CODE = "CUSTOM_BUTTON_ACTION_CODE";
 
 		public enum Type
 		{
@@ -123,6 +125,18 @@ public class StateManager
 		public MessageParams setText(String text)
 		{
 			_bundle.putString(PARAM_TEXT, text);
+			return this;
+		}
+
+		public MessageParams setAutoAnswerTimeout(int timeout)
+		{
+			_bundle.putInt(PARAM_AUTO_ANSWER_TIMEOUT, timeout);
+			return this;
+		}
+
+		public MessageParams setAutoAnswerIndex(int index)
+		{
+			_bundle.putInt(PARAM_AUTO_ANSWER_INDEX, index);
 			return this;
 		}
 

@@ -279,5 +279,12 @@ public class FeatureDisplay extends FeatureComponent
 			return String.format("%s%s-%s", width == 4096 ? "4k" : (width + "x"), height == 2160 ? "2k"
 			        : (height + (isProgressive ? "p" : "i")), isSmpte ? "smpte" : (hz + "Hz"));
 		}
+
+		@Override
+        public boolean equals(Object vMode)
+		{
+			VideoMode videoMode = (VideoMode)vMode;
+			return videoMode.modeId.equals(this.modeId);
+		}
 	}
 }
