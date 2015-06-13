@@ -283,14 +283,19 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 
 	/**
 	 * Swap channel positions
-	 * FIXME: The order of channels after swapping channels position needs corrections.
-	 * The current logic makes the user play puzzle 15 :)
 	 */
 	public void swapChannelPositions(int position1, int position2)
 	{
 		if (position1 != position2 && position1 < _favoriteChannels.size() && position2 < _favoriteChannels.size())
 		{
-			Collections.swap(_favoriteChannels, position1, position2);
+			Log.i(TAG, ".swapChannelPositions: " + position1 + " <-> " + position2);
+			int delta = position1 < position2 ? 1 : -1;
+			while (position1 != position2)
+			{
+				Collections.swap(_favoriteChannels, position1, position1 + delta);
+				position1 += delta;
+			}
+
 			_isFavoritesModified = true;
 		}
 	}
@@ -302,10 +307,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	{
 		if (position > 0)
 		{
-			Channel channel = _favoriteChannels.get(position);
-			_favoriteChannels.remove(position);
-			_favoriteChannels.add(0, channel);
-			_isFavoritesModified = true;
+			swapChannelPositions(position, 0);
 		}
 	}
 
@@ -323,6 +325,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	 */
 	public boolean isModified()
 	{
+		Log.i(TAG, ".isModified -> " + _isFavoritesModified);
 		return _isFavoritesModified;
 	}
 
