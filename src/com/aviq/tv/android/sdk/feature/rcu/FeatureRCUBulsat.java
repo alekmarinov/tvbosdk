@@ -20,6 +20,23 @@ public class FeatureRCUBulsat extends FeatureRCUSDMC
 	@Override
 	public Key getKey(int keyCode)
 	{
+
+		switch (keyCode)
+		{
+			case 126:
+				return Key.PLAY;
+			case 127:
+				return Key.PAUSE;
+			case 171:
+				return Key.PIP;
+			case 172:
+				return Key.EPG;
+			case 174:
+				return Key.FAVORITE;
+			case 165:
+				return Key.INFO;
+
+		}
 		return super.getKey(keyCode);
 	}
 }

@@ -325,7 +325,6 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	 */
 	public boolean isModified()
 	{
-		Log.i(TAG, ".isModified -> " + _isFavoritesModified);
 		return _isFavoritesModified;
 	}
 
