@@ -758,6 +758,13 @@ public abstract class FeatureEPG extends FeatureComponent
 		if (channelIds.size() != programIds.size())
 			throw new IllegalArgumentException("Number of channel ids must be equal to the number of program ids");
 
+		if (channelIds.size() == 0)
+		{
+			// return empty list with success status
+			onResultReceived.onReceiveResult(FeatureError.OK(this), new ArrayList<Program>());
+			return ;
+		}
+
 		final int nPrograms = programIds.size();
 		final Map<String, Program> programsMap = new HashMap<String, Program>();
 		final int[] responseCount = new int[1];

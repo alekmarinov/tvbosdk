@@ -301,7 +301,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	protected void loadRecordFromDataProvider(final OnResultReceived onResultReceived)
 	{
 		final HashMap<String, NavigableMap<Calendar, Program>> channelToRecordsNavigableMap = new HashMap<String, NavigableMap<Calendar, Program>>();
-		if (!_userPrefs.has(UserParam.RECORDINGS))
+		if (!_userPrefs.has(UserParam.RECORDINGS) || _userPrefs.getString(UserParam.RECORDINGS).isEmpty())
 		{
 			onResultReceived.onReceiveResult(FeatureError.OK(this), channelToRecordsNavigableMap);
 			return;
