@@ -250,6 +250,16 @@ public class FeatureDisplay extends FeatureComponent
 		return screenPosition;
 	}
 
+	public void resetScreenPosition()
+	{
+		ScreenPosition screenPosition = new ScreenPosition();
+       	VideoMode videoMode = getVideoMode();
+    	screenPosition.x = screenPosition.y = 0;
+    	screenPosition.w = videoMode.width;
+    	screenPosition.h = videoMode.height;
+    	saveScreenPosition(screenPosition);
+	}
+
 	public static class ScreenPosition
 	{
 		public int x;
