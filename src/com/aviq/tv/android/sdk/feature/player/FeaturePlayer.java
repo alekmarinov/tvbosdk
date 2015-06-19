@@ -318,7 +318,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	}
 
 	/**
-	 * Seeks in stream position at the specified offset in seconds
+	 * Seeks in stream position at the specified offset in milliseconds
 	 */
 	public void seekTo(int offset)
 	{
