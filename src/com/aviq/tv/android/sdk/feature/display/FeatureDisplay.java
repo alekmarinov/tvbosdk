@@ -257,6 +257,7 @@ public class FeatureDisplay extends FeatureComponent
     	screenPosition.x = screenPosition.y = 0;
     	screenPosition.w = videoMode.width;
     	screenPosition.h = videoMode.height;
+    	setScreenPosition(screenPosition);
     	saveScreenPosition(screenPosition);
 	}
 
