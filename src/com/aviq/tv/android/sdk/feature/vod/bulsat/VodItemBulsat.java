@@ -204,6 +204,21 @@ public class VodItemBulsat extends VODItem
 		{
 			case DESCRIPTION:
 				return _description;
+			case COUNTRY:
+				return _country;
+			case DIRECTOR:
+				return _director;
+			case RATING:
+				return String.valueOf(_ratings[0]);
+			case RELEASE:
+				return _release;
+			case SHORT_DESCRIPTION:
+				return _shortDescription;
+			case DURATION:
+				return String.valueOf(_duration);
+			case YOUTUBE_TRAILER_URL:
+				return _youTubeTrailerUrl;
+			default:
 		}
 		return null;
 	}

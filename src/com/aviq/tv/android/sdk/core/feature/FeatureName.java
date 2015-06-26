@@ -42,7 +42,8 @@ public class FeatureName
 		DEBUG,
 		RECORDING_SCHEDULER,
 		DEVICE,
-		VOLUME
+		VOLUME,
+		COMMAND
 	}
 
 	public static enum Scheduler

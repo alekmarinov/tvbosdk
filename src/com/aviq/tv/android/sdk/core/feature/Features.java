@@ -15,6 +15,7 @@ import java.lang.reflect.Field;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.channels.FeatureChannels;
+import com.aviq.tv.android.sdk.feature.command.FeatureCommand;
 import com.aviq.tv.android.sdk.feature.display.FeatureDisplay;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
@@ -78,6 +79,7 @@ public class Features
 		public FeatureDevice DEVICE;
 		public FeatureVolume VOLUME;
 		public FeatureComponent CRASHLOG;
+		public FeatureCommand COMMAND;
 	}
 
 	public class Schedulers
