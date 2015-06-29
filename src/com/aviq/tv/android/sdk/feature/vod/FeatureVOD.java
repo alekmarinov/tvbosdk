@@ -1138,7 +1138,6 @@ public abstract class FeatureVOD extends FeatureScheduler
 	}
 	
 	// Command handlers
-	
 	/**
 	 * Returns a JSON Array for the VOD groups
 	 * Params:
