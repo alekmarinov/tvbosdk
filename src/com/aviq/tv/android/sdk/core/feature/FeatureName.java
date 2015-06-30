@@ -43,6 +43,7 @@ public class FeatureName
 		RECORDING_SCHEDULER,
 		DEVICE,
 		VOLUME,
+		COMMAND,
 		DLNA
 	}
 

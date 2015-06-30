@@ -15,5 +15,5 @@ package com.aviq.tv.android.sdk.feature.vod;
  */
 public enum VodAttribute
 {
-	DESCRIPTION
+	DESCRIPTION, RELEASE, COUNTRY, SHORT_DESCRIPTION, RATING, DIRECTOR, ACTORS, YOUTUBE_TRAILER_URL, DURATION
 }
