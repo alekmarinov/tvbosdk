@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Random;
+import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,9 +40,12 @@ public class TextUtils
 	/**
 	 * Implodes byte[] into String
 	 *
-	 * @param bytes the byte array to implode to string
-	 * @param format the byte format
-	 * @param sep separator string between bytes
+	 * @param bytes
+	 *            the byte array to implode to string
+	 * @param format
+	 *            the byte format
+	 * @param sep
+	 *            separator string between bytes
 	 * @return the String with imploded bytes
 	 */
 	public static String implodeBytesArray(byte[] bytes, String format, String sep)
@@ -104,10 +108,14 @@ public class TextUtils
 	/**
 	 * Implodes bundle into StringBuffer
 	 *
-	 * @param buffer the StringBuffer to append into
-	 * @param bundle the bundle to be imploded
-	 * @param sepKey key from value character separator
-	 * @param sepVal key/value pairs separator
+	 * @param buffer
+	 *            the StringBuffer to append into
+	 * @param bundle
+	 *            the bundle to be imploded
+	 * @param sepKey
+	 *            key from value character separator
+	 * @param sepVal
+	 *            key/value pairs separator
 	 * @return the same specified buffer
 	 */
 	public static StringBuffer implodeBundle(StringBuffer buffer, Bundle bundle, char sepKey, char sepVal)
@@ -139,6 +147,7 @@ public class TextUtils
 
 	/**
 	 * Implodes bundle to string formatted as (key1:val1,key2:val2)
+	 *
 	 * @param bundle
 	 * @return String with formatted bundle
 	 */
@@ -373,47 +382,71 @@ public class TextUtils
 	{
 		if (o.getClass().getName().contentEquals("java.lang.Byte"))
 		{
-			bundle.putByte(key, (Byte)o);
+			bundle.putByte(key, (Byte) o);
 		}
 		else if (o.getClass().getName().contentEquals("java.lang.Short"))
 		{
-			bundle.putShort(key, (Short)o);
+			bundle.putShort(key, (Short) o);
 		}
 		else if (o.getClass().getName().contentEquals("java.lang.Integer"))
 		{
-			bundle.putInt(key, (Integer)o);
+			bundle.putInt(key, (Integer) o);
 		}
 		else if (o.getClass().getName().contentEquals("java.lang.Long"))
 		{
-			bundle.putLong(key, (Long)o);
+			bundle.putLong(key, (Long) o);
 		}
 		else if (o.getClass().getName().contentEquals("java.lang.Boolean"))
 		{
-			bundle.putBoolean(key, (Boolean)o);
+			bundle.putBoolean(key, (Boolean) o);
 		}
 		else if (o.getClass().getName().contentEquals("java.lang.Double"))
 		{
-			bundle.putDouble(key, (Double)o);
+			bundle.putDouble(key, (Double) o);
 		}
 		else if (o.getClass().getName().contentEquals("java.lang.Float"))
 		{
-			bundle.putFloat(key, (Float)o);
+			bundle.putFloat(key, (Float) o);
 		}
 		else if (o.getClass().getName().contentEquals("java.lang.String"))
 		{
-			bundle.putString(key, (String)o);
+			bundle.putString(key, (String) o);
 		}
 		else if (o.getClass().getName().contentEquals("java.lang.Character"))
 		{
-			bundle.putChar(key, (Character)o);
+			bundle.putChar(key, (Character) o);
 		}
 		else if (o.getClass().getName().contentEquals("android.os.Bundle"))
 		{
-			bundle.putBundle(key, (Bundle)o);
+			bundle.putBundle(key, (Bundle) o);
 		}
 		else
 		{
 			Log.w(TAG, "Can't put object class `" + o.getClass().getName() + "' to Bundle");
 		}
+	}
+
+	/**
+	 * Capitalizes a sentence.
+	 * Example: "the quick brown fox jumps over the lazy dog" -> "The Quick Brown Fox Jumps Over The Lazy Dog"
+	 *
+	 * @param sentence to be capitalized
+	 * @return capitalized string
+	 */
+	public static String capitalize(String sentence)
+	{
+		StringTokenizer tokenizer = new StringTokenizer(sentence);
+		StringBuffer capitalized = new StringBuffer();
+
+		while (tokenizer.hasMoreTokens())
+		{
+			String word = tokenizer.nextToken();
+			if (capitalized.length() > 0)
+			{
+				capitalized.append(' ');
+			}
+			capitalized.append(word.substring(0, 1).toUpperCase()).append(word.substring(1).toLowerCase());
+		}
+		return capitalized.toString();
 	}
 }
