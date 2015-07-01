@@ -15,12 +15,11 @@ import com.aviq.tv.android.sdk.core.Key;
 /**
  * Defines Bulsat RCU specific keys mapping
  */
-public class FeatureRCUBulsat extends FeatureRCUSDMC
+public class FeatureRCUBulsat extends FeatureRCUKeyboard
 {
 	@Override
 	public Key getKey(int keyCode)
 	{
-
 		switch (keyCode)
 		{
 			case 126:
@@ -35,8 +34,30 @@ public class FeatureRCUBulsat extends FeatureRCUSDMC
 				return Key.FAVORITE;
 			case 165:
 				return Key.INFO;
-
+				
 		}
 		return super.getKey(keyCode);
+	}
+	
+	@Override
+	public int getCode(Key key)
+	{
+		switch (key)
+		{
+			case PLAY:
+				return 126;
+			case PAUSE:
+				return 127;
+			case PIP:
+				return 171;
+			case EPG:
+				return 172;
+			case FAVORITE:
+				return 174;
+			case INFO:
+				return 165;
+			default:
+				return super.getCode(key);
+		}
 	}
 }

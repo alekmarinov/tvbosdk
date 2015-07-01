@@ -145,4 +145,132 @@ public class FeatureRCUKeyboard extends FeatureRCU
 		}
 		return Key.UNKNOWN;
 	}
+
+	@Override
+    public int getCode(Key key)
+    {
+		switch (key)
+		{
+			case NUM_1 :
+				return KeyEvent.KEYCODE_1;
+			case NUM_2 :
+				return KeyEvent.KEYCODE_2;
+			case NUM_3:
+				return KeyEvent.KEYCODE_3;
+			case NUM_4:
+				return KeyEvent.KEYCODE_4;
+			case NUM_5:
+				return KeyEvent.KEYCODE_5;
+			case NUM_6:
+				return KeyEvent.KEYCODE_6;
+			case NUM_7:
+				return KeyEvent.KEYCODE_7;
+			case NUM_8:
+				return KeyEvent.KEYCODE_8;
+			case NUM_9:
+				return KeyEvent.KEYCODE_9;
+			case CHARACTERS:
+				return KeyEvent.KEYCODE_STAR;
+			case NUM_0:
+				return KeyEvent.KEYCODE_0;
+			case DELETE:
+				return KeyEvent.KEYCODE_DEL;
+			case PAGE_UP:
+				return KeyEvent.KEYCODE_PAGE_UP;
+			case PAGE_DOWN:
+				return KeyEvent.KEYCODE_PAGE_DOWN;
+			case BACK:
+				return KeyEvent.KEYCODE_ESCAPE;
+			case LEFT:
+				return KeyEvent.KEYCODE_DPAD_LEFT;
+			case RIGHT:
+				return KeyEvent.KEYCODE_DPAD_RIGHT;
+			case UP:
+				return KeyEvent.KEYCODE_DPAD_UP;
+			case DOWN:
+				return KeyEvent.KEYCODE_DPAD_DOWN;
+			case OK:
+				return KeyEvent.KEYCODE_ENTER;
+			case FUNCTION1:
+				return KeyEvent.KEYCODE_F1;
+			case MENU:
+				return KeyEvent.KEYCODE_F2;
+			case FUNCTION3:
+				return KeyEvent.KEYCODE_F3;
+			case FUNCTION4:
+				return KeyEvent.KEYCODE_F4;
+			case FUNCTION5:
+				return KeyEvent.KEYCODE_F5;
+			case FUNCTION6:
+				return KeyEvent.KEYCODE_F6;
+			case FUNCTION7:
+				return KeyEvent.KEYCODE_F7;
+			case FUNCTION8:
+				return KeyEvent.KEYCODE_F8;
+			case FUNCTION9:
+				return KeyEvent.KEYCODE_F9;
+			case FUNCTION10:
+				return KeyEvent.KEYCODE_F10;
+			case FUNCTION11:
+				return KeyEvent.KEYCODE_F11;
+			case FUNCTION12:
+				return KeyEvent.KEYCODE_F12;
+
+			case A:
+				return KeyEvent.KEYCODE_A;
+			case B:
+				return KeyEvent.KEYCODE_B;
+			case C:
+				return KeyEvent.KEYCODE_C;
+			case D:
+				return KeyEvent.KEYCODE_D;
+			case E:
+				return KeyEvent.KEYCODE_E;
+			case F:
+				return KeyEvent.KEYCODE_F;
+			case G:
+				return KeyEvent.KEYCODE_G;
+			case H:
+				return KeyEvent.KEYCODE_H;
+			case I:
+				return KeyEvent.KEYCODE_I;
+			case J:
+				return KeyEvent.KEYCODE_J;
+			case K:
+				return KeyEvent.KEYCODE_K;
+			case L:
+				return KeyEvent.KEYCODE_L;
+			case M:
+				return KeyEvent.KEYCODE_M;
+			case N:
+				return KeyEvent.KEYCODE_N;
+			case O:
+				return KeyEvent.KEYCODE_O;
+			case P:
+				return KeyEvent.KEYCODE_P;
+			case Q:
+				return KeyEvent.KEYCODE_Q;
+			case R:
+				return KeyEvent.KEYCODE_R;
+			case S:
+				return KeyEvent.KEYCODE_S;
+			case T:
+				return KeyEvent.KEYCODE_T;
+			case U:
+				return KeyEvent.KEYCODE_U;
+			case V:
+				return KeyEvent.KEYCODE_V;
+			case W:
+				return KeyEvent.KEYCODE_W;
+			case X:
+				return KeyEvent.KEYCODE_X;
+			case Y:
+				return KeyEvent.KEYCODE_Y;
+			case Z:
+				return KeyEvent.KEYCODE_Z;
+			default:
+				break;
+		}
+	    return KeyEvent.KEYCODE_UNKNOWN;
+    }
 }

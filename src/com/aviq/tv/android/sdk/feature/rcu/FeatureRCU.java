@@ -34,4 +34,5 @@ public abstract class FeatureRCU extends FeatureComponent
 	}
 
 	abstract public Key getKey(int keyCode);
+	abstract public int getCode(Key key);
 }

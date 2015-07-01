@@ -15,18 +15,39 @@ import java.util.Map;
 
 import android.os.Bundle;
 
+import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
+import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
+import com.aviq.tv.android.sdk.feature.command.handlers.CommandSendKey;
 
 /**
  * Feature implementing common command interface
  */
 public class FeatureCommand extends FeatureComponent
 {
+	public static final String TAG = FeatureCommand.class.getSimpleName();
 	private Map<String, CommandHandler> _commandHandlers = new HashMap<String, CommandHandler>();
-	
+
+	public FeatureCommand() throws FeatureNotFoundException
+	{
+		require(FeatureName.Component.RCU);
+	}
+
+	@Override
+	public void initialize(final OnFeatureInitialized onFeatureInitialized)
+	{
+		Log.i(TAG, ".initialize");
+		
+		// add global command handlers
+		CommandSendKey commandSendKey = new CommandSendKey(_feature.Component.RCU);
+		addCommandHandler(commandSendKey);
+		
+		super.initialize(onFeatureInitialized);
+	}
+
 	@Override
 	public Component getComponentName()
 	{
