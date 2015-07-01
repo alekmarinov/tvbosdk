@@ -71,6 +71,8 @@ public class FeatureDLNA extends FeatureComponent implements PropertyChangeListe
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
+		Log.i(TAG, ".initialize");
+
 		_udn = new UDN(_feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.UUID));
 		Context context = Environment.getInstance().getApplicationContext();
 		context.bindService(new Intent(context, AndroidUpnpServiceImpl.class), serviceConnection,
@@ -141,7 +143,7 @@ public class FeatureDLNA extends FeatureComponent implements PropertyChangeListe
 		productName = TextUtils.capitalize(productName);
 
 		DeviceType type = new UDADeviceType(Name.SDK, 1);
-		DeviceDetails details = new DeviceDetails(productName, new ManufacturerDetails(Name.SDK),
+		DeviceDetails details = new DeviceDetails(productName, new ManufacturerDetails(Name.COMPANY),
 		        new ModelDetails(brandName, productName + " Set-Top Box based on " + Name.SDK.toUpperCase()
 		                + Version.NAME, Version.NAME));
 		LocalService stateService = createService();
