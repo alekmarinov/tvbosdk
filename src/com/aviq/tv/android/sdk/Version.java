@@ -1,15 +1,18 @@
 /**
- * Copyright (c) 2007-2014, AVIQ Bulgaria Ltd
+ * Copyright (c) 2007-2015, Intelibo Ltd
  *
- * Project:     AVIQTVSDK
+ * Project:     TVBOSDK
  * Filename:    Version.java
  * Author:      alek
  * Date:        4 May 2014
- * Description:
+ * Description: Static version information
  */
 
 package com.aviq.tv.android.sdk;
 
+/**
+ * Static version information
+ */
 public class Version
 {
 	public static final int MAJOR = 1;

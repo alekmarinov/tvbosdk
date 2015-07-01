@@ -81,7 +81,6 @@ public class FeatureRegister extends FeatureComponent
 	private String _version;
 
 	/**
-	 * @param environment
 	 * @throws FeatureNotFoundException
 	 */
 	public FeatureRegister() throws FeatureNotFoundException

@@ -43,7 +43,8 @@ public class FeatureName
 		RECORDING_SCHEDULER,
 		DEVICE,
 		VOLUME,
-		COMMAND
+		COMMAND,
+		DLNA
 	}
 
 	public static enum Scheduler

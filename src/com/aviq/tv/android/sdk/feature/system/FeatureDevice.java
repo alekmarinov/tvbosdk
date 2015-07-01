@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.UUID;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -61,7 +62,7 @@ public class FeatureDevice extends FeatureComponent
 
 	public enum DeviceAttribute
 	{
-		PACKAGE, CUSTOMER, BRAND, BUILD, VERSION, NETWORK, MAC, UPTIME, REALTIME
+		UUID, PACKAGE, CUSTOMER, BRAND, BUILD, VERSION, NETWORK, MAC, UPTIME, REALTIME
 	}
 
 	public enum StartReason
@@ -76,7 +77,7 @@ public class FeatureDevice extends FeatureComponent
 
 	public static enum UserParam
 	{
-		SUICIDE_REASON
+		UUID, SUICIDE_REASON
 	}
 
 	public static enum Param
@@ -147,6 +148,7 @@ public class FeatureDevice extends FeatureComponent
 	private long _bytesRcvd;
 	private long _bytesSent;
 	private String _deviceMac;
+	private String _deviceUUID;
 	protected long _statusInterval;
 	private StartReason _startReason = StartReason.UNKONWN;
 	private String _suicideReason;
@@ -183,6 +185,16 @@ public class FeatureDevice extends FeatureComponent
 			_startReason = StartReason.SUICIDE;
 			_suicideReason = userPrefs.getString(UserParam.SUICIDE_REASON);
 			userPrefs.remove(UserParam.SUICIDE_REASON);
+		}
+
+		if (userPrefs.has(UserParam.UUID))
+		{
+			_deviceUUID = userPrefs.getString(UserParam.UUID);
+		}
+		else
+		{
+			_deviceUUID = UUID.randomUUID().toString();
+			userPrefs.put(UserParam.UUID, _deviceUUID);
 		}
 
 		resetStats();
@@ -273,6 +285,9 @@ public class FeatureDevice extends FeatureComponent
 	{
 		switch (deviceAttribute)
 		{
+			case UUID:
+				return _deviceUUID;
+
 			case PACKAGE:
 				return Environment.getInstance().getPackageName();
 

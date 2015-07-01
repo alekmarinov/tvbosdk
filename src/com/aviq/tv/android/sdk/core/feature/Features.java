@@ -17,10 +17,11 @@ import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.channels.FeatureChannels;
 import com.aviq.tv.android.sdk.feature.command.FeatureCommand;
 import com.aviq.tv.android.sdk.feature.display.FeatureDisplay;
+import com.aviq.tv.android.sdk.feature.dlna.FeatureDLNA;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPGCompat;
-import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
+import com.aviq.tv.android.sdk.feature.httpserver.custom.FeatureHttpServer;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.language.FeatureLanguage;
 import com.aviq.tv.android.sdk.feature.network.FeatureEthernet;
@@ -80,6 +81,7 @@ public class Features
 		public FeatureVolume VOLUME;
 		public FeatureComponent CRASHLOG;
 		public FeatureCommand COMMAND;
+		public FeatureDLNA DLNA;
 	}
 
 	public class Schedulers

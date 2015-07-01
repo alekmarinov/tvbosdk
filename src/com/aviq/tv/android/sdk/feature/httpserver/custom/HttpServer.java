@@ -7,7 +7,7 @@
  * Description: WebServer utility component hosting local site in either /assets or /files directory
  */
 
-package com.aviq.tv.android.sdk.feature.httpserver;
+package com.aviq.tv.android.sdk.feature.httpserver.custom;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
