@@ -21,7 +21,7 @@ import com.aviq.tv.android.sdk.feature.dlna.FeatureDLNA;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPGCompat;
-import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
+import com.aviq.tv.android.sdk.feature.httpserver.custom.FeatureHttpServer;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.language.FeatureLanguage;
 import com.aviq.tv.android.sdk.feature.network.FeatureEthernet;

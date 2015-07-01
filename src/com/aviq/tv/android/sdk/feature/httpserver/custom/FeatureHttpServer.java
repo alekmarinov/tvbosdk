@@ -2,13 +2,13 @@
  * Copyright (c) 2007-2013, AVIQ Bulgaria Ltd
  *
  * Project:     AVIQTVSDK
- * Filename:    FeatureHttpServer.java
+ * Filename:    FeatureHttpServerJetty.java
  * Author:      alek
  * Date:        1 Dec 2013
  * Description: Component feature providing http server
  */
 
-package com.aviq.tv.android.sdk.feature.httpserver;
+package com.aviq.tv.android.sdk.feature.httpserver.custom;
 
 import java.io.IOException;
 
