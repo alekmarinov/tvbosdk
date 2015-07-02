@@ -10,6 +10,8 @@
 
 package com.aviq.tv.android.sdk.feature.rcu;
 
+import android.view.KeyEvent;
+
 import com.aviq.tv.android.sdk.core.Key;
 
 /**
@@ -22,6 +24,12 @@ public class FeatureRCUBulsat extends FeatureRCUKeyboard
 	{
 		switch (keyCode)
 		{
+			case 164:
+				return Key.MUTE;
+			case KeyEvent.KEYCODE_BACK:
+				return Key.BACK;
+			case KeyEvent.KEYCODE_MENU:
+				return Key.MENU;
 			case 126:
 				return Key.PLAY;
 			case 127:
@@ -34,16 +42,18 @@ public class FeatureRCUBulsat extends FeatureRCUKeyboard
 				return Key.FAVORITE;
 			case 165:
 				return Key.INFO;
-				
+
 		}
 		return super.getKey(keyCode);
 	}
-	
+
 	@Override
 	public int getCode(Key key)
 	{
 		switch (key)
 		{
+			case MUTE:
+				return 164;
 			case PLAY:
 				return 126;
 			case PAUSE:
@@ -56,6 +66,10 @@ public class FeatureRCUBulsat extends FeatureRCUKeyboard
 				return 174;
 			case INFO:
 				return 165;
+			case BACK:
+				return KeyEvent.KEYCODE_BACK;
+			case MENU:
+				return KeyEvent.KEYCODE_MENU;
 			default:
 				return super.getCode(key);
 		}

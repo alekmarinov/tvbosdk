@@ -89,7 +89,6 @@ public class FeatureRCUKeyboard extends FeatureRCU
 				return Key.FUNCTION11;
 			case KeyEvent.KEYCODE_F12:
 				return Key.FUNCTION12;
-
 			case KeyEvent.KEYCODE_A:
 				return Key.A;
 			case KeyEvent.KEYCODE_B:
@@ -147,13 +146,13 @@ public class FeatureRCUKeyboard extends FeatureRCU
 	}
 
 	@Override
-    public int getCode(Key key)
-    {
+	public int getCode(Key key)
+	{
 		switch (key)
 		{
-			case NUM_1 :
+			case NUM_1:
 				return KeyEvent.KEYCODE_1;
-			case NUM_2 :
+			case NUM_2:
 				return KeyEvent.KEYCODE_2;
 			case NUM_3:
 				return KeyEvent.KEYCODE_3;
@@ -169,10 +168,10 @@ public class FeatureRCUKeyboard extends FeatureRCU
 				return KeyEvent.KEYCODE_8;
 			case NUM_9:
 				return KeyEvent.KEYCODE_9;
-			case CHARACTERS:
-				return KeyEvent.KEYCODE_STAR;
 			case NUM_0:
 				return KeyEvent.KEYCODE_0;
+			case CHARACTERS:
+				return KeyEvent.KEYCODE_STAR;
 			case DELETE:
 				return KeyEvent.KEYCODE_DEL;
 			case PAGE_UP:
@@ -180,7 +179,7 @@ public class FeatureRCUKeyboard extends FeatureRCU
 			case PAGE_DOWN:
 				return KeyEvent.KEYCODE_PAGE_DOWN;
 			case BACK:
-				return KeyEvent.KEYCODE_ESCAPE;
+				return KeyEvent.KEYCODE_BACK;
 			case LEFT:
 				return KeyEvent.KEYCODE_DPAD_LEFT;
 			case RIGHT:
@@ -191,9 +190,11 @@ public class FeatureRCUKeyboard extends FeatureRCU
 				return KeyEvent.KEYCODE_DPAD_DOWN;
 			case OK:
 				return KeyEvent.KEYCODE_ENTER;
+			case MENU:
+				return KeyEvent.KEYCODE_MENU;
 			case FUNCTION1:
 				return KeyEvent.KEYCODE_F1;
-			case MENU:
+			case FUNCTION2:
 				return KeyEvent.KEYCODE_F2;
 			case FUNCTION3:
 				return KeyEvent.KEYCODE_F3;
@@ -215,7 +216,6 @@ public class FeatureRCUKeyboard extends FeatureRCU
 				return KeyEvent.KEYCODE_F11;
 			case FUNCTION12:
 				return KeyEvent.KEYCODE_F12;
-
 			case A:
 				return KeyEvent.KEYCODE_A;
 			case B:
@@ -269,8 +269,8 @@ public class FeatureRCUKeyboard extends FeatureRCU
 			case Z:
 				return KeyEvent.KEYCODE_Z;
 			default:
-				break;
+			break;
 		}
-	    return KeyEvent.KEYCODE_UNKNOWN;
-    }
+		return KeyEvent.KEYCODE_UNKNOWN;
+	}
 }
