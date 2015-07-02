@@ -24,6 +24,10 @@ public class FeatureRCUBulsat extends FeatureRCUKeyboard
 	{
 		switch (keyCode)
 		{
+			case KeyEvent.KEYCODE_VOLUME_UP:
+				return Key.VOLUME_UP;
+			case KeyEvent.KEYCODE_VOLUME_DOWN:
+				return Key.VOLUME_DOWN;
 			case 164:
 				return Key.MUTE;
 			case KeyEvent.KEYCODE_BACK:
