@@ -14,19 +14,20 @@ import java.io.IOException;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
-import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
+import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
 
 /**
  * Component feature providing http server
  */
 @Author("alek")
-public class FeatureHttpServer extends FeatureComponent
+@Deprecated
+public class FeatureHttpServerCustom extends FeatureHttpServer
 {
-	public static final String TAG = FeatureHttpServer.class.getSimpleName();
+	public static final String TAG = FeatureHttpServerCustom.class.getSimpleName();
 
 	private HttpServer _httpServer;
 

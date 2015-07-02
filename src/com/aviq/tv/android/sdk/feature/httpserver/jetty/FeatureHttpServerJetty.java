@@ -10,153 +10,85 @@
 
 package com.aviq.tv.android.sdk.feature.httpserver.jetty;
 
-import java.io.IOException;
+import javax.servlet.Servlet;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.eclipse.jetty.servlet.ServletHandler;
 
 import android.os.Bundle;
 
+import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
-import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
-import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
-import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
-import com.aviq.tv.android.sdk.feature.command.FeatureCommand;
+import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
 
 /**
  * jetty based HTTP server feature
  */
 @Author("hari")
-public class FeatureHttpServerJetty extends FeatureComponent
+public class FeatureHttpServerJetty extends FeatureHttpServer
 {
 	public static final String TAG = FeatureHttpServerJetty.class.getSimpleName();
+
+	public static enum Param
+	{
+		/**
+		 * HTTP port number
+		 */
+		PORT(8080);
+
+		Param(int value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.HTTP_SERVER).put(name(), value);
+		}
+	}
+
+	private Server _server;
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
 		Log.i(TAG, ".initialize");
 
-		// FIXME: Configure HTTP server
-		Server server = new Server(8081);
-	    ContextHandler context = new ContextHandler();
-        context.setContextPath("/command");
-        context.setResourceBase(".");
-        context.setClassLoader(Thread.currentThread().getContextClassLoader()); 
-        context.setHandler(new HelloHandler());
-        server.setHandler(context);
-
-        
-		// FIXME: Start HTTP server
-	    try
-        {
-	        server.start();
-        }
-        catch (Exception e)
-        {
-	        // TODO Auto-generated catch block
-	        e.printStackTrace();
-        }
-	    try
-        {
-	        server.join();
-        }
-        catch (InterruptedException e)
-        {
-	        // TODO Auto-generated catch block
-	        e.printStackTrace();
-        }
-
+		// Configure HTTP server
+		final int port = getPrefs().getInt(Param.PORT);
+		_server = new Server(port);
 		super.initialize(onFeatureInitialized);
-	}
-	
-	
-	
-	
-	
-	public class HelloHandler extends AbstractHandler
-	{
-		@Override
-		public void handle(String target, Request baseRequest, HttpServletRequest request, final HttpServletResponse response)
-		        throws IOException, ServletException
-		{		
-			String cmdId = target.substring(1);
-			System.out.println("cmdId = " + cmdId);
-			
-			System.out.println("baseRequest = " + baseRequest.toString());
-			System.out.println("request = " + request.toString());
-			
-			
 
-			response.setContentType("application/json");
-			response.setStatus(HttpServletResponse.SC_OK);
-			baseRequest.setHandled(true);
-			
-			OnResultReceived onResultReceived = new OnResultReceived()
+		Environment.getInstance().getEventMessenger().register(new EventReceiver()
+		{
+			@Override
+			public void onEvent(int msgId, Bundle bundle)
 			{
-				@Override
-				public void onReceiveResult(FeatureError error, Object object)
+				try
 				{
-					Log.i(TAG , "testCommands");
-					if (error.isError())
-					{
-						Log.e(TAG, error.getMessage(), error);
-					}
-					else
-					{
-						JSONArray jsonArr = (JSONArray) object;
-						try
-						{
-							Log.i(TAG, "== " + jsonArr.length() + " objects returned");
-							for (int i = 0; i < jsonArr.length(); i++)
-							{
-								JSONObject jsonObj = jsonArr.getJSONObject(i);
-								response.getWriter().println(jsonObj);
-								Log.i(TAG, jsonObj.toString());
-							}
-						}
-						catch (JSONException e)
-						{
-							Log.e(TAG, e.getMessage(), e);
-						}
-                        catch (IOException e)
-                        {
-	                        // TODO Auto-generated catch block
-	                        e.printStackTrace();
-                        }
-					}
+					Log.i(TAG, "Starting jetty http server on port " + port);
+					// Start HTTP server
+					_server.start();
 				}
-			};
-			
-			FeatureCommand featureCommand = null;
-			Bundle params = new Bundle();
-	        featureCommand.execute(cmdId, params, onResultReceived);
-	        
-		        
-		        
-		}
+				catch (Exception e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+				}
+
+				Environment.getInstance().getEventMessenger().unregister(this, Environment.ON_LOADED);
+			}
+		}, Environment.ON_LOADED);
 	}
 
-	
-	
-	
+	public void setHandler(Class<? extends Servlet> servletClass, String path)
+	{
+		ServletHandler handler = new ServletHandler();
+		_server.setHandler(handler);
+		handler.addServletWithMapping(servletClass, path);
+	}
+
 	@Override
 	public Component getComponentName()
 	{
 		return FeatureName.Component.HTTP_SERVER;
 	}
-	
 }
-
-
