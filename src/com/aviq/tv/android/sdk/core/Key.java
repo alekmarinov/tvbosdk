@@ -105,5 +105,6 @@ public enum Key
 	W,
 	X,
 	Y,
-	Z
+	Z,
+	TIME
 }

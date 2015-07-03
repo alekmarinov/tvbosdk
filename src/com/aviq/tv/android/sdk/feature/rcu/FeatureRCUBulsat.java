@@ -24,6 +24,8 @@ public class FeatureRCUBulsat extends FeatureRCUKeyboard
 	{
 		switch (keyCode)
 		{
+			case 258:
+				return Key.TIME;
 			case KeyEvent.KEYCODE_VOLUME_UP:
 				return Key.VOLUME_UP;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
@@ -56,6 +58,8 @@ public class FeatureRCUBulsat extends FeatureRCUKeyboard
 	{
 		switch (key)
 		{
+			case TIME:
+				return 258;
 			case MUTE:
 				return 164;
 			case PLAY:
@@ -74,6 +78,10 @@ public class FeatureRCUBulsat extends FeatureRCUKeyboard
 				return KeyEvent.KEYCODE_BACK;
 			case MENU:
 				return KeyEvent.KEYCODE_MENU;
+			case VOLUME_UP:
+				return KeyEvent.KEYCODE_VOLUME_UP;
+			case VOLUME_DOWN:
+				return KeyEvent.KEYCODE_VOLUME_DOWN;
 			default:
 				return super.getCode(key);
 		}
