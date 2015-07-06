@@ -10,15 +10,10 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
 
-import com.aviq.tv.android.sdk.R;
-import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.bulsat.ProgramBulsat.ImageSize;
@@ -43,22 +38,22 @@ public class ChannelBulsat extends Channel
 	private String _programImageMediumUrl;
 	private String _programImageLargeUrl;
 
-	public static enum Genre
-	{
-		FAVORITES, NATIONAL, SPORT, SCIENCE, MOVIE, MUSIC, KIDS, OTHER, EROTIC, RADIO, VOD
-	}
+//	public static enum Genre
+//	{
+//		FAVORITES, NATIONAL, SPORT, SCIENCE, MOVIE, MUSIC, KIDS, OTHER, EROTIC, RADIO, VOD
+//	}
 
-	private static Map<String, Genre> _genreMap = new HashMap<String, Genre>();
-
-	static
-	{
-		String[] categoryNames = Environment.getInstance().getResources().getStringArray(R.array.categories);
-		Genre[] genreList = Genre.values();
-		for (int index = 1; index < genreList.length - 1; index++)
-		{
-			_genreMap.put(categoryNames[index - 1], genreList[index]);
-		}
-	}
+//	private static Map<String, Genre> _genreMap = new HashMap<String, Genre>();
+//
+//	static
+//	{
+//		String[] categoryNames = Environment.getInstance().getResources().getStringArray(R.array.categories);
+//		Genre[] genreList = Genre.values();
+//		for (int index = 1; index < genreList.length - 1; index++)
+//		{
+//			_genreMap.put(categoryNames[index - 1], genreList[index]);
+//		}
+//	}
 
 	/**
 	 * No-arg constructor added for Kryo serialization. Do not use for anything
@@ -219,45 +214,7 @@ public class ChannelBulsat extends Channel
 		}
 
 		String genreTitle = attributes[channelBulsatMetaData.metaChannelGenre];
-		Genre genre = _genreMap.get(genreTitle);
-		if (genre == null)
-		{
-			if (Environment.getInstance().getResources().getString(R.string.channel_category_alias_national)
-			        .equals(genreTitle))
-			{
-				Log.i(TAG, "Assigning " + genreTitle + " to its alias " + Genre.NATIONAL + " for channel "
-				        + getChannelId());
-				genre = Genre.NATIONAL;
-			}
-			else if (Environment.getInstance().getResources().getString(R.string.channel_category_alias_erotic)
-			        .equals(genreTitle))
-			{
-				Log.i(TAG, "Assigning " + genreTitle + " to its alias " + Genre.EROTIC + " for channel "
-				        + getChannelId());
-				genre = Genre.EROTIC;
-			}
-			else if (Environment.getInstance().getResources().getString(R.string.channel_category_alias_radio)
-			        .equals(genreTitle))
-			{
-				Log.i(TAG, "Assigning " + genreTitle + " to its alias " + Genre.RADIO + " for channel "
-				        + getChannelId());
-				genre = Genre.RADIO;
-			}
-			else if (Environment.getInstance().getResources().getString(R.string.channel_category_alias_other)
-			        .equals(genreTitle))
-			{
-				Log.i(TAG, "Assigning " + genreTitle + " to its alias " + Genre.OTHER + " for channel "
-				        + getChannelId());
-				genre = Genre.OTHER;
-			}
-			else
-			{
-				Log.w(TAG, "Can't find genre mapping of " + genreTitle + ", mapping to " + Genre.OTHER + " in channel "
-				        + getChannelId());
-				genre = Genre.OTHER;
-			}
-		}
-		setGenre(genre);
+		setGenre(Genres.getInstance().getGenreByTitle(genreTitle));
 
 		try
 		{
