@@ -40,6 +40,8 @@ public class FeatureRCUBulsat extends FeatureRCUKeyboard
 				return Key.PLAY;
 			case 127:
 				return Key.PAUSE;
+			case 170:
+				return Key.TV;
 			case 171:
 				return Key.PIP;
 			case 172:
@@ -48,6 +50,8 @@ public class FeatureRCUBulsat extends FeatureRCUKeyboard
 				return Key.FAVORITE;
 			case 165:
 				return Key.INFO;
+			case 209:
+				return Key.VOD;
 
 		}
 		return super.getKey(keyCode);
@@ -58,6 +62,10 @@ public class FeatureRCUBulsat extends FeatureRCUKeyboard
 	{
 		switch (key)
 		{
+			case VOD:
+				return 209;
+			case TV:
+				return 170;
 			case TIME:
 				return 258;
 			case MUTE:
