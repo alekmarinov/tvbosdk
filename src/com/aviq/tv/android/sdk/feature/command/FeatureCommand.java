@@ -33,6 +33,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
+import com.aviq.tv.android.sdk.feature.command.handlers.CommandHello;
 import com.aviq.tv.android.sdk.feature.command.handlers.CommandSendKey;
 import com.aviq.tv.android.sdk.feature.httpserver.jetty.FeatureHttpServerJetty;
 
@@ -58,14 +59,14 @@ public class FeatureCommand extends FeatureComponent
 		Log.i(TAG, ".initialize");
 
 		// add global command handlers
-		CommandSendKey commandSendKey = new CommandSendKey(_feature.Component.RCU);
-		addCommandHandler(commandSendKey);
+		addCommandHandler(new CommandHello());
+		addCommandHandler(new CommandSendKey(_feature.Component.RCU));
 
 		if (_feature.Component.HTTP_SERVER instanceof FeatureHttpServerJetty)
 		{
 			// add handler to http server
 			FeatureHttpServerJetty featureHttpServer = (FeatureHttpServerJetty) _feature.Component.HTTP_SERVER;
-			featureHttpServer.setHandler(JettyHttpHandlerCommand.class, HTTP_CONTEXT + "/*");
+			featureHttpServer.setServlet(JettyHttpHandlerCommand.class, HTTP_CONTEXT + "/*");
 		}
 
 		super.initialize(onFeatureInitialized);
