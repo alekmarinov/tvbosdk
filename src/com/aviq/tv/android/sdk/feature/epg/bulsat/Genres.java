@@ -61,6 +61,7 @@ public class Genres
 
 	void addGenre(Genre genre)
 	{
+		genre.setIndex(_genres.size());
 		_genres.add(genre);
 		_genresTitlesMap.put(genre.getTitle(), genre);
 		if (_defaultGenreTitle.equals(genre.getTitle()))

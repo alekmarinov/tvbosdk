@@ -42,6 +42,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.Response.ErrorListener;
 import com.android.volley.VolleyError;
@@ -122,6 +123,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 			@Override
 			public void onReceiveResult(FeatureError error, Object object)
 			{
+				Log.i(TAG, ".retrieveBulsatGenres.onReceiveResult: " + error);
+
 				if (error.isError())
 				{
 					onFeatureInitialized.onInitialized(error);
@@ -140,6 +143,9 @@ public class FeatureEPGBulsat extends FeatureEPG
 									@Override
 									public void onReceiveResult(FeatureError error, Object object)
 									{
+										Log.i(TAG, "Channels updated: " + error);
+
+										// EPG initialization finishes with status error
 										onFeatureInitialized.onInitialized(error);
 
 										// update channel streams periodically
@@ -592,6 +598,9 @@ public class FeatureEPGBulsat extends FeatureEPG
 						SAXParser saxParser = spf.newSAXParser();
 
 						XMLReader xmlReader = saxParser.getXMLReader();
+						// Response to initialize callback will come from the
+						// XML content handler after retrieving all related
+						// images
 						GenresContentHandler contentHandler = new GenresContentHandler(onResultReceived);
 						xmlReader.setContentHandler(contentHandler);
 						Log.i(TAG, "Parsing Genres xml");
@@ -599,8 +608,6 @@ public class FeatureEPGBulsat extends FeatureEPG
 						if (!contentHandler.isValid())
 							error = new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR,
 							        "Unexpected XML format by Genre service at " + url);
-						else
-							error = FeatureError.OK(FeatureEPGBulsat.this);
 					}
 					else
 					{
@@ -621,12 +628,15 @@ public class FeatureEPGBulsat extends FeatureEPG
 
 				if (error != null && onResultReceived != null)
 				{
+					// response only error
+
 					final FeatureError fError = error;
 					Environment.getInstance().runOnUiThread(new Runnable()
 					{
 						@Override
 						public void run()
 						{
+							Log.e(TAG, fError.getMessage(), fError);
 							onResultReceived.onReceiveResult(fError, null);
 						}
 					});
@@ -651,14 +661,18 @@ public class FeatureEPGBulsat extends FeatureEPG
 		private int _logosLoaded = 0;
 		private int _logosRequested = 0;
 		private boolean _parsed;
+		private RequestQueue _requestQueue;
 
 		GenresContentHandler(OnResultReceived onResultReceived)
 		{
 			_onResultReceived = onResultReceived;
+			_requestQueue = Environment.getInstance().getRequestQueue();
 		}
 
 		private void callBackOnFinish()
 		{
+			Log.i(TAG, ".callBackOnFinish: _parsed = " + _parsed + ", _logosRequested = " + _logosRequested
+			        + ", _logosLoaded = " + _logosLoaded);
 			if (_parsed && _logosRequested == _logosLoaded)
 				_onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPGBulsat.this), null);
 		}

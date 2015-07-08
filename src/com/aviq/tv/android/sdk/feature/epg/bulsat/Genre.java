@@ -21,6 +21,7 @@ public class Genre
 	private String _title;
 	private Bitmap _logo;
 	private Bitmap _logoSelected;
+	private int _index;
 
 	/**
 	 * @return the _id
@@ -29,13 +30,16 @@ public class Genre
 	{
 		return _id;
 	}
+
 	/**
-	 * @param id the id to set
+	 * @param id
+	 *            the id to set
 	 */
 	public void setId(String id)
 	{
 		_id = id;
 	}
+
 	/**
 	 * @return the title
 	 */
@@ -43,13 +47,16 @@ public class Genre
 	{
 		return _title;
 	}
+
 	/**
-	 * @param title the title to set
+	 * @param title
+	 *            the title to set
 	 */
 	public void setTitle(String title)
 	{
 		_title = title;
 	}
+
 	/**
 	 * @return the logo bitmap
 	 */
@@ -57,13 +64,16 @@ public class Genre
 	{
 		return _logo;
 	}
+
 	/**
-	 * @param logo the logo bitmap to set
+	 * @param logo
+	 *            the logo bitmap to set
 	 */
 	public void setLogo(Bitmap logo)
 	{
 		_logo = logo;
 	}
+
 	/**
 	 * @return the logoSelected bitmap
 	 */
@@ -71,11 +81,30 @@ public class Genre
 	{
 		return _logoSelected;
 	}
+
 	/**
-	 * @param logoSelected the logoSelected bitmap to set
+	 * @param logoSelected
+	 *            the logoSelected bitmap to set
 	 */
 	public void setLogoSelected(Bitmap logoSelected)
 	{
 		_logoSelected = logoSelected;
+	}
+
+	/**
+	 * @return the index
+	 */
+	public int getIndex()
+	{
+		return _index;
+	}
+
+	/**
+	 * @param index
+	 *            the index to set
+	 */
+	public void setIndex(int index)
+	{
+		_index = index;
 	}
 }
