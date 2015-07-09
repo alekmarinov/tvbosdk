@@ -58,12 +58,17 @@ public abstract class FeatureEPG extends FeatureComponent
 	
 	public static enum Command
 	{
-		GET_CHANNELS, GET_PROGRAMS
+		GET_CHANNELS, GET_PROGRAMS, GET_PROGRAM_DETAILS
 	}
 	
 	public static enum CommandGetProgramsExtras
 	{
 		CHANNEL_ID, DAY_OFFSET
+	}
+	
+	public static enum CommandGetProgramDetailsExtras
+	{
+		PROGRAM_ID
 	}
 	
 	public static enum Param
@@ -291,10 +296,10 @@ public abstract class FeatureEPG extends FeatureComponent
 
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetChannels());
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetPrograms());
+		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetProgramDetails());
 		
 	} // initialize
-	
-	
+
 	@Override
 	public Component getComponentName()
 	{
@@ -999,5 +1004,52 @@ public abstract class FeatureEPG extends FeatureComponent
 				}
 			});
 		}
+	}
+	
+    private class OnCommandGetProgramDetails implements CommandHandler
+	{
+		@Override
+		public void execute(Bundle params, final OnResultReceived onResultReceived)
+		{
+			String channelId = params.getString(CommandGetProgramsExtras.CHANNEL_ID.name());
+			String programId = params.getString(CommandGetProgramDetailsExtras.PROGRAM_ID.name());
+			
+			getProgramDetails(channelId, programId, new OnResultReceived()
+			{
+				@Override
+				public void onReceiveResult(FeatureError error, Object object)
+				{
+					if (error.isError())
+					{
+						onResultReceived.onReceiveResult(error, null);
+					}
+					else
+					{
+						Program program = (Program) object;
+						try
+						{
+							JSONObject jsonProgram = new JSONObject();
+							jsonProgram.put("length", program.getLengthMin());
+							jsonProgram.put("title", program.getTitle());
+							//jsonProgram.put("description", program.getDetailAttribute(ProgramAttribute.DESCRIPTION));
+							jsonProgram.put("image", program.getDetailAttribute(ProgramAttribute.IMAGE));
+							
+							onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPG.this), jsonProgram);
+						}
+						catch (JSONException e)
+						{
+							onResultReceived.onReceiveResult(new FeatureError(FeatureEPG.this, e), null);
+						}
+					}
+				}
+			});
+		}
+		
+		@Override
+		public String getId()
+		{
+			return Command.GET_PROGRAM_DETAILS.name();
+		}
+		
 	}
 }
