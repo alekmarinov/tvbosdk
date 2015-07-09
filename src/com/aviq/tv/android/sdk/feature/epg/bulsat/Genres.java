@@ -60,10 +60,27 @@ public class Genres
 		return _defaultGenre;
 	}
 
-	void addGenre(Genre genre)
+	public void addGenre(Genre genre)
 	{
-		genre.setIndex(_genres.size());
-		_genres.add(genre);
+		addGenre(-1, genre);
+	}
+
+	public void addGenre(int index, Genre genre)
+	{
+		if (index < 0)
+		{
+			genre.setIndex(_genres.size());
+			_genres.add(genre);
+		}
+		else
+		{
+			genre.setIndex(index);
+			_genres.add(index, genre);
+			for (int i = index + 1; i < _genres.size(); i++)
+			{
+				_genres.get(i).setIndex(_genres.get(i).getIndex() + 1);
+			}
+		}
 		_genresTitlesMap.put(genre.getTitle(), genre);
 		if (_defaultGenreTitle.equals(genre.getTitle()))
 			_defaultGenre = genre;

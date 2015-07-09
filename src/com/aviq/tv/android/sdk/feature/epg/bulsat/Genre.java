@@ -103,7 +103,7 @@ public class Genre
 	 * @param index
 	 *            the index to set
 	 */
-	public void setIndex(int index)
+	void setIndex(int index)
 	{
 		_index = index;
 	}
