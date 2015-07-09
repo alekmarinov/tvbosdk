@@ -23,6 +23,7 @@ import com.aviq.tv.android.sdk.core.Environment;
  */
 public class Genres
 {
+	public static final String TAG = Genres.class.getSimpleName();
 	private static Genres _instance;
 	private List<Genre> _genres = new ArrayList<Genre>();
 	private Map<String, Genre> _genresTitlesMap = new HashMap<String, Genre>();

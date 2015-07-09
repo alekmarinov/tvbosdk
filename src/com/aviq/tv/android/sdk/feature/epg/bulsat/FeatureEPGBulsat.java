@@ -697,6 +697,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 			if (TAG_GENRE.equals(localName))
 			{
 				Genres.getInstance().addGenre(_genre);
+				_genre = new Genre();
 				_valid = true;
 			}
 			if (TAG_ID.equals(localName))
