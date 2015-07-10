@@ -161,6 +161,14 @@ public class FeatureTimeshift extends FeatureComponent implements EventReceiver
 	}
 
 	/**
+	 * @return true if playing time is live
+	 */
+	public boolean isLive()
+	{
+		return !(getPlayingTime() < currentTime());
+	}
+
+	/**
 	 * @return the playable duration in timeshift buffer (secs)
 	 */
 	public long getTimeshiftDuration()
