@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -1275,12 +1277,17 @@ public abstract class FeatureVOD extends FeatureScheduler
 							jsonVODdetails.put("id", vodItem.getId());
 							jsonVODdetails.put("title", vodItem.getTitle());
 							jsonVODdetails.put("rating_imdb", vodItem.getAttribute(VodAttribute.RATING));
+							jsonVODdetails.put("country", vodItem.getAttribute(VodAttribute.COUNTRY));
 							jsonVODdetails.put("director", vodItem.getAttribute(VodAttribute.DIRECTOR));
 							jsonVODdetails.put("description", vodItem.getAttribute(VodAttribute.DESCRIPTION));
 							jsonVODdetails.put("actors", vodItem.getAttribute(VodAttribute.ACTORS));
 							String trailerUrl = vodItem.getAttribute(VodAttribute.YOUTUBE_TRAILER_URL);
 							if (trailerUrl != null)
-								jsonVODdetails.put("youtube_trailer_code", parseyoutubeUrlFull(trailerUrl));
+							{
+								String trailerCode = parseyoutubeUrlFull(trailerUrl);
+								if (trailerCode != null)
+									jsonVODdetails.put("youtube_trailer_code", trailerCode);
+							}
 							jsonVODdetails.put("duration", vodItem.getAttribute(VodAttribute.DURATION));
 							jsonVODdetails.put("poster_large", vodItem.getPoster());
 							onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this), jsonVODdetails);
@@ -1294,32 +1301,17 @@ public abstract class FeatureVOD extends FeatureScheduler
 			});
 		}
 
-		String parseyoutubeUrlFull(String youtubeUrlFull)
+		public String parseyoutubeUrlFull(String youtubeUrlFull)
 		{
-			int i = 0;
-			boolean t = false;
-			while (youtubeUrlFull.charAt(i) != '=' && i < youtubeUrlFull.length())
-			{
-				if (youtubeUrlFull.charAt(i) == '\\') // erase the character '\'
-				                                      // since it is wrong
-				                                      // and must not increment
-				                                      // var i since the string
-				                                      // shrinks
-				{
-					youtubeUrlFull = youtubeUrlFull.substring(0, i)
-					        + youtubeUrlFull.substring(i + 1, youtubeUrlFull.length());
-					continue;
-				}
-				i++;
+			String regExp = "http[s]?://www.youtube.com/watch\\?v=([^&]+).*";
+			Pattern pattern = Pattern.compile(regExp);
+			Matcher matcher = pattern.matcher(youtubeUrlFull);
+			
+			if(matcher.find())
+			{	
+				return matcher.group(1);
 			}
-			if (i != youtubeUrlFull.length())
-				t = true;
-
-			i++; // position after '='
-			if (!youtubeUrlFull.substring(0, i).equals("http://www.youtube.com/watch?v=") || t == false)
-				return "not a youtube link";
-
-			return youtubeUrlFull.substring(i, youtubeUrlFull.length());
+			return null;
 		}
 
 		@Override
