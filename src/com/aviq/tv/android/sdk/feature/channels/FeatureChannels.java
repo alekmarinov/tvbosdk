@@ -14,6 +14,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.os.Bundle;
 
 import com.aviq.tv.android.sdk.core.Environment;
@@ -28,6 +32,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
+import com.aviq.tv.android.sdk.feature.command.CommandHandler;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer.MediaType;
@@ -45,6 +50,11 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	public static final int ON_SWITCH_CHANNEL = EventMessenger.ID("ON_SWITCH_CHANNEL");
 	public static final int ON_GET_STREAM_ERROR = EventMessenger.ID("ON_GET_STREAM_ERROR");
 	public static final String EXTRA_GET_STREAM_ERROR_CODE = "GET_STREAM_ERROR_CODE";
+
+	public static enum Command
+	{
+		GET_CHANNELS
+	}
 
 	public enum OnSwitchChannelExtras
 	{
@@ -107,7 +117,8 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		USE_FAVORITES,
 
 		/**
-		 * Last synchronized channels, used to detect new channels coming from the EPG provider
+		 * Last synchronized channels, used to detect new channels coming from
+		 * the EPG provider
 		 * formatted as <channel_id>,<channel_id>,...
 		 */
 		SYNCED_CHANNELS
@@ -133,6 +144,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		require(FeatureName.Component.LANGUAGE);
 		require(FeatureName.Component.PLAYER);
 		require(FeatureName.Component.DEVICE);
+		require(FeatureName.Component.COMMAND);
 	}
 
 	@Override
@@ -175,16 +187,11 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		Environment.getInstance().getEventMessenger().register(FeatureChannels.this, Environment.ON_PAUSE);
 
 		// register on player events
-		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
-		        FeaturePlayer.ON_PLAY_ERROR);
-		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
-		        FeaturePlayer.ON_PLAY_PAUSE);
-		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
-		        FeaturePlayer.ON_PLAY_STOP);
-		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
-		        FeaturePlayer.ON_PLAY_TIMEOUT);
-		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this,
-		        FeaturePlayer.ON_PLAY_STARTED);
+		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this, FeaturePlayer.ON_PLAY_ERROR);
+		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this, FeaturePlayer.ON_PLAY_PAUSE);
+		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this, FeaturePlayer.ON_PLAY_STOP);
+		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this, FeaturePlayer.ON_PLAY_TIMEOUT);
+		_feature.Component.PLAYER.getEventMessenger().register(FeatureChannels.this, FeaturePlayer.ON_PLAY_STARTED);
 
 		if (getPrefs().getBool(Param.AUTOPLAY))
 		{
@@ -196,11 +203,16 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 			@Override
 			public String getStatusField()
 			{
-				if (MediaType.TV.equals(_feature.Component.PLAYER.getMediaType()) && _feature.Component.PLAYER.isPlaying())
+				if (MediaType.TV.equals(_feature.Component.PLAYER.getMediaType())
+				        && _feature.Component.PLAYER.isPlaying())
 					return getLastChannelId();
 				return null;
 			}
 		});
+
+		// add GET_CHANNELS command
+		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetChannels());
+
 		FeatureChannels.super.initialize(onFeatureInitialized);
 	}
 
@@ -342,7 +354,8 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	 * Start playing channel at specified position and duration, set playTime to
 	 * 0 for live stream
 	 *
-	 * @param index the channel index
+	 * @param index
+	 *            the channel index
 	 * @param playTime
 	 *            timestamp in seconds to start channel from
 	 * @param playDuration
@@ -355,7 +368,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		if (nChannels == 0)
 		{
 			Log.w(TAG, ".play: channels list is empty");
-			return ;
+			return;
 		}
 		int playIndex = 0;
 		if (index < 0 || index >= nChannels)
@@ -384,8 +397,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 			if (lastChannel == null || lastChannel.getIndex() != channel.getIndex())
 			{
 				long bufferSize = _feature.Component.EPG.getStreamBufferSize(channel);
-				Log.i(TAG, "Set timeshift buffer size of " + channel + " to "
-				        + bufferSize);
+				Log.i(TAG, "Set timeshift buffer size of " + channel + " to " + bufferSize);
 				if (bufferSize > 0)
 				{
 					// timeshift buffer is defined by stream
@@ -670,5 +682,41 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 		}
 		_userPrefs.put(UserParam.CHANNELS, buffer.toString());
 		Log.i(TAG, "Updated favorites list: " + buffer);
+	}
+
+	// Command handlers
+	private class OnCommandGetChannels implements CommandHandler
+	{
+		@Override
+		public String getId()
+		{
+			return Command.GET_CHANNELS.name();
+		}
+
+		@Override
+		public void execute(Bundle params, final OnResultReceived onResultReceived)
+		{
+			Log.i(TAG, ".OnCommandGetChannels.execute");
+			FeatureChannels featureChannels = (FeatureChannels) Environment.getInstance().getFeatureComponent(
+			        FeatureName.Component.CHANNELS);
+			List<Channel> channels = featureChannels.getActiveChannels();
+			JSONArray jsonChannels = new JSONArray();
+			try
+			{
+				for (Channel channel : channels)
+				{
+					JSONObject jsonChannel = new JSONObject();
+					jsonChannel.put("id", channel.getChannelId());
+					jsonChannel.put("thumbnail", channel.getChannelImageUrl(Channel.LOGO_NORMAL));
+					jsonChannel.put("title", channel.getTitle());
+					jsonChannels.put(jsonChannel);
+				}
+				onResultReceived.onReceiveResult(FeatureError.OK(FeatureChannels.this), jsonChannels);
+			}
+			catch (JSONException e)
+			{
+				onResultReceived.onReceiveResult(new FeatureError(FeatureChannels.this, e), null);
+			}
+		}
 	}
 }

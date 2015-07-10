@@ -58,7 +58,7 @@ public abstract class FeatureEPG extends FeatureComponent
 	
 	public static enum Command
 	{
-		GET_CHANNELS, GET_PROGRAMS, GET_PROGRAM_DETAILS
+		GET_PROGRAMS, GET_PROGRAM_DETAILS
 	}
 	
 	public static enum CommandGetProgramsExtras
@@ -68,7 +68,7 @@ public abstract class FeatureEPG extends FeatureComponent
 	
 	public static enum CommandGetProgramDetailsExtras
 	{
-		PROGRAM_ID
+		CHANNEL_ID, PROGRAM_ID
 	}
 	
 	public static enum Param
@@ -284,7 +284,6 @@ public abstract class FeatureEPG extends FeatureComponent
 						_channelsMap.put(channel.getChannelId(), channel);
 					}
 
-					
 					FeatureEPG.super.initialize(onFeatureInitialized);
 				}
 				else
@@ -294,7 +293,6 @@ public abstract class FeatureEPG extends FeatureComponent
 			}
 		});
 
-		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetChannels());
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetPrograms());
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetProgramDetails());
 		
@@ -745,6 +743,8 @@ public abstract class FeatureEPG extends FeatureComponent
 		Log.i(TAG, "Retrieving program details of " + channelId + "/" + programId + " from " + programDetailsUrl);
 		
 		Channel channel = getChannelById(channelId);
+		
+		Log.i(TAG, "Channel created:" + channel);
 		ProgramDetailsResponseCallback responseCallback = new ProgramDetailsResponseCallback(channel, programId,
 		        onResultReceived);
 		
@@ -761,9 +761,11 @@ public abstract class FeatureEPG extends FeatureComponent
 				return headers;
 			}
 		};
+		Log.i(TAG, " _programDetailsRequest:" + _programDetailsRequest.toString());
 		
 		// retrieves program details from the global request queue
 		_requestQueue.add(_programDetailsRequest);
+		Log.i(TAG, " _requestQueue:" + _requestQueue.toString());
 	}
 	
 	/**
@@ -845,12 +847,14 @@ public abstract class FeatureEPG extends FeatureComponent
 	
 	private String getProgramDetailsUrl(String channelId, String programId)
 	{
+		Log.i(TAG , "getProgramDetailsUrl");
 		Bundle bundle = new Bundle();
 		bundle.putString("SERVER", _epgServer);
 		bundle.putInt("VERSION", _epgVersion);
 		bundle.putString("PROVIDER", _epgProvider);
 		bundle.putString("CHANNEL", channelId);
 		bundle.putString("ID", programId);
+		Log.i(TAG , "getPrefs().getString(): " + getPrefs().getString(Param.EPG_PROGRAM_DETAILS_URL, bundle));
 		
 		return getPrefs().getString(Param.EPG_PROGRAM_DETAILS_URL, bundle);
 	}
@@ -863,6 +867,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		
 		ProgramDetailsResponseCallback(Channel channel, String programId, OnResultReceived onResultReceived)
 		{
+			Log.i(TAG , "ProgramDetailsResponseCallback");
 			_channel = channel;
 			_programId = programId;
 			_onResultReceived = onResultReceived;
@@ -871,6 +876,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		@Override
 		public void onResponse(JSONObject response)
 		{
+			Log.i(TAG , "onResponse");
 			Program program = createProgram(_programId, _channel);
 			try
 			{
@@ -901,52 +907,6 @@ public abstract class FeatureEPG extends FeatureComponent
 	}
 	
 	// Command handlers
-	private class OnCommandGetChannels implements CommandHandler
-	{
-		@Override
-		public String getId()
-		{
-			return Command.GET_CHANNELS.name();
-		}
-		
-		@Override
-		public void execute(Bundle params, final OnResultReceived onResultReceived)
-		{
-			loadChannels(new OnResultReceived()
-			{
-				@Override
-				public void onReceiveResult(FeatureError error, Object object)
-				{
-					if (error.isError())
-					{
-						onResultReceived.onReceiveResult(error, null);
-					}
-					else
-					{
-						@SuppressWarnings("unchecked")
-						List<Channel> channels = (List<Channel>) object;
-						JSONArray jsonChannels = new JSONArray();
-						try
-						{
-							for (Channel channel : channels)
-							{
-								JSONObject jsonChannel = new JSONObject();
-								jsonChannel.put("id", channel.getChannelId());
-								jsonChannel.put("thumbnail", channel.getChannelImageUrl(Channel.LOGO_NORMAL) );
-								jsonChannel.put("title", channel.getTitle());
-								jsonChannels.put(jsonChannel);
-							}
-							onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPG.this), jsonChannels);
-						}
-						catch (JSONException e)
-						{
-							onResultReceived.onReceiveResult(new FeatureError(FeatureEPG.this, e), null);
-						}
-					}
-				}
-			});
-		}
-	}
 	
 	private class OnCommandGetPrograms implements CommandHandler
 	{
@@ -960,7 +920,18 @@ public abstract class FeatureEPG extends FeatureComponent
 		public void execute(Bundle params, final OnResultReceived onResultReceived)
 		{
 			String channelId = params.getString(CommandGetProgramsExtras.CHANNEL_ID.name());
-			final int dayOffset = params.getInt(CommandGetProgramsExtras.DAY_OFFSET.name(), 0);
+			String dayOffsetStr = params.getString(CommandGetProgramsExtras.DAY_OFFSET.name());
+
+			final int dayOffset[] = new int[1];
+						try
+						{
+				dayOffset[0] = Integer.parseInt(dayOffsetStr);
+							}
+			catch (NumberFormatException e)
+						{
+				Log.w(TAG, e.getMessage(), e);
+						}
+			Log.i(TAG, ".OnCommandGetPrograms.execute: channelId = " + channelId + ", dayOffset = " + dayOffset[0]);
 			Channel channel = getChannelById(channelId);
 			getPrograms(channel, new OnResultReceived()
 			{
@@ -977,13 +948,14 @@ public abstract class FeatureEPG extends FeatureComponent
 					{
 						@SuppressWarnings("unchecked")
 						List<Program> programs = (List<Program>) object;
+						Log.i(TAG, ".OnCommandGetPrograms.execute.onReceiveResult: programs count = " + programs.size());
 						JSONArray jsonPrograms = new JSONArray();
 						try
 						{
 							for (Program program : programs)
 							{
 								int programDayOffset = Calendars.getDayOffsetByDate(program.getStartTime());
-								if (dayOffset == programDayOffset)
+								if (dayOffset[0] == programDayOffset)
 								{
 									JSONObject jsonProgram = new JSONObject();
 									jsonProgram.put("start",
@@ -1011,8 +983,9 @@ public abstract class FeatureEPG extends FeatureComponent
 		@Override
 		public void execute(Bundle params, final OnResultReceived onResultReceived)
 		{
-			String channelId = params.getString(CommandGetProgramsExtras.CHANNEL_ID.name());
+			String channelId = params.getString(CommandGetProgramDetailsExtras.CHANNEL_ID.name());
 			String programId = params.getString(CommandGetProgramDetailsExtras.PROGRAM_ID.name());
+			Log.i(TAG, ".OnCommandGetProgramDetails.execute: channelId = " + channelId + ", programId = " + programId);
 			
 			getProgramDetails(channelId, programId, new OnResultReceived()
 			{
@@ -1031,7 +1004,9 @@ public abstract class FeatureEPG extends FeatureComponent
 							JSONObject jsonProgram = new JSONObject();
 							jsonProgram.put("length", program.getLengthMin());
 							jsonProgram.put("title", program.getTitle());
-							//jsonProgram.put("description", program.getDetailAttribute(ProgramAttribute.DESCRIPTION));
+							String description = program.getDetailAttribute(ProgramAttribute.DESCRIPTION);
+							if (description != null)
+								jsonProgram.put("description", description);
 							jsonProgram.put("image", program.getDetailAttribute(ProgramAttribute.IMAGE));
 							
 							onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPG.this), jsonProgram);
@@ -1044,7 +1019,7 @@ public abstract class FeatureEPG extends FeatureComponent
 				}
 			});
 		}
-		
+
 		@Override
 		public String getId()
 		{

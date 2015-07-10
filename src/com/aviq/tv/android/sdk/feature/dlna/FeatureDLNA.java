@@ -15,6 +15,7 @@ import java.beans.PropertyChangeListener;
 
 import org.fourthline.cling.android.AndroidUpnpService;
 import org.fourthline.cling.android.AndroidUpnpServiceImpl;
+import org.fourthline.cling.android.FixedAndroidLogHandler;
 import org.fourthline.cling.binding.LocalServiceBindingException;
 import org.fourthline.cling.model.ValidationException;
 import org.fourthline.cling.model.meta.Action;
@@ -73,6 +74,10 @@ public class FeatureDLNA extends FeatureComponent implements PropertyChangeListe
 	{
 		Log.i(TAG, ".initialize");
 
+		// Fix the logging integration between java.util.logging and Android
+		// internal logging
+		org.seamless.util.logging.LoggingUtil.resetRootHandler(new FixedAndroidLogHandler());
+
 		_udn = new UDN(_feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.UUID));
 		Context context = Environment.getInstance().getApplicationContext();
 		context.bindService(new Intent(context, AndroidUpnpServiceImpl.class), serviceConnection,
@@ -129,7 +134,9 @@ public class FeatureDLNA extends FeatureComponent implements PropertyChangeListe
 	private LocalService createService() throws ValidationException
 	{
 		LocalService service = new LocalService(new ServiceType(Name.SDK, SERVICE_ID, Version.MAJOR), new ServiceId(
-		        Name.SDK, SERVICE_ID), new Action[]{}, new StateVariable[]{});
+		        Name.SDK, SERVICE_ID), new Action[]
+		{}, new StateVariable[]
+		{});
 		return service;
 	}
 

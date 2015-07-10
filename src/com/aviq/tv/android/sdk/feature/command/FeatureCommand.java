@@ -33,6 +33,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
+import com.aviq.tv.android.sdk.feature.command.handlers.CommandHello;
 import com.aviq.tv.android.sdk.feature.command.handlers.CommandSendKey;
 import com.aviq.tv.android.sdk.feature.httpserver.jetty.FeatureHttpServerJetty;
 
@@ -58,14 +59,14 @@ public class FeatureCommand extends FeatureComponent
 		Log.i(TAG, ".initialize");
 
 		// add global command handlers
-		CommandSendKey commandSendKey = new CommandSendKey(_feature.Component.RCU);
-		addCommandHandler(commandSendKey);
+		addCommandHandler(new CommandHello());
+		addCommandHandler(new CommandSendKey(_feature.Component.RCU));
 
 		if (_feature.Component.HTTP_SERVER instanceof FeatureHttpServerJetty)
 		{
 			// add handler to http server
 			FeatureHttpServerJetty featureHttpServer = (FeatureHttpServerJetty) _feature.Component.HTTP_SERVER;
-			featureHttpServer.setHandler(JettyHttpHandlerCommand.class, HTTP_CONTEXT + "/*");
+			featureHttpServer.setServlet(JettyHttpHandlerCommand.class, HTTP_CONTEXT + "/*");
 		}
 
 		super.initialize(onFeatureInitialized);
@@ -136,10 +137,27 @@ public class FeatureCommand extends FeatureComponent
 		protected void doGet(HttpServletRequest request, final HttpServletResponse response) throws ServletException,
 		        IOException
 		{
-			final String cmdId = request.getRequestURI().substring(1 + HTTP_CONTEXT.length()).toUpperCase();
-			Log.i(TAG, ".doGet: cmdId = " + cmdId);
+			Log.i(TAG, ".doGet");
+			doGetOrPost(request, response);
+		}
 
-			Bundle params = new Bundle();
+		@Override
+		protected void doPost(HttpServletRequest request, final HttpServletResponse response) throws ServletException,
+		        IOException
+		{
+			Log.i(TAG, ".doPost");
+			doGetOrPost(request, response);
+		}
+
+		private void doGetOrPost(HttpServletRequest request, final HttpServletResponse response)
+		        throws ServletException, IOException
+		{
+			final String cmdId = request.getRequestURI().substring(1 + HTTP_CONTEXT.length()).toUpperCase();
+			Log.i(TAG, ".doGetOrPost: cmdId = " + cmdId + ", current thread = " + Thread.currentThread());
+
+			response.setContentType("application/json;charset=utf-8");
+
+			final Bundle params = new Bundle();
 			Enumeration<String> names = request.getParameterNames();
 			while (names.hasMoreElements())
 			{
@@ -147,16 +165,29 @@ public class FeatureCommand extends FeatureComponent
 				String value = request.getParameter(name);
 				params.putString(name.toUpperCase(), value);
 			}
-			FeatureCommand featureCommand = (FeatureCommand) Environment.getInstance().getFeatureComponent(
+			final FeatureCommand featureCommand = (FeatureCommand) Environment.getInstance().getFeatureComponent(
 			        FeatureName.Component.COMMAND);
+
+			// Object to store JSON result from command execution
+			final JSONObject jsonResult = new JSONObject();
+
+			// Keep reference to servlet thread
+			final Thread servletThread = Thread.currentThread();
+
+			// Flag indicating if command execute method finished before next
+			// statement in the current function
+			final boolean executed[] = new boolean[1];
+
+			// Start command execute method in the servlet thread
 			featureCommand.execute(cmdId, params, new OnResultReceived()
 			{
 				@Override
 				public void onReceiveResult(FeatureError error, Object object)
 				{
-					Log.i(TAG, ".onReceiveResult: cmdId = " + cmdId);
-					response.setContentType("application/json;charset=utf-8");
-					JSONObject jsonResult = new JSONObject();
+					// Now the current thread could be the same servletThread or
+					// other, .e.g
+					// android main thread when the command uses Volley
+					Log.i(TAG, ".doGetOrPost.onReceiveResult: object = " + object);
 					try
 					{
 						jsonResult.put("success", !error.isError());
@@ -173,7 +204,14 @@ public class FeatureCommand extends FeatureComponent
 							response.setStatus(HttpServletResponse.SC_OK);
 							jsonResult.put("result", object);
 						}
-						response.getWriter().print(jsonResult);
+						// The servlet thread is now waiting for the JSON since
+						// we are running from separate thread.
+						synchronized (jsonResult)
+						{
+							// Notify JSON object as completed
+							jsonResult.notify();
+						}
+						executed[0] = servletThread == Thread.currentThread();
 					}
 					catch (Exception e)
 					{
@@ -181,6 +219,29 @@ public class FeatureCommand extends FeatureComponent
 					}
 				}
 			});
+
+			try
+			{
+				// executed flag will be true in case the command execute method
+				// finished
+				// and will be false if command execute method runs in parallel
+				// thread
+				if (!executed[0])
+				{
+					Log.i(TAG, "Waiting");
+					synchronized (jsonResult)
+					{
+						jsonResult.wait();
+					}
+				}
+			}
+			catch (InterruptedException e)
+			{
+				Log.w(TAG, e.getMessage(), e);
+			}
+			Log.i(TAG, "Print json `" + jsonResult + "'");
+
+			response.getWriter().print(jsonResult);
 		}
 	}
 }

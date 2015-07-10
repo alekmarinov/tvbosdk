@@ -10,9 +10,18 @@
 
 package com.aviq.tv.android.sdk.feature.httpserver.jetty;
 
-import javax.servlet.Servlet;
+import java.io.IOException;
 
+import javax.servlet.Servlet;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 
 import android.os.Bundle;
@@ -65,9 +74,12 @@ public class FeatureHttpServerJetty extends FeatureHttpServer
 			{
 				try
 				{
+					// setAssetsContext("tvboconnect/www");
+
 					Log.i(TAG, "Starting jetty http server on port " + port);
 					// Start HTTP server
 					_server.start();
+
 				}
 				catch (Exception e)
 				{
@@ -79,16 +91,53 @@ public class FeatureHttpServerJetty extends FeatureHttpServer
 		}, Environment.ON_LOADED);
 	}
 
-	public void setHandler(Class<? extends Servlet> servletClass, String path)
+	public void setServlet(Class<? extends Servlet> servletClass, String path)
 	{
 		ServletHandler handler = new ServletHandler();
 		_server.setHandler(handler);
 		handler.addServletWithMapping(servletClass, path);
 	}
 
+	public void setAssetsContext(String path)
+	{
+		Log.i(TAG, ".setAssetsContext: path = " + path);
+		ServletContextHandler context = new ServletContextHandler();
+		context.setContextPath("/");
+		context.setResourceBase(path);
+	    context.addServlet(AssetServlet.class, "/");
+	}
+
 	@Override
 	public Component getComponentName()
 	{
 		return FeatureName.Component.HTTP_SERVER;
+	}
+
+	public class StaticHandler2 extends ResourceHandler
+	{
+
+	}
+
+	public class StaticHandler extends AbstractHandler
+	{
+		private String _path;
+
+		StaticHandler(String path)
+		{
+			_path = path;
+		}
+
+		@Override
+		public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+		        throws IOException, ServletException
+		{
+			String localFile = _path + target;
+			Log.i(TAG, "Handling file " + localFile);
+
+			response.setContentType("text/html;charset=utf-8");
+			response.setStatus(HttpServletResponse.SC_OK);
+			baseRequest.setHandled(true);
+			response.getWriter().println("<h1>Hello World</h1>");
+		}
 	}
 }
