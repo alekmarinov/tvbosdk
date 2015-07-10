@@ -36,13 +36,17 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.Response.ErrorListener;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
@@ -72,6 +76,11 @@ public class FeatureEPGBulsat extends FeatureEPG
 		 * Direct url to Bulsatcom channels
 		 */
 		BULSAT_CHANNELS_URL("http://api.iptv.bulsat.com/?xml&tv"),
+
+		/**
+		 * Direct url to Bulsatcom genres
+		 */
+		BULSAT_GENRES_URL("http://api.iptv.bulsat.com/?xml&chantypes"),
 
 		/**
 		 * Update interval for updating channel streams directly from bulsat
@@ -108,45 +117,66 @@ public class FeatureEPGBulsat extends FeatureEPG
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-		super.initialize(new OnFeatureInitialized()
+		// load channel genres
+		retrieveBulsatGenres(new OnResultReceived()
 		{
 			@Override
-			public void onInitialized(final FeatureError error)
+			public void onReceiveResult(FeatureError error, Object object)
 			{
-				if (!error.isError())
-				{
-					updateBulsatChannelStreams(new OnResultReceived()
-					{
-						@Override
-						public void onReceiveResult(FeatureError error, Object object)
-						{
-							onFeatureInitialized.onInitialized(error);
+				Log.i(TAG, ".retrieveBulsatGenres.onReceiveResult: " + error);
 
-							// update channel streams periodically directly from
-							// the bulsat server
-							final long updateInterval = getPrefs().getLong(Param.STREAMS_UPDATE_INTERVAL);
-							getEventMessenger().postDelayed(new Runnable()
-							{
-								@Override
-								public void run()
-								{
-									updateBulsatChannelStreams(null);
-									getEventMessenger().postDelayed(this, updateInterval);
-								}
-							}, updateInterval);
-						}
-					});
-				}
-				else
+				if (error.isError())
 				{
 					onFeatureInitialized.onInitialized(error);
 				}
-			}
+				else
+				{
+					FeatureEPGBulsat.super.initialize(new OnFeatureInitialized()
+					{
+						@Override
+						public void onInitialized(final FeatureError error)
+						{
+							if (!error.isError())
+							{
+								updateBulsatChannelStreams(new OnResultReceived()
+								{
+									@Override
+									public void onReceiveResult(FeatureError error, Object object)
+									{
+										Log.i(TAG, "Channels updated: " + error);
 
-			@Override
-			public void onInitializeProgress(IFeature feature, float progress)
-			{
-				onFeatureInitialized.onInitializeProgress(feature, progress);
+										// EPG initialization finishes with status error
+										onFeatureInitialized.onInitialized(error);
+
+										// update channel streams periodically
+										// directly from
+										// the bulsat server
+										final long updateInterval = getPrefs().getLong(Param.STREAMS_UPDATE_INTERVAL);
+										getEventMessenger().postDelayed(new Runnable()
+										{
+											@Override
+											public void run()
+											{
+												updateBulsatChannelStreams(null);
+												getEventMessenger().postDelayed(this, updateInterval);
+											}
+										}, updateInterval);
+									}
+								});
+							}
+							else
+							{
+								onFeatureInitialized.onInitialized(error);
+							}
+						}
+
+						@Override
+						public void onInitializeProgress(IFeature feature, float progress)
+						{
+							onFeatureInitialized.onInitializeProgress(feature, progress);
+						}
+					});
+				}
 			}
 		});
 	}
@@ -536,6 +566,204 @@ public class FeatureEPGBulsat extends FeatureEPG
 
 			// clear buffer
 			_buffer.setLength(0);
+		}
+	}
+
+	private void retrieveBulsatGenres(final OnResultReceived onResultReceived)
+	{
+		Log.i(TAG, ".retrieveBulsatGenres");
+
+		new Thread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				FeatureError error = null;
+				String url = getPrefs().getString(Param.BULSAT_GENRES_URL);
+				HttpUriRequest httpGet = new HttpGet(url);
+				Log.i(TAG, "Opening " + httpGet.getURI());
+
+				HttpClient httpClient = new DefaultHttpClient(httpGet.getParams());
+				try
+				{
+					HttpResponse response = httpClient.execute(httpGet);
+					HttpEntity entity = response.getEntity();
+					if (entity != null)
+					{
+						InputStream content = entity.getContent();
+
+						// Setup SAX parser
+						SAXParserFactory spf = SAXParserFactory.newInstance();
+						spf.setNamespaceAware(true);
+						SAXParser saxParser = spf.newSAXParser();
+
+						XMLReader xmlReader = saxParser.getXMLReader();
+						// Response to initialize callback will come from the
+						// XML content handler after retrieving all related
+						// images
+						GenresContentHandler contentHandler = new GenresContentHandler(onResultReceived);
+						xmlReader.setContentHandler(contentHandler);
+						Log.i(TAG, "Parsing Genres xml");
+						xmlReader.parse(new InputSource(content));
+						if (!contentHandler.isValid())
+							error = new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR,
+							        "Unexpected XML format by Genre service at " + url);
+					}
+					else
+					{
+						error = new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR,
+						        "No entity returned by " + httpGet.getURI());
+					}
+				}
+				catch (SAXException e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+					error = new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR, e);
+				}
+				catch (Exception e)
+				{
+					Log.e(TAG, e.getMessage(), e);
+					error = new FeatureError(FeatureEPGBulsat.this, e);
+				}
+
+				if (error != null && onResultReceived != null)
+				{
+					// response only error
+
+					final FeatureError fError = error;
+					Environment.getInstance().runOnUiThread(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							Log.e(TAG, fError.getMessage(), fError);
+							onResultReceived.onReceiveResult(fError, null);
+						}
+					});
+				}
+			}
+		}).start();
+	}
+
+	private class GenresContentHandler extends DefaultHandler
+	{
+		static final String TAG_GENRES = "chan_types";
+		static final String TAG_GENRE = "type";
+		static final String TAG_ID = "id";
+		static final String TAG_TITLE = "name";
+		static final String TAG_LOGO = "logo";
+		static final String TAG_LOGO_SELECTED = "logo_selected";
+
+		private OnResultReceived _onResultReceived;
+		private Genre _genre = new Genre();
+		private StringBuilder _buffer = new StringBuilder();
+		private boolean _valid;
+		private int _logosLoaded = 0;
+		private int _logosRequested = 0;
+		private boolean _parsed;
+		private RequestQueue _requestQueue;
+
+		GenresContentHandler(OnResultReceived onResultReceived)
+		{
+			_onResultReceived = onResultReceived;
+			_requestQueue = Environment.getInstance().getRequestQueue();
+		}
+
+		private void callBackOnFinish()
+		{
+			Log.i(TAG, ".callBackOnFinish: _parsed = " + _parsed + ", _logosRequested = " + _logosRequested
+			        + ", _logosLoaded = " + _logosLoaded);
+			if (_parsed && _logosRequested == _logosLoaded)
+				_onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPGBulsat.this), null);
+		}
+
+		/**
+		 * @return true if the xml is valid
+		 */
+		boolean isValid()
+		{
+			return _valid;
+		}
+
+		@Override
+		public void characters(char[] ch, int start, int length)
+		{
+			_buffer.append(ch, start, length);
+		}
+
+		@Override
+		public void endElement(String namespaceURI, String localName, String qName) throws SAXException
+		{
+			if (TAG_GENRE.equals(localName))
+			{
+				Genres.getInstance().addGenre(_genre);
+				_genre = new Genre();
+				_valid = true;
+			}
+			if (TAG_ID.equals(localName))
+			{
+				_genre.setId(_buffer.toString().trim());
+			}
+			else if (TAG_TITLE.equals(localName))
+			{
+				_genre.setTitle(_buffer.toString().trim());
+			}
+			else if (TAG_LOGO.equals(localName))
+			{
+				String url = _buffer.toString().trim();
+				GenreImageListener genreImageListener = new GenreImageListener(_genre, false);
+				ImageRequest imageRequest = new ImageRequest(url, genreImageListener, 0, 0, Config.ARGB_8888,
+				        genreImageListener);
+				_requestQueue.add(imageRequest);
+				_logosRequested++;
+			}
+			else if (TAG_LOGO_SELECTED.equals(localName))
+			{
+				String url = _buffer.toString().trim();
+				GenreImageListener genreImageListener = new GenreImageListener(_genre, true);
+				ImageRequest imageRequest = new ImageRequest(url, genreImageListener, 0, 0, Config.ARGB_8888,
+				        genreImageListener);
+				_requestQueue.add(imageRequest);
+				_logosRequested++;
+			}
+			else if (TAG_GENRES.equals(localName))
+			{
+				_parsed = true;
+			}
+
+			// clear buffer
+			_buffer.setLength(0);
+		}
+
+		private class GenreImageListener implements Response.Listener<Bitmap>, ErrorListener
+		{
+			private Genre _genre;
+			private boolean _isSelected;
+
+			GenreImageListener(Genre genre, boolean isSelected)
+			{
+				_genre = genre;
+				_isSelected = isSelected;
+			}
+
+			@Override
+			public void onResponse(Bitmap bitmap)
+			{
+				if (_isSelected)
+					_genre.setLogoSelected(bitmap);
+				else
+					_genre.setLogo(bitmap);
+
+				_logosLoaded++;
+				callBackOnFinish();
+			}
+
+			@Override
+			public void onErrorResponse(VolleyError arg0)
+			{
+				_logosLoaded++;
+				callBackOnFinish();
+			}
 		}
 	}
 }

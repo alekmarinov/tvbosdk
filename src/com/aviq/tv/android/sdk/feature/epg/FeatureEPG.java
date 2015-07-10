@@ -958,6 +958,7 @@ public abstract class FeatureEPG extends FeatureComponent
 								if (dayOffset[0] == programDayOffset)
 								{
 									JSONObject jsonProgram = new JSONObject();
+									jsonProgram.put("id", program.getId());
 									jsonProgram.put("start",
 									        Calendars.makeString(program.getStartTime(), DATETIME_FORMAT));
 									jsonProgram.put("stop",
