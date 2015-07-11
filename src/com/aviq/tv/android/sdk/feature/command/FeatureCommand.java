@@ -63,7 +63,7 @@ public class FeatureCommand extends FeatureComponent
 		/**
 		 * Context to access the tvboconnect app
 		 */
-		HTTP_CONTEXT_TVBOCONNECT("/tvboconnect");
+		HTTP_CONTEXT_TVBOCONNECT("/browse");
 
 		Param(boolean value)
 		{
