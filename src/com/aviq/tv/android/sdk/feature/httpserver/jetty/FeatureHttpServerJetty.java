@@ -10,18 +10,19 @@
 
 package com.aviq.tv.android.sdk.feature.httpserver.jetty;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.servlet.Servlet;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.Request;
+import org.apache.commons.io.FileUtils;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 
 import android.os.Bundle;
@@ -33,6 +34,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
+import com.aviq.tv.android.sdk.utils.Files;
 
 /**
  * jetty based HTTP server feature
@@ -56,6 +58,7 @@ public class FeatureHttpServerJetty extends FeatureHttpServer
 	}
 
 	private Server _server;
+	private HandlerList _handlers = new HandlerList();
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
@@ -74,12 +77,11 @@ public class FeatureHttpServerJetty extends FeatureHttpServer
 			{
 				try
 				{
-					// setAssetsContext("tvboconnect/www");
-
 					Log.i(TAG, "Starting jetty http server on port " + port);
+					_server.setHandler(_handlers);
+
 					// Start HTTP server
 					_server.start();
-
 				}
 				catch (Exception e)
 				{
@@ -94,50 +96,63 @@ public class FeatureHttpServerJetty extends FeatureHttpServer
 	public void setServlet(Class<? extends Servlet> servletClass, String path)
 	{
 		ServletHandler handler = new ServletHandler();
-		_server.setHandler(handler);
 		handler.addServletWithMapping(servletClass, path);
+		_handlers.addHandler(handler);
 	}
 
-	public void setAssetsContext(String path)
+	public void setStaticContext(String staticDir, String contextPath)
 	{
-		Log.i(TAG, ".setAssetsContext: path = " + path);
-		ServletContextHandler context = new ServletContextHandler();
-		context.setContextPath("/");
-		context.setResourceBase(path);
-	    context.addServlet(AssetServlet.class, "/");
+		Log.i(TAG, ".setStaticContext: staticDir = " + staticDir + ", path = " + contextPath);
+		ContextHandler contextHandler = new ContextHandler();
+		contextHandler.setContextPath(contextPath);
+		contextHandler.setResourceBase(staticDir);
+		contextHandler.setClassLoader(Thread.currentThread().getContextClassLoader());
+
+		ResourceHandler resourceHandler = new ResourceHandler();
+		resourceHandler.setDirectoriesListed(true);
+		resourceHandler.setWelcomeFiles(new String[]
+		{ "index.html" });
+
+		HandlerList handlers = new HandlerList();
+		handlers.setHandlers(new Handler[]
+		{ resourceHandler, new DefaultHandler() });
+
+		contextHandler.setHandler(handlers);
+		_handlers.addHandler(contextHandler);
+	}
+
+	/**
+	 * Extracts zip file to directory in files/{contextPath}/{app version} and adds
+	 * http context {contextPath} serving app's static files
+	 *
+	 * @param inputStreamToZipFile
+	 * @param appName
+	 * @param contextPath
+	 * @throws IOException
+	 */
+	public void deployStaticApp(InputStream inputStreamToZipFile, String contextPath) throws IOException
+	{
+		String appName = Files.baseName(contextPath);
+		File appDir = new File(Environment.getInstance().getFilesDir(), appName);
+
+		String appVersion = Environment.getInstance().getBuildVersion();
+		File versionDir = new File(appDir, appVersion);
+		if (!versionDir.isDirectory())
+		{
+			FileUtils.forceMkdir(appDir);
+
+			// clean old version directories
+			FileUtils.cleanDirectory(appDir);
+
+			// extract zip file to appDir with current app version
+			Files.unzip(inputStreamToZipFile, versionDir.getAbsolutePath());
+		}
+		setStaticContext(versionDir.getAbsolutePath(), contextPath);
 	}
 
 	@Override
 	public Component getComponentName()
 	{
 		return FeatureName.Component.HTTP_SERVER;
-	}
-
-	public class StaticHandler2 extends ResourceHandler
-	{
-
-	}
-
-	public class StaticHandler extends AbstractHandler
-	{
-		private String _path;
-
-		StaticHandler(String path)
-		{
-			_path = path;
-		}
-
-		@Override
-		public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-		        throws IOException, ServletException
-		{
-			String localFile = _path + target;
-			Log.i(TAG, "Handling file " + localFile);
-
-			response.setContentType("text/html;charset=utf-8");
-			response.setStatus(HttpServletResponse.SC_OK);
-			baseRequest.setHandled(true);
-			response.getWriter().println("<h1>Hello World</h1>");
-		}
 	}
 }

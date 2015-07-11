@@ -13,13 +13,19 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.net.URL;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
+import org.apache.commons.io.FileUtils;
 
 import android.content.Context;
 
@@ -269,5 +275,63 @@ public class Files
 			Files.closeQuietly(gzipOut, TAG);
 		}
 		return true;
+	}
+
+	public static void unzip(String zipFileUrl, String destinationPath) throws IOException
+	{
+		URL url = new URL(zipFileUrl);
+		unzip(url.openStream(), destinationPath);
+	}
+
+	public static void unzip(InputStream inputStreamToZipFile, String destinationPath) throws IOException
+	{
+		FileUtils.forceMkdir(new File(destinationPath));
+
+		ZipInputStream zipInputStream = null;
+		ZipEntry zipEntry = null;
+		try
+		{
+			zipInputStream = new ZipInputStream(inputStreamToZipFile);
+
+			zipEntry = zipInputStream.getNextEntry();
+			while (zipEntry != null)
+			{
+				String fileName = zipEntry.getName();
+				File newFile = new File(destinationPath + File.separator + fileName);
+				Log.v(TAG, ".unzip: unzipping " + fileName);
+				if (zipEntry.isDirectory())
+				{
+					File dir = new File(newFile.getParent());
+					if (dir.mkdirs())
+						Log.v(TAG, dir.getAbsolutePath() + " created");
+				}
+				else
+				{
+					File dir = new File(newFile.getParent());
+					if (dir.mkdirs())
+						Log.v(TAG, dir.getAbsolutePath() + " created");
+
+					FileOutputStream fileOutputStream = new FileOutputStream(newFile);
+
+					int length;
+					byte[] buffer = new byte[1024];
+					while ((length = zipInputStream.read(buffer)) > 0)
+					{
+						fileOutputStream.write(buffer, 0, length);
+					}
+					fileOutputStream.close();
+					Log.v(TAG, newFile.getAbsolutePath() + " created");
+				}
+				zipEntry = zipInputStream.getNextEntry();
+			}
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		finally
+		{
+			closeQuietly(zipInputStream, TAG);
+		}
 	}
 }

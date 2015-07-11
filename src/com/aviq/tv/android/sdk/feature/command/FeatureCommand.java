@@ -11,6 +11,7 @@
 package com.aviq.tv.android.sdk.feature.command;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +46,35 @@ public class FeatureCommand extends FeatureComponent
 {
 	public static final String TAG = FeatureCommand.class.getSimpleName();
 	private Map<String, CommandHandler> _commandHandlers = new HashMap<String, CommandHandler>();
-	private static final String HTTP_CONTEXT = "/command";
+	private static final String TVBOCONNECT_APP_ARCHIVE = "tvboconnect.zip";
+
+	public static enum Param
+	{
+		/**
+		 * Should deploy remote control app tvboconnect via http
+		 */
+		DEPLOY_TVBOCONNECT(true),
+
+		/**
+		 * Context to access the tvboconnect app
+		 */
+		HTTP_CONTEXT_COMMAND("/command"),
+
+		/**
+		 * Context to access the tvboconnect app
+		 */
+		HTTP_CONTEXT_TVBOCONNECT("/tvboconnect");
+
+		Param(boolean value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.COMMAND).put(name(), value);
+		}
+
+		Param(String value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.COMMAND).put(name(), value);
+		}
+	}
 
 	public FeatureCommand() throws FeatureNotFoundException
 	{
@@ -65,8 +94,24 @@ public class FeatureCommand extends FeatureComponent
 		if (_feature.Component.HTTP_SERVER instanceof FeatureHttpServerJetty)
 		{
 			// add handler to http server
-			FeatureHttpServerJetty featureHttpServer = (FeatureHttpServerJetty) _feature.Component.HTTP_SERVER;
-			featureHttpServer.setServlet(JettyHttpHandlerCommand.class, HTTP_CONTEXT + "/*");
+			FeatureHttpServerJetty httpServer = (FeatureHttpServerJetty) _feature.Component.HTTP_SERVER;
+			httpServer.setServlet(JettyHttpHandlerCommand.class, getPrefs().getString(Param.HTTP_CONTEXT_COMMAND)
+			        + "/*");
+
+			// deploy tvboconnect html app
+			if (getPrefs().getBool(Param.DEPLOY_TVBOCONNECT))
+			{
+				try
+				{
+					InputStream zipFileStream = Environment.getInstance().getAssets().open(TVBOCONNECT_APP_ARCHIVE);
+					httpServer.deployStaticApp(zipFileStream, getPrefs().getString(Param.HTTP_CONTEXT_TVBOCONNECT));
+				}
+				catch (IOException e)
+				{
+					onFeatureInitialized.onInitialized(new FeatureError(this, e));
+					return;
+				}
+			}
 		}
 
 		super.initialize(onFeatureInitialized);
@@ -152,7 +197,9 @@ public class FeatureCommand extends FeatureComponent
 		private void doGetOrPost(HttpServletRequest request, final HttpServletResponse response)
 		        throws ServletException, IOException
 		{
-			final String cmdId = request.getRequestURI().substring(1 + HTTP_CONTEXT.length()).toUpperCase();
+			String uri = request.getRequestURI();
+			int slashIdx = uri.substring(1).indexOf('/');
+			final String cmdId = request.getRequestURI().substring(2 + slashIdx).toUpperCase();
 			Log.i(TAG, ".doGetOrPost: cmdId = " + cmdId + ", current thread = " + Thread.currentThread());
 
 			response.setContentType("application/json;charset=utf-8");
