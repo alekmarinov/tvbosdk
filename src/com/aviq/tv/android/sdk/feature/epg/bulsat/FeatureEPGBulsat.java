@@ -14,8 +14,10 @@ import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 
 import javax.xml.parsers.SAXParser;
@@ -84,9 +86,9 @@ public class FeatureEPGBulsat extends FeatureEPG
 
 		/**
 		 * Update interval for updating channel streams directly from bulsat
-		 * server
+		 * server and refresh channels list if changed
 		 */
-		STREAMS_UPDATE_INTERVAL(2 * 3600 * 1000),
+		CHANNELS_UPDATE_INTERVAL(15 * 1000), // 2 * 3600
 
 		/**
 		 * EPG provider name
@@ -131,6 +133,9 @@ public class FeatureEPGBulsat extends FeatureEPG
 				}
 				else
 				{
+					Genres genres = (Genres)object;
+					Genres.getInstance().addAll(genres);
+
 					FeatureEPGBulsat.super.initialize(new OnFeatureInitialized()
 					{
 						@Override
@@ -143,21 +148,40 @@ public class FeatureEPGBulsat extends FeatureEPG
 									@Override
 									public void onReceiveResult(FeatureError error, Object object)
 									{
-										Log.i(TAG, "Channels updated: " + error);
+										Log.i(TAG, "Channel streams updated: " + error);
 
-										// EPG initialization finishes with status error
+										// EPG initialization finishes with
+										// status given by error
 										onFeatureInitialized.onInitialized(error);
 
 										// update channel streams periodically
-										// directly from
-										// the bulsat server
-										final long updateInterval = getPrefs().getLong(Param.STREAMS_UPDATE_INTERVAL);
+										// directly from the bulsat server
+										final long updateInterval = getPrefs().getLong(Param.CHANNELS_UPDATE_INTERVAL);
 										getEventMessenger().postDelayed(new Runnable()
 										{
 											@Override
 											public void run()
 											{
-												updateBulsatChannelStreams(null);
+												updateBulsatChannelStreams(new OnResultReceived()
+												{
+													@Override
+													public void onReceiveResult(FeatureError error, Object object)
+													{
+														Log.i(TAG, "Channel streams periodically updated: " + error);
+														if (!error.isError())
+														{
+															retrieveBulsatGenres(new OnResultReceived()
+															{
+																@Override
+																public void onReceiveResult(FeatureError error,
+																        Object object)
+																{
+																	Log.i(TAG, "Genres updated: " + error);
+																}
+															});
+														}
+													}
+												});
 												getEventMessenger().postDelayed(this, updateInterval);
 											}
 										}, updateInterval);
@@ -434,6 +458,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 				HttpUriRequest httpGet = new HttpGet(url);
 				Log.i(TAG, "Opening " + httpGet.getURI());
 
+				XMLTVContentHandler contentHandler = new XMLTVContentHandler();
 				HttpClient httpClient = new DefaultHttpClient(httpGet.getParams());
 				try
 				{
@@ -449,7 +474,6 @@ public class FeatureEPGBulsat extends FeatureEPG
 						SAXParser saxParser = spf.newSAXParser();
 
 						XMLReader xmlReader = saxParser.getXMLReader();
-						XMLTVContentHandler contentHandler = new XMLTVContentHandler();
 						xmlReader.setContentHandler(contentHandler);
 						Log.i(TAG, "Parsing XML TV xml");
 						xmlReader.parse(new InputSource(content));
@@ -478,6 +502,12 @@ public class FeatureEPGBulsat extends FeatureEPG
 
 				if (onResultReceived != null)
 				{
+					if (!error.isError()
+					        && (contentHandler.getAddChannels().size() > 0 || contentHandler.getDelChannels().size() > 0))
+					{
+						// channels set changed
+						getEventMessenger().trigger(ON_CHANNELS_CHANGED);
+					}
 					final FeatureError fError = error;
 					Environment.getInstance().runOnUiThread(new Runnable()
 					{
@@ -494,6 +524,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 
 	private class XMLTVContentHandler extends DefaultHandler
 	{
+		static final String TAG_TVLISTS = "tvlists";
 		static final String TAG_TV = "tv";
 		static final String TAG_EPG_NAME = "epg_name";
 		static final String TAG_SOURCES = "sources";
@@ -504,6 +535,19 @@ public class FeatureEPGBulsat extends FeatureEPG
 		private String _seekUrl;
 		private StringBuilder _buffer = new StringBuilder();
 		private boolean _valid;
+		private Map<String, Boolean> _updatedChannels = new HashMap<String, Boolean>();
+		private List<String> _addChannels = new ArrayList<String>();
+		private List<String> _delChannels = new ArrayList<String>();
+
+		public List<String> getAddChannels()
+		{
+			return _addChannels;
+		}
+
+		public List<String> getDelChannels()
+		{
+			return _delChannels;
+		}
 
 		/**
 		 * @return true if the xml is valid
@@ -538,12 +582,19 @@ public class FeatureEPGBulsat extends FeatureEPG
 			{
 				_valid = true;
 				ChannelBulsat channel = (ChannelBulsat) getChannelById(_channelId);
+				_updatedChannels.put(_channelId, Boolean.TRUE);
 				if (channel == null)
 				{
-					Log.w(TAG,
-					        "Got channel " + _channelId + " on Bulsatcom server ("
-					                + getPrefs().getString(Param.BULSAT_CHANNELS_URL) + ") missing on AVTV server ( "
-					                + getPrefs().getString(FeatureEPG.Param.EPG_SERVER) + ")");
+					if (!com.aviq.tv.android.sdk.utils.TextUtils.isEmpty(_streamUrl))
+					{
+						Log.w(TAG,
+						        "Got channel " + _channelId + " on Bulsatcom server ("
+						                + getPrefs().getString(Param.BULSAT_CHANNELS_URL)
+						                + ") missing on AVTV server ( "
+						                + getPrefs().getString(FeatureEPG.Param.EPG_SERVER) + ")");
+
+						_addChannels.add(_channelId);
+					}
 				}
 				else
 				{
@@ -562,6 +613,25 @@ public class FeatureEPGBulsat extends FeatureEPG
 				}
 
 				_channelId = _streamUrl = _seekUrl = null;
+			}
+			else if (TAG_TVLISTS.equals(localName))
+			{
+				// verify channels for removal
+				for (Channel channel : getChannels())
+				{
+					if (_updatedChannels.get(channel.getChannelId()) == null)
+						_delChannels.add(channel.getChannelId());
+				}
+
+				for (String channelId : _addChannels)
+				{
+					Log.i(TAG, "Add channel: " + channelId);
+				}
+
+				for (String channelId : _delChannels)
+				{
+					Log.i(TAG, "Del channel: " + channelId);
+				}
 			}
 
 			// clear buffer
@@ -583,6 +653,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 				HttpUriRequest httpGet = new HttpGet(url);
 				Log.i(TAG, "Opening " + httpGet.getURI());
 
+				final GenresContentHandler contentHandler = new GenresContentHandler(onResultReceived);
 				HttpClient httpClient = new DefaultHttpClient(httpGet.getParams());
 				try
 				{
@@ -601,13 +672,20 @@ public class FeatureEPGBulsat extends FeatureEPG
 						// Response to initialize callback will come from the
 						// XML content handler after retrieving all related
 						// images
-						GenresContentHandler contentHandler = new GenresContentHandler(onResultReceived);
 						xmlReader.setContentHandler(contentHandler);
 						Log.i(TAG, "Parsing Genres xml");
 						xmlReader.parse(new InputSource(content));
 						if (!contentHandler.isValid())
 							error = new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR,
 							        "Unexpected XML format by Genre service at " + url);
+						else
+						{
+							if (!Genres.getInstance().isEmpty() && !contentHandler.getGenres().isEqualTo(Genres.getInstance()))
+							{
+								// genres set changed
+								getEventMessenger().trigger(ON_CHANNELS_CHANGED);
+							}
+						}
 					}
 					else
 					{
@@ -629,7 +707,6 @@ public class FeatureEPGBulsat extends FeatureEPG
 				if (error != null && onResultReceived != null)
 				{
 					// response only error
-
 					final FeatureError fError = error;
 					Environment.getInstance().runOnUiThread(new Runnable()
 					{
@@ -637,7 +714,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 						public void run()
 						{
 							Log.e(TAG, fError.getMessage(), fError);
-							onResultReceived.onReceiveResult(fError, null);
+							onResultReceived.onReceiveResult(fError, contentHandler.getGenres());
 						}
 					});
 				}
@@ -662,6 +739,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		private int _logosRequested = 0;
 		private boolean _parsed;
 		private RequestQueue _requestQueue;
+		private Genres _genres = new Genres();
 
 		GenresContentHandler(OnResultReceived onResultReceived)
 		{
@@ -669,12 +747,17 @@ public class FeatureEPGBulsat extends FeatureEPG
 			_requestQueue = Environment.getInstance().getRequestQueue();
 		}
 
+		public Genres getGenres()
+		{
+			return _genres;
+		}
+
 		private void callBackOnFinish()
 		{
 			Log.i(TAG, ".callBackOnFinish: _parsed = " + _parsed + ", _logosRequested = " + _logosRequested
 			        + ", _logosLoaded = " + _logosLoaded);
 			if (_parsed && _logosRequested == _logosLoaded)
-				_onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPGBulsat.this), null);
+				_onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPGBulsat.this), _genres);
 		}
 
 		/**
@@ -696,7 +779,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		{
 			if (TAG_GENRE.equals(localName))
 			{
-				Genres.getInstance().addGenre(_genre);
+				_genres.addGenre(_genre);
 				_genre = new Genre();
 				_valid = true;
 			}

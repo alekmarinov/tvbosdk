@@ -22,6 +22,7 @@ public class Genre
 	private Bitmap _logo;
 	private Bitmap _logoSelected;
 	private int _index;
+	private boolean _isHidden;
 
 	/**
 	 * @return the _id
@@ -106,5 +107,21 @@ public class Genre
 	void setIndex(int index)
 	{
 		_index = index;
+	}
+
+	/**
+	 * @return the isHidden
+	 */
+	public boolean isHidden()
+	{
+		return _isHidden;
+	}
+
+	/**
+	 * @param isHidden the isHidden to set
+	 */
+	public void setHidden(boolean isHidden)
+	{
+		_isHidden = isHidden;
 	}
 }

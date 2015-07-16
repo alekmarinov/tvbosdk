@@ -17,6 +17,7 @@ import java.util.Map;
 
 import com.aviq.tv.android.sdk.R;
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.Log;
 
 /**
  * Bulsatcom channel genres manager
@@ -30,7 +31,7 @@ public class Genres
 	private Genre _defaultGenre;
 	private String _defaultGenreTitle;
 
-	private Genres()
+	public Genres()
 	{
 		_defaultGenreTitle = Environment.getInstance().getResources().getString(R.string.channel_category_default);
 	}
@@ -84,5 +85,56 @@ public class Genres
 		_genresTitlesMap.put(genre.getTitle(), genre);
 		if (_defaultGenreTitle.equals(genre.getTitle()))
 			_defaultGenre = genre;
+	}
+
+	public boolean isEqualTo(Genres otherGenres)
+	{
+		List<Genre> thisGenreList = new ArrayList<Genre>();
+		List<Genre> otherGenreList = new ArrayList<Genre>();
+
+		for (Genre genre: otherGenres.getGenres())
+		{
+			if (!genre.isHidden())
+				otherGenreList.add(genre);
+		}
+
+		for (Genre genre: getGenres())
+		{
+			if (!genre.isHidden())
+				thisGenreList.add(genre);
+		}
+
+		if (thisGenreList.size() != otherGenreList.size())
+		{
+			Log.i(TAG, "isEqualTo: Genres differ by count");
+			return false;
+		}
+
+		for (int i = 0; i < thisGenreList.size(); i++)
+		{
+			if (!thisGenreList.get(i).getTitle().equals(otherGenreList.get(i).getTitle()))
+				return false;
+		}
+		return true;
+	}
+
+	public void addAll(Genres otherGenres)
+	{
+		for (Genre genre: otherGenres.getGenres())
+		{
+			addGenre(genre);
+		}
+	}
+
+	public void clear()
+	{
+		_genres.clear();
+		_genresTitlesMap.clear();
+		_defaultGenreTitle = null;
+	}
+
+	public boolean isEmpty()
+	{
+		return _genres.size() == 0;
 	}
 }
