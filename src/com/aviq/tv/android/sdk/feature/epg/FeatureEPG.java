@@ -673,6 +673,12 @@ public abstract class FeatureEPG extends FeatureComponent
 				else
 					channel = getChannelById(data.getJSONArray(i).getString(metaData.metaChannel));
 
+				if (channel == null)
+				{
+					// program channel is not available
+					continue;
+				}
+
 				Program program = createProgram(id, channel);
 				program.setTitle(new String(jsonArr.getString(metaData.metaTitle)));
 				program.setStartTime(startTime);
