@@ -106,5 +106,9 @@ public enum Key
 	X,
 	Y,
 	Z,
-	TIME
+	TIME,
+	SUBTITLES,
+	ASPECT,
+	RECALL,
+	AUDIO
 }

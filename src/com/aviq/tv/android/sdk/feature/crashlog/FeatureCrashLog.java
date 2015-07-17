@@ -407,7 +407,14 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 				}
 				catch (ClassCastException cce)
 				{
-					paramValue = String.valueOf(prefs.getInt(paramName));
+					try
+					{
+						paramValue = String.valueOf(prefs.getInt(paramName));
+					}
+					catch (ClassCastException ccce)
+					{
+						paramValue = String.valueOf(prefs.getLong(paramName));
+					}
 				}
 				sb.append(paramName).append('=').append(paramValue);
 			}

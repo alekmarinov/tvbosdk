@@ -2,5 +2,4 @@
 <resources>
     <string name="cyrillic_chars">абвгдежзийклмнопрстуфхцчшщъьюяАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯ</string>
     <string name="latin_chars">abvgdejziyklmnoprstufhccstu_uaABVGDEJZIYKLMNOPRSTUFHCCSTU_UA</string>
-    <string name="channel_category_default">ДРУГИ</string>
 </resources>

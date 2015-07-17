@@ -215,6 +215,8 @@ public class ChannelBulsat extends Channel
 
 		String genreTitle = attributes[channelBulsatMetaData.metaChannelGenre];
 		setGenre(Genres.getInstance().getGenreByTitle(genreTitle));
+		if (getGenre() == null)
+			throw new IllegalArgumentException("Genre " + genreTitle + " is not recognized");
 
 		try
 		{

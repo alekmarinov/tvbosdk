@@ -15,8 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.aviq.tv.android.sdk.R;
-import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
 
 /**
@@ -28,13 +26,6 @@ public class Genres
 	private static Genres _instance;
 	private List<Genre> _genres = new ArrayList<Genre>();
 	private Map<String, Genre> _genresTitlesMap = new HashMap<String, Genre>();
-	private Genre _defaultGenre;
-	private String _defaultGenreTitle;
-
-	public Genres()
-	{
-		_defaultGenreTitle = Environment.getInstance().getResources().getString(R.string.channel_category_default);
-	}
 
 	public static synchronized Genres getInstance()
 	{
@@ -50,15 +41,7 @@ public class Genres
 
 	public Genre getGenreByTitle(String title)
 	{
-		Genre genre = _genresTitlesMap.get(title);
-		if (genre == null)
-			genre = _defaultGenre;
-		return genre;
-	}
-
-	public Genre getDefaultGenre()
-	{
-		return _defaultGenre;
+		return _genresTitlesMap.get(title);
 	}
 
 	public void addGenre(Genre genre)
@@ -83,8 +66,6 @@ public class Genres
 			}
 		}
 		_genresTitlesMap.put(genre.getTitle(), genre);
-		if (_defaultGenreTitle.equals(genre.getTitle()))
-			_defaultGenre = genre;
 	}
 
 	public boolean isEqualTo(Genres otherGenres)
@@ -130,7 +111,6 @@ public class Genres
 	{
 		_genres.clear();
 		_genresTitlesMap.clear();
-		_defaultGenreTitle = null;
 	}
 
 	public boolean isEmpty()

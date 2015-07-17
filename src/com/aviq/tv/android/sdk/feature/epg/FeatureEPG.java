@@ -593,8 +593,16 @@ public abstract class FeatureEPG extends FeatureComponent
 				channel.setChannelImage(Channel.LOGO_NORMAL,
 				        BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
 			}
-			channel.setAttributes(metaData, values);
-			channels.add(channel);
+			try
+			{
+				channel.setAttributes(metaData, values);
+				channels.add(channel);
+			}
+			catch (Exception e)
+			{
+				// invalid channel attributes, skip this channel
+				Log.w(TAG, e.getMessage(), e);
+			}
 		}
 		return channels;
 	}
@@ -867,14 +875,14 @@ public abstract class FeatureEPG extends FeatureComponent
 
 	private String getProgramDetailsUrl(String channelId, String programId)
 	{
-		Log.i(TAG , "getProgramDetailsUrl");
+		Log.i(TAG, "getProgramDetailsUrl");
 		Bundle bundle = new Bundle();
 		bundle.putString("SERVER", _epgServer);
 		bundle.putInt("VERSION", _epgVersion);
 		bundle.putString("PROVIDER", _epgProvider);
 		bundle.putString("CHANNEL", channelId);
 		bundle.putString("ID", programId);
-		Log.i(TAG , "getPrefs().getString(): " + getPrefs().getString(Param.EPG_PROGRAM_DETAILS_URL, bundle));
+		Log.i(TAG, "getPrefs().getString(): " + getPrefs().getString(Param.EPG_PROGRAM_DETAILS_URL, bundle));
 
 		return getPrefs().getString(Param.EPG_PROGRAM_DETAILS_URL, bundle);
 	}
@@ -887,7 +895,7 @@ public abstract class FeatureEPG extends FeatureComponent
 
 		ProgramDetailsResponseCallback(Channel channel, String programId, OnResultReceived onResultReceived)
 		{
-			Log.i(TAG , "ProgramDetailsResponseCallback");
+			Log.i(TAG, "ProgramDetailsResponseCallback");
 			_channel = channel;
 			_programId = programId;
 			_onResultReceived = onResultReceived;
@@ -896,7 +904,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		@Override
 		public void onResponse(JSONObject response)
 		{
-			Log.i(TAG , "onResponse");
+			Log.i(TAG, "onResponse");
 			Program program = createProgram(_programId, _channel);
 			try
 			{
@@ -943,14 +951,14 @@ public abstract class FeatureEPG extends FeatureComponent
 			String dayOffsetStr = params.getString(CommandGetProgramsExtras.DAY_OFFSET.name());
 
 			final int dayOffset[] = new int[1];
-						try
-						{
+			try
+			{
 				dayOffset[0] = Integer.parseInt(dayOffsetStr);
-							}
+			}
 			catch (NumberFormatException e)
-						{
+			{
 				Log.w(TAG, e.getMessage(), e);
-						}
+			}
 			Log.i(TAG, ".OnCommandGetPrograms.execute: channelId = " + channelId + ", dayOffset = " + dayOffset[0]);
 			Channel channel = getChannelById(channelId);
 			getPrograms(channel, new OnResultReceived()
@@ -999,7 +1007,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		}
 	}
 
-    private class OnCommandGetProgramDetails implements CommandHandler
+	private class OnCommandGetProgramDetails implements CommandHandler
 	{
 		@Override
 		public void execute(Bundle params, final OnResultReceived onResultReceived)
