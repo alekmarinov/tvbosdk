@@ -65,7 +65,7 @@ import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 
 /**
- * RayV specific extension of EPG feature
+ * Bulsat specific extension of EPG feature
  */
 @Author("alek")
 public class FeatureEPGBulsat extends FeatureEPG
