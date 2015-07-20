@@ -275,6 +275,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 				bulsatMetaData.metaChannelPG = j;
 			else if ("recordable".equals(key))
 				bulsatMetaData.metaChannelRecordable = j;
+			else if ("radio".equals(key))
+				bulsatMetaData.metaChannelRadio = j;
 			else if ("thumbnail_base64".equals(key))
 				bulsatMetaData.metaChannelLogo = j;
 			else if ("thumbnail_selected_base64".equals(key))
@@ -312,7 +314,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 	{
 		String url = super.getChannelsUrl();
 		return url
-		        + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable,thumbnail_base64,thumbnail_selected_base64,thumbnail_favorite_base64,program_image_medium,program_image_large";
+		        + "?attr=channel,genre,ndvr,streams.1.url,streams.2.url,pg,recordable,radio,thumbnail_base64,thumbnail_selected_base64,thumbnail_favorite_base64,program_image_medium,program_image_large";
 	}
 
 	@Override

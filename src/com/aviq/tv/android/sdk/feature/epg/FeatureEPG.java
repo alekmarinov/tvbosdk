@@ -583,7 +583,7 @@ public abstract class FeatureEPG extends FeatureComponent
 				}
 			}
 
-			Channel channel = createChannel(i);
+			Channel channel = createChannel(channels.size());
 			channel.setChannelId(values[metaData.metaChannelId]);
 			channel.setTitle(values[metaData.metaChannelTitle]);
 
@@ -680,7 +680,8 @@ public abstract class FeatureEPG extends FeatureComponent
 				}
 
 				Program program = createProgram(id, channel);
-				program.setTitle(new String(jsonArr.getString(metaData.metaTitle)));
+				if (!jsonArr.isNull(metaData.metaTitle))
+					program.setTitle(new String(jsonArr.getString(metaData.metaTitle)));
 				program.setStartTime(startTime);
 				program.setStopTime(stopTime);
 
@@ -866,6 +867,7 @@ public abstract class FeatureEPG extends FeatureComponent
 
 	protected void updateChannels(List<Channel> channels)
 	{
+		Log.i(TAG, ".updateChannels: size = " + channels.size());
 		_channels = channels;
 
 		// index all channels to map

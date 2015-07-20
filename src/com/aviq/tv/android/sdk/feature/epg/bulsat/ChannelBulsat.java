@@ -37,6 +37,7 @@ public class ChannelBulsat extends Channel
 	private Bitmap _logoFavorite;
 	private String _programImageMediumUrl;
 	private String _programImageLargeUrl;
+	private boolean _radio;
 
 //	public static enum Genre
 //	{
@@ -77,6 +78,7 @@ public class ChannelBulsat extends Channel
 		public int metaChannelSeekUrl;
 		public int metaChannelPG;
 		public int metaChannelRecordable;
+		public int metaChannelRadio;
 		public int metaChannelLogo; // base64 image
 		public int metaChannelLogoSelected; // base64 image
 		public int metaChannelLogoFavorite; // base64 image
@@ -142,6 +144,16 @@ public class ChannelBulsat extends Channel
 	public boolean isRecordable()
 	{
 		return _recordable;
+	}
+
+	public void setRadio(boolean radio)
+	{
+		_radio = radio;
+	}
+
+	public boolean isRadio()
+	{
+		return _radio;
 	}
 
 	@Override
@@ -234,6 +246,8 @@ public class ChannelBulsat extends Channel
 			setParentControl(PG18.equals(attributes[channelBulsatMetaData.metaChannelPG]));
 		if (attributes[channelBulsatMetaData.metaChannelRecordable] != null)
 			setRecordable(!"0".equals(attributes[channelBulsatMetaData.metaChannelRecordable]));
+		if (attributes[channelBulsatMetaData.metaChannelRadio] != null)
+			setRadio("true".equals(attributes[channelBulsatMetaData.metaChannelRadio]));
 		if (attributes[channelBulsatMetaData.metaChannelLogoSelected] != null)
 		{
 			byte[] decodedString = Base64.decode(attributes[channelBulsatMetaData.metaChannelLogoSelected], Base64.DEFAULT);
