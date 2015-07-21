@@ -38,6 +38,7 @@ import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer.MediaType;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice.IStatusFieldGetter;
+import com.aviq.tv.android.sdk.utils.Calendars;
 
 /**
  * Component feature managing TV channel lists
@@ -363,7 +364,7 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	 */
 	public void play(final int index, final long playTime, final long playDuration)
 	{
-		Log.i(TAG, ".play: index = " + index + ", playTime = " + playTime + ", playDuration = " + playDuration);
+		Log.i(TAG, ".play: index = " + index + ", playTime = " + Calendars.makeString((int)playTime) + ", playDuration = " + playDuration);
 		int nChannels = _feature.Component.EPG.getChannels().size();
 		if (nChannels == 0)
 		{
