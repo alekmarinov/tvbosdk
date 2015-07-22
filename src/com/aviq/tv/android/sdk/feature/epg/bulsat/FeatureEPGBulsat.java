@@ -10,7 +10,9 @@
 
 package com.aviq.tv.android.sdk.feature.epg.bulsat;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -158,6 +160,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		else
 		{
 			updateGenres = new UpdateGenresJSON();
+			// updateGenres = new UpdateGenresJSONWithHttpClient();
 		}
 
 		// load channel genres
@@ -1032,6 +1035,74 @@ public class FeatureEPGBulsat extends FeatureEPG
 							{
 								Log.e(TAG, fError.getMessage(), fError);
 								onResultReceived.onReceiveResult(fError, contentHandler.getGenres());
+							}
+						});
+					}
+				}
+			}).start();
+		}
+	}
+
+	private class UpdateGenresJSONWithHttpClient implements UpdateInterface
+	{
+		@Override
+		public void update(final OnResultReceived onResultReceived)
+		{
+
+			new Thread(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					FeatureError error = null;
+					String url = getPrefs().getString(Param.BULSAT_GENRES_URL_JSON);
+					HttpUriRequest httpGet = new HttpGet(url);
+					Log.i(TAG, "Opening " + httpGet.getURI());
+
+		            ChannelGenreResponse channelGenreResponse = new ChannelGenreResponse(onResultReceived);
+					HttpClient httpClient = new DefaultHttpClient(httpGet.getParams());
+					httpGet.setHeader("STBDEVEL", "INTELIBO");
+					try
+					{
+						HttpResponse response = httpClient.execute(httpGet);
+						HttpEntity entity = response.getEntity();
+						if (entity != null)
+						{
+							InputStream content = entity.getContent();
+
+							BufferedReader reader = new BufferedReader(new InputStreamReader(content, "UTF-8"));
+				            StringBuilder sb = new StringBuilder();
+				            String line = null;
+				            while ((line = reader.readLine()) != null) {
+				                sb.append(line + "n");
+				            }
+				            content.close();
+
+				            channelGenreResponse.onResponse(new JSONArray(sb.toString()));
+						}
+						else
+						{
+							error = new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR,
+							        "No entity returned by " + httpGet.getURI());
+						}
+					}
+					catch (Exception e)
+					{
+						Log.e(TAG, e.getMessage(), e);
+						error = new FeatureError(FeatureEPGBulsat.this, e);
+					}
+
+					if (error != null && onResultReceived != null)
+					{
+						// response only error
+						final FeatureError fError = error;
+						Environment.getInstance().runOnUiThread(new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								Log.e(TAG, fError.getMessage(), fError);
+								onResultReceived.onReceiveResult(fError, null);
 							}
 						});
 					}
