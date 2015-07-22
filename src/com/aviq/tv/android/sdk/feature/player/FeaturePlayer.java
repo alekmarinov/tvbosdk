@@ -236,7 +236,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	 */
 	public boolean isPlaying()
 	{
-		boolean playing = _player.isPlaying();
+		boolean playing = _player.isPlaying() || _player.isPaused();
 		Log.i(TAG, ".isPlaying -> " + playing);
 		return playing;
 	}
@@ -520,7 +520,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		@Override
 		public String toString()
 		{
-			return "smooth playing";
+			return "play freezed";
 		}
 	};
 
@@ -529,7 +529,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		@Override
 		public boolean checkStatus(long timeElapsed)
 		{
-			if (!_player.isPlaying())
+			if (!isPlaying())
 			{
 				// trigger player stopped
 				Bundle bundle = new Bundle();
