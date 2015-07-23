@@ -255,7 +255,7 @@ public abstract class FeatureEPG extends FeatureComponent
 	public FeatureEPG() throws FeatureNotFoundException
 	{
 		require(FeatureName.Scheduler.INTERNET);
-		require(FeatureName.State.NETWORK_WIZARD);
+		require(FeatureName.Component.NETWORK_TIME);
 		require(FeatureName.Component.TIMEZONE);
 		require(FeatureName.Component.COMMAND);
 

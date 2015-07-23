@@ -23,6 +23,7 @@ import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPGCompat;
 import com.aviq.tv.android.sdk.feature.httpserver.FeatureHttpServer;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
+import com.aviq.tv.android.sdk.feature.internet.FeatureNetworkTime;
 import com.aviq.tv.android.sdk.feature.language.FeatureLanguage;
 import com.aviq.tv.android.sdk.feature.network.FeatureEthernet;
 import com.aviq.tv.android.sdk.feature.network.FeatureNetwork;
@@ -82,6 +83,7 @@ public class Features
 		public FeatureComponent CRASHLOG;
 		public FeatureCommand COMMAND;
 		public FeatureDLNA DLNA;
+		public FeatureNetworkTime NETWORK_TIME;
 	}
 
 	public class Schedulers

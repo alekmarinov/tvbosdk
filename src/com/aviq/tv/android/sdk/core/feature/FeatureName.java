@@ -44,7 +44,8 @@ public class FeatureName
 		DEVICE,
 		VOLUME,
 		COMMAND,
-		DLNA
+		DLNA,
+		NETWORK_TIME
 	}
 
 	public static enum Scheduler
