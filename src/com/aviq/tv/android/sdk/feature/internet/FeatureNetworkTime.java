@@ -80,10 +80,10 @@ public class FeatureNetworkTime extends FeatureComponent
 					InetAddress hostAddr = InetAddress.getByName(_ntpServer);
 					Log.i(TAG, _ntpServer + " resolved to " + hostAddr.getHostAddress());
 					TimeInfo timeInfo = client.getTime(hostAddr);
-					TimeStamp destNtpTime = TimeStamp.getNtpTime(timeInfo.getReturnTime());
-					Log.i(TAG, "Destination time: " + Calendars.makeString((int) (destNtpTime.getTime() / 1000)));
+					TimeStamp receivedTimeStamp = timeInfo.getMessage().getReceiveTimeStamp();
+					Log.i(TAG, "Destination time: " + Calendars.makeString((int) (receivedTimeStamp.getTime() / 1000)));
 					Calendar dateTime = new GregorianCalendar();
-					dateTime.setTimeInMillis(destNtpTime.getTime());
+					dateTime.setTimeInMillis(receivedTimeStamp.getTime());
 					setDateTime(dateTime);
 			        client.close();
 
@@ -121,7 +121,7 @@ public class FeatureNetworkTime extends FeatureComponent
 	{
 		try
 		{
-			Log.i(TAG, ".setDateTime: " + Calendars.makeString(dateTime));
+			Log.i(TAG, ".setDateTime: " + Calendars.makeString(dateTime) + " from current time = " + Calendars.makeString(new GregorianCalendar()));
 			AlarmManager am = (AlarmManager) Environment.getInstance().getSystemService(Context.ALARM_SERVICE);
 			am.setTime(dateTime.getTimeInMillis());
 		}
