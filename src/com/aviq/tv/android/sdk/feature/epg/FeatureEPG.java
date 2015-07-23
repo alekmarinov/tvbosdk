@@ -14,6 +14,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -266,7 +267,8 @@ public abstract class FeatureEPG extends FeatureComponent
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-		Log.i(TAG, ".initialize");
+		Log.i(TAG, ".initialize:");
+		Log.i(TAG, "Current date time: " + Calendars.makeString(new GregorianCalendar()));
 
 		_featureTimeZone = (FeatureTimeZone) Environment.getInstance().getFeatureComponent(
 		        FeatureName.Component.TIMEZONE);
