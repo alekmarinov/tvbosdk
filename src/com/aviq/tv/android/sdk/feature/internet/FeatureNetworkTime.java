@@ -86,11 +86,25 @@ public class FeatureNetworkTime extends FeatureComponent
 					dateTime.setTimeInMillis(destNtpTime.getTime());
 					setDateTime(dateTime);
 
-					FeatureNetworkTime.super.initialize(onFeatureInitialized);
+					Environment.getInstance().runOnUiThread(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							FeatureNetworkTime.super.initialize(onFeatureInitialized);
+						}
+					});
 				}
-				catch (Exception e)
+				catch (final Exception e)
 				{
-					onFeatureInitialized.onInitialized(new FeatureError(FeatureNetworkTime.this, e));
+					Environment.getInstance().runOnUiThread(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							onFeatureInitialized.onInitialized(new FeatureError(FeatureNetworkTime.this, e));
+						}
+					});
 				}
 			}
 		}).start();
