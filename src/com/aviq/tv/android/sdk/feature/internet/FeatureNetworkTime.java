@@ -85,6 +85,7 @@ public class FeatureNetworkTime extends FeatureComponent
 					Calendar dateTime = new GregorianCalendar();
 					dateTime.setTimeInMillis(destNtpTime.getTime());
 					setDateTime(dateTime);
+			        client.close();
 
 					Environment.getInstance().runOnUiThread(new Runnable()
 					{
