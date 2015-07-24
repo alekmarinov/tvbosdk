@@ -63,11 +63,6 @@ public class FeatureInternet extends FeatureScheduler
 		CHECK_INTERVAL(60000),
 
 		/**
-		 * Timeout in seconds to attempt checking
-		 */
-		CHECK_TIMEOUT(30000),
-
-		/**
 		 * Check URL attempts number
 		 */
 		CHECK_ATTEMPTS(3),
@@ -119,12 +114,24 @@ public class FeatureInternet extends FeatureScheduler
 	}
 
 	private Bundle _geoIp;
+	private int _checkInterval;
 
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
+		_checkInterval = getPrefs().getInt(Param.CHECK_INTERVAL);
 		getEventMessenger().trigger(ON_SCHEDULE);
 		super.initialize(onFeatureInitialized);
+	}
+
+	public void setCheckInterval(int checkInterval)
+	{
+		_checkInterval = checkInterval;
+	}
+
+	public int getCheckInterval()
+	{
+		return _checkInterval;
 	}
 
 	@Override
@@ -156,7 +163,7 @@ public class FeatureInternet extends FeatureScheduler
 				else
 				{
 					getEventMessenger().trigger(error.isError() ? ON_DISCONNECTED : ON_CONNECTED, error.getBundle());
-					scheduleDelayed(getPrefs().getInt(Param.CHECK_INTERVAL));
+					scheduleDelayed(_checkInterval);
 					_checkAttempts = 0;
 
 					if (!error.isError() && _geoIp == null)
@@ -215,7 +222,8 @@ public class FeatureInternet extends FeatureScheduler
 			@Override
 			public Map<String, String> getHeaders() throws AuthFailureError
 			{
-				// Prevent HttpClient bug in Android 4.1 to 4.3 where sockets/open files are depleted
+				// Prevent HttpClient bug in Android 4.1 to 4.3 where
+				// sockets/open files are depleted
 				if (!headers.containsKey("Connection") || !headers.containsKey("connection")
 				        || !headers.containsKey("CONNECTION"))
 				{
@@ -283,8 +291,8 @@ public class FeatureInternet extends FeatureScheduler
 				{
 					resultData.putString(key, response.headers.get(key));
 				}
-				onResultReceived
-				        .onReceiveResult(new FeatureError(FeatureInternet.this, response.statusCode, resultData), null);
+				onResultReceived.onReceiveResult(
+				        new FeatureError(FeatureInternet.this, response.statusCode, resultData), null);
 				return super.parseNetworkResponse(response);
 			}
 		};
@@ -429,16 +437,17 @@ public class FeatureInternet extends FeatureScheduler
 	}
 
 	/**
-	 * Checks for internet access by probing route to list of hosts via given network type
+	 * Checks for internet access by probing route to list of hosts via given
+	 * network type
 	 *
-	 * @param networkType the network type to use for routing
+	 * @param networkType
+	 *            the network type to use for routing
 	 * @param onResultReceived
 	 */
 	public void checkInternet(final int networkType, final OnResultReceived onResultReceived)
 	{
 		final String[] hosts = new String[]
 		{ getPrefs().getString(Param.CHECK_HOST_ACCESS), getPrefs().getString(Param.CHECK_HOST_ACCESS_BACKUP) };
-		final int checkTimeout = getPrefs().getInt(Param.CHECK_TIMEOUT);
 		final Object mutex = new Object();
 		final ConnectivityManager connectivityManager = (ConnectivityManager) Environment.getInstance()
 		        .getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -455,80 +464,80 @@ public class FeatureInternet extends FeatureScheduler
 				FeatureError error = new FeatureError(FeatureInternet.this, ResultCode.OK);
 				final Bundle bundle = new Bundle();
 
-					bundle.putInt(OnConnectedExtras.NETWORK_TYPE.name(), networkType);
+				bundle.putInt(OnConnectedExtras.NETWORK_TYPE.name(), networkType);
 
-					StringBuffer hostNames = new StringBuffer();
-					for (int i = 0; i < hosts.length; i++)
+				StringBuffer hostNames = new StringBuffer();
+				for (int i = 0; i < hosts.length; i++)
+				{
+					if (i > 0)
+						hostNames.append(',');
+					hostNames.append(hosts[i]);
+					threads[i] = new Thread(new Runnable()
 					{
-						if (i > 0)
-							hostNames.append(',');
-						hostNames.append(hosts[i]);
-						threads[i] = new Thread(new Runnable()
+						@Override
+						public void run()
 						{
-							@Override
-							public void run()
+							boolean connected = false;
+							String host = Thread.currentThread().getName();
+							try
 							{
-								boolean connected = false;
-								String host = Thread.currentThread().getName();
-								try
+								Log.i(TAG, "Resolving IP for host " + host);
+								InetAddress inetAddress = InetAddress.getByName(host);
+								if (inetAddress != null)
 								{
-									Log.i(TAG, "Resolving IP for host " + host);
-									InetAddress inetAddress = InetAddress.getByName(host);
-									if (inetAddress != null)
-									{
-										byte[] ip = inetAddress.getAddress();
-										int addr = ((ip[3] & 0xff) << 24) | ((ip[2] & 0xff) << 16)
-										        | ((ip[1] & 0xff) << 8) | (ip[0] & 0xff);
+									byte[] ip = inetAddress.getAddress();
+									int addr = ((ip[3] & 0xff) << 24) | ((ip[2] & 0xff) << 16) | ((ip[1] & 0xff) << 8)
+									        | (ip[0] & 0xff);
 
-										connected = connectivityManager.requestRouteToHost(networkType, addr);
-										bundle.putBoolean(host, connected);
-									}
-									Log.i(TAG, host + " - " + (connected ? "OK" : "FAIL"));
+									connected = connectivityManager.requestRouteToHost(networkType, addr);
+									bundle.putBoolean(host, connected);
 								}
-								catch (UnknownHostException e)
-								{
-									Log.w(TAG, e.getMessage(), e);
-								}
-								completed[0]++;
-
-								if (connected || completed[0] == hosts.length)
-								{
-									status[0] = status[0] || connected;
-									synchronized (mutex)
-									{
-										mutex.notify();
-									}
-								}
+								Log.i(TAG, host + " - " + (connected ? "OK" : "FAIL"));
 							}
-						}, hosts[i]);
-					}
-
-					for (int j = 0; j < hosts.length; j++)
-					{
-						threads[j].start();
-					}
-
-					synchronized (mutex)
-					{
-						try
-						{
-							mutex.wait(checkTimeout);
-
-							if (!status[0])
+							catch (UnknownHostException e)
 							{
-								error = new FeatureError(FeatureInternet.this, ResultCode.IO_ERROR, bundle,
-								        "No route to hosts " + hostNames);
+								Log.w(TAG, e.getMessage(), e);
+							}
+							completed[0]++;
+
+							if (connected || completed[0] == hosts.length)
+							{
+								status[0] = status[0] || connected;
+								synchronized (mutex)
+								{
+									mutex.notify();
+								}
 							}
 						}
-						catch (InterruptedException e)
+					}, hosts[i]);
+				}
+
+				for (int j = 0; j < hosts.length; j++)
+				{
+					threads[j].start();
+				}
+
+				synchronized (mutex)
+				{
+					try
+					{
+						mutex.wait(_checkInterval / 2);
+
+						if (!status[0])
 						{
-							if (!status[0])
-							{
-								error = new FeatureError(FeatureInternet.this, ResultCode.GENERAL_FAILURE, bundle,
-								        "Internet check unexpectedly interrupted");
-							}
+							error = new FeatureError(FeatureInternet.this, ResultCode.IO_ERROR, bundle,
+							        "No route to hosts " + hostNames);
 						}
 					}
+					catch (InterruptedException e)
+					{
+						if (!status[0])
+						{
+							error = new FeatureError(FeatureInternet.this, ResultCode.GENERAL_FAILURE, bundle,
+							        "Internet check unexpectedly interrupted");
+						}
+					}
+				}
 
 				final FeatureError result = error;
 				getEventMessenger().post(new Runnable()

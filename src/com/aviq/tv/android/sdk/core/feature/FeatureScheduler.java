@@ -169,6 +169,8 @@ public abstract class FeatureScheduler implements IFeature
 		Log.i(getClass().getName(), ".scheduleDelayed: delayMs = " + delayMs);
 		_scheduledTime = Calendar.getInstance();
 		_scheduledTime.setTimeInMillis(_scheduledTime.getTimeInMillis() + delayMs);
+
+		getEventMessenger().removeMessages(ON_SCHEDULE);
 		getEventMessenger().trigger(ON_SCHEDULE, delayMs);
 	}
 

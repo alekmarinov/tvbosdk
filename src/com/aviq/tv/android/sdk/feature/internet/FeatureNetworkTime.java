@@ -74,6 +74,7 @@ public class FeatureNetworkTime extends FeatureComponent
 			public void run()
 			{
 				NTPUDPClient client = new NTPUDPClient();
+		        client.setDefaultTimeout(getPrefs().getInt(Param.TIMEOUT));
 				try
 				{
 					client.open();
