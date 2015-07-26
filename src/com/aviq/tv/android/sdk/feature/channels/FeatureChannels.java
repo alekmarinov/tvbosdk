@@ -510,6 +510,14 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	}
 
 	/**
+	 * Set previous channel id
+	 */
+	public void setPreviousChannelId(String channelId)
+	{
+		_userPrefs.put(UserParam.PREV_CHANNEL_ID, channelId);
+	}
+
+	/**
 	 * Returns last played channel
 	 */
 	public Channel getLastChannel()
