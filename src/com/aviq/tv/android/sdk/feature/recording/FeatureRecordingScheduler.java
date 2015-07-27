@@ -26,9 +26,15 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.annotation.SuppressLint;
+import android.os.Bundle;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
@@ -38,8 +44,10 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
+import com.aviq.tv.android.sdk.feature.command.CommandHandler;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.Program;
+import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
 import com.aviq.tv.android.sdk.utils.Calendars;
 
 /**
@@ -52,12 +60,22 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	private static final String RECORD_DELIMITER = ";";
 	private static final String ITEM_DELIMITER = ",";
 	private static final String PROGRAM_TIME_ID = "yyyyMMddHHmmss";
-
+	
 	/** key = chanelID; value = map between record endTime and schedule record */
 	private Map<String, NavigableMap<Calendar, Program>> _channelToRecordsNavigableMap = null;
-
+	
 	private Set<Integer> _dayOffsets = new TreeSet<Integer>(Collections.reverseOrder());
 	private Prefs _userPrefs;
+	
+	public static enum Command
+	{
+		RECORD, GET_RECORDINGS
+	}
+	
+	public static enum CommandRecordExtras
+	{
+		PROGRAM_ID, CHANNEL_ID
+	}
 
 	public static enum UserParam
 	{
@@ -66,7 +84,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		 */
 		RECORDINGS
 	}
-
+	
 	private Comparator<Program> _recordingSchedulerComparator = new Comparator<Program>()
 	{
 		@Override
@@ -75,19 +93,20 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			return lhs.getStartTime().compareTo(rhs.getStartTime());
 		}
 	};
-
+	
 	@SuppressLint("SimpleDateFormat")
 	public FeatureRecordingScheduler() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.TIMEZONE);
 		require(FeatureName.Component.EPG);
+		require(FeatureName.Component.COMMAND);
 	}
-
+	
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
 		_userPrefs = Environment.getInstance().getUserPrefs();
-
+		
 		loadRecordFromDataProvider(new OnResultReceived()
 		{
 			@SuppressWarnings("unchecked")
@@ -99,14 +118,18 @@ public class FeatureRecordingScheduler extends FeatureComponent
 				onFeatureInitialized.onInitialized(error);
 			}
 		});
+		_feature.Component.COMMAND.addCommandHandler(new OnCommandRecord());
+		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetRecordings());
+		
+		// onSchedule(onFeatureInitialized);
 	}
-
+	
 	@Override
 	public Component getComponentName()
 	{
 		return FeatureName.Component.RECORDING_SCHEDULER;
 	}
-
+	
 	/**
 	 * Add new program recording
 	 *
@@ -125,7 +148,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 				navMap = new TreeMap<Calendar, Program>();
 				_channelToRecordsNavigableMap.put(channelId, navMap);
 			}
-
+			
 			navMap.put(program.getStartTime(), program);
 			int dayOffset = Calendars.getDayOffsetByDate(program.getStartTime());
 			Log.i(TAG, "Adding dayoffset " + dayOffset + " for " + program.getChannel().getChannelId() + "/"
@@ -138,10 +161,10 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			        + "on channel " + program.getChannel().getChannelId());
 			return false;
 		}
-
+		
 		return saveRecords();
 	}
-
+	
 	/**
 	 * Remove schedule record for given program
 	 *
@@ -165,7 +188,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		}
 		return true;
 	}
-
+	
 	/**
 	 * Return all programs for recording by date
 	 *
@@ -181,7 +204,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		// date.get(Calendar.YEAR), 1 + date.get(Calendar.MONTH),
 		// date.get(Calendar.DAY_OF_MONTH));
 		Log.d(TAG, ".getRecordsByDate: dateOffset = " + dateOffset + " -> " + Calendars.makeString(date));
-
+		
 		for (NavigableMap<Calendar, Program> map : _channelToRecordsNavigableMap.values())
 		{
 			for (Program program : map.values())
@@ -197,9 +220,17 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			}
 		}
 		Collections.sort(programs, _recordingSchedulerComparator);
+		if (programs.size() > 0)
+		{
+			Log.d(TAG , "program from getRecordsByDate " + programs.get(0).getTitle());
+		}
+		else
+		{
+			Log.d(TAG , "no programs from getRecordsByDate with dateOffset = " + dateOffset);
+		}
 		return programs;
 	}
-
+	
 	/**
 	 * Checks if program is scheduled for recording
 	 *
@@ -212,13 +243,13 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			Log.e(TAG, ".isProgramRecorded(null) is not allowed!");
 			return false;
 		}
-
+		
 		if (_channelToRecordsNavigableMap == null)
 		{
 			Log.e(TAG, ".isProgramRecorded: _channelToRecordsNavigableMap = null is not allowed!");
 			return false;
 		}
-
+		
 		Channel channel = program.getChannel();
 		NavigableMap<Calendar, Program> navMap = _channelToRecordsNavigableMap.get(channel.getChannelId());
 		if (navMap == null)
@@ -227,7 +258,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		}
 		return navMap.containsKey(program.getStartTime());
 	}
-
+	
 	/**
 	 * Check if schedule record is in future
 	 *
@@ -239,7 +270,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		Calendar now = _feature.Component.TIMEZONE.getCurrentTime();
 		return !date.before(now);
 	}
-
+	
 	/**
 	 * Checks if there exists records on given channel
 	 *
@@ -255,7 +286,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		}
 		return navMap.size() > 0;
 	}
-
+	
 	/**
 	 * Returns iterator of integers representing those day offsets having one or
 	 * more recordings
@@ -266,7 +297,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	{
 		return _dayOffsets.iterator();
 	}
-
+	
 	/**
 	 * Stores records to data repository
 	 */
@@ -275,7 +306,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		SimpleDateFormat sdfUTC = new SimpleDateFormat(PROGRAM_TIME_ID, Locale.US);
 		TimeZone utc = TimeZone.getTimeZone("UTC");
 		sdfUTC.setTimeZone(utc);
-
+		
 		StringBuilder buffer = new StringBuilder();
 		for (NavigableMap<Calendar, Program> map : _channelToRecordsNavigableMap.values())
 		{
@@ -291,7 +322,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		}
 		return saveRecordsToDataProvider(buffer.toString());
 	}
-
+	
 	/**
 	 * Load records from data repository
 	 *
@@ -306,11 +337,11 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			onResultReceived.onReceiveResult(FeatureError.OK(this), channelToRecordsNavigableMap);
 			return;
 		}
-
+		
 		SimpleDateFormat sdfUTC = new SimpleDateFormat(PROGRAM_TIME_ID, Locale.US);
 		TimeZone utc = TimeZone.getTimeZone("UTC");
 		sdfUTC.setTimeZone(utc);
-
+		
 		List<String> channelIds = new ArrayList<String>();
 		List<String> programIds = new ArrayList<String>();
 		String recordings = _userPrefs.getString(UserParam.RECORDINGS);
@@ -326,7 +357,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			}
 			final String channelId = items[0];
 			final String programId = items[1];
-
+			
 			Calendar calStartTime = Calendar.getInstance(utc);
 			try
 			{
@@ -337,11 +368,11 @@ public class FeatureRecordingScheduler extends FeatureComponent
 				Log.e(TAG, e.getMessage(), e);
 				continue;
 			}
-
+			
 			channelIds.add(channelId);
 			programIds.add(programId);
 		}
-
+		
 		_feature.Component.EPG.getMultiplePrograms(channelIds, programIds, new OnResultReceived()
 		{
 			@Override
@@ -367,7 +398,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 							navigableMap = channelToRecordsNavigableMap.get(channelId);
 						}
 						navigableMap.put(program.getStartTime(), program);
-
+						
 						int dayOffset = Calendars.getDayOffsetByDate(program.getStartTime());
 						Log.i(TAG,
 						        "Adding dayOffset = " + dayOffset + " from "
@@ -384,18 +415,132 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			}
 		});
 	}
-
+	
 	protected boolean saveRecordsToDataProvider(String recordings)
 	{
 		_userPrefs.put(UserParam.RECORDINGS, recordings);
 		return true;
 	}
-
+	
 	/**
 	 * Loading records callback interface
 	 */
 	protected interface OnLoadRecordings
 	{
 		public void onRecordingLoaded(FeatureError error, Map<String, NavigableMap<String, Program>> map);
+	}
+	
+	private class OnCommandRecord implements CommandHandler
+	{
+		public void execute(Bundle params, final OnResultReceived onResultReceived)
+		{
+			Log.i(TAG, ".OnCommandRecord exec");
+			
+			String programId = params.getString(CommandRecordExtras.PROGRAM_ID.name());
+			String channelId = params.getString(CommandRecordExtras.CHANNEL_ID.name());
+			Log.i(TAG, ".OnCommandRecord.execute: channelId = " + channelId.toString() + ", programId = "
+			        + programId.toString());
+			
+			_feature.Component.EPG.getProgramDetails(channelId, programId, new OnResultReceived()
+			{
+				@Override
+				public void onReceiveResult(FeatureError error, Object object)
+				{
+					if (error.isError())
+					{
+						Log.i(TAG, "error received from getProgramDetails in PostRecordingscheduler");
+						onResultReceived.onReceiveResult(error, null);
+					}
+					else
+					{
+						Program program = (Program) object;
+						
+						if (!isProgramRecorded(program))
+						{
+							Log.i(TAG, "isProgram " + program.toString() + " recorded?" + isProgramRecorded(program));
+							addRecord(program);
+							
+							Log.i(TAG, "program added");
+							Log.i(TAG, "isProgram " + program.toString() + " recorded?" + isProgramRecorded(program));
+						}
+						onResultReceived.onReceiveResult(FeatureError.OK(FeatureRecordingScheduler.this), null);
+					}
+				}
+			});
+		}
+		
+		@Override
+		public String getId()
+		{
+			Log.i(TAG, "Command.POST_RECORDING_SECHEDULER.name();");
+			return Command.RECORD.name();
+		}
+	}
+	
+	private class OnCommandGetRecordings implements CommandHandler
+	{
+		public void execute(Bundle params, final OnResultReceived onResultReceived)
+		{
+			Log.i(TAG, ".OnCommandGetRecordings exec");
+			final JSONArray jsonRecAllDayoffsets = new JSONArray();
+			Iterator<Integer> recordedDayoffset = getRecordedDayOffsets();
+			try
+			{
+				if (recordedDayoffset == null || !recordedDayoffset.hasNext())
+				{
+					Log.i(TAG, "nothing to be displayed from records");
+					onResultReceived.onReceiveResult(FeatureError.OK(FeatureRecordingScheduler.this), null);
+				}
+				else
+				{
+					while (recordedDayoffset.hasNext())
+					{
+						final JSONObject jsonRecDayoffset = new JSONObject();
+						int dayOffset = recordedDayoffset.next();
+						JSONArray Programs = new JSONArray();
+						
+						Calendar shiftedDate = Calendars.getDateByDayOffset(dayOffset);
+						SimpleDateFormat format = new SimpleDateFormat("dd.MM.yyyy");
+						String formatted = format.format(shiftedDate.getTime());
+						System.out.println(formatted);
+						jsonRecDayoffset.put("date", formatted);
+						
+						List<Program> programsInDayoffset = getRecordsByDate(dayOffset);
+						for (Program program : programsInDayoffset)
+						{
+							JSONObject jsonProgram = new JSONObject();
+							
+							Log.i(TAG, "Program's title:" + program.getTitle());
+							jsonProgram.put("id", program.getId());
+							jsonProgram.put("length", program.getLengthMin());
+							jsonProgram.put("title", program.getTitle());
+							String description = program.getDetailAttribute(ProgramAttribute.DESCRIPTION);
+							if (description != null)
+								jsonProgram.put("description", description);
+							jsonProgram.put("image", program.getDetailAttribute(ProgramAttribute.IMAGE));
+							Log.i(TAG, "jsonProgram:" + jsonProgram.toString());
+							Programs.put(jsonProgram);
+						}
+						jsonRecDayoffset.put("programs", (Object)Programs);
+						
+						jsonRecAllDayoffsets.put(jsonRecDayoffset);
+					}
+					onResultReceived.onReceiveResult(FeatureError.OK(FeatureRecordingScheduler.this), jsonRecAllDayoffsets);
+					
+				}
+			}
+			catch (JSONException e)
+			{
+				Log.e(TAG, e.getMessage(), e);
+				onResultReceived.onReceiveResult(new FeatureError(FeatureRecordingScheduler.this, e), null);
+			}
+		}
+		
+		@Override
+		public String getId()
+		{
+			Log.i(TAG, "Command.GET_RECORDINGS.name();");
+			return Command.GET_RECORDINGS.name();
+		}
 	}
 }
