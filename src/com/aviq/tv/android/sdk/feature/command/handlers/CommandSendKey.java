@@ -12,7 +12,6 @@ package com.aviq.tv.android.sdk.feature.command.handlers;
 
 import android.app.Instrumentation;
 import android.os.Bundle;
-import android.view.KeyEvent;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Key;
@@ -50,8 +49,6 @@ public class CommandSendKey implements CommandHandler
 		String code = params.getString(Extras.CODE.name());
 		Log.i(TAG, ".execute: KEY = " + keyName + ", CODE = " + code);
 		final int keyCode = code != null ? Integer.valueOf(code) : _featureRCU.getCode(Key.valueOf(keyName));
-
-		KeyEvent.KEYCODE_P
 
 		new Thread(new Runnable()
 		{
