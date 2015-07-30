@@ -34,6 +34,7 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 
 import com.aviq.tv.android.sdk.core.Environment;
+import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
@@ -120,9 +121,46 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandRecord());
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetRecordings());
 
-		// onSchedule(onFeatureInitialized);
+		
+		Environment.getInstance().getEventMessenger().register(new EventReceiver()
+		{
+			@Override
+			public void onEvent(int msgId, Bundle bundle)
+			{
+				testCommands();
+				Environment.getInstance().getEventMessenger().unregister(this, Environment.ON_LOADED);
+			}
+		}, Environment.ON_LOADED);
 	}
 
+	
+	private void testCommands()
+	{
+		OnResultReceived onResultReceived = new OnResultReceived()
+		{
+			@Override
+			public void onReceiveResult(FeatureError error, Object object)
+			{
+				if (error.isError())
+				{
+					Log.e(TAG, error.getMessage(), error);
+				}
+				else
+				{
+					JSONObject json = new JSONObject();
+					Log.i(TAG, json.toString());
+				}
+			}
+		};
+		
+		Bundle bundle = new Bundle();
+		bundle.putString(CommandRecordExtras.CHANNEL_ID.name() , "btv");
+		bundle.putString(CommandRecordExtras.PROGRAM_ID.name() , "20150727183000");
+		_feature.Component.COMMAND.execute(Command.RECORD.name(), bundle, onResultReceived);
+	}
+		
+		
+	
 	@Override
 	public Component getComponentName()
 	{
@@ -455,7 +493,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 					{
 						Program program = (Program) object;
 
-						if (!isProgramRecorded(program))
+						//if (!isProgramRecorded(program))
 						{
 							Log.i(TAG, "isProgram " + program.toString() + " recorded?" + isProgramRecorded(program));
 							addRecord(program);
@@ -512,7 +550,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 							JSONObject jsonProgram = new JSONObject();
 
 							Log.i(TAG, "Program's title:" + program.getTitle());
-							jsonProgram.put("id", program.getId());
+							jsonProgram.put("program_id", program.getId());
+							jsonProgram.put("channel_id", program.getChannel().getChannelId());
 							jsonProgram.put("length", program.getLengthMin());
 							jsonProgram.put("title", program.getTitle());
 							String description = program.getDetailAttribute(ProgramAttribute.DESCRIPTION);
