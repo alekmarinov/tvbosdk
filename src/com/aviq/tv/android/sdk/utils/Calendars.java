@@ -13,11 +13,17 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
+import java.util.TimeZone;
+
+import com.aviq.tv.android.sdk.core.Log;
 
 public class Calendars
 {
+	private static final String TAG = Calendars.class.getSimpleName();
+	public static final String ISO8601DATEFORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSZ";
 	public static final String FORMAT_DATE_TIME = "yyyy-MM-dd HH:mm:ss";
 	public static final String FORMAT_DATE = "yyyy-MM-dd";
 	public static final String FORMAT_TIME_HHMM = "HH:mm";
@@ -233,5 +239,31 @@ public class Calendars
 		Calendar cal = Calendar.getInstance();
 		cal.setTimeInMillis(1000 * (long) timestamp);
 		return getDayOffsetByDate(cal);
+	}
+
+	/**
+	 * Generate a Calendar from ISO 8601 date
+	 *
+	 * @param date
+	 *            a ISO 8601 Date string
+	 * @return a Calendar object
+	 */
+	public static Calendar getCalendarFromISO(String datestring)
+	{
+		Calendar calendar = Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault());
+		SimpleDateFormat dateformat = new SimpleDateFormat(ISO8601DATEFORMAT, Locale.getDefault());
+		try
+		{
+			Date date = dateformat.parse(datestring);
+			date.setHours(date.getHours() - 1);
+			calendar.setTime(date);
+		}
+		catch (ParseException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+			return null;
+		}
+
+		return calendar;
 	}
 }
