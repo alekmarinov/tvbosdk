@@ -20,7 +20,6 @@ import org.apache.commons.net.ntp.TimeStamp;
 
 import android.app.AlarmManager;
 import android.content.Context;
-import android.content.res.Resources;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.Log;
@@ -36,7 +35,7 @@ import com.aviq.tv.android.sdk.utils.Calendars;
  */
 public class FeatureNetworkTime extends FeatureComponent
 {
-	public static final String TAG = FeatureNetworkTime.class.getSimpleName();
+	private static final String TAG = FeatureNetworkTime.class.getSimpleName();
 	private String _ntpServer;
 
 	public static enum Param
@@ -44,9 +43,19 @@ public class FeatureNetworkTime extends FeatureComponent
 		/**
 		 * Network client timeout
 		 */
-		TIMEOUT(10000);
+		TIMEOUT(10000),
+
+		/**
+		 * NTP server address
+		 */
+		NTP_SERVER("bg.pool.ntp.org");
 
 		Param(int value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.NETWORK_TIME).put(name(), value);
+		}
+
+		Param(String value)
 		{
 			Environment.getInstance().getFeaturePrefs(FeatureName.Component.NETWORK_TIME).put(name(), value);
 		}
@@ -63,9 +72,10 @@ public class FeatureNetworkTime extends FeatureComponent
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-		final Resources res = Environment.getInstance().getResources();
-		final int id = Resources.getSystem().getIdentifier("config_ntpServer", "string", "android");
-		_ntpServer = res.getString(id);
+//		final Resources res = Environment.getInstance().getResources();
+//		final int id = Resources.getSystem().getIdentifier("config_ntpServer", "string", "android");
+//		_ntpServer = res.getString(id);
+		_ntpServer = getPrefs().getString(Param.NTP_SERVER);
 		Log.i(TAG, ".initialize: _ntpServer = " + _ntpServer);
 
 		new Thread(new Runnable()
@@ -118,7 +128,7 @@ public class FeatureNetworkTime extends FeatureComponent
 		return FeatureName.Component.NETWORK_TIME;
 	}
 
-	private void setDateTime(Calendar dateTime)
+	protected void setDateTime(Calendar dateTime)
 	{
 		try
 		{
