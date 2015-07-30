@@ -60,6 +60,7 @@ public class FeatureVolume extends FeatureComponent
 		Log.i(TAG, ".mute: isMute = " + isMute);
 		getAudioManager().setStreamMute(AudioManager.STREAM_MUSIC, isMute);
 		_muted = isMute;
+		volumeChanged();
 	}
 
 	/**
