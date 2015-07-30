@@ -132,7 +132,7 @@ public class FeatureNetworkTime extends FeatureComponent
 	{
 		try
 		{
-			Log.i(TAG, ".setDateTime: " + Calendars.makeString(dateTime) + " from current time = " + Calendars.makeString(new GregorianCalendar()));
+			Log.i(TAG, ".setDateTime: " + Calendars.makeString(dateTime) + " over current time = " + Calendars.makeString(new GregorianCalendar()));
 			AlarmManager am = (AlarmManager) Environment.getInstance().getSystemService(Context.ALARM_SERVICE);
 			am.setTime(dateTime.getTimeInMillis());
 		}
