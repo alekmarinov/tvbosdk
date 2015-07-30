@@ -235,10 +235,12 @@ public class FeatureDisplay extends FeatureComponent
 	{
 		VideoMode videoMode = getVideoMode();
 
-		setProp(String.format("ubootenv.var.%soutputx", videoMode.modeId), String.valueOf(screenPosition.x));
-		setProp(String.format("ubootenv.var.%soutputy", videoMode.modeId), String.valueOf(screenPosition.y));
-		setProp(String.format("ubootenv.var.%soutputwidth", videoMode.modeId), String.valueOf(screenPosition.w));
-		setProp(String.format("ubootenv.var.%soutputheight", videoMode.modeId), String.valueOf(screenPosition.h));
+		String modeId = videoMode.modeId.replace("cvbs", "i");
+
+		setProp(String.format("ubootenv.var.%soutputx", modeId), String.valueOf(screenPosition.x));
+		setProp(String.format("ubootenv.var.%soutputy", modeId), String.valueOf(screenPosition.y));
+		setProp(String.format("ubootenv.var.%soutputwidth", modeId), String.valueOf(screenPosition.w));
+		setProp(String.format("ubootenv.var.%soutputheight", modeId), String.valueOf(screenPosition.h));
 
 		int right = screenPosition.x + screenPosition.w - 1;
 		int bottom = screenPosition.y + screenPosition.h - 1;
