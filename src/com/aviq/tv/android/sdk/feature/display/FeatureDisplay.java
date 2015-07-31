@@ -129,7 +129,7 @@ public class FeatureDisplay extends FeatureComponent
 						videoMode.width = 720;
 					break;
 					case 480:
-						videoMode.width = 640;
+						videoMode.width = 720;
 					break;
 				}
 			}

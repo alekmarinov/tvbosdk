@@ -109,6 +109,7 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	private int _autoStandByWarnTimeout;
 	private long _autoStandbyTimeout;
 	private boolean _isStandByHDMI;
+	private boolean _autoPostponeStandby;
 
 	public FeatureStandBy() throws FeatureNotFoundException
 	{
@@ -127,8 +128,9 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 
-		// FIXME: ON_KEY_PRESSED is not guaranteed in every case
-		// _feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
+		_autoPostponeStandby = getPrefs().getBool(Param.AUTO_POSTPONE_STANDBY);
+		if (_autoPostponeStandby)
+			_feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
 
 		// RcuIMEService will broadcast BROADCAST_ACTION_SLEEP in response to
 		// sleep button pressed. This event may occur at any time even when the
@@ -305,9 +307,8 @@ public class FeatureStandBy extends FeatureComponent implements EventReceiver
 		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
 		if (FeatureRCU.ON_KEY_PRESSED == msgId)
 		{
-			Log.i(TAG, "AUTO_POSTPONE_STANDBY -> " + getPrefs().getBool(Param.AUTO_POSTPONE_STANDBY)
-			        + ", _isWarningProgress -> " + _isWarningProgress);
-			if (getPrefs().getBool(Param.AUTO_POSTPONE_STANDBY) || _isWarningProgress)
+			Log.i(TAG, "_autoPostponeStandby -> " + _autoPostponeStandby+ ", _isWarningProgress -> " + _isWarningProgress);
+			if (_autoPostponeStandby || _isWarningProgress)
 			{
 				getEventMessenger().trigger(ON_STANDBY_CANCEL);
 				postponeAutoStandBy();
