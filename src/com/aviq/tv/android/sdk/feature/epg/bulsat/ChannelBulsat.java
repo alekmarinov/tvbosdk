@@ -32,6 +32,7 @@ public class ChannelBulsat extends Channel
 	private String _streamUrl;
 	private String _seekUrl;
 	private boolean _parentControl;
+	private boolean _playable;
 	private boolean _recordable;
 	private Bitmap _logoSelected;
 	private Bitmap _logoFavorite;
@@ -39,22 +40,25 @@ public class ChannelBulsat extends Channel
 	private String _programImageLargeUrl;
 	private boolean _radio;
 
-//	public static enum Genre
-//	{
-//		FAVORITES, NATIONAL, SPORT, SCIENCE, MOVIE, MUSIC, KIDS, OTHER, EROTIC, RADIO, VOD
-//	}
+	// public static enum Genre
+	// {
+	// FAVORITES, NATIONAL, SPORT, SCIENCE, MOVIE, MUSIC, KIDS, OTHER, EROTIC,
+	// RADIO, VOD
+	// }
 
-//	private static Map<String, Genre> _genreMap = new HashMap<String, Genre>();
-//
-//	static
-//	{
-//		String[] categoryNames = Environment.getInstance().getResources().getStringArray(R.array.categories);
-//		Genre[] genreList = Genre.values();
-//		for (int index = 1; index < genreList.length - 1; index++)
-//		{
-//			_genreMap.put(categoryNames[index - 1], genreList[index]);
-//		}
-//	}
+	// private static Map<String, Genre> _genreMap = new HashMap<String,
+	// Genre>();
+	//
+	// static
+	// {
+	// String[] categoryNames =
+	// Environment.getInstance().getResources().getStringArray(R.array.categories);
+	// Genre[] genreList = Genre.values();
+	// for (int index = 1; index < genreList.length - 1; index++)
+	// {
+	// _genreMap.put(categoryNames[index - 1], genreList[index]);
+	// }
+	// }
 
 	/**
 	 * No-arg constructor added for Kryo serialization. Do not use for anything
@@ -146,6 +150,16 @@ public class ChannelBulsat extends Channel
 		return _recordable;
 	}
 
+	public void setPlayable(boolean playable)
+	{
+		_playable = playable;
+	}
+
+	public boolean isPlayable()
+	{
+		return _playable;
+	}
+
 	public void setRadio(boolean radio)
 	{
 		_radio = radio;
@@ -230,38 +244,60 @@ public class ChannelBulsat extends Channel
 		if (getGenre() == null)
 			throw new IllegalArgumentException("Genre " + genreTitle + " is not recognized");
 
-		try
+		if (attributes[channelBulsatMetaData.metaChannelNdvr] != null)
 		{
-			setNDVR(Integer.parseInt(attributes[channelBulsatMetaData.metaChannelNdvr]));
+			try
+			{
+				int ndvr = Integer.parseInt(attributes[channelBulsatMetaData.metaChannelNdvr]);
+				setNDVR(ndvr);
+				_playable = ndvr > 0;
+			}
+			catch (NumberFormatException nfe)
+			{
+				Log.w("ChannelBulsat", "Missing or invalid NDVR in channel " + getChannelId());
+			}
 		}
-		catch (NumberFormatException nfe)
+
+		if (attributes[channelBulsatMetaData.metaChannelRecordable] != null)
 		{
-			Log.w("ChannelBulsat", "Missing or invalid NDVR in channel " + getChannelId());
+			try
+			{
+				int record = Integer.parseInt(attributes[channelBulsatMetaData.metaChannelRecordable]);
+				_recordable = record > 0;
+				if (getNDVR() == 0)
+					setNDVR(record);
+			}
+			catch (NumberFormatException nfe)
+			{
+				Log.w("ChannelBulsat", "Missing or invalid recordable in channel " + getChannelId());
+			}
 		}
+
 		if (attributes[channelBulsatMetaData.metaChannelStreamUrl] != null)
 			setStreamUrl(new String(attributes[channelBulsatMetaData.metaChannelStreamUrl]));
 		if (attributes[channelBulsatMetaData.metaChannelSeekUrl] != null)
 			setSeekUrl(new String(attributes[channelBulsatMetaData.metaChannelSeekUrl]));
 		if (attributes[channelBulsatMetaData.metaChannelPG] != null)
 			setParentControl(PG18.equals(attributes[channelBulsatMetaData.metaChannelPG]));
-		if (attributes[channelBulsatMetaData.metaChannelRecordable] != null)
-			setRecordable(!"0".equals(attributes[channelBulsatMetaData.metaChannelRecordable]));
 		if (attributes[channelBulsatMetaData.metaChannelRadio] != null)
 			setRadio("true".equals(attributes[channelBulsatMetaData.metaChannelRadio]));
 		if (attributes[channelBulsatMetaData.metaChannelLogoSelected] != null)
 		{
-			byte[] decodedString = Base64.decode(attributes[channelBulsatMetaData.metaChannelLogoSelected], Base64.DEFAULT);
+			byte[] decodedString = Base64.decode(attributes[channelBulsatMetaData.metaChannelLogoSelected],
+			        Base64.DEFAULT);
 			setChannelImage(LOGO_SELECTED, BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
 		}
 		if (attributes[channelBulsatMetaData.metaChannelLogoFavorite] != null)
 		{
-			byte[] decodedString = Base64.decode(attributes[channelBulsatMetaData.metaChannelLogoFavorite], Base64.DEFAULT);
+			byte[] decodedString = Base64.decode(attributes[channelBulsatMetaData.metaChannelLogoFavorite],
+			        Base64.DEFAULT);
 			setChannelImage(LOGO_FAVORITE, BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
 		}
 		if (attributes[channelBulsatMetaData.metaChannelProgramImageMedium] != null)
 			setProgramImageUrl(new String(attributes[channelBulsatMetaData.metaChannelProgramImageMedium]),
 			        ImageSize.MEDIUM);
 		if (attributes[channelBulsatMetaData.metaChannelProgramImageLarge] != null)
-			setProgramImageUrl(new String(attributes[channelBulsatMetaData.metaChannelProgramImageLarge]), ImageSize.LARGE);
+			setProgramImageUrl(new String(attributes[channelBulsatMetaData.metaChannelProgramImageLarge]),
+			        ImageSize.LARGE);
 	}
 }
