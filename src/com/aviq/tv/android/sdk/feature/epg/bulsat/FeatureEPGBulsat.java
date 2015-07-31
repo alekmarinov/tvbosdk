@@ -65,6 +65,7 @@ import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
+import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 
 /**
  * Bulsat specific extension of EPG feature
@@ -133,6 +134,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 	public static Param ParamIniter = Param.EPG_PROVIDER;
 
 	private List<Bitmap> _programImages = null;
+	private UpdateInterface _updateChannels;
 
 	public FeatureEPGBulsat() throws FeatureNotFoundException
 	{
@@ -142,14 +144,15 @@ public class FeatureEPGBulsat extends FeatureEPG
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-		final UpdateInterface updateChannels;
+		_feature.Scheduler.INTERNET.getEventMessenger().register(this, FeatureInternet.ON_EXTERNAL_IP_CHANGED);
+
 		if (TransportFormat.XML.name().equals(getPrefs().getString(Param.TRANSPORT_FORMAT)))
 		{
-			updateChannels = new UpdateChannelsXML();
+			_updateChannels = new UpdateChannelsXML();
 		}
 		else
 		{
-			updateChannels = new UpdateChannelsJSON();
+			_updateChannels = new UpdateChannelsJSON();
 		}
 
 		final UpdateInterface updateGenres;
@@ -187,7 +190,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 						{
 							if (!error.isError())
 							{
-								updateChannels.update(new OnResultReceived()
+								_updateChannels.update(new OnResultReceived()
 								{
 									@Override
 									public void onReceiveResult(FeatureError error, Object object)
@@ -206,7 +209,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 											@Override
 											public void run()
 											{
-												updateChannels.update(new OnResultReceived()
+												_updateChannels.update(new OnResultReceived()
 												{
 													@Override
 													public void onReceiveResult(FeatureError error, Object object)
@@ -247,6 +250,26 @@ public class FeatureEPGBulsat extends FeatureEPG
 				}
 			}
 		});
+	}
+
+	@Override
+	public void onEvent(final int msgId, Bundle bundle)
+	{
+		super.onEvent(msgId, bundle);
+		if (FeatureInternet.ON_EXTERNAL_IP_CHANGED == msgId)
+		{
+			Log.i(TAG, "Updating channel streams on changed external IP");
+
+			// refresh channel streams
+			_updateChannels.update(new OnResultReceived()
+			{
+				@Override
+				public void onReceiveResult(FeatureError error, Object object)
+				{
+					Log.i(TAG, "Channel streams updated caused by IP change with status: " + error);
+				}
+			});
+		}
 	}
 
 	@Override

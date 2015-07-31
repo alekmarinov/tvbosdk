@@ -54,6 +54,7 @@ public class FeatureInternet extends FeatureScheduler
 	public static final int ON_CONNECTED = EventMessenger.ID("ON_CONNECTED");
 	public static final int ON_DISCONNECTED = EventMessenger.ID("ON_DISCONNECTED");
 	public static final int ON_GEOIP = EventMessenger.ID("ON_GEOIP");
+	public static final int ON_EXTERNAL_IP_CHANGED = EventMessenger.ID("ON_EXTERNAL_IP_CHANGED");
 
 	public static enum Param
 	{
@@ -176,17 +177,7 @@ public class FeatureInternet extends FeatureScheduler
 							{
 								if (!error.isError())
 								{
-									_geoIp = new Bundle();
-									Bundle bundle = error.getBundle();
-									for (GeoIpExtras geoip : GeoIpExtras.values())
-									{
-										if (bundle.containsKey(geoip.name()))
-										{
-											Object value = bundle.get(geoip.name());
-											Log.d(TAG, "GeoIP." + geoip.name() + " -> " + value);
-											TextUtils.putBundleObject(_geoIp, geoip.name(), value);
-										}
-									}
+									_geoIp = (Bundle)object;
 									getEventMessenger().trigger(ON_GEOIP, _geoIp);
 								}
 							}
@@ -558,7 +549,7 @@ public class FeatureInternet extends FeatureScheduler
 	 * @param onResultReceived
 	 *            result callback interface
 	 */
-	private void retrieveGeoIP(final OnResultReceived onResultReceived)
+	public void retrieveGeoIP(final OnResultReceived onResultReceived)
 	{
 		class GeoIPCheckResponse implements OnResultReceived, Runnable
 		{
@@ -577,6 +568,7 @@ public class FeatureInternet extends FeatureScheduler
 			public void onReceiveResult(FeatureError result, Object object)
 			{
 				Bundle resultData = result.getBundle();
+				Bundle geoIp = null;
 				if (result.isError())
 				{
 					if (_attemptsCounter < 1)
@@ -615,8 +607,20 @@ public class FeatureInternet extends FeatureScheduler
 					{
 						Log.e(TAG, e.getMessage(), e);
 					}
+
+					geoIp = new Bundle();
+					for (GeoIpExtras geoip : GeoIpExtras.values())
+					{
+						if (resultData.containsKey(geoip.name()))
+						{
+							Object value = resultData.get(geoip.name());
+							Log.d(TAG, "GeoIP." + geoip.name() + " -> " + value);
+							TextUtils.putBundleObject(geoIp, geoip.name(), value);
+						}
+					}
+					_geoIp = geoIp;
 				}
-				onResultReceived.onReceiveResult(result, null);
+				onResultReceived.onReceiveResult(result, geoIp);
 			}
 		}
 		getEventMessenger().post(new GeoIPCheckResponse());
