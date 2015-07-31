@@ -169,6 +169,8 @@ public class FeatureInternet extends FeatureScheduler
 
 					if (!error.isError() && _geoIp == null)
 					{
+						Log.i(TAG, "Calling retrieveGeoIP by scheduled checkInternet");
+
 						// retrieves GeoIP data
 						retrieveGeoIP(new OnResultReceived()
 						{
@@ -551,6 +553,7 @@ public class FeatureInternet extends FeatureScheduler
 	 */
 	public void retrieveGeoIP(final OnResultReceived onResultReceived)
 	{
+		Log.i(TAG, ".retrieveGeoIP");
 		class GeoIPCheckResponse implements OnResultReceived, Runnable
 		{
 			private int _attemptsCounter = 0;
@@ -567,6 +570,7 @@ public class FeatureInternet extends FeatureScheduler
 			@Override
 			public void onReceiveResult(FeatureError result, Object object)
 			{
+				Log.i(TAG, ".retrieveGeoIP:GeoIPCheckResponse.onReceiveResult: result = " + result);
 				Bundle resultData = result.getBundle();
 				Bundle geoIp = null;
 				if (result.isError())
