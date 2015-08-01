@@ -175,6 +175,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	public void play(String url, MediaType mediaType)
 	{
 		Log.i(TAG, ".play: url = " + url + ", mediaType = " + mediaType);
+		if (_player == null)
+			return;
 		_mediaType = mediaType;
 		_isError = false;
 		_playTimeElapsed = System.currentTimeMillis();
@@ -197,6 +199,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	public void stop()
 	{
 		Log.i(TAG, ".stop");
+		if (_player == null)
+			return;
 		// set undetermined media type
 		_mediaType = null;
 		getEventMessenger().trigger(ON_PLAY_STOPPING);
@@ -208,6 +212,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	public void pause()
 	{
 		Log.i(TAG, ".pause");
+		if (_player == null)
+			return;
 		getEventMessenger().trigger(ON_PLAY_PAUSING);
 		_player.pause();
 		// start polling for paused status
@@ -217,6 +223,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	public void resume()
 	{
 		Log.i(TAG, ".resume");
+		if (_player == null)
+			return;
 		getEventMessenger().trigger(ON_PLAY_RESUMING);
 		_player.resume();
 		// start polling for resumed status
@@ -236,6 +244,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	 */
 	public boolean isPlaying()
 	{
+		if (_player == null)
+			return false;
 		boolean playing = _player.isPlaying() || _player.isPaused();
 		Log.i(TAG, ".isPlaying -> " + playing);
 		return playing;
@@ -246,6 +256,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	 */
 	public boolean isPaused()
 	{
+		if (_player == null)
+			return false;
 		boolean paused = _player.isPaused();
 		Log.i(TAG, ".isPaused -> " + paused);
 		return paused;
@@ -280,6 +292,9 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	 */
 	public int getPosition()
 	{
+		if (_player == null)
+			return 0;
+
 		return _player.getPosition();
 	}
 
@@ -288,6 +303,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	 */
 	public int getDuration()
 	{
+		if (_player == null)
+			return 0;
 		return _player.getDuration();
 	}
 
@@ -298,16 +315,22 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	 */
 	public SurfaceView getView()
 	{
+		if (_player == null)
+			return null;
 		return _player.getView();
 	}
 
 	public void hide()
 	{
+		if (_player == null)
+			return ;
 		_player.hide();
 	}
 
 	public void setPositionAndSize(int x, int y, int w, int h)
 	{
+		if (_player == null)
+			return ;
 		_player.setPositionAndSize(x, y, w, h);
 
 		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(w, h);
@@ -322,11 +345,15 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	 */
 	public void seekTo(int offset)
 	{
+		if (_player == null)
+			return ;
 		_player.seekTo(offset);
 	}
 
 	public void setFullScreen()
 	{
+		if (_player == null)
+			return ;
 		_player.setFullScreen();
 
 		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
@@ -344,11 +371,15 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 
 	public MediaController createMediaController(boolean useFastForward)
 	{
+		if (_player == null)
+			return null;
 		return _player.createMediaController(useFastForward);
 	}
 
 	public void removeMediaController()
 	{
+		if (_player == null)
+			return ;
 		_player.removeMediaController();
 	}
 

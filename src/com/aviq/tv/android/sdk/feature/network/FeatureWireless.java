@@ -265,6 +265,12 @@ public class FeatureWireless extends FeatureComponent
 		if (networkId == AccessPoint.INVALID_NETWORK_ID)
 		{
 			Log.w(TAG, "WifiManager.addNetwork results invalid network id " + AccessPoint.INVALID_NETWORK_ID);
+
+			Bundle bundle = new Bundle();
+			bundle.putString(OnRequestPasswordExtras.SSID.name(), accessPoint.getSsid());
+			bundle.putBoolean(OnRequestPasswordExtras.WRONG_PASSWORD.name(), true);
+			getEventMessenger().trigger(ON_REQUEST_PASSWORD, bundle);
+
 			return false;
 		}
 		else if (!_wifiManager.saveConfiguration())
