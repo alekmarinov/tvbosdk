@@ -34,7 +34,6 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 
 import com.aviq.tv.android.sdk.core.Environment;
-import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
@@ -120,47 +119,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		});
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandRecord());
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetRecordings());
-
-		
-		Environment.getInstance().getEventMessenger().register(new EventReceiver()
-		{
-			@Override
-			public void onEvent(int msgId, Bundle bundle)
-			{
-				testCommands();
-				Environment.getInstance().getEventMessenger().unregister(this, Environment.ON_LOADED);
-			}
-		}, Environment.ON_LOADED);
 	}
 
-	
-	private void testCommands()
-	{
-		OnResultReceived onResultReceived = new OnResultReceived()
-		{
-			@Override
-			public void onReceiveResult(FeatureError error, Object object)
-			{
-				if (error.isError())
-				{
-					Log.e(TAG, error.getMessage(), error);
-				}
-				else
-				{
-					JSONObject json = new JSONObject();
-					Log.i(TAG, json.toString());
-				}
-			}
-		};
-		
-		Bundle bundle = new Bundle();
-		bundle.putString(CommandRecordExtras.CHANNEL_ID.name() , "btv");
-		bundle.putString(CommandRecordExtras.PROGRAM_ID.name() , "20150727183000");
-		_feature.Component.COMMAND.execute(Command.RECORD.name(), bundle, onResultReceived);
-	}
-		
-		
-	
 	@Override
 	public Component getComponentName()
 	{

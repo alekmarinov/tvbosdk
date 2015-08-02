@@ -213,8 +213,7 @@ public class FeatureWireless extends FeatureComponent
 
 	public boolean connectToNetwork(AccessPoint accessPoint, String password)
 	{
-		Log.i(TAG, ".connectToNetwork: ssid = " + accessPoint.getSsid() + ", networkID = " + accessPoint.getNetworkId()
-		        + ", security = " + accessPoint.getSecurity() + ", password = " + password);
+		Log.i(TAG, ".connectToNetwork: " + accessPoint + (password != null ? " with password" : ""));
 
 		// remember the connecting access point and password
 		_currentAccessPoint = accessPoint;

@@ -30,7 +30,13 @@ import com.aviq.tv.android.sdk.core.Log;
 public class AccessPoint implements Comparable<AccessPoint>
 {
 	private static final String TAG = AccessPoint.class.getSimpleName();
-	private static final int DISABLED_AUTH_FAILURE = 3;
+
+	public static final int DISABLED_UNKNOWN_REASON = 0;
+	public static final int DISABLED_DNS_FAILURE = 1;
+	public static final int DISABLED_DHCP_FAILURE = 2;
+	public static final int DISABLED_AUTH_FAILURE = 3;
+	public static final int DISABLED_ASSOCIATION_REJECT = 4;
+	public static final int DISABLED_BY_WIFI_MANAGER = 5;
 
 	public static final int INVALID_NETWORK_ID = -1;
 
@@ -262,6 +268,7 @@ public class AccessPoint implements Comparable<AccessPoint>
 		sb.append(", rssi: ").append(_rssi);
 		sb.append(", wifiInfo: ").append(_wifiInfo);
 		sb.append(", state: ").append(_state);
+		sb.append(", disableReason: ").append(getDisableReason());
 		sb.append("]");
 
 		return sb.toString();
@@ -272,8 +279,11 @@ public class AccessPoint implements Comparable<AccessPoint>
 		try
 		{
 			WifiConfiguration config = getConfig();
-			Field fieldDisableReason = config.getClass().getField("disableReason");
-			return fieldDisableReason.getInt(config);
+			if (config != null)
+			{
+				Field fieldDisableReason = config.getClass().getField("disableReason");
+				return fieldDisableReason.getInt(config);
+			}
 		}
 		catch (NoSuchFieldException e)
 		{
@@ -314,7 +324,6 @@ public class AccessPoint implements Comparable<AccessPoint>
 	}
 
 	/**
-	 *
 	 * @param info
 	 * @param state
 	 * @return true if hierarchy is changed
