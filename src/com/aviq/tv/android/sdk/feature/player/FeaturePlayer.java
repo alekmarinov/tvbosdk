@@ -661,7 +661,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 		bundle.putInt(Extras.WHAT.name(), what);
 		bundle.putInt(Extras.EXTRA.name(), extra);
 		bundle.putInt(Extras.TIME_ELAPSED.name(), (int) (System.currentTimeMillis() - _playTimeElapsed));
-		bundle.putString(Extras.URL.name(), Environment.getInstance().getUserPrefs().getString(UserParam.LAST_URL));
+		if (Environment.getInstance().getUserPrefs().has(UserParam.LAST_URL))
+			bundle.putString(Extras.URL.name(), Environment.getInstance().getUserPrefs().getString(UserParam.LAST_URL));
 		getEventMessenger().trigger(ON_PLAY_ERROR, bundle);
 		_errWhat = what;
 		_errExtra = extra;

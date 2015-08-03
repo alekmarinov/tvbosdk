@@ -66,6 +66,7 @@ public class FeatureWireless extends FeatureComponent
 	// FIXME: get rid of this state variable
 	private AccessPoint _currentAccessPoint;
 	private String _lastPassword;
+	private long _connectTime;
 
 	public enum OnRequestPasswordExtras
 	{
@@ -214,6 +215,7 @@ public class FeatureWireless extends FeatureComponent
 	public boolean connectToNetwork(AccessPoint accessPoint, String password)
 	{
 		Log.i(TAG, ".connectToNetwork: " + accessPoint + (password != null ? " with password" : ""));
+		_connectTime = System.currentTimeMillis();
 
 		// remember the connecting access point and password
 		_currentAccessPoint = accessPoint;
@@ -277,6 +279,13 @@ public class FeatureWireless extends FeatureComponent
 			Log.i(TAG, "connectToNetwork returns with " + status);
 			return status;
 		}
+	}
+
+	public void removeNetwork(AccessPoint accessPoint)
+	{
+		_wifiManager.removeNetwork(accessPoint.getNetworkId());
+		_accessPoints.remove(accessPoint);
+		_wifiManager.saveConfiguration();
 	}
 
 	public WifiState getWifiState()
@@ -393,12 +402,16 @@ public class FeatureWireless extends FeatureComponent
 				if (_currentAccessPoint != null && _currentAccessPoint.getSsid().equals(ap.getSsid())
 				        && ap.isAuthError())
 				{
-					Bundle bundle = new Bundle();
-					bundle.putString(OnRequestPasswordExtras.SSID.name(), ap.getSsid());
-					bundle.putString(OnRequestPasswordExtras.LAST_PASSWORD.name(), _lastPassword);
-					bundle.putBoolean(OnRequestPasswordExtras.WRONG_PASSWORD.name(), true);
-					getEventMessenger().trigger(ON_REQUEST_PASSWORD, bundle);
-					return;
+					// FIXME: too fast error workaround, consider better solution
+					if (System.currentTimeMillis() - _connectTime > 1000)
+					{
+						Bundle bundle = new Bundle();
+						bundle.putString(OnRequestPasswordExtras.SSID.name(), ap.getSsid());
+						bundle.putString(OnRequestPasswordExtras.LAST_PASSWORD.name(), _lastPassword);
+						bundle.putBoolean(OnRequestPasswordExtras.WRONG_PASSWORD.name(), true);
+						getEventMessenger().trigger(ON_REQUEST_PASSWORD, bundle);
+						return;
+					}
 				}
 			}
 		}
