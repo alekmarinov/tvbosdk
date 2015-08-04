@@ -13,13 +13,17 @@ import java.util.Calendar;
 
 import org.json.JSONObject;
 
+import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.feature.recording.FeatureRecordingScheduler;
+
 /**
  * Program data holder class
  */
 public abstract class Program implements Comparable<Program>
 {
     private static final long serialVersionUID = 7712628341257180116L;
-
+    private static final String TAG = Program.class.getSimpleName();
+    
 	// Bean properties
 
 	// FIXME: Make id as long type in order to be used natively for recommendation without conversions
@@ -27,10 +31,11 @@ public abstract class Program implements Comparable<Program>
 	private Channel _channel;
 	private String _title;
 	private int _index;
-
+	
 	// Other internal properties
 	private Calendar _startTime;
 	private Calendar _stopTime;
+	private boolean _isWatched;
 
 	public static class MetaData
 	{
@@ -73,10 +78,26 @@ public abstract class Program implements Comparable<Program>
 	{
 		return _startTime;
 	}
+	
+	public boolean getIsWatched()
+	{
+		return _isWatched;
+	}
 
 	public void setStartTime(Calendar startTime)
 	{
 		_startTime = startTime;
+	}
+	
+	
+	public void setIsWatched()
+	{
+		_isWatched = true;
+	}
+	
+	public void setIsWatched(boolean isWatched)
+	{
+		_isWatched = isWatched;
 	}
 
 	public Calendar getStopTime()
