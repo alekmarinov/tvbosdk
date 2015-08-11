@@ -34,7 +34,6 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 
 import com.aviq.tv.android.sdk.core.Environment;
-import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
@@ -48,8 +47,6 @@ import com.aviq.tv.android.sdk.feature.command.CommandHandler;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
-import com.aviq.tv.android.sdk.feature.vod.FeatureVOD.Command;
-import com.aviq.tv.android.sdk.feature.vod.FeatureVOD.CommandGetVodGroupsExtras;
 import com.aviq.tv.android.sdk.utils.Calendars;
 
 /**
@@ -66,29 +63,31 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	/** key = chanelID; value = map between record endTime and schedule record */
 	private Map<String, NavigableMap<Calendar, Program>> _channelToRecordsNavigableMap = null;
 
+	private Map<String, Boolean> _watchedRecords = new HashMap<String, Boolean>();
+
 	private Set<Integer> _dayOffsets = new TreeSet<Integer>(Collections.reverseOrder());
 	private Prefs _userPrefs;
 
 	public static enum Command
 	{
-		RECORD, GET_RECORDINGS, REMOVE_RECORDING, SET_RECORDING_WATCHED, GET_NUM_OF_NOT_WATCHED
+		RECORD, GET_RECORDINGS, REMOVE_RECORDING, GET_NUM_OF_NOT_WATCHED
 	}
 
 	public static enum CommandRecordExtras
 	{
 		PROGRAM_ID, CHANNEL_ID
 	}
-	
+
 	public static enum CommandRemoveRecordingExtras
 	{
 		CHANNEL_ID, PROGRAM_ID
 	}
-	
+
 	public static enum CommandSetRecordingWatched
 	{
 		CHANNEL_ID, PROGRAM_ID
 	}
-	
+
 	public static enum UserParam
 	{
 		/**
@@ -132,14 +131,9 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandRecord());
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetRecordings());
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandRemoveRecording());
-		_feature.Component.COMMAND.addCommandHandler(new OnCommandSetRecordingWatched());
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetNumOfNotWatched());
-		
 	}
-	
 
-	
-	
 	@Override
 	public Component getComponentName()
 	{
@@ -153,7 +147,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 *            for recording
 	 * @return true if record is added successfully, otherwise false
 	 */
-	
+
 	public boolean addRecord(Program program)
 	{
 		String channelId = program.getChannel().getChannelId();
@@ -167,7 +161,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		navMap.put(program.getStartTime(), program);
 		int dayOffset = Calendars.getDayOffsetByDate(program.getStartTime());
 		_dayOffsets.add(dayOffset);
-		
+
 		return saveRecords();
 	}
 
@@ -179,18 +173,43 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 */
 	public boolean removeRecord(Program program)
 	{
-		NavigableMap<Calendar, Program> navMap = _channelToRecordsNavigableMap.get(program.getChannel().getChannelId());
+		return removeRecord(program.getChannel().getChannelId(), program.getId());
+	}
+
+	/**
+	 * Remove schedule record for given program
+	 *
+	 * @param program
+	 * @return true if record is removed successfully, otherwise false
+	 */
+	public boolean removeRecord(String channelId, String programId)
+	{
+		NavigableMap<Calendar, Program> navMap = _channelToRecordsNavigableMap.get(channelId);
 		if (navMap != null)
 		{
-			navMap.remove(program.getStartTime());
-			int dayOffset = Calendars.getDayOffsetByDate(program.getStartTime());
-			if (getRecordsByDate(dayOffset).size() == 0)
+			SimpleDateFormat sdfUTC = new SimpleDateFormat(PROGRAM_TIME_ID, Locale.getDefault());
+			sdfUTC.setTimeZone(TimeZone.getTimeZone("UTC"));
+			Calendar startTime = Calendar.getInstance();
+			try
 			{
-				Log.i(TAG, "Removing dayoffset " + dayOffset + " for " + program.getChannel().getChannelId() + "/"
-				        + Calendars.makeString(program.getStartTime()));
-				_dayOffsets.remove(dayOffset);
+				startTime.setTime(sdfUTC.parse(programId));
+				navMap.remove(startTime);
+				_watchedRecords.remove(makeRecordingId(channelId, programId));
+				int dayOffset = Calendars.getDayOffsetByDate(startTime);
+				if (getRecordsByDate(dayOffset).size() == 0)
+				{
+					Log.i(TAG,
+					        "Removing dayoffset " + dayOffset + " for " + channelId + "/"
+					                + Calendars.makeString(startTime));
+					_dayOffsets.remove(dayOffset);
+				}
+				return saveRecords();
 			}
-			return saveRecords();
+			catch (ParseException e)
+			{
+				Log.e(TAG, e.getMessage(), e);
+				return false;
+			}
 		}
 		return true;
 	}
@@ -228,11 +247,11 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		Collections.sort(programs, _recordingSchedulerComparator);
 		if (programs.size() > 0)
 		{
-			Log.d(TAG , "program from getRecordsByDate " + programs.get(0).getTitle());
+			Log.d(TAG, "program from getRecordsByDate " + programs.get(0).getTitle());
 		}
 		else
 		{
-			Log.d(TAG , "no programs from getRecordsByDate with dateOffset = " + dateOffset);
+			Log.d(TAG, "no programs from getRecordsByDate with dateOffset = " + dateOffset);
 		}
 		return programs;
 	}
@@ -266,18 +285,6 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	}
 
 	/**
-	 * Check if schedule record is in future
-	 *
-	 * @param date
-	 * @return true if schedule record date is valid, false otherwise
-	 */
-	private boolean isDateInFuture(Calendar date)
-	{
-		Calendar now = _feature.Component.TIMEZONE.getCurrentTime();
-		return !date.before(now);
-	}
-
-	/**
 	 * Checks if there exists records on given channel
 	 *
 	 * @param channel
@@ -292,35 +299,39 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		}
 		return navMap.size() > 0;
 	}
-	
+
 	/**
-	 * Set the parameter _isWatched of the program to true
-	 * 
+	 * Set recording to status watched
+	 *
 	 * @param program
-	 * @return true if the record with its new value is saved to the repository
 	 */
 	public boolean setRecordWatched(Program program)
 	{
-		program.setIsWatched();
-		
-		
-		String channelId = program.getChannel().getChannelId();
-		NavigableMap<Calendar, Program> navMap = _channelToRecordsNavigableMap.get(channelId);
-		if (navMap == null)
-		{
-			navMap = new TreeMap<Calendar, Program>();
-			_channelToRecordsNavigableMap.put(channelId, navMap);
-		}
+		return setRecordWatched(program.getChannel().getChannelId(), program.getId());
+	}
 
-		navMap.put(program.getStartTime(), program);
-		int dayOffset = Calendars.getDayOffsetByDate(program.getStartTime());
-		Log.i(TAG, "Adding dayoffset " + dayOffset + " for " + program.getChannel().getChannelId() + "/"
-		        + Calendars.makeString(program.getStartTime()));
-		_dayOffsets.add(dayOffset);
-
+	/**
+	 * Set recording to status watched
+	 *
+	 * @param program
+	 * @return true if the record with its new value is saved to the repository
+	 */
+	public boolean setRecordWatched(String channelId, String programId)
+	{
+		_watchedRecords.put(makeRecordingId(channelId, programId), Boolean.TRUE);
 		return saveRecords();
 	}
-	
+
+	/**
+	 * @param program
+	 * @return true if the specified program has been watched
+	 */
+	public boolean isRecordWatched(Program program)
+	{
+		Boolean watched = _watchedRecords.get(makeRecordingId(program.getChannel().getChannelId(), program.getId()));
+		return watched != null && watched.booleanValue();
+	}
+
 	/**
 	 * Returns iterator of integers representing those day offsets having one or
 	 * more recordings
@@ -337,10 +348,6 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 */
 	private boolean saveRecords()
 	{
-		SimpleDateFormat sdfUTC = new SimpleDateFormat(PROGRAM_TIME_ID, Locale.US);
-		TimeZone utc = TimeZone.getTimeZone("UTC");
-		sdfUTC.setTimeZone(utc);
-
 		StringBuilder buffer = new StringBuilder();
 		for (NavigableMap<Calendar, Program> map : _channelToRecordsNavigableMap.values())
 		{
@@ -348,13 +355,20 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			{
 				buffer.append(program.getChannel().getChannelId());
 				buffer.append(ITEM_DELIMITER);
-				buffer.append(sdfUTC.format(program.getStartTime().getTime()));
+				buffer.append(program.getId());
 				buffer.append(ITEM_DELIMITER);
 				buffer.append(Integer.toString((int) (program.getLengthMillis() / 1000)));
+				buffer.append(ITEM_DELIMITER);
+				buffer.append(isRecordWatched(program));
 				buffer.append(RECORD_DELIMITER);
 			}
 		}
 		return saveRecordsToDataProvider(buffer.toString());
+	}
+
+	private String makeRecordingId(String channelId, String programId)
+	{
+		return channelId + "_" + programId;
 	}
 
 	/**
@@ -378,13 +392,14 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 		List<String> channelIds = new ArrayList<String>();
 		List<String> programIds = new ArrayList<String>();
+		final List<Boolean> watched = new ArrayList<Boolean>();
 		String recordings = _userPrefs.getString(UserParam.RECORDINGS);
 		Log.i(TAG, "Load recordings: " + recordings);
 		String[] records = recordings.split(RECORD_DELIMITER);
 		for (String record : records)
 		{
 			String[] items = record.split(ITEM_DELIMITER);
-			if (items.length != 3)
+			if (items.length != 3 && items.length != 4)
 			{
 				Log.e(TAG, "Invalid recording format! Expected chnid,start,duration + got " + record);
 				continue;
@@ -405,6 +420,11 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 			channelIds.add(channelId);
 			programIds.add(programId);
+
+			if (items.length == 4)
+				watched.add(Boolean.parseBoolean(items[3]));
+			else
+				watched.add(Boolean.FALSE);
 		}
 
 		_feature.Component.EPG.getMultiplePrograms(channelIds, programIds, new OnResultReceived()
@@ -416,10 +436,12 @@ public class FeatureRecordingScheduler extends FeatureComponent
 				{
 					@SuppressWarnings("unchecked")
 					List<Program> programs = (List<Program>) object;
-					for (Program program : programs)
+					for (int i = 0; i < programs.size(); i++)
 					{
+						Program program = programs.get(i);
 						if (program == null)
 							continue;
+						_watchedRecords.put(makeRecordingId(program.getChannel().getChannelId(), program.getId()), watched.get(i));
 						String channelId = program.getChannel().getChannelId();
 						NavigableMap<Calendar, Program> navigableMap = null;
 						if (!channelToRecordsNavigableMap.containsKey(channelId))
@@ -467,14 +489,15 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	private class OnCommandRecord implements CommandHandler
 	{
 		@Override
-        public void execute(Bundle params, final OnResultReceived onResultReceived)
+		public void execute(Bundle params, final OnResultReceived onResultReceived)
 		{
 			Log.i(TAG, ".OnCommandRecord exec");
 
 			String programId = params.getString(CommandRecordExtras.PROGRAM_ID.name());
 			String channelId = params.getString(CommandRecordExtras.CHANNEL_ID.name());
-			Log.i(TAG, ".OnCommandRecord.execute: channelId = " + channelId.toString() + ", programId = "
-			        + programId.toString());
+			Log.i(TAG,
+			        ".OnCommandRecord.execute: channelId = " + channelId.toString() + ", programId = "
+			                + programId.toString());
 
 			_feature.Component.EPG.getProgramDetails(channelId, programId, new OnResultReceived()
 			{
@@ -500,7 +523,6 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		@Override
 		public String getId()
 		{
-			Log.i(TAG, "Command.POST_RECORDING_SECHEDULER.name();");
 			return Command.RECORD.name();
 		}
 	}
@@ -508,7 +530,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	private class OnCommandGetRecordings implements CommandHandler
 	{
 		@Override
-        public void execute(Bundle params, final OnResultReceived onResultReceived)
+		public void execute(Bundle params, final OnResultReceived onResultReceived)
 		{
 			Log.i(TAG, ".OnCommandGetRecordings exec");
 			final JSONArray jsonRecAllDayoffsets = new JSONArray();
@@ -543,9 +565,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 							jsonProgram.put("channel_id", program.getChannel().getChannelId());
 							jsonProgram.put("length", program.getLengthMin());
 							jsonProgram.put("title", program.getTitle());
-							jsonProgram.put("is_watched", program.getIsWatched());
-							
-							
+							jsonProgram.put("is_watched", isRecordWatched(program));
+
 							String description = program.getDetailAttribute(ProgramAttribute.DESCRIPTION);
 							if (description != null)
 								jsonProgram.put("description", description);
@@ -553,11 +574,10 @@ public class FeatureRecordingScheduler extends FeatureComponent
 							Programs.put(jsonProgram);
 						}
 						jsonRecDayoffset.put("programs", Programs);
-
 						jsonRecAllDayoffsets.put(jsonRecDayoffset);
 					}
-					onResultReceived.onReceiveResult(FeatureError.OK(FeatureRecordingScheduler.this), jsonRecAllDayoffsets);
-
+					onResultReceived.onReceiveResult(FeatureError.OK(FeatureRecordingScheduler.this),
+					        jsonRecAllDayoffsets);
 				}
 			}
 			catch (JSONException e)
@@ -570,39 +590,21 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		@Override
 		public String getId()
 		{
-			Log.i(TAG, "Command.GET_RECORDINGS.name();");
 			return Command.GET_RECORDINGS.name();
 		}
 	}
-	
-	
+
 	private class OnCommandRemoveRecording implements CommandHandler
 	{
 		@Override
-        public void execute(Bundle params, final OnResultReceived onResultReceived)
+		public void execute(Bundle params, final OnResultReceived onResultReceived)
 		{
 			Log.i(TAG, ".OnCommandRemoveRecording exec");
 
 			String channelId = params.getString(CommandRemoveRecordingExtras.CHANNEL_ID.name());
 			String programId = params.getString(CommandRemoveRecordingExtras.PROGRAM_ID.name());
-			
-			_feature.Component.EPG.getProgramDetails(channelId, programId, new OnResultReceived()
-			{
-				@Override
-				public void onReceiveResult(FeatureError error, Object object)
-				{
-					if (error.isError())
-					{
-						onResultReceived.onReceiveResult(error, null);
-					}
-					else
-					{
-						Program program = (Program) object;
-						removeRecord(program);
-						onResultReceived.onReceiveResult(FeatureError.OK(FeatureRecordingScheduler.this), null);
-					}
-				}
-			});
+
+			removeRecord(channelId, programId);
 		}
 
 		@Override
@@ -611,62 +613,23 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			return Command.REMOVE_RECORDING.name();
 		}
 	}
-	
-	
-	
-	private class OnCommandSetRecordingWatched implements CommandHandler
-	{
-		@Override
-        public void execute(Bundle params, final OnResultReceived onResultReceived)
-		{
-			Log.i(TAG, ".OnCommandSetRecordingWatched exec");
 
-			String channelId = params.getString(CommandSetRecordingWatched.CHANNEL_ID.name());
-			String programId = params.getString(CommandSetRecordingWatched.PROGRAM_ID.name());
-			
-			_feature.Component.EPG.getProgramDetails(channelId, programId, new OnResultReceived()
-			{
-				@Override
-				public void onReceiveResult(FeatureError error, Object object)
-				{
-					try
-					{
-						Program program = (Program) object;
-						setRecordWatched(program);
-						onResultReceived.onReceiveResult(FeatureError.OK(FeatureRecordingScheduler.this), null);
-					}
-					catch(Error e)
-					{
-						Log.i(TAG , "Error:" + e);
-						onResultReceived.onReceiveResult(error, null);
-					}
-				}
-			});
-		}
-
-		@Override
-		public String getId() 
-		{
-			return Command.SET_RECORDING_WATCHED.name();
-		}
-	}
-	
-	
 	private class OnCommandGetNumOfNotWatched implements CommandHandler
 	{
 		@Override
-        public void execute(Bundle params, final OnResultReceived onResultReceived)
+		public void execute(Bundle params, final OnResultReceived onResultReceived)
 		{
 			Log.i(TAG, ".OnCommandGetNumOfNotWatched exec");
-			Integer numOfNotWatched = 0;
+			int numOfNotWatched = 0;
 			final JSONObject jsonNumOfUnwatched = new JSONObject();
 			Iterator<Integer> recordedDayoffset = getRecordedDayOffsets();
 			try
 			{
+				jsonNumOfUnwatched.put("numOfNotWatched", 0);
 				if (recordedDayoffset == null || !recordedDayoffset.hasNext())
 				{
 					Log.i(TAG, "nothing to be displayed from records");
-					onResultReceived.onReceiveResult(FeatureError.OK(FeatureRecordingScheduler.this), null);
+					onResultReceived.onReceiveResult(FeatureError.OK(FeatureRecordingScheduler.this), jsonNumOfUnwatched);
 				}
 				else
 				{
@@ -677,25 +640,26 @@ public class FeatureRecordingScheduler extends FeatureComponent
 						List<Program> programsInDayoffset = getRecordsByDate(dayOffset);
 						for (Program program : programsInDayoffset)
 						{
-							if(program.getIsWatched() == false)
+							if (!isRecordWatched(program))
 								numOfNotWatched++;
 						}
 					}
-					jsonNumOfUnwatched.put("numOfNotWatched",numOfNotWatched.toString());
-					onResultReceived.onReceiveResult(FeatureError.OK(FeatureRecordingScheduler.this), jsonNumOfUnwatched);
+					jsonNumOfUnwatched.put("numOfNotWatched", numOfNotWatched);
+					onResultReceived.onReceiveResult(FeatureError.OK(FeatureRecordingScheduler.this),
+					        jsonNumOfUnwatched);
 				}
 			}
 			catch (JSONException e)
 			{
 				Log.e(TAG, e.getMessage(), e);
-				onResultReceived.onReceiveResult(new FeatureError(FeatureRecordingScheduler.this,e), null);
+				onResultReceived.onReceiveResult(new FeatureError(FeatureRecordingScheduler.this, e), null);
 			}
 		}
+
 		@Override
-		public String getId() 
+		public String getId()
 		{
 			return Command.GET_NUM_OF_NOT_WATCHED.name();
 		}
 	}
-				
 }
