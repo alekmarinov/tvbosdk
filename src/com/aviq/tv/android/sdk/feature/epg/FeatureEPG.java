@@ -298,8 +298,7 @@ public abstract class FeatureEPG extends FeatureComponent
 			}
 		});
 
-		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetPrograms());
-		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetProgramDetails());
+		registerCommands();
 
 	} // initialize
 
@@ -307,6 +306,12 @@ public abstract class FeatureEPG extends FeatureComponent
 	public Component getComponentName()
 	{
 		return FeatureName.Component.EPG;
+	}
+
+	protected void registerCommands()
+	{
+		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetPrograms());
+		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetProgramDetails());
 	}
 
 	/**
@@ -946,8 +951,12 @@ public abstract class FeatureEPG extends FeatureComponent
 
 	// Command handlers
 
-	private class OnCommandGetPrograms implements CommandHandler
+	protected class OnCommandGetPrograms implements CommandHandler
 	{
+		public OnCommandGetPrograms()
+        {
+        }
+
 		@Override
 		public String getId()
 		{
@@ -1017,8 +1026,12 @@ public abstract class FeatureEPG extends FeatureComponent
 		}
 	}
 
-	private class OnCommandGetProgramDetails implements CommandHandler
+	protected class OnCommandGetProgramDetails implements CommandHandler
 	{
+		public OnCommandGetProgramDetails()
+        {
+        }
+
 		@Override
 		public void execute(Bundle params, final OnResultReceived onResultReceived)
 		{
@@ -1064,6 +1077,5 @@ public abstract class FeatureEPG extends FeatureComponent
 		{
 			return Command.GET_PROGRAM_DETAILS.name();
 		}
-
 	}
 }

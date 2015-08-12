@@ -62,10 +62,13 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.IFeature;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
+import com.aviq.tv.android.sdk.feature.command.CommandHandler;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
+import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
+import com.aviq.tv.android.sdk.feature.recording.FeatureRecordingScheduler;
 
 /**
  * Bulsat specific extension of EPG feature
@@ -139,6 +142,13 @@ public class FeatureEPGBulsat extends FeatureEPG
 	public FeatureEPGBulsat() throws FeatureNotFoundException
 	{
 		super();
+	}
+
+	@Override
+	protected void registerCommands()
+	{
+		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetPrograms());
+		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetProgramBulsatDetails());
 	}
 
 	@Override
@@ -1082,7 +1092,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 					HttpUriRequest httpGet = new HttpGet(url);
 					Log.i(TAG, "Opening " + httpGet.getURI());
 
-		            ChannelGenreResponse channelGenreResponse = new ChannelGenreResponse(onResultReceived);
+					ChannelGenreResponse channelGenreResponse = new ChannelGenreResponse(onResultReceived);
 					HttpClient httpClient = new DefaultHttpClient(httpGet.getParams());
 					httpGet.setHeader("STBDEVEL", "INTELIBO");
 					try
@@ -1094,14 +1104,15 @@ public class FeatureEPGBulsat extends FeatureEPG
 							InputStream content = entity.getContent();
 
 							BufferedReader reader = new BufferedReader(new InputStreamReader(content, "UTF-8"));
-				            StringBuilder sb = new StringBuilder();
-				            String line = null;
-				            while ((line = reader.readLine()) != null) {
-				                sb.append(line + "n");
-				            }
-				            content.close();
+							StringBuilder sb = new StringBuilder();
+							String line = null;
+							while ((line = reader.readLine()) != null)
+							{
+								sb.append(line + "n");
+							}
+							content.close();
 
-				            channelGenreResponse.onResponse(new JSONArray(sb.toString()));
+							channelGenreResponse.onResponse(new JSONArray(sb.toString()));
 						}
 						else
 						{
@@ -1262,6 +1273,86 @@ public class FeatureEPGBulsat extends FeatureEPG
 				_logosLoaded++;
 				callBackOnFinish();
 			}
+		}
+	}
+
+	/** Determines whether to display the Record button */
+	public boolean isProgramRecordable(ProgramBulsat program)
+	{
+		ChannelBulsat channel = ((ChannelBulsat) program.getChannel());
+		Calendar now = _feature.Component.TIMEZONE.getCurrentTime();
+		boolean recordable = channel.isRecordable();
+		boolean inFuture = program.getStopTime().after(now);
+		int ndvr = channel.getNDVR();
+		Calendar ndvrTime = Calendar.getInstance();
+		ndvrTime.add(Calendar.SECOND, -ndvr);
+		return recordable && (inFuture || (channel.isPlayable() && program.getStartTime().after(ndvrTime)));
+	}
+
+	/** Determines whether to display the Play button */
+	public boolean isProgramPlayable(ProgramBulsat program)
+	{
+		ChannelBulsat channel = ((ChannelBulsat) program.getChannel());
+		Calendar now = _feature.Component.TIMEZONE.getCurrentTime();
+		Calendar ndvrStart = _feature.Component.TIMEZONE.getCurrentTime();
+		ndvrStart.add(Calendar.SECOND, -channel.getNDVR());
+
+		boolean playable = channel.isPlayable();
+		FeatureRecordingScheduler recordingScheduler = (FeatureRecordingScheduler) Environment.getInstance()
+		        .getFeatureComponent(FeatureName.Component.RECORDING_SCHEDULER);
+		boolean recorded = recordingScheduler != null ? recordingScheduler.isProgramRecorded(program) : false;
+		boolean inNdvr = program.getStopTime().before(now) && program.getStartTime().after(ndvrStart);
+		return inNdvr && (recorded || playable);
+	}
+
+	private class OnCommandGetProgramBulsatDetails implements CommandHandler
+	{
+		@Override
+		public void execute(Bundle params, final OnResultReceived onResultReceived)
+		{
+			String channelId = params.getString(CommandGetProgramDetailsExtras.CHANNEL_ID.name());
+			String programId = params.getString(CommandGetProgramDetailsExtras.PROGRAM_ID.name());
+			Log.i(TAG, ".OnCommandGetProgramBulsatDetails.execute: channelId = " + channelId + ", programId = "
+			        + programId);
+
+			getProgramDetails(channelId, programId, new OnResultReceived()
+			{
+				@Override
+				public void onReceiveResult(FeatureError error, Object object)
+				{
+					if (error.isError())
+					{
+						onResultReceived.onReceiveResult(error, null);
+					}
+					else
+					{
+						ProgramBulsat program = (ProgramBulsat) object;
+						try
+						{
+							JSONObject jsonProgram = new JSONObject();
+							jsonProgram.put("length", program.getLengthMin());
+							jsonProgram.put("title", program.getTitle());
+							String description = program.getDetailAttribute(ProgramAttribute.DESCRIPTION);
+							if (description != null)
+								jsonProgram.put("description", description);
+							jsonProgram.put("image", program.getDetailAttribute(ProgramAttribute.IMAGE));
+							jsonProgram.put("playable", isProgramPlayable(program));
+							jsonProgram.put("recordable", isProgramRecordable(program));
+							onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPGBulsat.this), jsonProgram);
+						}
+						catch (JSONException e)
+						{
+							onResultReceived.onReceiveResult(new FeatureError(FeatureEPGBulsat.this, e), null);
+						}
+					}
+				}
+			});
+		}
+
+		@Override
+		public String getId()
+		{
+			return Command.GET_PROGRAM_DETAILS.name();
 		}
 	}
 }
