@@ -36,6 +36,8 @@ import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.command.handlers.CommandHello;
 import com.aviq.tv.android.sdk.feature.command.handlers.CommandSendKey;
+import com.aviq.tv.android.sdk.feature.command.handlers.CommandSendText;
+import com.aviq.tv.android.sdk.feature.command.handlers.CommandTime;
 import com.aviq.tv.android.sdk.feature.httpserver.jetty.FeatureHttpServerJetty;
 
 /**
@@ -90,6 +92,8 @@ public class FeatureCommand extends FeatureComponent
 		// add global command handlers
 		addCommandHandler(new CommandHello());
 		addCommandHandler(new CommandSendKey(_feature.Component.RCU));
+		addCommandHandler(new CommandSendText());
+		addCommandHandler(new CommandTime());
 
 		if (_feature.Component.HTTP_SERVER instanceof FeatureHttpServerJetty)
 		{
