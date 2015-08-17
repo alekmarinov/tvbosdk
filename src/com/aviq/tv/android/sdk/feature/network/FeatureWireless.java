@@ -217,6 +217,8 @@ public class FeatureWireless extends FeatureComponent
 		Log.i(TAG, ".connectToNetwork: " + accessPoint + (password != null ? " with password" : ""));
 		_connectTime = System.currentTimeMillis();
 
+		_wifiManager.disconnect();
+
 		// remember the connecting access point and password
 		_currentAccessPoint = accessPoint;
 		_lastPassword = password;

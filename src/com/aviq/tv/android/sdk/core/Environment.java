@@ -117,6 +117,11 @@ public class Environment extends Activity
 		RELEASE("devel"),
 
 		/**
+		 * whether we are in debug mode
+		 */
+		DEBUG(false),
+
+		/**
 		 * Timeout in seconds for feature initialization
 		 */
 		FEATURE_INITIALIZE_TIMEOUT(180),
@@ -147,6 +152,11 @@ public class Environment extends Activity
 		MAX_KEYS_IN_QUEUE(3);
 
 		Param(int value)
+		{
+			Environment.getInstance().getPrefs().put(name(), value);
+		}
+
+		Param(boolean value)
 		{
 			Environment.getInstance().getPrefs().put(name(), value);
 		}
@@ -339,6 +349,12 @@ public class Environment extends Activity
 			// initialize preferences
 			_userPrefs = createUserPrefs();
 			_prefs = createPrefs(SYSTEM_PREFS);
+
+			// copy debug param from system to user prefs if not already set
+			if (!_userPrefs.has(Param.DEBUG))
+			{
+				_userPrefs.put(Param.DEBUG, _prefs.getBool(Param.DEBUG));
+			}
 
 			_maxKeysInQueue = _prefs.getInt(Param.MAX_KEYS_IN_QUEUE);
 

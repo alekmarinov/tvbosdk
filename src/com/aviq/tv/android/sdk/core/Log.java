@@ -11,6 +11,15 @@
 
 package com.aviq.tv.android.sdk.core;
 
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.SimpleFormatter;
+
+import org.apache.commons.collections.Buffer;
+import org.apache.commons.collections.BufferUtils;
+import org.apache.commons.collections.buffer.CircularFifoBuffer;
+
 import com.aviq.tv.android.sdk.feature.crashlog.FeatureCrashLog;
 
 public class Log
@@ -23,8 +32,12 @@ public class Log
 	public static final int WARN = 5;
 	public static final int ERROR = 6;
 	public static final int ASSERT = 7;
+	private static Buffer _ringBuf = BufferUtils.synchronizedBuffer(new CircularFifoBuffer(10000));
+	private static AtomicLong _counter = new AtomicLong(0);
+	private static SimpleFormatter _formatter = new SimpleFormatter();
+	private static boolean _enableRingBuffer = true;
 
-	private static int logLevel = VERBOSE;
+	private static int _logLevel = VERBOSE;
 
 	private Log()
 	{
@@ -32,77 +45,133 @@ public class Log
 
 	public static void setLogLevel(int level)
 	{
-		logLevel = level;
+		_logLevel = level;
 	}
 
 	public static int v(String tag, String msg)
 	{
-		return VERBOSE >= logLevel ? android.util.Log.v(tag, msg) : 0;
+		return doLog(VERBOSE, tag, msg, null);
 	}
 
-	public static int v(String tag, String msg, Throwable tr)
+	public static int v(String tag, String msg, Throwable ex)
 	{
-		return VERBOSE >= logLevel ? android.util.Log.v(tag, msg, tr) : 0;
+		return doLog(VERBOSE, tag, msg, ex);
 	}
 
 	public static int d(String tag, String msg)
 	{
-		return DEBUG >= logLevel ? android.util.Log.d(tag, msg) : 0;
+		return doLog(DEBUG, tag, msg, null);
 	}
 
-	public static int d(String tag, String msg, Throwable tr)
+	public static int d(String tag, String msg, Throwable ex)
 	{
-		return DEBUG >= logLevel ? android.util.Log.d(tag, msg, tr) : 0;
+		return doLog(DEBUG, tag, msg, ex);
 	}
 
 	public static int i(String tag, String msg)
 	{
-		return INFO >= logLevel ? android.util.Log.i(tag, msg) : 0;
+		return doLog(INFO, tag, msg, null);
 	}
 
-	public static int i(String tag, String msg, Throwable tr)
+	public static int i(String tag, String msg, Throwable ex)
 	{
-		return INFO >= logLevel ? android.util.Log.i(tag, msg, tr) : 0;
+		return doLog(INFO, tag, msg, ex);
 	}
 
 	public static int w(String tag, String msg)
 	{
-		handleWarnsAndErrors(WARN, tag, msg, null);
-		return WARN >= logLevel ? android.util.Log.w(tag, msg) : 0;
+		return doLog(WARN, tag, msg, null);
 	}
 
-	public static int w(String tag, String msg, Throwable tr)
+	public static int w(String tag, String msg, Throwable ex)
 	{
-		handleWarnsAndErrors(WARN, tag, msg, tr);
-		return WARN >= logLevel ? android.util.Log.w(tag, msg, tr) : 0;
-	}
-
-	public static int w(String tag, Throwable tr)
-	{
-		handleWarnsAndErrors(WARN, tag, tr.getMessage(), tr);
-		return WARN >= logLevel ? android.util.Log.w(tag, tr) : 0;
+		return doLog(WARN, tag, msg, ex);
 	}
 
 	public static int e(String tag, String msg)
 	{
-		handleWarnsAndErrors(ERROR, tag, msg, null);
-		return ERROR >= logLevel ? android.util.Log.e(tag, msg) : 0;
+		return doLog(ERROR, tag, msg, null);
 	}
 
-	public static int e(String tag, String msg, Throwable tr)
+	public static int e(String tag, String msg, Throwable ex)
 	{
-		handleWarnsAndErrors(ERROR, tag, msg, tr);
-		return ERROR >= logLevel ? android.util.Log.e(tag, msg, tr) : 0;
+		return doLog(ERROR, tag, msg, ex);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static int doLog(int level, String tag, String msg, Throwable ex)
+	{
+		if (level == WARN || level == ERROR)
+			handleWarnsAndErrors(level, tag, msg, ex);
+
+		if (_enableRingBuffer)
+		{
+			Level logLevel;
+			switch (level)
+			{
+				case VERBOSE:
+					logLevel = Level.FINER;
+				break;
+				case DEBUG:
+					logLevel = Level.FINE;
+				break;
+				case INFO:
+					logLevel = Level.INFO;
+				break;
+				case WARN:
+					logLevel = Level.WARNING;
+				break;
+				case ERROR:
+				case ASSERT:
+					logLevel = Level.SEVERE;
+				break;
+				default:
+					logLevel = Level.FINEST;
+				break;
+			}
+			LogRecord logRecord = new LogRecord(logLevel, tag + " " + msg);
+			logRecord.setThrown(ex);
+			logRecord.setThreadID((int) Thread.currentThread().getId());
+
+			String logLine = _formatter.format(logRecord);
+			logLine = logLine.replaceFirst(" null", "");
+			logLine = logLine.replaceFirst(" null", "");
+			logLine = logLine.replaceFirst("\n", "");
+			_ringBuf.add(_counter.incrementAndGet() + ": " + logLine);
+		}
+
+		if (level >= _logLevel)
+		{
+			switch (level)
+			{
+				case DEBUG:
+					return ex != null ? android.util.Log.d(tag, msg, ex) : android.util.Log.d(tag, msg);
+				case INFO:
+					return ex != null ? android.util.Log.i(tag, msg, ex) : android.util.Log.i(tag, msg);
+				case WARN:
+					return ex != null ? android.util.Log.w(tag, msg, ex) : android.util.Log.w(tag, msg);
+				case ERROR:
+					return ex != null ? android.util.Log.e(tag, msg, ex) : android.util.Log.e(tag, msg);
+				default:
+					return ex != null ? android.util.Log.v(tag, msg, ex) : android.util.Log.v(tag, msg);
+			}
+		}
+		return 0;
+	}
+
+	public static void enableRingBuffer(boolean enableRingBuffer)
+	{
+		_enableRingBuffer = enableRingBuffer;
+	}
+
+	public static Buffer getRingBuffer()
+	{
+		return _ringBuf;
 	}
 
 	public static String getStackTraceString(Throwable tr)
 	{
 		return android.util.Log.getStackTraceString(tr);
-	}
-
-	public static int println(int priority, String tag, String msg)
-	{
-		return logLevel >= priority ? android.util.Log.println(priority, tag, msg) : 0;
 	}
 
 	private static void handleWarnsAndErrors(final int level, final String tag, final String msg, final Throwable ex)
@@ -115,7 +184,8 @@ public class Log
 				@Override
 				public void run()
 				{
-					FeatureCrashLog crashLog = (FeatureCrashLog) Environment.getInstance().getFeature(FeatureCrashLog.class);
+					FeatureCrashLog crashLog = (FeatureCrashLog) Environment.getInstance().getFeature(
+					        FeatureCrashLog.class);
 					if (crashLog != null)
 					{
 						if (level == WARN)

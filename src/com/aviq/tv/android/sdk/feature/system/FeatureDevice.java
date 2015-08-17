@@ -46,14 +46,14 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Defines device parameters
  */
-@Author("elmira")
+@Author("alek")
 public class FeatureDevice extends FeatureComponent
 {
 	public static final String TAG = FeatureDevice.class.getSimpleName();
 	public static final int ON_STATUS = EventMessenger.ID("ON_STATUS");
 	private static int KB = 1024;
 	private static String CMD_STAT = "vmstat -n 1 -d %d";
-	private static String CMD_LOGCAT = "logcat -v time -t 6000 -d";
+	private static String CMD_LOGCAT = "logcat -v time -d *:";
 
 	public enum OnStatusExtra
 	{
@@ -382,9 +382,9 @@ public class FeatureDevice extends FeatureComponent
 	/**
 	 * @return logcat InputStream
 	 */
-	public InputStream getLogcatInputStream() throws IOException
+	public InputStream getLogcatInputStream(char logLevel) throws IOException
 	{
-		Process process = Runtime.getRuntime().exec(CMD_LOGCAT);
+		Process process = Runtime.getRuntime().exec(CMD_LOGCAT + logLevel);
 		return process.getInputStream();
 	}
 

@@ -11,11 +11,8 @@
 package com.aviq.tv.android.sdk.core.feature;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -25,6 +22,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.Locator;
@@ -66,42 +66,17 @@ public class FeatureManager
 		Log.i(TAG, "Sorting features topologically based on their declared dependencies");
 		topologicalSort();
 
-		// export features to json
-		new Thread(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				try
-				{
-					FileOutputStream fileOutStream = new FileOutputStream(Environment.getInstance().getFilesDir()
-					        .getAbsolutePath()
-					        + "/aviqtv.json");
-					exportToJson(fileOutStream);
-					fileOutStream.close();
-				}
-				catch (FileNotFoundException e)
-				{
-					Log.e(TAG, e.getMessage(), e);
-				}
-				catch (IOException e)
-				{
-					Log.e(TAG, e.getMessage(), e);
-				}
-			}
-		}).start();
-
 		Log.i(TAG, "Initializing features");
 		_featureInitializer.setOnFeatureInitialized(onFeatureInitialized);
 		_featureInitializer.initialize();
 	}
 
 	/**
-	 * Exports features dependency trees to json format
+	 * Get features dependency trees in json format
 	 *
-	 * @throws IOException
+	 * @return JSONArray with features dependency information
 	 */
-	public void exportToJson(OutputStream outStream) throws IOException
+	public JSONArray toJson() throws JSONException
 	{
 		class FeatureNode
 		{
@@ -112,133 +87,82 @@ public class FeatureManager
 				_feature = feature;
 			}
 
-			void writeToStream(OutputStream outStream) throws IOException
+			void addToJson(JSONArray result) throws JSONException
 			{
-				StringBuffer sb = new StringBuffer();
-				boolean isFirst = true;
 				if (_feature.dependencies() != null)
 				{
 					// write component dependencies
 					for (FeatureName.Component dependency : _feature.dependencies().Components)
 					{
-						if (!isFirst)
-							sb.append(',');
-						isFirst = false;
-						sb.append("\n[\n    ");
-						writeFeature(sb, _feature);
-						sb.append(",\n    ");
-						writeComponent(sb, dependency);
-						sb.append("\n]");
+						JSONArray featureDepsJson = new JSONArray();
+						JSONObject featureJson = new JSONObject();
+						featureJson.put("name", _feature.getName());
+						featureJson.put("type", _feature.getType().name());
+						featureDepsJson.put(featureJson);
+						featureJson = new JSONObject();
+						featureJson.put("name", dependency.name());
+						featureJson.put("type", IFeature.Type.COMPONENT.name());
+						featureDepsJson.put(featureJson);
+
+						result.put(featureDepsJson);
 					}
 
 					// write scheduler dependencies
 					for (FeatureName.Scheduler dependency : _feature.dependencies().Schedulers)
 					{
-						if (!isFirst)
-							sb.append(',');
-						isFirst = false;
-						sb.append("\n[\n    ");
-						writeFeature(sb, _feature);
-						sb.append(",\n    ");
-						writeScheduler(sb, dependency);
-						sb.append("\n]");
+						JSONArray featureDepsJson = new JSONArray();
+						JSONObject featureJson = new JSONObject();
+						featureJson.put("name", _feature.getName());
+						featureJson.put("type", _feature.getType().name());
+						featureDepsJson.put(featureJson);
+						featureJson = new JSONObject();
+						featureJson.put("name", dependency.name());
+						featureJson.put("type", IFeature.Type.SCHEDULER.name());
+						featureDepsJson.put(featureJson);
+
+						result.put(featureDepsJson);
 					}
 
 					// write state dependencies
 					for (FeatureName.State dependency : _feature.dependencies().States)
 					{
-						if (!isFirst)
-							sb.append(',');
-						isFirst = false;
-						sb.append("\n[\n    ");
-						writeFeature(sb, _feature);
-						sb.append(",\n    ");
-						writeState(sb, dependency);
-						sb.append("\n]");
+						JSONArray featureDepsJson = new JSONArray();
+						JSONObject featureJson = new JSONObject();
+						featureJson.put("name", _feature.getName());
+						featureJson.put("type", _feature.getType().name());
+						featureDepsJson.put(featureJson);
+						featureJson = new JSONObject();
+						featureJson.put("name", dependency.name());
+						featureJson.put("type", IFeature.Type.STATE.name());
+						featureDepsJson.put(featureJson);
+
+						result.put(featureDepsJson);
 					}
 
 					// write special dependencies
 					for (Class<?> dependency : _feature.dependencies().Specials)
 					{
-						if (!isFirst)
-							sb.append(',');
-						isFirst = false;
-						sb.append("\n[\n    ");
-						writeFeature(sb, _feature);
-						sb.append(",\n    ");
-						writeSpecial(sb, dependency);
-						sb.append("\n]");
+
+						JSONArray featureDepsJson = new JSONArray();
+						JSONObject featureJson = new JSONObject();
+						featureJson.put("name", _feature.getName());
+						featureJson.put("type", _feature.getType().name());
+						featureDepsJson.put(featureJson);
+						featureJson = new JSONObject();
+						featureJson.put("name", dependency.getName());
+						featureJson.put("type", "SPECIAL");
+						featureDepsJson.put(featureJson);
+
+						result.put(featureDepsJson);
 					}
 				}
-
-				if (isFirst)
-				{
-					isFirst = false;
-					// independent feature
-					sb.append("\n[\n");
-					sb.append("    ");
-					writeFeature(sb, _feature);
-					sb.append("\n]");
-				}
-
-				outStream.write(sb.toString().getBytes());
-			}
-
-			void writeFeature(StringBuffer sb, IFeature feature)
-			{
-				sb.append('{');
-				sb.append("\"name\": \"").append(feature.getName()).append("\", \"type\": \"")
-				        .append(feature.getType().name()).append('"');
-				sb.append('}');
-			}
-
-			void writeComponent(StringBuffer sb, FeatureName.Component component)
-			{
-				sb.append('{');
-				sb.append("\"name\": \"").append(component.name()).append("\", \"type\": \"")
-				        .append(IFeature.Type.COMPONENT.name()).append('"');
-				sb.append('}');
-			}
-
-			void writeScheduler(StringBuffer sb, FeatureName.Scheduler scheduler)
-			{
-				sb.append('{');
-				sb.append("\"name\": \"").append(scheduler.name()).append("\", \"type\": \"")
-				        .append(IFeature.Type.SCHEDULER.name()).append('"');
-				sb.append('}');
-			}
-
-			void writeState(StringBuffer sb, FeatureName.State state)
-			{
-				sb.append('{');
-				sb.append("\"name\": \"").append(state.name()).append("\", \"type\": \"")
-				        .append(IFeature.Type.STATE.name()).append('"');
-				sb.append('}');
-			}
-
-			void writeSpecial(StringBuffer sb, Class<?> featureClass)
-			{
-				// FIXME: detect if feature class derives from component,
-				// scheduler or state
-				sb.append('{');
-				sb.append("\"name\": \"").append(featureClass.getName()).append("\", \"type\": \"").append("SPECIAL")
-				        .append('"');
-				sb.append('}');
 			}
 		}
 
-		outStream.write("[\n".getBytes());
-		boolean isFirst = true;
+		JSONArray result = new JSONArray();
 		for (IFeature feature : _features)
-		{
-			if (!isFirst)
-			{
-				outStream.write(",\n".getBytes());
-			}
-			isFirst = false;
-			new FeatureNode(feature).writeToStream(outStream);
-		}
-		outStream.write("\n]\n".getBytes());
+			new FeatureNode(feature).addToJson(result);
+		return result;
 	}
 
 	/**

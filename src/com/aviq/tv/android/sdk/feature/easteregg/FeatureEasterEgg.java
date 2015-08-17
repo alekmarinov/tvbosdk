@@ -11,10 +11,7 @@
 package com.aviq.tv.android.sdk.feature.easteregg;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -43,27 +40,12 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 {
 	public static final String TAG = FeatureEasterEgg.class.getSimpleName();
 
-	/** 000 = PWD */
-	public static final String KEY_SEQ_PWD = "000";
-
-	/** 738 = SET */
-	public static final String KEY_SEQ_SET = "RR738RR";
-	/** 564 = LOG */
-	public static final String KEY_SEQ_LOG = "RR564RR";
-	/** 272 = ASB -> Auto StandBy */
-	public static final String KEY_SEQ_AUTO_STANDBY = "RR272RR";
-	/** 847 = VHR */
-	public static final String KEY_SEQ_VHR = "RR847RR";
-
 	public static int ON_KEY_SEQUENCE = EventMessenger.ID("ON_KEY_SEQUENCE");
 	public static final String EXTRA_KEY_SEQUENCE = "KEY_SEQUENCE";
-
 	private static final int SEQUENCE_PREFIX_NUM_CHARS = 2;
-
 	private long lastKeyPress = 0;
 	private StringBuffer _sequence = new StringBuffer();
 	private List<String> _sequenceList = new ArrayList<String>();
-	private Map<String, String> _globalSequenceMap = new HashMap<String, String>();
 	private Set<String> _sequencePrefixes = new TreeSet<String>();
 	private boolean _inEasterEggMode = false;
 	private int _minKeyDelay;
@@ -73,23 +55,7 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 		/**
 		 * The minimum delay between key presses
 		 */
-		MIN_KEY_DELAY(3000),
-
-		/**
-		 * The expected comma-separated key sequences for the easter egg.
-		 */
-		KEY_SEQUENCES(""),
-
-		/**
-		 * Key sequences global to the application using this feature.
-		 */
-		KEY_SEQUENCE_SET(KEY_SEQ_SET), KEY_SEQUENCE_LOG(KEY_SEQ_LOG), KEY_SEQUENCE_AUTO_STANDBY(KEY_SEQ_AUTO_STANDBY), KEY_SEQUENCE_VHR(
-		        KEY_SEQ_VHR),
-
-		/**
-		 * The expected app package to start
-		 */
-		KEY_SEQUENCE_ACTION_SET("com.android.settings");
+		MIN_KEY_DELAY(3000),;
 
 		Param(int value)
 		{
@@ -112,51 +78,7 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 	{
 		Log.i(TAG, ".initialize");
 		_feature.Component.RCU.getEventMessenger().register(this, FeatureRCU.ON_KEY_PRESSED);
-
-		// A list of the application-specific key sequences
-
-		String sequences = getPrefs().getString(Param.KEY_SEQUENCES);
-		if (sequences.length() > 0)
-		{
-			String[] seqArray = sequences.split(",");
-			_sequenceList.addAll(Arrays.asList(seqArray));
-			for (String seq : seqArray)
-				_sequencePrefixes.add(seq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
-		}
-
-		// Process global key sequence mapping
-
-		String keySeq = null;
-		String keySeqAction = null;
-
-		// Settings
-		keySeq = getPrefs().getString(Param.KEY_SEQUENCE_SET);
-		keySeqAction = getPrefs().getString(Param.KEY_SEQUENCE_ACTION_SET);
-		_globalSequenceMap.put(keySeq, keySeqAction);
-		_sequencePrefixes.add(keySeq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
-
-		// Logcat
-		keySeq = getPrefs().getString(Param.KEY_SEQUENCE_LOG);
-		_sequenceList.add(keySeq);
-		_sequencePrefixes.add(keySeq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
-
-		// Auto StandBy
-		keySeq = getPrefs().getString(Param.KEY_SEQUENCE_AUTO_STANDBY);
-		_sequenceList.add(keySeq);
-		_sequencePrefixes.add(keySeq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
-
-		// View Hierarchy
-		keySeq = getPrefs().getString(Param.KEY_SEQUENCE_VHR);
-		_sequenceList.add(keySeq);
-		_sequencePrefixes.add(keySeq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
-
-		// FIXME:
-		keySeq = KEY_SEQ_PWD;
-		_sequenceList.add(keySeq);
-		_sequencePrefixes.add(keySeq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
-
 		_minKeyDelay = getPrefs().getInt(Param.MIN_KEY_DELAY);
-
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -166,9 +88,16 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 		return FeatureName.Component.EASTER_EGG;
 	}
 
+	public void addEasterEgg(String keySeq)
+	{
+		_sequenceList.add(keySeq);
+		_sequencePrefixes.add(keySeq.substring(0, SEQUENCE_PREFIX_NUM_CHARS));
+	}
+
 	@Override
 	public void onEvent(int msgId, Bundle bundle)
 	{
+		super.onEvent(msgId, bundle);
 		Log.i(TAG, ".onEvent: " + EventMessenger.idName(msgId) + TextUtils.implodeBundle(bundle));
 		if (FeatureRCU.ON_KEY_PRESSED == msgId)
 		{
@@ -192,12 +121,7 @@ public class FeatureEasterEgg extends FeatureComponent implements EventReceiver
 				}
 
 				String keySeq = _sequence.toString();
-
-				if (_globalSequenceMap.containsKey(keySeq))
-				{
-					Environment.getInstance().startAppPackage(_globalSequenceMap.get(keySeq));
-				}
-				else if (_sequenceList.contains(keySeq))
+				if (_sequenceList.contains(keySeq))
 				{
 					Bundle params = new Bundle();
 					params.putString(EXTRA_KEY_SEQUENCE, keySeq);

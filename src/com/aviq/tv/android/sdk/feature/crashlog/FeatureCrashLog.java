@@ -20,6 +20,14 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.collections.Buffer;
+import org.apache.commons.io.IOUtils;
+
 import android.os.Bundle;
 import android.text.format.Time;
 import android.util.Log;
@@ -40,6 +48,7 @@ import com.aviq.tv.android.sdk.core.feature.annotation.Priority;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.easteregg.FeatureEasterEgg;
 import com.aviq.tv.android.sdk.feature.eventcollector.FeatureEventCollector;
+import com.aviq.tv.android.sdk.feature.httpserver.jetty.FeatureHttpServerJetty;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.internet.UploadService;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice;
@@ -64,6 +73,7 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 	public FeatureCrashLog() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.DEVICE);
+		require(FeatureName.Component.HTTP_SERVER);
 	}
 
 	public enum Severity
@@ -89,7 +99,22 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 		CRASHLOG_SERVER_CA_CERT_PATH(""),
 
 		/** Directory where to store logcat before upload */
-		LOGCAT_DIRECTORY("logcat");
+		LOGCAT_DIRECTORY("logcat"),
+
+		/**
+		 * Context to access the log ring buffer
+		 */
+		HTTP_CONTEXT_LOG("/log"),
+
+		/**
+		 * Context to access the logcat
+		 */
+		HTTP_CONTEXT_LOGCAT("/logcat"),
+
+		/**
+		 * Key sequence for crash test
+		 */
+		KEY_SEQUENCE_CRASH("27274");
 
 		Param(String value)
 		{
@@ -98,6 +123,7 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 	}
 
 	private String _logcatDir;
+	private String _keySeqCrash;
 
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
@@ -105,9 +131,15 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 		Log.i(TAG, ".initialize");
 		Thread.currentThread().setUncaughtExceptionHandler(this);
 
-		FeatureEasterEgg featureEasterEgg = (FeatureEasterEgg)Environment.getInstance().getFeatureComponent(FeatureName.Component.EASTER_EGG);
+		_keySeqCrash = getPrefs().getString(Param.KEY_SEQUENCE_CRASH);
+
+		FeatureEasterEgg featureEasterEgg = (FeatureEasterEgg) Environment.getInstance().getFeatureComponent(
+		        FeatureName.Component.EASTER_EGG);
 		if (featureEasterEgg != null)
+		{
+			featureEasterEgg.addEasterEgg(_keySeqCrash);
 			featureEasterEgg.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
+		}
 
 		Environment.getInstance().getEventMessenger().register(new EventReceiver()
 		{
@@ -191,6 +223,19 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 		{
 			super.initialize(onFeatureInitialized);
 		}
+
+		if (_feature.Component.HTTP_SERVER instanceof FeatureHttpServerJetty)
+		{
+			// add handler to http server
+			FeatureHttpServerJetty httpServer = (FeatureHttpServerJetty) _feature.Component.HTTP_SERVER;
+
+			if (Environment.getInstance().getUserPrefs().getBool(Environment.Param.DEBUG))
+			{
+				httpServer.setServlet(JettyHttpHandlerLog.class, getPrefs().getString(Param.HTTP_CONTEXT_LOG) + "/*");
+				httpServer.setServlet(JettyHttpHandlerLogcat.class, getPrefs().getString(Param.HTTP_CONTEXT_LOGCAT)
+				        + "/*");
+			}
+		}
 	}
 
 	@Override
@@ -199,7 +244,7 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 		if (FeatureEasterEgg.ON_KEY_SEQUENCE == msgId)
 		{
 			String keySeq = bundle.getString(FeatureEasterEgg.EXTRA_KEY_SEQUENCE);
-			if (FeatureEasterEgg.KEY_SEQ_LOG.equals(keySeq))
+			if (keySeq.equals(_keySeqCrash))
 			{
 				throw new RuntimeException("Test Fatal Exception");
 			}
@@ -494,7 +539,7 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 	private Stack<String> saveLogcat(String logcatFileName) throws IOException
 	{
 		BufferedReader logcatReader = new BufferedReader(new InputStreamReader(
-		        _feature.Component.DEVICE.getLogcatInputStream()));
+		        _feature.Component.DEVICE.getLogcatInputStream('v')));
 		Stack<String> logcatStack = new Stack<String>();
 		String line;
 		FileOutputStream fileOut = new FileOutputStream(logcatFileName);
@@ -585,5 +630,93 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 		substitute.putString("DATETIME", eventDateTime);
 		substitute.putString("RANDOM", String.valueOf(randomNum));
 		return getPrefs().getString(Param.LOGCAT_FILENAME_TEMPLATE, substitute);
+	}
+
+	/**
+	 * HTTP handler to jetty web server for http based commands execution
+	 */
+	public static class JettyHttpHandlerLog extends HttpServlet
+	{
+		private static final long serialVersionUID = -8412895065201166090L;
+
+		@Override
+		protected void doGet(HttpServletRequest request, final HttpServletResponse response) throws ServletException,
+		        IOException
+		{
+			Log.i(TAG, ".doGet");
+			doGetOrPost(request, response);
+		}
+
+		@Override
+		protected void doPost(HttpServletRequest request, final HttpServletResponse response) throws ServletException,
+		        IOException
+		{
+			Log.i(TAG, ".doPost");
+			doGetOrPost(request, response);
+		}
+
+		private void doGetOrPost(HttpServletRequest request, final HttpServletResponse response)
+		        throws ServletException, IOException
+		{
+			String uri = request.getRequestURI();
+			int slashIdx = uri.substring(1).indexOf('/');
+			final String levelId = slashIdx >= 0 ? request.getRequestURI().substring(2 + slashIdx).toLowerCase() : null;
+			Log.i(TAG, ".doGetOrPost: levelId = " + levelId);
+
+			response.setContentType("text/plain;charset=utf-8");
+
+			Buffer ringBuffer = com.aviq.tv.android.sdk.core.Log.getRingBuffer();
+			for (Object line : ringBuffer)
+			{
+				response.getWriter().println(line);
+			}
+		}
+	}
+
+	/**
+	 * HTTP handler to jetty web server for http based commands execution
+	 */
+	public static class JettyHttpHandlerLogcat extends HttpServlet
+	{
+		private static final long serialVersionUID = 1589039520846482237L;
+
+		@Override
+		protected void doGet(HttpServletRequest request, final HttpServletResponse response) throws ServletException,
+		        IOException
+		{
+			Log.i(TAG, ".doGet");
+			doGetOrPost(request, response);
+		}
+
+		@Override
+		protected void doPost(HttpServletRequest request, final HttpServletResponse response) throws ServletException,
+		        IOException
+		{
+			Log.i(TAG, ".doPost");
+			doGetOrPost(request, response);
+		}
+
+		private void doGetOrPost(HttpServletRequest request, final HttpServletResponse response)
+		        throws ServletException, IOException
+		{
+			String uri = request.getRequestURI();
+			int slashIdx = uri.substring(1).indexOf('/');
+			final String levelId = slashIdx >= 0 ? request.getRequestURI().substring(2 + slashIdx).toLowerCase() : null;
+			Log.i(TAG, ".doGetOrPost: levelId = " + levelId);
+
+			response.setContentType("text/plain;charset=utf-8");
+
+			final FeatureDevice featureDevice = (FeatureDevice) Environment.getInstance().getFeatureComponent(
+			        FeatureName.Component.DEVICE);
+
+			char logLevel = 'v';
+			if (levelId != null)
+				if (levelId.equals("i"))
+					logLevel = 'i';
+				else if (levelId.equals("e"))
+					logLevel = 'e';
+
+			IOUtils.copy(featureDevice.getLogcatInputStream(logLevel), response.getOutputStream());
+		}
 	}
 }

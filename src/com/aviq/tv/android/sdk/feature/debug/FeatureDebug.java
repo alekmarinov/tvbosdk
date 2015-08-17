@@ -10,15 +10,14 @@
 
 package com.aviq.tv.android.sdk.feature.debug;
 
-import android.content.res.Resources.NotFoundException;
 import android.os.Bundle;
-import android.view.View;
-import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
 import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
+import com.aviq.tv.android.sdk.core.Prefs;
 import com.aviq.tv.android.sdk.core.feature.FeatureComponent;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
@@ -29,21 +28,37 @@ import com.aviq.tv.android.sdk.utils.TextUtils;
 /**
  * Feature for debugging
  */
-@Author("zheliazko")
+@Author("alek")
 public class FeatureDebug extends FeatureComponent implements EventReceiver
 {
 	private static final String TAG = FeatureDebug.class.getSimpleName();
 
-	private int _vhLevel = 0;
+	public static enum Param
+	{
+		/**
+		 * Key sequence for debug mode
+		 */
+		KEY_SEQUENCE_DEBUG("33284");
+
+		Param(String value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.DEBUG).put(name(), value);
+		}
+	}
+
+	private String _keySeqDebug;
 
 	public FeatureDebug() throws FeatureNotFoundException
 	{
 		require(FeatureName.Component.EASTER_EGG);
+		require(FeatureName.Component.DEVICE);
 	}
 
 	@Override
 	public void initialize(OnFeatureInitialized onFeatureInitialized)
 	{
+		_keySeqDebug = getPrefs().getString(Param.KEY_SEQUENCE_DEBUG);
+		_feature.Component.EASTER_EGG.addEasterEgg(_keySeqDebug);
 		_feature.Component.EASTER_EGG.getEventMessenger().register(this, FeatureEasterEgg.ON_KEY_SEQUENCE);
 		super.initialize(onFeatureInitialized);
 	}
@@ -62,69 +77,31 @@ public class FeatureDebug extends FeatureComponent implements EventReceiver
 		if (FeatureEasterEgg.ON_KEY_SEQUENCE == msgId)
 		{
 			String keySeq = bundle.getString(FeatureEasterEgg.EXTRA_KEY_SEQUENCE);
-			if (FeatureEasterEgg.KEY_SEQ_VHR.equals(keySeq))
+			if (keySeq.equals(_keySeqDebug))
 			{
-				Log.i(TAG, "------------ VIEW HIERARCHY DUMP ------------");
-				_vhLevel = 0;
-				View v = ((ViewGroup) Environment.getInstance().findViewById(android.R.id.content)).getChildAt(0);
-				recurseView(v);
-				Log.i(TAG, "------------ END OF VIEW HIERARCHY DUMP ------------");
-			}
-		}
-	}
-
-	private void recurseView(View v)
-	{
-		String treeLine = getTreeLine(_vhLevel);
-
-		String id = getStringId(v);
-		Log.i(TAG, treeLine + v.getClass() + " [tag = " + v.getTag() + ", id = " + id + ", top = " + v.getTop()
-		        + ", bottom = " + v.getBottom() + ", left = " + v.getLeft() + ", right = " + v.getRight() + "]");
-
-		if (v instanceof ViewGroup)
-		{
-			ViewGroup vg = (ViewGroup) v;
-			for (int i = 0; i < vg.getChildCount(); i++)
-			{
-				View child = vg.getChildAt(i);
-				if (child instanceof ViewGroup)
+				Prefs userPrefs = Environment.getInstance().getUserPrefs();
+				boolean isDebug = userPrefs.getBool(Environment.Param.DEBUG);
+				isDebug = !isDebug;
+				if (isDebug)
 				{
-					_vhLevel++;
-					recurseView(child);
+					Toast.makeText(Environment.getInstance(), "Entering DEBUG mode", Toast.LENGTH_LONG).show();
 				}
 				else
 				{
-					treeLine = getTreeLine(_vhLevel + 1);
-					id = getStringId(child);
-					Log.i(TAG, treeLine + child.getClass() + " [tag = " + v.getTag() + ", id = " + id + ", top = "
-					        + child.getTop() + ", bottom = " + child.getBottom() + ", left = " + child.getLeft()
-					        + ", right = " + child.getRight() + "]");
+					Toast.makeText(Environment.getInstance(), "Leaving DEBUG mode", Toast.LENGTH_LONG).show();
 				}
+				userPrefs.put(Environment.Param.DEBUG, isDebug);
+
+				final boolean debug = isDebug;
+				getEventMessenger().postDelayed(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						_feature.Component.DEVICE.suicide("Switching to DEBUG mode = " + debug);
+					}
+				}, 2000);
 			}
-			_vhLevel--;
 		}
-	}
-
-	private String getStringId(View v)
-	{
-		String id = null;
-		try
-		{
-			id = v.getResources().getResourceName(v.getId());
-		}
-		catch (NotFoundException e)
-		{
-			id = v.getId() + "";
-		}
-		return id;
-	}
-
-	private String getTreeLine(int level)
-	{
-		String tree = "+";
-		for (int i = 0; i < level; i++)
-			tree += "----";
-		tree += " ";
-		return tree;
 	}
 }

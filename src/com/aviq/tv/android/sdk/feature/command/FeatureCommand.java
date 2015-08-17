@@ -34,6 +34,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureName.Component;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
+import com.aviq.tv.android.sdk.feature.command.handlers.CommandFeatures;
 import com.aviq.tv.android.sdk.feature.command.handlers.CommandHello;
 import com.aviq.tv.android.sdk.feature.command.handlers.CommandSendKey;
 import com.aviq.tv.android.sdk.feature.command.handlers.CommandSendText;
@@ -49,6 +50,7 @@ public class FeatureCommand extends FeatureComponent
 	public static final String TAG = FeatureCommand.class.getSimpleName();
 	private Map<String, CommandHandler> _commandHandlers = new HashMap<String, CommandHandler>();
 	private static final String TVBOCONNECT_APP_ARCHIVE = "tvboconnect.zip";
+	private static final String FEATURES_APP_ARCHIVE = "features.zip";
 
 	public static enum Param
 	{
@@ -58,6 +60,11 @@ public class FeatureCommand extends FeatureComponent
 		DEPLOY_TVBOCONNECT(true),
 
 		/**
+		 * Should deploy features analyzer app via http
+		 */
+		DEPLOY_FEATURES(true),
+
+		/**
 		 * Context to access the tvboconnect app
 		 */
 		HTTP_CONTEXT_COMMAND("/command"),
@@ -65,7 +72,12 @@ public class FeatureCommand extends FeatureComponent
 		/**
 		 * Context to access the tvboconnect app
 		 */
-		HTTP_CONTEXT_TVBOCONNECT("/browse");
+		HTTP_CONTEXT_TVBOCONNECT("/browse"),
+
+		/**
+		 * Context to access the features app
+		 */
+		HTTP_CONTEXT_FEATURES("/features");
 
 		Param(boolean value)
 		{
@@ -94,6 +106,7 @@ public class FeatureCommand extends FeatureComponent
 		addCommandHandler(new CommandSendKey(_feature.Component.RCU));
 		addCommandHandler(new CommandSendText());
 		addCommandHandler(new CommandTime());
+		addCommandHandler(new CommandFeatures());
 
 		if (_feature.Component.HTTP_SERVER instanceof FeatureHttpServerJetty)
 		{
@@ -114,6 +127,24 @@ public class FeatureCommand extends FeatureComponent
 				{
 					onFeatureInitialized.onInitialized(new FeatureError(this, e));
 					return;
+				}
+			}
+
+			// deploy features html app only in DEBUG mode
+			if (Environment.getInstance().getUserPrefs().getBool(Environment.Param.DEBUG))
+			{
+				if (getPrefs().getBool(Param.DEPLOY_FEATURES))
+				{
+					try
+					{
+						InputStream zipFileStream = Environment.getInstance().getAssets().open(FEATURES_APP_ARCHIVE);
+						httpServer.deployStaticApp(zipFileStream, getPrefs().getString(Param.HTTP_CONTEXT_FEATURES));
+					}
+					catch (IOException e)
+					{
+						onFeatureInitialized.onInitialized(new FeatureError(this, e));
+						return;
+					}
 				}
 			}
 		}
@@ -204,7 +235,7 @@ public class FeatureCommand extends FeatureComponent
 			String uri = request.getRequestURI();
 			int slashIdx = uri.substring(1).indexOf('/');
 			final String cmdId = request.getRequestURI().substring(2 + slashIdx).toUpperCase();
-			Log.i(TAG, ".doGetOrPost: cmdId = " + cmdId + ", current thread = " + Thread.currentThread());
+			Log.i(TAG, ".doGetOrPost: cmdId = " + cmdId);
 
 			response.setContentType("application/json;charset=utf-8");
 

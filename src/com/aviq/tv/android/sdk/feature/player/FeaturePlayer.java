@@ -396,7 +396,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 			// Call only once to prevent multiple triggering of events
 			long timeElapsed = System.currentTimeMillis() - _startPolling;
 			boolean isStatus = _playerStatusVerifier.checkStatus(timeElapsed);
-			Log.v(TAG, "waiting player for status: " + _playerStatusVerifier + " -> " + isStatus);
+//			Log.v(TAG, "waiting player for status: " + _playerStatusVerifier + " -> " + isStatus);
 
 			if (!isStatus)
 			{
@@ -478,9 +478,9 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 			if (_hasPlayed)
 			{
 				long elapsedTimeSinceLastPlay = System.currentTimeMillis() - _timeSinceLastPlay;
-				Log.v(TAG, "PlayerPlayingVerifier.checkStatus: elapsedTimeSinceLastPlay = " + elapsedTimeSinceLastPlay
-				        + ", _positionSinceLastPlay = " + _positionSinceLastPlay + ", _player.getPosition() = "
-				        + _player.getPosition());
+//				Log.v(TAG, "PlayerPlayingVerifier.checkStatus: elapsedTimeSinceLastPlay = " + elapsedTimeSinceLastPlay
+//				        + ", _positionSinceLastPlay = " + _positionSinceLastPlay + ", _player.getPosition() = "
+//				        + _player.getPosition());
 				if (elapsedTimeSinceLastPlay > _playFreezeTimeout)
 				{
 					if (_positionSinceLastPlay == _player.getPosition())
