@@ -266,6 +266,8 @@ public class Environment extends Activity
 					{
 						if (error.isError())
 						{
+							Log.e(TAG, error.getMessage(), error);
+
 							Bundle bundle = new Bundle();
 							bundle.putInt(ExtraInitError.ERROR_CODE.name(), error.getCode());
 							bundle.putBundle(ExtraInitError.ERROR_DATA.name(), error.getBundle());
