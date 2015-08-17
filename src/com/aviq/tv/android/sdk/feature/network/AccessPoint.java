@@ -330,7 +330,7 @@ public class AccessPoint implements Comparable<AccessPoint>
 	 */
 	boolean updateWifiInfo(WifiInfo info, DetailedState state)
 	{
-		Log.d(TAG, ".updateWifiInfo: info.networkId = " + info.getNetworkId() + " (_networkId = " + _networkId + ")"
+		Log.d(TAG, ".updateWifiInfo: ssid = " + info.getSSID() + ", info.networkId = " + info.getNetworkId() + " (_networkId = " + _networkId + ")"
 		        + ", state = " + state);
 		boolean isHierarchyChanged = false;
 		if (info != null && _networkId != INVALID_NETWORK_ID && _networkId == info.getNetworkId())

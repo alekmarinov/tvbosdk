@@ -132,6 +132,8 @@ public class FeatureWireless extends FeatureComponent
 				}
 				else if (WifiManager.NETWORK_STATE_CHANGED_ACTION.equals(action))
 				{
+					String bssid = intent.getStringExtra(WifiManager.EXTRA_BSSID);
+					Log.d(TAG, "NETWORK_STATE_CHANGED_ACTION: bssid = " + bssid);
 					NetworkInfo networkInfo = (NetworkInfo) intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
 					onNetworkStateChanged(networkInfo.getDetailedState());
 				}

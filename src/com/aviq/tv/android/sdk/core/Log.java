@@ -134,9 +134,8 @@ public class Log
 			logRecord.setThreadID((int) Thread.currentThread().getId());
 
 			String logLine = _formatter.format(logRecord);
-			logLine = logLine.replaceFirst(" null", "");
-			logLine = logLine.replaceFirst(" null", "");
 			logLine = logLine.replaceFirst("\n", "");
+			logLine = logLine.replaceFirst(" null null", " ");
 			_ringBuf.add(_counter.incrementAndGet() + ": " + logLine);
 		}
 

@@ -69,6 +69,7 @@ import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.recording.FeatureRecordingScheduler;
+import com.aviq.tv.android.sdk.utils.Calendars;
 
 /**
  * Bulsat specific extension of EPG feature
@@ -1338,6 +1339,13 @@ public class FeatureEPGBulsat extends FeatureEPG
 							jsonProgram.put("image", program.getDetailAttribute(ProgramAttribute.IMAGE));
 							jsonProgram.put("playable", isProgramPlayable(program));
 							jsonProgram.put("recordable", isProgramRecordable(program));
+							jsonProgram.put("start", Calendars.makeString(program.getStartTime(), "yyyyMMddHHmmss"));
+							jsonProgram.put("stop", Calendars.makeString(program.getStopTime(), "yyyyMMddHHmmss"));
+
+							FeatureRecordingScheduler recordingScheduler = (FeatureRecordingScheduler) Environment.getInstance()
+							        .getFeatureComponent(FeatureName.Component.RECORDING_SCHEDULER);
+							boolean recorded = recordingScheduler != null ? recordingScheduler.isProgramRecorded(program) : false;
+							jsonProgram.put("recorded", recorded);
 							onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPGBulsat.this), jsonProgram);
 						}
 						catch (JSONException e)
