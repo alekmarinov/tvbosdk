@@ -303,6 +303,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 
 	public void hide()
 	{
+		Log.i(TAG, ".hide");
 		_player.hide();
 	}
 

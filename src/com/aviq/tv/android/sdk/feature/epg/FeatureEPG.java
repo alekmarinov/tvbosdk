@@ -31,7 +31,6 @@ import android.util.Base64;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
@@ -166,7 +165,6 @@ public abstract class FeatureEPG extends FeatureComponent
 		}
 	}
 
-	protected RequestQueue _requestQueue;
 	protected String _epgProvider;
 	protected int _epgVersion;
 	protected String _epgServer;
@@ -277,7 +275,6 @@ public abstract class FeatureEPG extends FeatureComponent
 		_epgServer = getPrefs().getString(Param.EPG_SERVER);
 		_channelLogoWidth = getPrefs().getInt(Param.CHANNEL_LOGO_WIDTH);
 		_channelLogoHeight = getPrefs().getInt(Param.CHANNEL_LOGO_HEIGHT);
-		_requestQueue = Environment.getInstance().getRequestQueue();
 		_maxChannels = getPrefs().getInt(Param.MAX_CHANNELS);
 
 		loadChannels(new OnResultReceived()
@@ -326,7 +323,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		// retrieve new channels from server
 		ChannelsResponse channelsResponse = new ChannelsResponse(onResultReceived);
 		JsonObjectRequest request = new JsonObjectRequest(getChannelsUrl(), null, channelsResponse, channelsResponse);
-		_requestQueue.add(request);
+		Environment.getInstance().getRequestQueue().add(request);
 	}
 
 	public List<Channel> getChannels()
@@ -409,7 +406,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		Log.i(TAG, ".getPrograms: channel = " + channel + ", when = " + Calendars.makeString(when) + ", offset = "
 		        + offset + ", count = " + count + " -> " + programsUrl);
 		JsonObjectRequest request = new JsonObjectRequest(programsUrl, null, programsResponse, programsResponse);
-		_requestQueue.add(request);
+		Environment.getInstance().getRequestQueue().add(request);
 	}
 
 	public void getPrograms(Calendar when, int offset, int count, OnResultReceived onResultReceived)
@@ -791,8 +788,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		Log.i(TAG, " _programDetailsRequest:" + _programDetailsRequest.toString());
 
 		// retrieves program details from the global request queue
-		_requestQueue.add(_programDetailsRequest);
-		Log.i(TAG, " _requestQueue:" + _requestQueue.toString());
+		Environment.getInstance().getRequestQueue().add(_programDetailsRequest);
 	}
 
 	/**
@@ -868,7 +864,7 @@ public abstract class FeatureEPG extends FeatureComponent
 			};
 
 			// retrieves program details from the global request queue
-			_requestQueue.add(programDetailsRequest);
+			Environment.getInstance().getRequestQueue().add(programDetailsRequest);
 		}
 	}
 
