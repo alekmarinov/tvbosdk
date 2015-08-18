@@ -358,6 +358,8 @@ public class Environment extends Activity
 				_userPrefs.put(Param.DEBUG, _prefs.getBool(Param.DEBUG));
 			}
 
+			Log.enableRingBuffer(_userPrefs.getBool(Param.DEBUG));
+
 			_maxKeysInQueue = _prefs.getInt(Param.MAX_KEYS_IN_QUEUE);
 
 			// enter strict mode in non release builds
