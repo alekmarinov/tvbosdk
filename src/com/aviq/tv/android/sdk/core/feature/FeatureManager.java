@@ -74,6 +74,28 @@ public class FeatureManager
 	}
 
 	/**
+	 * Verify if a given feature is currently initializing
+	 *
+	 * @param feature
+	 * @return true if feature is currently initializing
+	 */
+	public boolean isInitializing(IFeature feature)
+	{
+		return _featureInitializer._initializingFeatures.containsKey(feature);
+	}
+
+	/**
+	 * Verify if a given feature is already initliazed
+	 *
+	 * @param feature
+	 * @return true if feature is already initliazed
+	 */
+	public boolean isInitialized(IFeature feature)
+	{
+		return _featureInitializer._initializedFeatures.containsKey(feature);
+	}
+
+	/**
 	 * Get features dependency trees in json format
 	 *
 	 * @return JSONArray with features dependency information
