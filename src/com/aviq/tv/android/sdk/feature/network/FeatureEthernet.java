@@ -11,7 +11,6 @@
 package com.aviq.tv.android.sdk.feature.network;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -125,7 +124,7 @@ public class FeatureEthernet extends FeatureComponent
 		return _ethernetManagerWrapper.getConfiguration();
 	}
 
-	public boolean isEthPlugged()
+	public boolean isEthPlugged() throws IOException
 	{
 		int status = -1;
 		FileInputStream fis = null;
@@ -133,14 +132,6 @@ public class FeatureEthernet extends FeatureComponent
 		{
 			fis = new FileInputStream("/sys/class/net/" + getNetworkConfig().Iface + "/carrier");
 			status = fis.read();
-		}
-		catch (FileNotFoundException e)
-		{
-			Log.e(TAG, e.getMessage());
-		}
-		catch (IOException e)
-		{
-			Log.e(TAG, e.getMessage());
 		}
 		finally
 		{

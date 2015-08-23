@@ -734,9 +734,11 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 					JSONObject jsonChannel = new JSONObject();
 					jsonChannel.put("id", channel.getChannelId());
 					if (channel instanceof ChannelBulsat)
-						jsonChannel.put("thumbnail", "data:image/png;base64," + channel.getChannelImageBase64(ChannelBulsat.LOGO_SELECTED));
+						jsonChannel.put("thumbnail",
+						        "data:image/png;base64," + channel.getChannelImageBase64(ChannelBulsat.LOGO_SELECTED));
 					else
-						jsonChannel.put("thumbnail", "data:image/png;base64," + channel.getChannelImageBase64(Channel.LOGO_NORMAL));
+						jsonChannel.put("thumbnail",
+						        "data:image/png;base64," + channel.getChannelImageBase64(Channel.LOGO_NORMAL));
 					jsonChannel.put("title", channel.getTitle());
 					jsonChannel.put("is_favorite", isChannelFavorite(channel));
 					jsonChannels.put(jsonChannel);
