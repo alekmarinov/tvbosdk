@@ -21,6 +21,7 @@ public abstract class Channel
 	private int _ndvr;
 	private String _logoNormalUrl;
 	private Bitmap _logoNormal;
+	private String _logoNormalBase64;
 
 	public static class MetaData
 	{
@@ -81,6 +82,20 @@ public abstract class Channel
 	public int getNDVR()
 	{
 		return _ndvr;
+	}
+
+	public String getChannelImageBase64(int imageType)
+	{
+		if (imageType != LOGO_NORMAL)
+			throw new IllegalArgumentException("Expected imageType " + LOGO_NORMAL + ", got " + imageType);
+		return _logoNormalBase64;
+	}
+
+	public void setChannelImageBase64(int imageType, String imageBase64)
+	{
+		if (imageType != LOGO_NORMAL)
+			throw new IllegalArgumentException("Expected imageType " + LOGO_NORMAL + ", got " + imageType);
+		_logoNormalBase64 = imageBase64;
 	}
 
 	public Bitmap getChannelImage(int imageType)

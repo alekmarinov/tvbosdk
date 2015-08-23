@@ -1152,9 +1152,10 @@ public abstract class FeatureVOD extends FeatureScheduler
 		{
 			String vodGroupId = params.getString(CommandGetVodGroupsExtras.VOD_GROUP_ID.name());
 			final List<VODGroup> vodGroups = new ArrayList<VODGroup>();
+			final Map<VODGroup, List<VODItem>> vodGroupItems = new HashMap<VODGroup, List<VODItem>>();
+
 			loadVodGroups(vodGroupId, vodGroups, new OnResultReceived()
 			{
-
 				@Override
 				public void onReceiveResult(FeatureError error, Object object)
 				{
@@ -1164,24 +1165,42 @@ public abstract class FeatureVOD extends FeatureScheduler
 					}
 					else
 					{
-						@SuppressWarnings("unchecked")
-						JSONArray jsonVODgroups = new JSONArray();
-						try
+						loadVodItemsIndirect(vodGroups, vodGroupItems, 1, new OnResultReceived()
 						{
-							for (VODGroup vodGroup : vodGroups)
+							@Override
+							public void onReceiveResult(FeatureError error, Object object)
 							{
-								JSONObject jsonVODgroup = new JSONObject();
-								jsonVODgroup.put("id", vodGroup.getId());
-								jsonVODgroup.put("title", vodGroup.getTitle());
-								jsonVODgroup.put("parent", vodGroup.getParent());
-								jsonVODgroups.put(jsonVODgroup);
+								JSONArray jsonVODgroups = null;
+								if (!error.isError())
+								{
+									jsonVODgroups = new JSONArray();
+									for (VODGroup vodGroup : vodGroups)
+									{
+										try
+										{
+											JSONObject jsonVODgroup = new JSONObject();
+											jsonVODgroup.put("id", vodGroup.getId());
+											jsonVODgroup.put("title", vodGroup.getTitle());
+											jsonVODgroup.put("parent", vodGroup.getParent());
+											List<VODItem> groupItems = vodGroupItems.get(vodGroup);
+											if (groupItems != null && groupItems.size() > 0)
+											{
+												String posterBase64 = "data:image/png;base64,"
+												        + groupItems.get(0).getAttribute(
+												                VodAttribute.POSTER_SMALL_BASE64);
+												jsonVODgroup.put("poster", posterBase64);
+											}
+											jsonVODgroups.put(jsonVODgroup);
+										}
+										catch (JSONException e)
+										{
+											Log.e(TAG, e.getMessage(), e);
+										}
+									}
+								}
+								onResultReceived.onReceiveResult(error, jsonVODgroups);
 							}
-							onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this), jsonVODgroups);
-						}
-						catch (JSONException e)
-						{
-							onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, e), null);
-						}
+						});
 					}
 				}
 			});
@@ -1209,7 +1228,6 @@ public abstract class FeatureVOD extends FeatureScheduler
 			// vodItems will be filled when we call loadVodItems()
 			loadVodItems(vodGroup, vodItems, new OnResultReceived()
 			{
-
 				@Override
 				public void onReceiveResult(FeatureError error, Object object)
 				{
@@ -1219,20 +1237,18 @@ public abstract class FeatureVOD extends FeatureScheduler
 					}
 					else
 					{
-						@SuppressWarnings("unchecked")
 						JSONArray jsonVODitems = new JSONArray();
 						try
 						{
-
 							for (VODItem vodItem : vodItems)
 							{
 								JSONObject jsonVODitem = new JSONObject();
 								jsonVODitem.put("id", vodItem.getId());
-
 								jsonVODitem.put("title", vodItem.getTitle());
-
-								jsonVODitem.put("poster", vodItem.getPoster());
-
+								jsonVODitem.put(
+								        "poster",
+								        "data:image/png;base64,"
+								                + vodItem.getAttribute(VodAttribute.POSTER_SMALL_BASE64));
 								jsonVODitems.put(jsonVODitem);
 							}
 							onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this), jsonVODitems);
@@ -1289,7 +1305,8 @@ public abstract class FeatureVOD extends FeatureScheduler
 									jsonVODdetails.put("youtube_trailer_code", trailerCode);
 							}
 							jsonVODdetails.put("duration", vodItem.getAttribute(VodAttribute.DURATION));
-							jsonVODdetails.put("poster_large", vodItem.getPoster());
+							jsonVODdetails.put("poster_large", "data:image/png;base64,"
+					                + vodItem.getAttribute(VodAttribute.POSTER_LARGE_BASE64));
 							onResultReceived.onReceiveResult(FeatureError.OK(FeatureVOD.this), jsonVODdetails);
 						}
 						catch (JSONException e)
@@ -1306,9 +1323,9 @@ public abstract class FeatureVOD extends FeatureScheduler
 			String regExp = "http[s]?://www.youtube.com/watch\\?v=([^&]+).*";
 			Pattern pattern = Pattern.compile(regExp);
 			Matcher matcher = pattern.matcher(youtubeUrlFull);
-			
-			if(matcher.find())
-			{	
+
+			if (matcher.find())
+			{
 				return matcher.group(1);
 			}
 			return null;

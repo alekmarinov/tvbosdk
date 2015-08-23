@@ -36,6 +36,8 @@ public class ChannelBulsat extends Channel
 	private boolean _recordable;
 	private Bitmap _logoSelected;
 	private Bitmap _logoFavorite;
+	private String _logoSelectedBase64;
+	private String _logoFavoriteBase64;
 	private String _programImageMediumUrl;
 	private String _programImageLargeUrl;
 	private boolean _radio;
@@ -171,6 +173,35 @@ public class ChannelBulsat extends Channel
 	}
 
 	@Override
+	public String getChannelImageBase64(int imageType)
+	{
+		switch (imageType)
+		{
+			case LOGO_SELECTED:
+				return _logoSelectedBase64;
+			case LOGO_FAVORITE:
+				return _logoFavoriteBase64;
+		}
+		return super.getChannelImageBase64(imageType);
+	}
+
+	@Override
+	public void setChannelImageBase64(int imageType, String imageBase64)
+	{
+		switch (imageType)
+		{
+			case LOGO_SELECTED:
+				_logoSelectedBase64 = imageBase64;
+			break;
+			case LOGO_FAVORITE:
+				_logoFavoriteBase64 = imageBase64;
+			break;
+			default:
+				super.setChannelImageBase64(imageType, imageBase64);
+		}
+	}
+
+	@Override
 	public Bitmap getChannelImage(int imageType)
 	{
 		switch (imageType)
@@ -283,12 +314,14 @@ public class ChannelBulsat extends Channel
 			setRadio("true".equals(attributes[channelBulsatMetaData.metaChannelRadio]));
 		if (attributes[channelBulsatMetaData.metaChannelLogoSelected] != null)
 		{
+			setChannelImageBase64(LOGO_SELECTED, attributes[channelBulsatMetaData.metaChannelLogoSelected]);
 			byte[] decodedString = Base64.decode(attributes[channelBulsatMetaData.metaChannelLogoSelected],
 			        Base64.DEFAULT);
 			setChannelImage(LOGO_SELECTED, BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
 		}
 		if (attributes[channelBulsatMetaData.metaChannelLogoFavorite] != null)
 		{
+			setChannelImageBase64(LOGO_FAVORITE, attributes[channelBulsatMetaData.metaChannelLogoFavorite]);
 			byte[] decodedString = Base64.decode(attributes[channelBulsatMetaData.metaChannelLogoFavorite],
 			        Base64.DEFAULT);
 			setChannelImage(LOGO_FAVORITE, BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));

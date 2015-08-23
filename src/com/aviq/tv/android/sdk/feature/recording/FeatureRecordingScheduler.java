@@ -47,6 +47,7 @@ import com.aviq.tv.android.sdk.feature.command.CommandHandler;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
+import com.aviq.tv.android.sdk.feature.epg.bulsat.ChannelBulsat;
 import com.aviq.tv.android.sdk.utils.Calendars;
 
 /**
@@ -529,6 +530,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 	private class OnCommandGetRecordings implements CommandHandler
 	{
+		private final String DATETIME_FORMAT = "yyyyMMddHHmmss";
+
 		@Override
 		public void execute(Bundle params, final OnResultReceived onResultReceived)
 		{
@@ -563,6 +566,16 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 							jsonProgram.put("program_id", program.getId());
 							jsonProgram.put("channel_id", program.getChannel().getChannelId());
+
+							Channel channel = program.getChannel();
+							if (channel instanceof ChannelBulsat)
+								jsonProgram.put("channel_thumbnail", "data:image/png;base64," + channel.getChannelImageBase64(ChannelBulsat.LOGO_SELECTED));
+							else
+								jsonProgram.put("channel_thumbnail", "data:image/png;base64," + channel.getChannelImageBase64(Channel.LOGO_NORMAL));
+
+							jsonProgram.put("start",
+							        Calendars.makeString(program.getStartTime(), DATETIME_FORMAT));
+
 							jsonProgram.put("length", program.getLengthMin());
 							jsonProgram.put("title", program.getTitle());
 							jsonProgram.put("is_watched", isRecordWatched(program));

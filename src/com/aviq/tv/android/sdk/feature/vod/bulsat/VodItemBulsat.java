@@ -29,6 +29,9 @@ public class VodItemBulsat extends VODItem
 	private String _posterSmall;
 	private String _posterMedium;
 	private String _posterLarge;
+	private String _posterSmallBase64;
+	private String _posterMediumBase64;
+	private String _posterLargeBase64;
 	private String _shortDescription;
 	private String _release;
 	private String _country;
@@ -46,6 +49,9 @@ public class VodItemBulsat extends VODItem
 		public int metaPosterSmall;
 		public int metaPosterMedium;
 		public int metaPosterLarge;
+		public int metaPosterSmallBase64;
+		public int metaPosterMediumBase64;
+		public int metaPosterLargeBase64;
 		public int metaDescription;
 		public int metaShortDescription;
 		public int metaRelease;
@@ -147,6 +153,9 @@ public class VodItemBulsat extends VODItem
     {
 		_description = details.getString("description");
 		_source = details.getString("source");
+		_posterSmallBase64 = details.getString("poster_small_base64");
+		_posterMediumBase64 = details.getString("poster_medium_base64");
+		_posterLargeBase64 = details.getString("poster_large_base64");
     }
 
 	@Override
@@ -160,6 +169,14 @@ public class VodItemBulsat extends VODItem
 			_posterMedium = new String(attributes[vodItemBulsatMetaData.metaPosterMedium]);
 		if (attributes[vodItemBulsatMetaData.metaPosterLarge] != null)
 			_posterLarge = new String(attributes[vodItemBulsatMetaData.metaPosterLarge]);
+
+		if (attributes[vodItemBulsatMetaData.metaPosterSmallBase64] != null)
+			_posterSmallBase64 = new String(attributes[vodItemBulsatMetaData.metaPosterSmallBase64]);
+
+		if (attributes[vodItemBulsatMetaData.metaPosterMediumBase64] != null)
+			_posterMediumBase64 = new String(attributes[vodItemBulsatMetaData.metaPosterMediumBase64]);
+		if (attributes[vodItemBulsatMetaData.metaPosterLargeBase64] != null)
+			_posterLargeBase64 = new String(attributes[vodItemBulsatMetaData.metaPosterLargeBase64]);
 
 		if (attributes[vodItemBulsatMetaData.metaShortDescription] != null)
 			_shortDescription = new String(attributes[vodItemBulsatMetaData.metaShortDescription]);
@@ -218,6 +235,12 @@ public class VodItemBulsat extends VODItem
 				return String.valueOf(_duration);
 			case YOUTUBE_TRAILER_URL:
 				return _youTubeTrailerUrl;
+			case POSTER_SMALL_BASE64:
+				return _posterSmallBase64;
+			case POSTER_MEDIUM_BASE64:
+				return _posterMediumBase64;
+			case POSTER_LARGE_BASE64:
+				return _posterLargeBase64;
 			default:
 		}
 		return null;

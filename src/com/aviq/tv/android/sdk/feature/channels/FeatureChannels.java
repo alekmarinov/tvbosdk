@@ -10,9 +10,7 @@
 
 package com.aviq.tv.android.sdk.feature.channels;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 
@@ -36,14 +34,11 @@ import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.command.CommandHandler;
 import com.aviq.tv.android.sdk.feature.epg.Channel;
-import com.aviq.tv.android.sdk.feature.epg.Program;
-import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
+import com.aviq.tv.android.sdk.feature.epg.bulsat.ChannelBulsat;
 //import com.aviq.tv.android.sdk.feature.epg.FeatureEPG.OnCommandGetPrograms;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer;
 import com.aviq.tv.android.sdk.feature.player.FeaturePlayer.MediaType;
 import com.aviq.tv.android.sdk.feature.player.FeatureTimeshift;
-import com.aviq.tv.android.sdk.feature.recording.FeatureRecordingScheduler;
-import com.aviq.tv.android.sdk.feature.recording.FeatureRecordingScheduler.CommandRecordExtras;
 import com.aviq.tv.android.sdk.feature.system.FeatureDevice.IStatusFieldGetter;
 import com.aviq.tv.android.sdk.utils.Calendars;
 
@@ -63,10 +58,10 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	{
 		GET_CHANNELS, ADD_REMOVE_FAVORITES
 	}
-	
+
 	public static enum CommandAddRemoveFavoriteExtras
 	{
-		CHANNEL_ID , IS_FAVORITE
+		CHANNEL_ID, IS_FAVORITE
 	}
 
 	public enum OnSwitchChannelExtras
@@ -377,7 +372,8 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 	 */
 	public void play(final int index, final long playTime, final long playDuration)
 	{
-		Log.i(TAG, ".play: index = " + index + ", playTime = " + Calendars.makeString((int)playTime) + ", playDuration = " + playDuration);
+		Log.i(TAG, ".play: index = " + index + ", playTime = " + Calendars.makeString((int) playTime)
+		        + ", playDuration = " + playDuration);
 		int nChannels = _feature.Component.EPG.getChannels().size();
 		if (nChannels == 0)
 		{
@@ -737,7 +733,10 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				{
 					JSONObject jsonChannel = new JSONObject();
 					jsonChannel.put("id", channel.getChannelId());
-					jsonChannel.put("thumbnail", channel.getChannelImageUrl(Channel.LOGO_NORMAL));
+					if (channel instanceof ChannelBulsat)
+						jsonChannel.put("thumbnail", "data:image/png;base64," + channel.getChannelImageBase64(ChannelBulsat.LOGO_SELECTED));
+					else
+						jsonChannel.put("thumbnail", "data:image/png;base64," + channel.getChannelImageBase64(Channel.LOGO_NORMAL));
 					jsonChannel.put("title", channel.getTitle());
 					jsonChannel.put("is_favorite", isChannelFavorite(channel));
 					jsonChannels.put(jsonChannel);
@@ -750,21 +749,19 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 			}
 		}
 	}
-	
-	
+
 	private class OnCommandAddRemoveFavorite implements CommandHandler
 	{
+		@Override
 		public void execute(Bundle params, final OnResultReceived onResultReceived)
 		{
 			Log.i(TAG, ".OnCommandAddFavorite exec");
-			
+
 			String channelId = params.getString(CommandAddRemoveFavoriteExtras.CHANNEL_ID.name());
 			String isFavorite = params.getString(CommandAddRemoveFavoriteExtras.IS_FAVORITE.name());
-			
+
 			Log.i(TAG, ".OnCommandAddFavorite.execute: channelId = " + channelId + ", isFavorite = " + isFavorite);
-			
-			
-			
+
 			try
 			{
 				if (channelId == null || isFavorite == null)
@@ -775,9 +772,9 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				else
 				{
 					Channel channel = _feature.Component.EPG.getChannelById(channelId);
-					
+
 					setChannelFavorite(channel, Boolean.parseBoolean(isFavorite));
-					
+
 					onResultReceived.onReceiveResult(FeatureError.OK(FeatureChannels.this), null);
 				}
 			}
@@ -787,7 +784,8 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				onResultReceived.onReceiveResult(new FeatureError(FeatureChannels.this, e), null);
 			}
 		}
-	
+
+		@Override
 		public String getId()
 		{
 			return Command.ADD_REMOVE_FAVORITES.name();

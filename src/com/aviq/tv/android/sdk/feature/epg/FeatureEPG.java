@@ -593,6 +593,7 @@ public abstract class FeatureEPG extends FeatureComponent
 
 			if (values[metaData.metaChannelLogo] != null)
 			{
+				channel.setChannelImageBase64(Channel.LOGO_NORMAL, values[metaData.metaChannelLogo]);
 				byte[] decodedString = Base64.decode(values[metaData.metaChannelLogo], Base64.DEFAULT);
 				channel.setChannelImage(Channel.LOGO_NORMAL,
 				        BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
@@ -950,8 +951,8 @@ public abstract class FeatureEPG extends FeatureComponent
 	protected class OnCommandGetPrograms implements CommandHandler
 	{
 		public OnCommandGetPrograms()
-        {
-        }
+		{
+		}
 
 		@Override
 		public String getId()
@@ -1025,8 +1026,8 @@ public abstract class FeatureEPG extends FeatureComponent
 	protected class OnCommandGetProgramDetails implements CommandHandler
 	{
 		public OnCommandGetProgramDetails()
-        {
-        }
+		{
+		}
 
 		@Override
 		public void execute(Bundle params, final OnResultReceived onResultReceived)

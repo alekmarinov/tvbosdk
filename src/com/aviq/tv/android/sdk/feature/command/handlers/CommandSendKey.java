@@ -10,6 +10,8 @@
 
 package com.aviq.tv.android.sdk.feature.command.handlers;
 
+import java.io.IOException;
+
 import android.app.Instrumentation;
 import android.os.Bundle;
 
@@ -48,7 +50,8 @@ public class CommandSendKey implements CommandHandler
 		String keyName = params.getString(Extras.KEY.name());
 		String code = params.getString(Extras.CODE.name());
 		Log.i(TAG, ".execute: KEY = " + keyName + ", CODE = " + code);
-		final int keyCode = code != null ? Integer.valueOf(code) : _featureRCU.getCode(Key.valueOf(keyName));
+		final Key key = Key.valueOf(keyName);
+		final int keyCode = code != null ? Integer.valueOf(code) : _featureRCU.getCode(key);
 
 		new Thread(new Runnable()
 		{
@@ -57,6 +60,18 @@ public class CommandSendKey implements CommandHandler
 			{
 				// inject key event via Android instrumentation
 				_instrumentation.sendKeyDownUpSync(keyCode);
+
+				if (Key.SLEEP.equals(key))
+				{
+					try
+					{
+						Runtime.getRuntime().exec("input keyevent 26");
+					}
+					catch (IOException e)
+					{
+						Log.e(TAG, e.getMessage(), e);
+					}
+				}
 
 				// call back with success
 				Environment.getInstance().runOnUiThread(new Runnable()

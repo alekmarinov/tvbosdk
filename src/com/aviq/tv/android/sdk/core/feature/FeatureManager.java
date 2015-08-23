@@ -16,7 +16,9 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -87,74 +89,52 @@ public class FeatureManager
 				_feature = feature;
 			}
 
+			JSONArray connectFeatureTo(String depName, String depType) throws JSONException
+			{
+				JSONArray featureDepsJson = new JSONArray();
+				JSONObject featureJson = new JSONObject();
+				featureJson.put("name", _feature.getName());
+				featureJson.put("type", _feature.getType().name());
+				featureDepsJson.put(featureJson);
+				featureJson = new JSONObject();
+				featureJson.put("name", depName);
+				featureJson.put("type", depType);
+				featureDepsJson.put(featureJson);
+				return featureDepsJson;
+			}
+
 			void addToJson(JSONArray result) throws JSONException
 			{
-				if (_feature.dependencies() != null)
+				if (!_feature.dependencies().isEmpty())
 				{
 					// write component dependencies
 					for (FeatureName.Component dependency : _feature.dependencies().Components)
 					{
-						JSONArray featureDepsJson = new JSONArray();
-						JSONObject featureJson = new JSONObject();
-						featureJson.put("name", _feature.getName());
-						featureJson.put("type", _feature.getType().name());
-						featureDepsJson.put(featureJson);
-						featureJson = new JSONObject();
-						featureJson.put("name", dependency.name());
-						featureJson.put("type", IFeature.Type.COMPONENT.name());
-						featureDepsJson.put(featureJson);
-
-						result.put(featureDepsJson);
+						result.put(connectFeatureTo(dependency.name(), IFeature.Type.COMPONENT.name()));
 					}
 
 					// write scheduler dependencies
 					for (FeatureName.Scheduler dependency : _feature.dependencies().Schedulers)
 					{
-						JSONArray featureDepsJson = new JSONArray();
-						JSONObject featureJson = new JSONObject();
-						featureJson.put("name", _feature.getName());
-						featureJson.put("type", _feature.getType().name());
-						featureDepsJson.put(featureJson);
-						featureJson = new JSONObject();
-						featureJson.put("name", dependency.name());
-						featureJson.put("type", IFeature.Type.SCHEDULER.name());
-						featureDepsJson.put(featureJson);
-
-						result.put(featureDepsJson);
+						result.put(connectFeatureTo(dependency.name(), IFeature.Type.SCHEDULER.name()));
 					}
 
 					// write state dependencies
 					for (FeatureName.State dependency : _feature.dependencies().States)
 					{
-						JSONArray featureDepsJson = new JSONArray();
-						JSONObject featureJson = new JSONObject();
-						featureJson.put("name", _feature.getName());
-						featureJson.put("type", _feature.getType().name());
-						featureDepsJson.put(featureJson);
-						featureJson = new JSONObject();
-						featureJson.put("name", dependency.name());
-						featureJson.put("type", IFeature.Type.STATE.name());
-						featureDepsJson.put(featureJson);
-
-						result.put(featureDepsJson);
+						result.put(connectFeatureTo(dependency.name(), IFeature.Type.STATE.name()));
 					}
 
 					// write special dependencies
 					for (Class<?> dependency : _feature.dependencies().Specials)
 					{
-
-						JSONArray featureDepsJson = new JSONArray();
-						JSONObject featureJson = new JSONObject();
-						featureJson.put("name", _feature.getName());
-						featureJson.put("type", _feature.getType().name());
-						featureDepsJson.put(featureJson);
-						featureJson = new JSONObject();
-						featureJson.put("name", dependency.getName());
-						featureJson.put("type", "SPECIAL");
-						featureDepsJson.put(featureJson);
-
-						result.put(featureDepsJson);
+						result.put(connectFeatureTo(dependency.getName(), "SPECIAL"));
 					}
+				}
+				else
+				{
+					// connect to self
+					result.put(connectFeatureTo(_feature.getName(), _feature.getType().name()));
 				}
 			}
 		}
@@ -782,6 +762,8 @@ public class FeatureManager
 
 		private OnFeatureInitialized _onFeatureInitialized;
 		private Handler _handler = new Handler();
+		private Map<IFeature, Boolean> _initializingFeatures = new HashMap<IFeature, Boolean>();
+		private Map<IFeature, Boolean> _initializedFeatures = new HashMap<IFeature, Boolean>();
 
 		public void setTimeout(int timeout)
 		{
@@ -824,6 +806,10 @@ public class FeatureManager
 				final IFeature feature = _features.get(_featureNumber);
 				Log.i(TAG, ">" + _featureNumber + ". Initializing " + feature + " (" + feature.getClass().getName()
 				        + ") with timeout " + _timeout + " secs");
+
+				if (_initializingFeatures.containsKey(feature))
+					throw new RuntimeException("Internal Error: Attempt to initialize already initialized feature " + feature);
+				_initializingFeatures.put(feature, Boolean.TRUE);
 
 				onInitializeProgress(feature, 0.0f);
 
@@ -869,11 +855,16 @@ public class FeatureManager
 		{
 			stopTimeout();
 			onInitializeProgress(error.getFeature(), 1.0f);
+
+			if (_initializedFeatures.containsKey(error.getFeature()))
+				throw new RuntimeException("Internal Error: Feature " + error.getFeature() + " is calling onInitialized callback more than once");
+			_initializedFeatures.put(error.getFeature(), Boolean.TRUE);
+
 			if (_lastFeatureNumber == _featureNumber)
 			{
-				throw new RuntimeException("Internal Error: Attempt to initialize feature " + error.getFeature()
-				        + " more than once");
+				throw new RuntimeException("Internal Error: onInitialized callback is called not after initializeNext by feature " + error.getFeature());
 			}
+
 			_lastFeatureNumber = _featureNumber;
 			long featureInitTime = System.currentTimeMillis() - _initStartedTime;
 			Log.i(TAG, "<" + _featureNumber + ". " + error.getFeature() + " initialized in " + featureInitTime
