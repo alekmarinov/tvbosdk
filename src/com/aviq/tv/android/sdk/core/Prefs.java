@@ -10,6 +10,16 @@
 
 package com.aviq.tv.android.sdk.core;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
@@ -25,6 +35,7 @@ public class Prefs
 	private String _name;
 	private final SharedPreferences _prefs;
 	private boolean _isOverwrite;
+	private File _externalFile;
 
 	/**
 	 * Constructor
@@ -40,6 +51,11 @@ public class Prefs
 		_name = name;
 		_prefs = prefs;
 		_isOverwrite = isOverwrite;
+		if (_isOverwrite)
+		{
+			_externalFile = new File(android.os.Environment.getExternalStorageDirectory(), "copy.prefs");
+			loadSharedPreferencesFromFile(_externalFile);
+		}
 	}
 
 	/**
@@ -140,6 +156,7 @@ public class Prefs
 			Editor edit = _prefs.edit();
 			edit.putString(key.toString(), value);
 			edit.apply();
+			onApplyChanges();
 		}
 		else
 		{
@@ -165,6 +182,7 @@ public class Prefs
 			Editor edit = _prefs.edit();
 			edit.putInt(key.toString(), value);
 			edit.apply();
+			onApplyChanges();
 		}
 		else
 		{
@@ -183,13 +201,14 @@ public class Prefs
 	 *        value
 	 */
 	public void put(Object key, long value)
-    {
+	{
 		if (_isOverwrite || !_prefs.contains(key.toString()))
 		{
 			Log.d(TAG + ":" + _name, "Set " + key + " = " + value);
 			Editor edit = _prefs.edit();
 			edit.putLong(key.toString(), value);
 			edit.apply();
+			onApplyChanges();
 		}
 		else
 		{
@@ -197,7 +216,7 @@ public class Prefs
 			// the previous
 			Log.v(TAG + ":" + _name, "Skip setting " + key + " = " + value + ", previous value = " + getLong(key));
 		}
-    }
+	}
 
 	/**
 	 * Sets boolean parameter in preferences
@@ -215,6 +234,7 @@ public class Prefs
 			Editor edit = _prefs.edit();
 			edit.putBoolean(key.toString(), value);
 			edit.apply();
+			onApplyChanges();
 		}
 		else
 		{
@@ -235,6 +255,7 @@ public class Prefs
 		Editor edit = _prefs.edit();
 		edit.remove(key.toString());
 		edit.apply();
+		onApplyChanges();
 	}
 
 	/**
@@ -245,5 +266,113 @@ public class Prefs
 		Editor edit = _prefs.edit();
 		edit.clear();
 		edit.apply();
+		onApplyChanges();
+	}
+
+	private void onApplyChanges()
+	{
+		if (_isOverwrite)
+		{
+			// save to external storage
+			saveSharedPreferencesToFile(_externalFile);
+		}
+	}
+
+	private boolean saveSharedPreferencesToFile(File dst)
+	{
+		Log.i(TAG, ".saveSharedPreferencesToFile: src = " + dst.getAbsolutePath());
+		boolean res = false;
+		ObjectOutputStream output = null;
+		try
+		{
+			output = new ObjectOutputStream(new FileOutputStream(dst));
+			output.writeObject(_prefs.getAll());
+			res = true;
+		}
+		catch (FileNotFoundException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		finally
+		{
+			try
+			{
+				if (output != null)
+				{
+					output.flush();
+					output.close();
+				}
+			}
+			catch (IOException ex)
+			{
+				Log.e(TAG, ex.getMessage(), ex);
+			}
+		}
+		return res;
+	}
+
+	@SuppressWarnings(
+	{ "unchecked" })
+	private boolean loadSharedPreferencesFromFile(File src)
+	{
+		Log.i(TAG, ".loadSharedPreferencesFromFile: src = " + src.getAbsolutePath() + ", _isOverwrite = " + _isOverwrite);
+		boolean res = false;
+		ObjectInputStream input = null;
+		try
+		{
+			input = new ObjectInputStream(new FileInputStream(src));
+			Editor prefEdit = _prefs.edit();
+			prefEdit.clear();
+			Map<String, ?> entries = (Map<String, ?>) input.readObject();
+			for (Entry<String, ?> entry : entries.entrySet())
+			{
+				Object v = entry.getValue();
+				String key = entry.getKey();
+
+				if (v instanceof Boolean)
+					prefEdit.putBoolean(key, ((Boolean) v).booleanValue());
+				else if (v instanceof Float)
+					prefEdit.putFloat(key, ((Float) v).floatValue());
+				else if (v instanceof Integer)
+					prefEdit.putInt(key, ((Integer) v).intValue());
+				else if (v instanceof Long)
+					prefEdit.putLong(key, ((Long) v).longValue());
+				else if (v instanceof String)
+					prefEdit.putString(key, ((String) v));
+			}
+			prefEdit.commit();
+			res = true;
+		}
+		catch (FileNotFoundException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		catch (ClassNotFoundException e)
+		{
+			Log.e(TAG, e.getMessage(), e);
+		}
+		finally
+		{
+			try
+			{
+				if (input != null)
+				{
+					input.close();
+				}
+			}
+			catch (IOException ex)
+			{
+				Log.e(TAG, ex.getMessage(), ex);
+			}
+		}
+		return res;
 	}
 }
