@@ -99,7 +99,7 @@ public class StateManager
 
 		public enum Button
 		{
-			OK, CANCEL, YES, NO, POSITIVE_BUTTON, NEGATIVE_BUTTON, CUSTOM
+			OK, CANCEL, NO, YES, POSITIVE_BUTTON, NEGATIVE_BUTTON, CUSTOM
 		}
 
 		private Bundle _bundle = new Bundle();
