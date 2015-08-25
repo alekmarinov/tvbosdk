@@ -225,13 +225,6 @@ public class FeatureWireless extends FeatureComponent
 		_currentAccessPoint = accessPoint;
 		_lastPassword = password;
 
-		if (password == null)
-		{
-			boolean status = _wifiManager.enableNetwork(accessPoint.getNetworkId(), true);
-			Log.i(TAG, "connectToNetwork returns with " + status);
-			return status;
-		}
-
 		WifiConfiguration config = new WifiConfiguration();
 		config.SSID = "\"" + accessPoint.getSsid() + "\"";
 
