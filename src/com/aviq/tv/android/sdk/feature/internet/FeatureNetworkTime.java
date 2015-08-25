@@ -41,6 +41,11 @@ public class FeatureNetworkTime extends FeatureComponent
 	public static enum Param
 	{
 		/**
+		 * Enable or disable time correction via NTP
+		 */
+		ENABLE_NTP(false),
+
+		/**
 		 * Network client timeout
 		 */
 		TIMEOUT(10000),
@@ -49,6 +54,11 @@ public class FeatureNetworkTime extends FeatureComponent
 		 * NTP server address
 		 */
 		NTP_SERVER("bg.pool.ntp.org");
+
+		Param(boolean value)
+		{
+			Environment.getInstance().getFeaturePrefs(FeatureName.Component.NETWORK_TIME).put(name(), value);
+		}
 
 		Param(int value)
 		{
@@ -72,54 +82,60 @@ public class FeatureNetworkTime extends FeatureComponent
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-//		final Resources res = Environment.getInstance().getResources();
-//		final int id = Resources.getSystem().getIdentifier("config_ntpServer", "string", "android");
-//		_ntpServer = res.getString(id);
-		_ntpServer = getPrefs().getString(Param.NTP_SERVER);
-		Log.i(TAG, ".initialize: _ntpServer = " + _ntpServer);
-
-		new Thread(new Runnable()
+		if (!getPrefs().getBool(Param.ENABLE_NTP))
 		{
-			@Override
-			public void run()
-			{
-				NTPUDPClient client = new NTPUDPClient();
-		        client.setDefaultTimeout(getPrefs().getInt(Param.TIMEOUT));
-				try
-				{
-					client.open();
-					InetAddress hostAddr = InetAddress.getByName(_ntpServer);
-					Log.i(TAG, _ntpServer + " resolved to " + hostAddr.getHostAddress());
-					TimeInfo timeInfo = client.getTime(hostAddr);
-					TimeStamp receivedTimeStamp = timeInfo.getMessage().getReceiveTimeStamp();
-					Log.i(TAG, "Destination time: " + Calendars.makeString((int) (receivedTimeStamp.getTime() / 1000)));
-					Calendar dateTime = new GregorianCalendar();
-					dateTime.setTimeInMillis(receivedTimeStamp.getTime());
-					setDateTime(dateTime);
-			        client.close();
+			Log.i(TAG, "Time update via NTP is disabled");
+			super.initialize(onFeatureInitialized);
+		}
+		else
+		{
+			_ntpServer = getPrefs().getString(Param.NTP_SERVER);
+			Log.i(TAG, ".initialize: Updating time from NTP server " + _ntpServer);
 
-					Environment.getInstance().runOnUiThread(new Runnable()
-					{
-						@Override
-						public void run()
-						{
-							FeatureNetworkTime.super.initialize(onFeatureInitialized);
-						}
-					});
-				}
-				catch (final Exception e)
+			new Thread(new Runnable()
+			{
+				@Override
+				public void run()
 				{
-					Environment.getInstance().runOnUiThread(new Runnable()
+					NTPUDPClient client = new NTPUDPClient();
+					client.setDefaultTimeout(getPrefs().getInt(Param.TIMEOUT));
+					try
 					{
-						@Override
-						public void run()
+						client.open();
+						InetAddress hostAddr = InetAddress.getByName(_ntpServer);
+						Log.i(TAG, _ntpServer + " resolved to " + hostAddr.getHostAddress());
+						TimeInfo timeInfo = client.getTime(hostAddr);
+						TimeStamp receivedTimeStamp = timeInfo.getMessage().getReceiveTimeStamp();
+						Log.i(TAG, "Destination time: " + Calendars.makeString((int) (receivedTimeStamp.getTime() / 1000)));
+						Calendar dateTime = new GregorianCalendar();
+						dateTime.setTimeInMillis(receivedTimeStamp.getTime());
+						setDateTime(dateTime);
+						client.close();
+
+						Environment.getInstance().runOnUiThread(new Runnable()
 						{
-							onFeatureInitialized.onInitialized(new FeatureError(FeatureNetworkTime.this, e));
-						}
-					});
+							@Override
+							public void run()
+							{
+								FeatureNetworkTime.super.initialize(onFeatureInitialized);
+							}
+						});
+					}
+					catch (final Exception e)
+					{
+						Log.e(TAG, e.getMessage(), e);
+						Environment.getInstance().runOnUiThread(new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								onFeatureInitialized.onInitialized(new FeatureError(FeatureNetworkTime.this, e));
+							}
+						});
+					}
 				}
-			}
-		}).start();
+			}).start();
+		}
 	}
 
 	@Override
@@ -132,7 +148,9 @@ public class FeatureNetworkTime extends FeatureComponent
 	{
 		try
 		{
-			Log.i(TAG, ".setDateTime: " + Calendars.makeString(dateTime) + " over current time = " + Calendars.makeString(new GregorianCalendar()));
+			Log.i(TAG,
+			        ".setDateTime: " + Calendars.makeString(dateTime) + " over current time = "
+			                + Calendars.makeString(new GregorianCalendar()));
 			AlarmManager am = (AlarmManager) Environment.getInstance().getSystemService(Context.ALARM_SERVICE);
 			am.setTime(dateTime.getTimeInMillis());
 		}

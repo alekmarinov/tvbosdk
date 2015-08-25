@@ -23,7 +23,7 @@ import com.aviq.tv.android.sdk.core.Log;
 public class Calendars
 {
 	private static final String TAG = Calendars.class.getSimpleName();
-	public static final String ISO8601DATEFORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSZ";
+	public static final String ISO8601DATEFORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
 	public static final String FORMAT_DATE_TIME = "yyyy-MM-dd HH:mm:ss";
 	public static final String FORMAT_DATE = "yyyy-MM-dd";
 	public static final String FORMAT_TIME_HHMM = "HH:mm";
@@ -250,6 +250,7 @@ public class Calendars
 	 */
 	public static Calendar getCalendarFromISO(String datestring)
 	{
+		datestring = datestring.replaceAll("\\+0([0-9]){1}\\:00", "+0$100");
 		Calendar calendar = Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault());
 		SimpleDateFormat dateformat = new SimpleDateFormat(ISO8601DATEFORMAT, Locale.getDefault());
 		try
