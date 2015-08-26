@@ -48,6 +48,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	public static final int ON_PLAY_TIMEOUT = EventMessenger.ID("ON_PLAY_TIMEOUT");
 	public static final int ON_PLAY_ERROR = EventMessenger.ID("ON_PLAY_ERROR");
 	public static final int ON_PLAY_FREEZE = EventMessenger.ID("ON_PLAY_FREEZE");
+	public static final int ON_PLAY_UNFREEZE = EventMessenger.ID("ON_PLAY_UNFREEZE");
+
 	protected BasePlayer _player;
 	protected VideoView _videoView;
 	private PlayerStatusPoller _playerStartPoller = new PlayerStatusPoller(new PlayerStartVerifier());
@@ -397,7 +399,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 			// Call only once to prevent multiple triggering of events
 			long timeElapsed = System.currentTimeMillis() - _startPolling;
 			boolean isStatus = _playerStatusVerifier.checkStatus(timeElapsed);
-//			Log.v(TAG, "waiting player for status: " + _playerStatusVerifier + " -> " + isStatus);
+			// Log.v(TAG, "waiting player for status: " + _playerStatusVerifier
+			// + " -> " + isStatus);
 
 			if (!isStatus)
 			{
@@ -418,20 +421,28 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 
 	private class PlayerStartVerifier implements PlayerStatusVerifier
 	{
+		private long _positionSinceLastPlay = 0;
+
 		@Override
 		public boolean checkStatus(long timeElapsed)
 		{
 			if (_player.getPosition() > 0)
 			{
-				// trigger player started
-				Bundle bundle = new Bundle();
-				bundle.putLong(Extras.TIME_ELAPSED.name(), timeElapsed);
-				getEventMessenger().trigger(ON_PLAY_STARTED, bundle);
+				if (_positionSinceLastPlay > 0 && _positionSinceLastPlay != _player.getPosition())
+				{
+					// trigger player started
+					Bundle bundle = new Bundle();
+					bundle.putLong(Extras.TIME_ELAPSED.name(), timeElapsed);
+					getEventMessenger().trigger(ON_PLAY_STARTED, bundle);
 
-				// start verifying of resistant playback
-				_playerPlayingPoller.start();
-
-				return true;
+					// start verifying of resistant playback
+					_playerPlayingPoller.start();
+					return true;
+				}
+				else
+				{
+					_positionSinceLastPlay = _player.getPosition();
+				}
 			}
 			return false;
 		}
@@ -461,6 +472,7 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	private class PlayerPlayingVerifier implements PlayerStatusVerifier
 	{
 		private boolean _hasPlayed;
+		private boolean _hasFreezed;
 		private long _timeSinceLastPlay;
 		private long _positionSinceLastPlay;
 
@@ -479,20 +491,32 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 			if (_hasPlayed)
 			{
 				long elapsedTimeSinceLastPlay = System.currentTimeMillis() - _timeSinceLastPlay;
-//				Log.v(TAG, "PlayerPlayingVerifier.checkStatus: elapsedTimeSinceLastPlay = " + elapsedTimeSinceLastPlay
-//				        + ", _positionSinceLastPlay = " + _positionSinceLastPlay + ", _player.getPosition() = "
-//				        + _player.getPosition());
+				// Log.v(TAG,
+				// "PlayerPlayingVerifier.checkStatus: elapsedTimeSinceLastPlay = "
+				// + elapsedTimeSinceLastPlay
+				// + ", _positionSinceLastPlay = " + _positionSinceLastPlay +
+				// ", _player.getPosition() = "
+				// + _player.getPosition());
 				if (elapsedTimeSinceLastPlay > _playFreezeTimeout)
 				{
 					if (_positionSinceLastPlay == _player.getPosition())
 					{
 						// trigger player freeze event
-						getEventMessenger().trigger(ON_PLAY_FREEZE);
+						if (!_hasFreezed)
+						{
+							getEventMessenger().trigger(ON_PLAY_FREEZE);
+							_hasFreezed = true;
+						}
 					}
 					else
 					{
 						_timeSinceLastPlay = System.currentTimeMillis();
 						_positionSinceLastPlay = _player.getPosition();
+						if (_hasFreezed)
+						{
+							getEventMessenger().trigger(ON_PLAY_UNFREEZE);
+							_hasFreezed = false;
+						}
 					}
 				}
 			}
