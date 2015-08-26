@@ -774,9 +774,8 @@ public class FeatureChannels extends FeatureComponent implements EventReceiver
 				else
 				{
 					Channel channel = _feature.Component.EPG.getChannelById(channelId);
-
 					setChannelFavorite(channel, Boolean.parseBoolean(isFavorite));
-
+					save();
 					onResultReceived.onReceiveResult(FeatureError.OK(FeatureChannels.this), null);
 				}
 			}
