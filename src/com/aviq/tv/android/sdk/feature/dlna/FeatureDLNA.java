@@ -143,16 +143,16 @@ public class FeatureDLNA extends FeatureComponent implements PropertyChangeListe
 	@SuppressWarnings("unchecked")
 	private LocalDevice createDevice() throws ValidationException, LocalServiceBindingException
 	{
-		String productName = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.CUSTOMER);
-		String brandName = _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.BRAND);
-		if (!productName.equals(brandName))
-			productName += " " + brandName;
-		productName = TextUtils.capitalize(productName);
+		String customerName = TextUtils.capitalize(_feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.CUSTOMER));
+		String brandName = TextUtils.capitalize(_feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.BRAND));
+		String productTitle = customerName;
+		if (!brandName.equals(customerName))
+			productTitle += " " + brandName;
 
 		DeviceType type = new UDADeviceType(Name.SDK, 1);
-		DeviceDetails details = new DeviceDetails(productName, new ManufacturerDetails(Name.COMPANY),
-		        new ModelDetails(brandName, productName + " Set-Top Box based on " + Name.SDK.toUpperCase()
-		                + Version.NAME, Version.NAME));
+		DeviceDetails details = new DeviceDetails(brandName, new ManufacturerDetails(customerName),
+		        new ModelDetails(brandName, productTitle + " Set-Top Box based on " + Name.COMPANY + " " + Name.SDK.toUpperCase()
+		                + Version.NAME, _feature.Component.DEVICE.getDeviceAttribute(DeviceAttribute.VERSION)));
 		LocalService stateService = createService();
 		stateService.setManager(new StateServiceManager(stateService));
 

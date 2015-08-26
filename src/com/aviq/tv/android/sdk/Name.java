@@ -17,7 +17,7 @@ import java.util.Calendar;
  */
 public class Name
 {
-	public static final String COMPANY = "Intelibo Ltd";
+	public static final String COMPANY = "Intelibo";
 	public static final String COPYRIGHT = String.format("Copyright (c) 2007-%d, %s", Calendar.getInstance().get(Calendar.YEAR), COMPANY);
 	public static final String SDK = "tvbosdk";
 }
