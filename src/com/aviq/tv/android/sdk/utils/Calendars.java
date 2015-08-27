@@ -251,12 +251,12 @@ public class Calendars
 	public static Calendar getCalendarFromISO(String datestring, TimeZone timezone)
 	{
 		datestring = datestring.replaceAll("\\+0([0-9]){1}\\:00", "+0$100");
+		Log.i(TAG, ".getCalendarFromISO: datestring = " + datestring + ", timezone = " + timezone);
 		Calendar calendar = Calendar.getInstance(timezone, Locale.getDefault());
 		SimpleDateFormat dateformat = new SimpleDateFormat(ISO8601DATEFORMAT, Locale.getDefault());
 		try
 		{
 			Date date = dateformat.parse(datestring);
-			date.setHours(date.getHours() - 1);
 			calendar.setTime(date);
 		}
 		catch (ParseException e)
