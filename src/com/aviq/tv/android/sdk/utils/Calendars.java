@@ -248,10 +248,10 @@ public class Calendars
 	 *            a ISO 8601 Date string
 	 * @return a Calendar object
 	 */
-	public static Calendar getCalendarFromISO(String datestring)
+	public static Calendar getCalendarFromISO(String datestring, TimeZone timezone)
 	{
 		datestring = datestring.replaceAll("\\+0([0-9]){1}\\:00", "+0$100");
-		Calendar calendar = Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault());
+		Calendar calendar = Calendar.getInstance(timezone, Locale.getDefault());
 		SimpleDateFormat dateformat = new SimpleDateFormat(ISO8601DATEFORMAT, Locale.getDefault());
 		try
 		{

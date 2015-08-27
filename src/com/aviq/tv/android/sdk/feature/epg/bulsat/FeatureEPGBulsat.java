@@ -1331,7 +1331,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		int ndvr = channel.getNDVR();
 		Calendar ndvrTime = Calendar.getInstance();
 		ndvrTime.add(Calendar.SECOND, -ndvr);
-		return recordable && (inFuture || (channel.isPlayable() && program.getStartTime().after(ndvrTime)));
+		return !channel.isParentControl() && recordable && (inFuture || (channel.isPlayable() && program.getStartTime().after(ndvrTime)));
 	}
 
 	/** Determines whether to display the Play button */
@@ -1347,7 +1347,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		        .getFeatureComponent(FeatureName.Component.RECORDING_SCHEDULER);
 		boolean recorded = recordingScheduler != null ? recordingScheduler.isProgramRecorded(program) : false;
 		boolean inNdvr = program.getStopTime().before(now) && program.getStartTime().after(ndvrStart);
-		return inNdvr && (recorded || playable);
+		return !channel.isParentControl() && inNdvr && (recorded || playable);
 	}
 
 	private class OnCommandGetProgramBulsatDetails implements CommandHandler
