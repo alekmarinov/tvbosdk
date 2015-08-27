@@ -177,6 +177,8 @@ public class FeaturePlayer extends FeatureComponent implements EventReceiver, An
 	public void play(String url, MediaType mediaType)
 	{
 		Log.i(TAG, ".play: url = " + url + ", mediaType = " + mediaType);
+		_player.stop();
+
 		_mediaType = mediaType;
 		_isError = false;
 		_playTimeElapsed = System.currentTimeMillis();

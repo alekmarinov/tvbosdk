@@ -280,7 +280,7 @@ public class Prefs
 
 	private boolean saveSharedPreferencesToFile(File dst)
 	{
-		Log.i(TAG, ".saveSharedPreferencesToFile: src = " + dst.getAbsolutePath());
+		Log.i(TAG, ".saveSharedPreferencesToFile: dst = " + dst.getAbsolutePath());
 		boolean res = false;
 		ObjectOutputStream output = null;
 		try
