@@ -121,7 +121,12 @@ public class FeatureEPGBulsat extends FeatureEPG
 		/**
 		 * EPG provider name
 		 */
-		EPG_PROVIDER("bulsat");
+		EPG_PROVIDER("bulsat"),
+
+		/**
+		 * Maximum update try attempts
+		 */
+		UPDATE_ATTEMPTS_MAX(10);
 
 		Param(long value)
 		{
@@ -139,6 +144,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 
 	private List<Bitmap> _programImages = null;
 	private UpdateInterface _updateChannels;
+	private UpdateInterface _updateGenres;
 
 	public FeatureEPGBulsat() throws FeatureNotFoundException
 	{
@@ -166,19 +172,56 @@ public class FeatureEPGBulsat extends FeatureEPG
 			_updateChannels = new UpdateChannelsJSON();
 		}
 
-		final UpdateInterface updateGenres;
 		if (TransportFormat.XML.name().equals(getPrefs().getString(Param.TRANSPORT_FORMAT)))
 		{
-			updateGenres = new UpdateGenresXML();
+			_updateGenres = new UpdateGenresXML();
 		}
 		else
 		{
-			updateGenres = new UpdateGenresJSON();
+			_updateGenres = new UpdateGenresJSON();
 			// updateGenres = new UpdateGenresJSONWithHttpClient();
 		}
 
+		final long maxAttempts = getPrefs().getLong(Param.UPDATE_ATTEMPTS_MAX);
+		tryUpdate(new OnFeatureInitialized()
+		{
+			int _attempts = 0;
+
+			@Override
+			public void onInitialized(FeatureError error)
+			{
+				if (error.isError() && _attempts < maxAttempts)
+				{
+					_attempts++;
+					final OnFeatureInitialized _this = this;
+
+					getEventMessenger().postDelayed(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							tryUpdate(_this);
+						}
+					}, 1000);
+				}
+				else
+				{
+					onFeatureInitialized.onInitialized(error);
+				}
+			}
+
+			@Override
+			public void onInitializeProgress(IFeature feature, float progress)
+			{
+				onFeatureInitialized.onInitializeProgress(feature, progress);
+			}
+		});
+	}
+
+	private void tryUpdate(final OnFeatureInitialized onFeatureInitialized)
+	{
 		// load channel genres
-		updateGenres.update(new OnResultReceived()
+		_updateGenres.update(new OnResultReceived()
 		{
 			@Override
 			public void onReceiveResult(FeatureError error, Object object)
@@ -192,6 +235,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 				else
 				{
 					Genres genres = (Genres) object;
+					Genres.getInstance().clear();
 					Genres.getInstance().addAll(genres);
 
 					FeatureEPGBulsat.super.initialize(new OnFeatureInitialized()
@@ -228,7 +272,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 														Log.i(TAG, "Channel streams periodically updated: " + error);
 														if (!error.isError())
 														{
-															updateGenres.update(new OnResultReceived()
+															_updateGenres.update(new OnResultReceived()
 															{
 																@Override
 																public void onReceiveResult(FeatureError error,
@@ -1342,9 +1386,10 @@ public class FeatureEPGBulsat extends FeatureEPG
 							jsonProgram.put("start", Calendars.makeString(program.getStartTime(), "yyyyMMddHHmmss"));
 							jsonProgram.put("stop", Calendars.makeString(program.getStopTime(), "yyyyMMddHHmmss"));
 
-							FeatureRecordingScheduler recordingScheduler = (FeatureRecordingScheduler) Environment.getInstance()
-							        .getFeatureComponent(FeatureName.Component.RECORDING_SCHEDULER);
-							boolean recorded = recordingScheduler != null ? recordingScheduler.isProgramRecorded(program) : false;
+							FeatureRecordingScheduler recordingScheduler = (FeatureRecordingScheduler) Environment
+							        .getInstance().getFeatureComponent(FeatureName.Component.RECORDING_SCHEDULER);
+							boolean recorded = recordingScheduler != null ? recordingScheduler
+							        .isProgramRecorded(program) : false;
 							jsonProgram.put("recorded", recorded);
 							onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPGBulsat.this), jsonProgram);
 						}

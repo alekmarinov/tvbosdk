@@ -33,7 +33,6 @@ import com.android.volley.toolbox.StringRequest;
 import com.aviq.tv.android.sdk.R;
 import com.aviq.tv.android.sdk.core.Environment;
 import com.aviq.tv.android.sdk.core.EventMessenger;
-import com.aviq.tv.android.sdk.core.EventReceiver;
 import com.aviq.tv.android.sdk.core.Log;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
@@ -199,86 +198,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetVODItems());
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetVODDetails());
 
-		Environment.getInstance().getEventMessenger().register(new EventReceiver()
-		{
-			@Override
-			public void onEvent(int msgId, Bundle bundle)
-			{
-				testCommands();
-				Environment.getInstance().getEventMessenger().unregister(this, Environment.ON_LOADED);
-			}
-		}, Environment.ON_LOADED);
-
 		onSchedule(onFeatureInitialized);
-	}
-
-	private void testCommands()
-	{
-		OnResultReceived onResultReceived = new OnResultReceived()
-		{
-			@Override
-			public void onReceiveResult(FeatureError error, Object object)
-			{
-				if (error.isError())
-				{
-					Log.e(TAG, error.getMessage(), error);
-				}
-				else
-				{
-					JSONArray jsonArr = (JSONArray) object;
-					try
-					{
-						Log.i(TAG, "== " + jsonArr.length() + " objects returned");
-						for (int i = 0; i < jsonArr.length(); i++)
-						{
-							JSONObject jsonObj = jsonArr.getJSONObject(i);
-							Log.i(TAG, jsonObj.toString());
-						}
-					}
-					catch (JSONException e)
-					{
-						Log.e(TAG, e.getMessage(), e);
-					}
-				}
-			}
-		};
-		/*
-		 * _feature.Component.COMMAND.execute(Command.GET_VODGROUPS.name(), new
-		 * Bundle(), onResultReceived);
-		 * bundle = new Bundle();
-		 * /*We must insert something in the bundle, cannot do the test with
-		 * null
-		 * bundle
-		 * id: "ict_8", title: "Комедия/ Семеен", group: false
-		 * bundle.putString(CommandGetVodItemsExtras.VOD_GROUP_ID.name(),
-		 * "ict_8");
-		 * _feature.Component.COMMAND.execute(Command.GET_VODITEMS.name(),
-		 * bundle, onResultReceived);
-		 */
-
-		onResultReceived = new OnResultReceived()
-		{
-			@Override
-			public void onReceiveResult(FeatureError error, Object object)
-			{
-				if (error.isError())
-				{
-					Log.e(TAG, error.getMessage(), error);
-				}
-				else
-				{
-					JSONObject jsonObj = (JSONObject) object;
-					Log.i(TAG, "JSON object returned");
-
-					Log.i(TAG, jsonObj.toString());
-				}
-			}
-		};
-		// after OnResultReceived we call the tests...
-		Bundle bundle = new Bundle();
-		Log.i(TAG, "CommandGetVodItemsExtras.VOD_GROUP_ID.name():" + CommandGetVodItemsExtras.VOD_GROUP_ID.name());
-		bundle.putString(CommandGetVodDetailsExtras.VOD_ITEM_ID.name(), "ivd_867");
-		_feature.Component.COMMAND.execute(Command.GET_VODDETAILS.name(), bundle, onResultReceived);
 	}
 
 	@Override
@@ -321,7 +241,6 @@ public abstract class FeatureVOD extends FeatureScheduler
 				JsonObjectRequest vodItemsRequest = new JsonObjectRequest(vodItemsUrl, null, responseCallback,
 				        responseCallback);
 				_requestQueue.add(vodItemsRequest);
-
 			}
 			catch (JSONException e)
 			{
