@@ -607,10 +607,15 @@ public class StateManager
 			}
 			_inCreateState = true;
 			StringBuffer logMsg = new StringBuffer();
-			logMsg.append(".showState: ").append(state.getClass().getSimpleName()).append('(');
+			logMsg.append(".createState: ").append(state.getClass().getSimpleName()).append('(');
 			TextUtils.implodeBundle(logMsg, params, '=', ',').append("), layer=").append(stateLayer.name());
 			Log.i(TAG, logMsg.toString());
 
+			if (state.isCreated())
+			{
+				Log.e(TAG, "State " + state + " is already created. Check your logic");
+				throw new StateException(state, "State " + state + " is already created");
+			}
 			// set created status
 			state.setCreated(true);
 
@@ -974,11 +979,11 @@ public class StateManager
 	{
 		Log.i(TAG, ".removeState: " + state.getClass().getSimpleName());
 
-		state.setCreated(false);
 		if (state.isAdded())
 		{
 			try
 			{
+				state.setCreated(false);
 				FragmentTransaction ft = _activity.getFragmentManager().beginTransaction();
 				Log.i(TAG, "Removing fragment " + state);
 				ft.remove(state);
