@@ -624,7 +624,7 @@ public class StateManager
 					state.setArguments(params);
 					if (!state.isAdded())
 					{
-						FragmentTransaction ft = _activity.getFragmentManager().beginTransaction();
+						final FragmentTransaction ft = _activity.getFragmentManager().beginTransaction();
 						int fragmentId = 0;
 						switch (stateLayer)
 						{
@@ -658,17 +658,33 @@ public class StateManager
 							throw new RuntimeException(
 							        "Set fragment layer resource ids with method setFragmentLayerResources");
 
-						if (state.isAdded())
+						boolean isAdded = state.isAdded();
+						if (isAdded)
 						{
 							Log.w(TAG, "Attempt to add state " + state + " more than once");
+							Log.i(TAG, "Removing fragment " + state);
 							ft.remove(state);
 						}
-						ft.add(fragmentId, state);
-						// FIXME: make transition effect depending on state's
-						// StateLayer
-						ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-						// ft.commit();
-						ft.commitAllowingStateLoss();
+
+						final int fId = fragmentId;
+						Runnable addFragmentRunnable = new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								Log.i(TAG, "Adding fragment " + state);
+								ft.add(fId, state);
+								// FIXME: make transition effect depending on state's
+								// StateLayer
+								ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+								// ft.commit();
+								ft.commitAllowingStateLoss();
+							}
+						};
+						if (isAdded)
+							_handler.post(addFragmentRunnable);
+						else
+							addFragmentRunnable.run();
 					}
 
 					_handler.post(new Runnable()
@@ -964,6 +980,7 @@ public class StateManager
 			try
 			{
 				FragmentTransaction ft = _activity.getFragmentManager().beginTransaction();
+				Log.i(TAG, "Removing fragment " + state);
 				ft.remove(state);
 				ft.commit();
 			}
