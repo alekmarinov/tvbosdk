@@ -468,7 +468,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		{
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving EPG channels with code " + statusCode + ": " + error);
+			Log.e(TAG, "Error retrieving EPG programs with code " + statusCode + ": " + error);
 			_onResultReceived.onReceiveResult(new FeatureError(FeatureEPG.this, statusCode, error), null);
 		}
 	}
