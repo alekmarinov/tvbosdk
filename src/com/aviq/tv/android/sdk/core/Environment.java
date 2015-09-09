@@ -223,10 +223,10 @@ public class Environment extends Activity
 
 				_volleyNetwork = new BasicNetwork(new HttpClientStack(AndroidHttpClient.newInstance("tvbosdk/volley")));
 
-				// Use 1/8th of the available memory for caching the global
+				// Use 1/2th of the available memory for caching the global
 				// request queue
-				int cacheSize = 1024 * 1024 * memClass / 8;
-				_volleyCache = new DiskBasedCache(getCacheDir(), cacheSize / 2);
+				int cacheSize = 1024 * 1024 * memClass / 2;
+				_volleyCache = new DiskBasedCache(getCacheDir(), cacheSize);
 
 				_requestQueue = newRequestQueue();
 
