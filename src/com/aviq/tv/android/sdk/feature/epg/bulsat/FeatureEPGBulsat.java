@@ -572,7 +572,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		{
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving EPG channels with code " + statusCode + ": " + error);
+			Log.e(TAG, "Error retrieving EPG program images with code " + statusCode + ": " + error);
 			_onResultReceived.onReceiveResult(new FeatureError(FeatureEPGBulsat.this, statusCode, error), null);
 		}
 	}
@@ -1278,7 +1278,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		{
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving EPG channels with code " + statusCode + ": " + error);
+			Log.e(TAG, "Error retrieving EPG channel genres with code " + statusCode + ": " + error);
 			_onResultReceived.onReceiveResult(new FeatureError(FeatureEPGBulsat.this, statusCode, error), null);
 		}
 

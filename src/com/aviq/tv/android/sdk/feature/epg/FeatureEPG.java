@@ -941,7 +941,10 @@ public abstract class FeatureEPG extends FeatureComponent
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			_onResultReceived.onReceiveResult(new FeatureError(FeatureEPG.this, error), null);
+			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
+			        : ResultCode.GENERAL_FAILURE;
+			Log.e(TAG, "Error retrieving program details of " + _channel.getChannelId() + "/" + _programId + ": " + statusCode + ": " + error);
+			_onResultReceived.onReceiveResult(new FeatureError(FeatureEPG.this, statusCode, error), null);
 			_programDetailsRequest = null;
 		}
 	}

@@ -372,7 +372,10 @@ public class FeatureInternet extends FeatureScheduler
 		@Override
 		public void onErrorResponse(VolleyError error)
 		{
-			_onResultReceived.onReceiveResult(new FeatureError(FeatureInternet.this, error), null);
+			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
+			        : ResultCode.GENERAL_FAILURE;
+			Log.e(TAG, "Error retrieving content from " + _url + " with code " + statusCode + ": " + error);
+			_onResultReceived.onReceiveResult(new FeatureError(FeatureInternet.this, statusCode, error), null);
 		}
 	}
 

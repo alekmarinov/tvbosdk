@@ -676,7 +676,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 		{
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving VOD rate with code " + statusCode + ": " + error);
+			Log.e(TAG, "Error retrieving VOD item rating with code " + statusCode + ": " + error);
 			_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, statusCode, error), null);
 		}
 
@@ -720,7 +720,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 		{
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving VOD details with code " + statusCode + ": " + error);
+			Log.e(TAG, "Error rating VOD item with code " + statusCode + ": " + error);
 			_onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, statusCode, error), null);
 		}
 
@@ -766,7 +766,7 @@ public abstract class FeatureVOD extends FeatureScheduler
 		{
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving VOD details with code " + statusCode + ": " + error);
+			Log.e(TAG, "Error retrieving recommendations on " + _vodItem.getId() + " with code " + statusCode + ": " + error);
 			loadNoRecommendedItems();
 			// _onResultReceived.onReceiveResult(new
 			// FeatureError(FeatureVOD.this, statusCode, error));
@@ -1028,9 +1028,12 @@ public abstract class FeatureVOD extends FeatureScheduler
 		Response.ErrorListener errorCallback = new Response.ErrorListener()
 		{
 			@Override
-			public void onErrorResponse(VolleyError err)
+			public void onErrorResponse(VolleyError error)
 			{
-				onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, err), null);
+				int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
+				        : ResultCode.GENERAL_FAILURE;
+				Log.e(TAG, "search error " + statusCode + ": " + error);
+				onResultReceived.onReceiveResult(new FeatureError(FeatureVOD.this, statusCode, error), null);
 			}
 		};
 
