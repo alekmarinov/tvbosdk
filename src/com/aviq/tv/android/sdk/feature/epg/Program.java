@@ -9,15 +9,22 @@
  */
 package com.aviq.tv.android.sdk.feature.epg;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import org.json.JSONObject;
+
+import com.aviq.tv.android.sdk.core.Log;
 
 /**
  * Program data holder class
  */
 public abstract class Program implements Comparable<Program>
 {
+	private static final String PROGRAM_TIME_ID = "yyyyMMddHHmmss";
     private static final long serialVersionUID = 7712628341257180116L;
     private static final String TAG = Program.class.getSimpleName();
 
@@ -39,6 +46,22 @@ public abstract class Program implements Comparable<Program>
 		public int metaStart;
 		public int metaStop;
 		public int metaTitle;
+	}
+
+	public static Calendar timeById(String programId)
+	{
+		SimpleDateFormat sdfUTC = new SimpleDateFormat(PROGRAM_TIME_ID, Locale.getDefault());
+		sdfUTC.setTimeZone(TimeZone.getTimeZone("UTC"));
+		Calendar startTime = Calendar.getInstance();
+		try
+        {
+	        startTime.setTime(sdfUTC.parse(programId));
+        }
+        catch (ParseException e)
+        {
+        	Log.w(TAG, e.getMessage(), e);
+        }
+		return startTime;
 	}
 
 	/**

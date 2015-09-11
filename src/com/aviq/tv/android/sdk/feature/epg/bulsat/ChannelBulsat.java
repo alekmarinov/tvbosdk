@@ -38,6 +38,8 @@ public class ChannelBulsat extends Channel
 	private Bitmap _logoFavorite;
 	private String _logoSelectedBase64;
 	private String _logoFavoriteBase64;
+	private String _logoSelectedUrl;
+	private String _logoFavoriteUrl;
 	private String _programImageMediumUrl;
 	private String _programImageLargeUrl;
 	private boolean _radio;
@@ -227,6 +229,35 @@ public class ChannelBulsat extends Channel
 			break;
 			default:
 				super.setChannelImage(imageType, image);
+		}
+	}
+
+	@Override
+    public String getChannelImageUrl(int imageType)
+	{
+		switch (imageType)
+		{
+			case LOGO_SELECTED:
+				return _logoSelectedUrl;
+			case LOGO_FAVORITE:
+				return _logoFavoriteUrl;
+		}
+		return super.getChannelImageUrl(imageType);
+	}
+
+	@Override
+    public void setChannelImageUrl(int imageType, String imageUrl)
+	{
+		switch (imageType)
+		{
+			case LOGO_SELECTED:
+				_logoSelectedUrl = imageUrl;
+			break;
+			case LOGO_FAVORITE:
+				_logoFavoriteUrl = imageUrl;
+			break;
+			default:
+				super.setChannelImageUrl(imageType, imageUrl);
 		}
 	}
 

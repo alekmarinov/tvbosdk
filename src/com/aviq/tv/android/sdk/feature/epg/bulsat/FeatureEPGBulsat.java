@@ -59,7 +59,6 @@ import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.core.feature.FeatureError;
 import com.aviq.tv.android.sdk.core.feature.FeatureName;
 import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
-import com.aviq.tv.android.sdk.core.feature.IFeature;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.command.CommandHandler;
@@ -67,6 +66,7 @@ import com.aviq.tv.android.sdk.feature.epg.Channel;
 import com.aviq.tv.android.sdk.feature.epg.FeatureEPG;
 import com.aviq.tv.android.sdk.feature.epg.Program;
 import com.aviq.tv.android.sdk.feature.epg.ProgramAttribute;
+import com.aviq.tv.android.sdk.feature.epg.bulsat.ProgramBulsat.ImageSize;
 import com.aviq.tv.android.sdk.feature.internet.FeatureInternet;
 import com.aviq.tv.android.sdk.feature.recording.FeatureRecordingScheduler;
 import com.aviq.tv.android.sdk.utils.Calendars;
@@ -181,56 +181,60 @@ public class FeatureEPGBulsat extends FeatureEPG
 			_updateGenres = new UpdateGenresJSON();
 			// updateGenres = new UpdateGenresJSONWithHttpClient();
 		}
+		super.initialize(onFeatureInitialized);
 
-		final long maxAttempts = getPrefs().getLong(Param.UPDATE_ATTEMPTS_MAX);
-		tryUpdate(new OnFeatureInitialized()
-		{
-			int _attempts = 0;
-
-			@Override
-			public void onInitialized(FeatureError error)
-			{
-				if (error.isError() && _attempts < maxAttempts)
-				{
-					_attempts++;
-					final OnFeatureInitialized _this = this;
-
-					getEventMessenger().postDelayed(new Runnable()
-					{
-						@Override
-						public void run()
-						{
-							tryUpdate(_this);
-						}
-					}, 1000);
-				}
-				else
-				{
-					onFeatureInitialized.onInitialized(error);
-				}
-			}
-
-			@Override
-			public void onInitializeProgress(IFeature feature, float progress)
-			{
-				onFeatureInitialized.onInitializeProgress(feature, progress);
-			}
-		});
+		/*
+		 * final long maxAttempts =
+		 * getPrefs().getLong(Param.UPDATE_ATTEMPTS_MAX);
+		 * tryUpdate(new OnFeatureInitialized()
+		 * {
+		 * int _attempts = 0;
+		 * @Override
+		 * public void onInitialized(FeatureError error)
+		 * {
+		 * if (error.isError() && _attempts < maxAttempts)
+		 * {
+		 * _attempts++;
+		 * final OnFeatureInitialized _this = this;
+		 * getEventMessenger().postDelayed(new Runnable()
+		 * {
+		 * @Override
+		 * public void run()
+		 * {
+		 * tryUpdate(_this);
+		 * }
+		 * }, 1000);
+		 * }
+		 * else
+		 * {
+		 * onFeatureInitialized.onInitialized(error);
+		 * }
+		 * }
+		 * @Override
+		 * public void onInitializeProgress(IFeature feature, float progress)
+		 * {
+		 * onFeatureInitialized.onInitializeProgress(feature, progress);
+		 * }
+		 * });
+		 */
 	}
 
-	private void tryUpdate(final OnFeatureInitialized onFeatureInitialized)
+	@Override
+	public void loadChannels(final OnResultReceived onResultReceived)
 	{
+		Log.i(TAG, ".loadChannels");
+
 		// load channel genres
 		_updateGenres.update(new OnResultReceived()
 		{
 			@Override
 			public void onReceiveResult(FeatureError error, Object object)
 			{
-				Log.i(TAG, ".retrieveBulsatGenres.onReceiveResult: " + error);
+				Log.i(TAG, ".loadChannels: _updateGenres received: " + error);
 
 				if (error.isError())
 				{
-					onFeatureInitialized.onInitialized(error);
+					onResultReceived.onReceiveResult(error, null);
 				}
 				else
 				{
@@ -238,73 +242,45 @@ public class FeatureEPGBulsat extends FeatureEPG
 					Genres.getInstance().clear();
 					Genres.getInstance().addAll(genres);
 
-					FeatureEPGBulsat.super.initialize(new OnFeatureInitialized()
+					_updateChannels.update(onResultReceived);
+
+					// update channel streams periodically
+					// directly from the bulsat server
+					final long updateInterval = getPrefs().getLong(Param.CHANNELS_UPDATE_INTERVAL);
+					getEventMessenger().postDelayed(new Runnable()
 					{
 						@Override
-						public void onInitialized(final FeatureError error)
+						public void run()
 						{
-							if (!error.isError())
+							_updateChannels.update(new OnResultReceived()
 							{
-								_updateChannels.update(new OnResultReceived()
+								@Override
+								public void onReceiveResult(FeatureError error, Object object)
 								{
-									@Override
-									public void onReceiveResult(FeatureError error, Object object)
+									Log.i(TAG, "Channels periodically updated: " + error);
+									if (!error.isError())
 									{
-										Log.i(TAG, "Channel streams updated: " + error);
-
-										// EPG initialization finishes with
-										// status given by error
-										onFeatureInitialized.onInitialized(error);
-
-										// update channel streams periodically
-										// directly from the bulsat server
-										final long updateInterval = getPrefs().getLong(Param.CHANNELS_UPDATE_INTERVAL);
-										getEventMessenger().postDelayed(new Runnable()
+										_updateGenres.update(new OnResultReceived()
 										{
 											@Override
-											public void run()
+											public void onReceiveResult(FeatureError error, Object object)
 											{
-												_updateChannels.update(new OnResultReceived()
-												{
-													@Override
-													public void onReceiveResult(FeatureError error, Object object)
-													{
-														Log.i(TAG, "Channel streams periodically updated: " + error);
-														if (!error.isError())
-														{
-															_updateGenres.update(new OnResultReceived()
-															{
-																@Override
-																public void onReceiveResult(FeatureError error,
-																        Object object)
-																{
-																	Log.i(TAG, "Genres updated: " + error);
-																}
-															});
-														}
-													}
-												});
-												getEventMessenger().postDelayed(this, updateInterval);
+												Log.i(TAG, "Genres updated: " + error);
 											}
-										}, updateInterval);
+										});
 									}
-								});
-							}
-							else
-							{
-								onFeatureInitialized.onInitialized(error);
-							}
+								}
+							});
+							getEventMessenger().postDelayed(this, updateInterval);
 						}
-
-						@Override
-						public void onInitializeProgress(IFeature feature, float progress)
-						{
-							onFeatureInitialized.onInitializeProgress(feature, progress);
-						}
-					});
+					}, updateInterval);
 				}
 			}
 		});
+	}
+
+	private void tryUpdate(final OnFeatureInitialized onFeatureInitialized)
+	{
 	}
 
 	@Override
@@ -809,26 +785,16 @@ public class FeatureEPGBulsat extends FeatureEPG
 		}
 	}
 
-	private class ChannelStreamResponse implements Response.Listener<JSONArray>, Response.ErrorListener
+	private class ChannelJSONResponse implements Response.Listener<JSONArray>, Response.ErrorListener
 	{
+		private List<Channel> _receivedChannels = new ArrayList<Channel>();
 		private OnResultReceived _onResultReceived;
-		private Map<String, Boolean> _updatedChannels = new HashMap<String, Boolean>();
-		private List<String> _addChannels = new ArrayList<String>();
-		private List<String> _delChannels = new ArrayList<String>();
+		private int _logosRequested;
+		private int _logosLoaded;
 
-		ChannelStreamResponse(OnResultReceived onResultReceived)
+		ChannelJSONResponse(OnResultReceived onResultReceived)
 		{
 			_onResultReceived = onResultReceived;
-		}
-
-		public List<String> getAddChannels()
-		{
-			return _addChannels;
-		}
-
-		public List<String> getDelChannels()
-		{
-			return _delChannels;
 		}
 
 		@Override
@@ -836,74 +802,111 @@ public class FeatureEPGBulsat extends FeatureEPG
 		{
 			try
 			{
+				Map<String, Boolean> receivedChannelsMap = new HashMap<String, Boolean>();
+
 				for (int i = 0; i < jsonArr.length(); i++)
 				{
+					ChannelImageListener channelImageListener;
+					ImageRequest imageRequest;
+
 					JSONObject jsonChannel = jsonArr.getJSONObject(i);
-					String channelId = jsonChannel.getString("epg_name");
-					String streamUrl = null;
-					String seekUrl = null;
-					String genreTitle = null;
+					ChannelBulsat channel = new ChannelBulsat(_receivedChannels.size());
+
+					channel.setChannelId(jsonChannel.getString("epg_name"));
+					channel.setChannelImageUrl(ChannelBulsat.LOGO_NORMAL, jsonChannel.getString("logo"));
+					channel.setChannelImageUrl(ChannelBulsat.LOGO_SELECTED, jsonChannel.getString("logo_selected"));
+					channel.setChannelImageUrl(ChannelBulsat.LOGO_FAVORITE, jsonChannel.getString("logo_favorite"));
+					channel.setProgramImageUrl(jsonChannel.getString("logo_epg"), ImageSize.LARGE);
 
 					if (jsonChannel.has("sources"))
-						streamUrl = jsonChannel.getString("sources");
+						channel.setStreamUrl(jsonChannel.getString("sources"));
 
 					if (jsonChannel.has("ndvr"))
-						seekUrl = jsonChannel.getString("ndvr");
+						channel.setSeekUrl(jsonChannel.getString("ndvr"));
 
 					if (jsonChannel.has("genre"))
-						genreTitle = jsonChannel.getString("genre");
-
-					_updatedChannels.put(channelId, Boolean.TRUE);
-
-					ChannelBulsat channel = (ChannelBulsat) getChannelById(channelId);
-
-					if (channel == null)
 					{
-						if (!com.aviq.tv.android.sdk.utils.TextUtils.isEmpty(streamUrl))
-						{
-							if (Genres.getInstance().getGenreByTitle(genreTitle) != null)
-							{
-								Log.w(TAG,
-								        "Got new channel " + channelId + " from "
-								                + getPrefs().getString(Param.BULSAT_CHANNELS_URL_JSON)
-								                + " missing on AVTV server ( "
-								                + getPrefs().getString(FeatureEPG.Param.EPG_SERVER) + ")");
+						String genreTitle = jsonChannel.getString("genre");
+						Genre genre = Genres.getInstance().getGenreByTitle(genreTitle);
+						channel.setGenre(genre);
+					}
 
-								_addChannels.add(channelId);
-							}
-						}
-					}
-					else
+					if (jsonChannel.has("pg"))
 					{
-						if (!TextUtils.equals(streamUrl, channel.getStreamUrl()))
-						{
-							Log.d(TAG,
-							        "Updating " + channel.getChannelId() + " stream url from " + channel.getStreamUrl()
-							                + " to " + streamUrl);
-							channel.setStreamUrl(streamUrl);
-						}
-						if (!TextUtils.equals(seekUrl, channel.getSeekUrl()))
-						{
-							Log.d(TAG, "Updating " + channel.getChannelId() + " seek url from " + channel.getSeekUrl()
-							        + " to " + seekUrl);
-							channel.setSeekUrl(seekUrl);
-						}
+						boolean parentControl = !"free".equals(jsonChannel.getString("pg"));
+						channel.setParentControl(parentControl);
 					}
+
+					if (jsonChannel.has("channel"))
+						try
+						{
+							channel.setChannelNo(Integer.valueOf(jsonChannel.getString("channel")));
+						}
+						catch (NumberFormatException nfe)
+						{
+							Log.w(TAG, nfe.getMessage(), nfe);
+						}
+
+					if (jsonChannel.has("can_record"))
+					{
+						int canRecord = Integer.valueOf(jsonChannel.getString("can_record"));
+						channel.setRecordable(canRecord > 0);
+					}
+
+					if (jsonChannel.has("has_dvr"))
+					{
+						int hasDdvr = Integer.valueOf(jsonChannel.getString("has_dvr"));
+						channel.setPlayable(hasDdvr > 0);
+						channel.setNDVR(hasDdvr);
+					}
+
+					channel.setRadio(jsonChannel.optBoolean("radio"));
+
+					channelImageListener = new ChannelImageListener(channel, ChannelBulsat.LOGO_NORMAL);
+					imageRequest = new ImageRequest(channel.getChannelImageUrl(ChannelBulsat.LOGO_NORMAL),
+					        channelImageListener, 0, 0, Config.ARGB_8888, channelImageListener);
+					Environment.getInstance().getRequestQueue().add(imageRequest);
+					_logosRequested++;
+
+					channelImageListener = new ChannelImageListener(channel, ChannelBulsat.LOGO_SELECTED);
+					imageRequest = new ImageRequest(channel.getChannelImageUrl(ChannelBulsat.LOGO_SELECTED),
+					        channelImageListener, 0, 0, Config.ARGB_8888, channelImageListener);
+					Environment.getInstance().getRequestQueue().add(imageRequest);
+					_logosRequested++;
+
+					channelImageListener = new ChannelImageListener(channel, ChannelBulsat.LOGO_FAVORITE);
+					imageRequest = new ImageRequest(channel.getChannelImageUrl(ChannelBulsat.LOGO_FAVORITE),
+					        channelImageListener, 0, 0, Config.ARGB_8888, channelImageListener);
+					Environment.getInstance().getRequestQueue().add(imageRequest);
+					_logosRequested++;
+
+					_receivedChannels.add(channel);
+					receivedChannelsMap.put(channel.getChannelId(), Boolean.TRUE);
 				}
 
-				// verify channels for removal
-				for (Channel channel : getChannels())
+				boolean channelsChanged = false;
+				for (Channel receivedChannel : _receivedChannels)
 				{
-					if (_updatedChannels.get(channel.getChannelId()) == null)
-						_delChannels.add(channel.getChannelId());
+					if (getChannelById(receivedChannel.getChannelId()) == null)
+					{
+						channelsChanged = true;
+						break;
+					}
 				}
 
-				Log.i(TAG, "Added channels: " + _addChannels.size() + ", Removed channels: " + _delChannels.size());
-				if (_addChannels.size() > 0 || _delChannels.size() > 0)
+				for (Channel existingChannel : getChannels())
+				{
+					if (!receivedChannelsMap.containsKey(existingChannel.getChannelId()))
+					{
+						channelsChanged = true;
+						break;
+					}
+				}
+
+				if (channelsChanged)
 				{
 					getEventMessenger().trigger(ON_CHANNELS_CHANGED);
 				}
-				_onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPGBulsat.this), null);
 			}
 			catch (JSONException e)
 			{
@@ -922,6 +925,41 @@ public class FeatureEPGBulsat extends FeatureEPG
 			Log.e(TAG, "Error retrieving channels with code " + statusCode + ": " + error);
 			_onResultReceived.onReceiveResult(new FeatureError(FeatureEPGBulsat.this, statusCode, error), null);
 		}
+
+		private void callBackOnFinish()
+		{
+			Log.i(TAG, ".callBackOnFinish: _logosRequested = " + _logosRequested + ", _logosLoaded = " + _logosLoaded);
+			if (_logosRequested == _logosLoaded)
+				_onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPGBulsat.this), _receivedChannels);
+		}
+
+		private class ChannelImageListener implements Response.Listener<Bitmap>, ErrorListener
+		{
+			private Channel _channel;
+			private int _imageType;
+
+			ChannelImageListener(Channel channel, int imageType)
+			{
+				_channel = channel;
+				_imageType = imageType;
+			}
+
+			@Override
+			public void onResponse(Bitmap bitmap)
+			{
+				_channel.setChannelImage(_imageType, bitmap);
+
+				_logosLoaded++;
+				callBackOnFinish();
+			}
+
+			@Override
+			public void onErrorResponse(VolleyError arg0)
+			{
+				_logosLoaded++;
+				callBackOnFinish();
+			}
+		}
 	}
 
 	private interface UpdateInterface
@@ -937,8 +975,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 			String url = getPrefs().getString(Param.BULSAT_CHANNELS_URL_JSON);
 
 			// retrieve channel streams from server
-			ChannelStreamResponse channelStreamResponse = new ChannelStreamResponse(onResultReceived);
-			JsonArrayRequest request = new JsonArrayRequest(url, channelStreamResponse, channelStreamResponse)
+			ChannelJSONResponse channelJSONResponse = new ChannelJSONResponse(onResultReceived);
+			JsonArrayRequest request = new JsonArrayRequest(url, channelJSONResponse, channelJSONResponse)
 			{
 				@Override
 				public Map<String, String> getHeaders() throws AuthFailureError
@@ -1331,7 +1369,8 @@ public class FeatureEPGBulsat extends FeatureEPG
 		int ndvr = channel.getNDVR();
 		Calendar ndvrTime = Calendar.getInstance();
 		ndvrTime.add(Calendar.SECOND, -ndvr);
-		return !channel.isParentControl() && recordable && (inFuture || (channel.isPlayable() && program.getStartTime().after(ndvrTime)));
+		return !channel.isParentControl() && recordable
+		        && (inFuture || (channel.isPlayable() && program.getStartTime().after(ndvrTime)));
 	}
 
 	/** Determines whether to display the Play button */
