@@ -448,17 +448,28 @@ public class FeatureCrashLog extends FeatureComponent implements Thread.Uncaught
 				String paramValue = null;
 				try
 				{
+					// try string preference
 					paramValue = prefs.getString(paramName);
 				}
 				catch (ClassCastException cce)
 				{
 					try
 					{
+						// try int preference
 						paramValue = String.valueOf(prefs.getInt(paramName));
 					}
 					catch (ClassCastException ccce)
 					{
-						paramValue = String.valueOf(prefs.getLong(paramName));
+						try
+						{
+							// try long preference
+							paramValue = String.valueOf(prefs.getLong(paramName));
+						}
+						catch (ClassCastException cccce)
+						{
+							// try boolean preference
+							paramValue = String.valueOf(prefs.getBool(paramName));
+						}
 					}
 				}
 				sb.append(paramName).append('=').append(paramValue);

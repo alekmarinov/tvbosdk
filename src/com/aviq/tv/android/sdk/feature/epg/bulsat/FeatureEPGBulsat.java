@@ -817,6 +817,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 					channel.setChannelImageUrl(ChannelBulsat.LOGO_SELECTED, jsonChannel.getString("logo_selected"));
 					channel.setChannelImageUrl(ChannelBulsat.LOGO_FAVORITE, jsonChannel.getString("logo_favorite"));
 					channel.setProgramImageUrl(jsonChannel.getString("logo_epg"), ImageSize.LARGE);
+					channel.setProgramImageUrl(jsonChannel.getString("logo_epg"), ImageSize.MEDIUM);
 
 					if (jsonChannel.has("sources"))
 						channel.setStreamUrl(jsonChannel.getString("sources"));

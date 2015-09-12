@@ -250,6 +250,16 @@ public class Calendars
 	 */
 	public static Calendar getCalendarFromISO(String datestring, TimeZone timezone)
 	{
+		if (datestring == null)
+		{
+			Log.w(TAG, ".getCalendarFromISO: datestring argument cannot be null");
+			return null;
+		}
+		if (timezone == null)
+		{
+			Log.w(TAG, ".getCalendarFromISO: timezone argument cannot be null");
+			return null;
+		}
 		datestring = datestring.replaceAll("\\+0([0-9]){1}\\:00", "+0$100");
 		Log.i(TAG, ".getCalendarFromISO: datestring = " + datestring + ", timezone = " + timezone);
 		Calendar calendar = Calendar.getInstance(timezone, Locale.getDefault());

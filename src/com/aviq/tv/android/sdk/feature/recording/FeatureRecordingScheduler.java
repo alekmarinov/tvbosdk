@@ -164,14 +164,14 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 			if (!programId.matches("[0-9]+"))
 			{
-				Log.e(TAG, "Invalid recording format! Expected only numbers for programId, got + `" + programId + "'");
+				Log.e(TAG, "Invalid recording format! Expected only numbers for programId, got `" + programId + "'");
 				return false;
 			}
 
 			String watched = items[2];
-			if (watched.equals("true") || watched.equals("false"))
+			if (!(watched.equals("true") || watched.equals("false")))
 			{
-				Log.e(TAG, "Invalid recording format! Expected true or false for watched, got + `" + watched + "'");
+				Log.e(TAG, "Invalid recording format! Expected true or false for watched, got `" + watched + "'");
 				return false;
 			}
 		}
@@ -212,8 +212,9 @@ public class FeatureRecordingScheduler extends FeatureComponent
 		StringBuffer sb = new StringBuffer();
 		for (String key : _recordedPrograms.keySet())
 		{
+			if (sb.length() > 0)
+				sb.append(RECORD_DELIMITER);
 			boolean watched = _recordedPrograms.get(key);
-			Log.i(TAG, ".serializeRecordings: " + key + " -> " + watched);
 			String[] parts = key.split("_");
 			sb.append(parts[0]).append(ITEM_DELIMITER).append(parts[1]).append(ITEM_DELIMITER).append(watched);
 		}
