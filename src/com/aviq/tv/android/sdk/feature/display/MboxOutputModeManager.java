@@ -8,26 +8,62 @@ import android.util.Log;
 public class MboxOutputModeManager
 {
 	public static final String TAG = MboxOutputModeManager.class.getSimpleName();
-	
+
 	private Object _mboxOutputManager;
-	
+	private Method _autoSwitchHdmiPassthough;
+	private Method _enableDobly_DRC;
+	private Method _setDTS_DownmixMode;
+	private Method _setDoblyMode;
+	private Method _enableDTS_DRC_scale_control;
+	private Method _enableDTS_Dial_Norm_control;
+	private Method _getBestMatchResolution;
+	private Method _ifModeIsSetting;
+	private Method _isHDMIPlugged;
+	private Method _setDigitalVoiceValue;
+	private Method _setHdmiUnPlugged;
+	private Method _setHdmiPlugged;
+	private Method _setOutputMode;
+	private boolean _isSupported;
+
 	public MboxOutputModeManager(Object mboxOutputManager)
 	{
 		_mboxOutputManager = mboxOutputManager;
+
+		try
+        {
+	        _autoSwitchHdmiPassthough = _mboxOutputManager.getClass().getMethod("autoSwitchHdmiPassthough",new Class[] {});
+	        _enableDobly_DRC = _mboxOutputManager.getClass().getMethod("enableDobly_DRC", boolean.class);
+	        _setDTS_DownmixMode = _mboxOutputManager.getClass().getMethod("setDTS_DownmixMode", String.class);
+	        _setDoblyMode = _mboxOutputManager.getClass().getMethod("setDoblyMode", String.class);
+	        _enableDTS_DRC_scale_control = _mboxOutputManager.getClass().getMethod("enableDTS_DRC_scale_control", boolean.class);
+	        _enableDTS_Dial_Norm_control = _mboxOutputManager.getClass().getMethod("enableDTS_Dial_Norm_control", boolean.class);
+	        _getBestMatchResolution = _mboxOutputManager.getClass().getMethod("getBestMatchResolution",new Class[] {});
+	        _ifModeIsSetting = _mboxOutputManager.getClass().getMethod("ifModeIsSetting",new Class[] {});
+	        _isHDMIPlugged = _mboxOutputManager.getClass().getMethod("isHDMIPlugged",new Class[] {});
+	        _setDigitalVoiceValue = _mboxOutputManager.getClass().getMethod("setDigitalVoiceValue",String.class);
+	        _setHdmiUnPlugged = _mboxOutputManager.getClass().getMethod("setHdmiUnPlugged",new Class[] {});
+	        _setHdmiPlugged = _mboxOutputManager.getClass().getMethod("setHdmiPlugged",new Class[] {});
+	        _setOutputMode = _mboxOutputManager.getClass().getMethod("setOutputMode",String.class);
+        	_isSupported = true;
+        }
+        catch (NoSuchMethodException e)
+        {
+        	Log.w(TAG, e.getMessage(), e);
+        }
 	}
-	
+
+	public boolean isSupported()
+	{
+		return _isSupported;
+	}
+
 	public int autoSwitchHdmiPassthough()
 	{
 		int res = 0;
 		try
 		{
-			Method autoSwitchHdmiPassthough = _mboxOutputManager.getClass().getMethod("autoSwitchHdmiPassthough",new Class[] {});
-			Integer iRes = (Integer) autoSwitchHdmiPassthough.invoke(_mboxOutputManager, new Object[]{});
+			Integer iRes = (Integer) _autoSwitchHdmiPassthough.invoke(_mboxOutputManager, new Object[]{});
 			res = iRes.intValue();
-		}
-		catch (NoSuchMethodException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -43,18 +79,12 @@ public class MboxOutputModeManager
 		}
 		return res;
 	}
-	
+
 	public void enableDobly_DRC(boolean parseBoolean)
 	{
-		
 		try
 		{
-			Method enableDobly_DRC = _mboxOutputManager.getClass().getMethod("enableDobly_DRC", boolean.class);
-			enableDobly_DRC.invoke(_mboxOutputManager, parseBoolean);
-		}
-		catch (NoSuchMethodException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
+			_enableDobly_DRC.invoke(_mboxOutputManager, parseBoolean);
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -69,17 +99,12 @@ public class MboxOutputModeManager
 			Log.e(TAG, e.getMessage(), e);
 		}
 	}
-	
+
 	public void setDTS_DownmixMode(String mode)
 	{
 		try
 		{
-			Method setDTS_DownmixMode = _mboxOutputManager.getClass().getMethod("setDTS_DownmixMode", String.class);
-			setDTS_DownmixMode.invoke(_mboxOutputManager, mode);
-		}
-		catch (NoSuchMethodException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
+			_setDTS_DownmixMode.invoke(_mboxOutputManager, mode);
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -93,19 +118,14 @@ public class MboxOutputModeManager
 		{
 			Log.e(TAG, e.getMessage(), e);
 		}
-		
+
 	}
-	
+
 	public void setDoblyMode(String mode)
 	{
 		try
 		{
-			Method setDoblyMode = _mboxOutputManager.getClass().getMethod("setDoblyMode", String.class);
-			setDoblyMode.invoke(_mboxOutputManager, mode);
-		}
-		catch (NoSuchMethodException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
+			_setDoblyMode.invoke(_mboxOutputManager, mode);
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -119,20 +139,13 @@ public class MboxOutputModeManager
 		{
 			Log.e(TAG, e.getMessage(), e);
 		}
-		
-		
 	}
-	
+
 	public void enableDTS_DRC_scale_control(boolean parseBoolean)
 	{
 		try
 		{
-			Method enableDTS_DRC_scale_control = _mboxOutputManager.getClass().getMethod("enableDTS_DRC_scale_control", boolean.class);
-			enableDTS_DRC_scale_control.invoke(_mboxOutputManager, parseBoolean);
-		}
-		catch (NoSuchMethodException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
+			_enableDTS_DRC_scale_control.invoke(_mboxOutputManager, parseBoolean);
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -146,19 +159,13 @@ public class MboxOutputModeManager
 		{
 			Log.e(TAG, e.getMessage(), e);
 		}
-		
 	}
-	
+
 	public void enableDTS_Dial_Norm_control(boolean parseBoolean)
 	{
 		try
 		{
-			Method enableDTS_Dial_Norm_control = _mboxOutputManager.getClass().getMethod("enableDTS_Dial_Norm_control", boolean.class);
-			enableDTS_Dial_Norm_control.invoke(_mboxOutputManager, parseBoolean);
-		}
-		catch (NoSuchMethodException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
+			_enableDTS_Dial_Norm_control.invoke(_mboxOutputManager, parseBoolean);
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -172,7 +179,7 @@ public class MboxOutputModeManager
 		{
 			Log.e(TAG, e.getMessage(), e);
 		}
-		
+
 	}
 
 	public String getBestMatchResolution()
@@ -180,13 +187,7 @@ public class MboxOutputModeManager
 		String res = null;
 		try
 		{
-			
-			Method getBestMatchResolution = _mboxOutputManager.getClass().getMethod("getBestMatchResolution",new Class[] {});			
-			res = (String) getBestMatchResolution.invoke(_mboxOutputManager, new Object[]{});			
-		}
-		catch (NoSuchMethodException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
+			res = (String) _getBestMatchResolution.invoke(_mboxOutputManager, new Object[]{});
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -208,12 +209,7 @@ public class MboxOutputModeManager
 		boolean res =  false;
 		try
 		{
-			Method ifModeIsSetting = _mboxOutputManager.getClass().getMethod("ifModeIsSetting",new Class[] {});
-			res = (Boolean) ifModeIsSetting.invoke(_mboxOutputManager, new Object[]{});			
-		}
-		catch (NoSuchMethodException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
+			res = (Boolean) _ifModeIsSetting.invoke(_mboxOutputManager, new Object[]{});
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -235,12 +231,7 @@ public class MboxOutputModeManager
 		boolean res =  false;
 		try
 		{
-			Method isHDMIPlugged = _mboxOutputManager.getClass().getMethod("isHDMIPlugged",new Class[] {});
-			res = (Boolean) isHDMIPlugged.invoke(_mboxOutputManager, new Object[]{});			
-		}
-		catch (NoSuchMethodException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
+			res = (Boolean) _isHDMIPlugged.invoke(_mboxOutputManager, new Object[]{});
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -259,15 +250,9 @@ public class MboxOutputModeManager
 
 	public void setDigitalVoiceValue(String string)
     {
-	
 		try
 		{
-			Method setDigitalVoiceValue = _mboxOutputManager.getClass().getMethod("setDigitalVoiceValue",String.class);
-			setDigitalVoiceValue.invoke(_mboxOutputManager, string);			
-		}
-		catch (NoSuchMethodException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
+			_setDigitalVoiceValue.invoke(_mboxOutputManager, string);
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -281,20 +266,13 @@ public class MboxOutputModeManager
 		{
 			Log.e(TAG, e.getMessage(), e);
 		}
-	
-	    
     }
 
 	public void setHdmiUnPlugged()
-    {		
+    {
 		try
 		{
-			Method setHdmiUnPlugged = _mboxOutputManager.getClass().getMethod("setHdmiUnPlugged",new Class[] {});
-			setHdmiUnPlugged.invoke(_mboxOutputManager, new Object[]{});			
-		}
-		catch (NoSuchMethodException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
+			_setHdmiUnPlugged.invoke(_mboxOutputManager, new Object[]{});
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -307,19 +285,14 @@ public class MboxOutputModeManager
 		catch (InvocationTargetException e)
 		{
 			Log.e(TAG, e.getMessage(), e);
-		}			    
+		}
     }
 
 	public void setHdmiPlugged()
     {
 		try
 		{
-			Method setHdmiPlugged = _mboxOutputManager.getClass().getMethod("setHdmiPlugged",new Class[] {});
-			setHdmiPlugged.invoke(_mboxOutputManager, new Object[]{});			
-		}
-		catch (NoSuchMethodException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
+			_setHdmiPlugged.invoke(_mboxOutputManager, new Object[]{});
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -332,19 +305,14 @@ public class MboxOutputModeManager
 		catch (InvocationTargetException e)
 		{
 			Log.e(TAG, e.getMessage(), e);
-		}			    
+		}
     }
 
 	public void setOutputMode(String mode)
     {
 		try
 		{
-			Method setOutputMode = _mboxOutputManager.getClass().getMethod("setOutputMode",String.class);
-			setOutputMode.invoke(_mboxOutputManager, mode);			
-		}
-		catch (NoSuchMethodException e)
-		{
-			Log.e(TAG, e.getMessage(), e);
+			_setOutputMode.invoke(_mboxOutputManager, mode);
 		}
 		catch (IllegalArgumentException e)
 		{
@@ -357,6 +325,6 @@ public class MboxOutputModeManager
 		catch (InvocationTargetException e)
 		{
 			Log.e(TAG, e.getMessage(), e);
-		}			    
+		}
     }
 }

@@ -112,21 +112,6 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			_recordedPrograms.put(makeRecordingId(recording.channelId, recording.programId), recording.watched);
 		}
 
-		/*
-		 * loadRecordings(new OnResultReceived()
-		 * {
-		 * @SuppressWarnings("unchecked")
-		 * @Override
-		 * public void onReceiveResult(FeatureError error, Object object)
-		 * {
-		 * if (!error.isError())
-		 * _channelToRecordsNavigableMap = (Map<String, NavigableMap<Calendar,
-		 * Program>>) object;
-		 * onFeatureInitialized.onInitialized(error);
-		 * }
-		 * });
-		 */
-
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandRecord());
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandGetRecordings());
 		_feature.Component.COMMAND.addCommandHandler(new OnCommandRemoveRecording());

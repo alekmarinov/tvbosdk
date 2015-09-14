@@ -49,17 +49,16 @@ public class FeatureDisplay extends FeatureComponent
 	{
 		Log.i(TAG, ".initialize");
 
-		_mboxOutputModeManager = new MboxOutputModeManager(Environment.getInstance().getApplicationContext()
-		        .getSystemService(MBOX_OUTPUTMODE_SERVICE));
-
-		List<VideoMode> videoModes = getVideoModes();
-		int i = 0;
-		for (VideoMode videoMode : videoModes)
-		{
-			Log.i(TAG, i + ". " + videoMode);
-			i++;
-		}
+		Object mboxOutputManager = Environment.getInstance().getApplicationContext()
+		        .getSystemService(MBOX_OUTPUTMODE_SERVICE);
+		if (mboxOutputManager != null)
+			_mboxOutputModeManager = new MboxOutputModeManager(mboxOutputManager);
 		super.initialize(onFeatureInitialized);
+	}
+
+	private boolean isSupported()
+	{
+		return _mboxOutputModeManager != null;
 	}
 
 	@Override
@@ -71,6 +70,9 @@ public class FeatureDisplay extends FeatureComponent
 	public List<VideoMode> getVideoModes()
 	{
 		List<VideoMode> videoModes = new ArrayList<VideoMode>();
+		if (!isSupported())
+			return videoModes;
+
 		if (_mboxOutputModeManager.isHDMIPlugged())
 		{
 			for (String modeId : ALL_HDMI_MODE_VALUE_LIST)
@@ -180,7 +182,8 @@ public class FeatureDisplay extends FeatureComponent
 
 	public void setVideoMode(VideoMode videoMode)
 	{
-		_mboxOutputModeManager.setOutputMode(videoMode.modeId);
+		if (isSupported())
+			_mboxOutputModeManager.setOutputMode(videoMode.modeId);
 	}
 
 	public VideoMode getVideoMode()
@@ -199,6 +202,9 @@ public class FeatureDisplay extends FeatureComponent
 
 	public VideoMode getBestVideoMode()
 	{
+		if (!isSupported())
+			return getVideoMode();
+
 		return parseVideoModeId(_mboxOutputModeManager.getBestMatchResolution());
 	}
 
@@ -234,6 +240,8 @@ public class FeatureDisplay extends FeatureComponent
 	public void saveScreenPosition(ScreenPosition screenPosition)
 	{
 		VideoMode videoMode = getVideoMode();
+		if (videoMode == null)
+			return ;
 
 		String modeId = videoMode.modeId.replace("cvbs", "i");
 
@@ -263,8 +271,8 @@ public class FeatureDisplay extends FeatureComponent
 		ScreenPosition screenPosition = new ScreenPosition();
 		VideoMode videoMode = getVideoMode();
 		screenPosition.x = screenPosition.y = 0;
-		screenPosition.w = videoMode.width;
-		screenPosition.h = videoMode.height;
+		screenPosition.w = videoMode != null ? videoMode.width : 0;
+		screenPosition.h = videoMode != null ? videoMode.height: 0;
 		try
 		{
 			String windowAxis = Files.loadToString("/sys/class/graphics/fb0/window_axis");
@@ -289,6 +297,8 @@ public class FeatureDisplay extends FeatureComponent
 	{
 		ScreenPosition screenPosition = new ScreenPosition();
 		VideoMode videoMode = getVideoMode();
+		if (videoMode == null)
+			return ;
 		screenPosition.x = screenPosition.y = 0;
 		screenPosition.w = videoMode.width;
 		screenPosition.h = videoMode.height;

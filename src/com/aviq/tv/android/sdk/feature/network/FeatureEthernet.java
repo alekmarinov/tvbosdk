@@ -365,6 +365,9 @@ public class FeatureEthernet extends FeatureComponent
 			NetworkConfig networkConfig = new NetworkConfig();
 			try
 			{
+				if (!isSupported())
+					return networkConfig;
+
 				_ethernetDevInfo = _getSavedEthConfig.invoke(_ethernetManager);
 				networkConfig.Iface = (String) _getIfName.invoke(_ethernetDevInfo);
 				if (networkConfig.Iface == null)
