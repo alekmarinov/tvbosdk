@@ -279,19 +279,10 @@ public abstract class FeatureEPG extends FeatureComponent
 
 		loadChannels(new OnResultReceived()
 		{
-			@SuppressWarnings("unchecked")
 			@Override
 			public void onReceiveResult(FeatureError error, Object object)
 			{
-				if (!error.isError())
-				{
-					updateChannels((List<Channel>) object);
-					FeatureEPG.super.initialize(onFeatureInitialized);
-				}
-				else
-				{
-					Log.e(TAG, error.getMessage(), error);
-				}
+				onFeatureInitialized.onInitialized(error);
 			}
 		});
 
@@ -333,7 +324,15 @@ public abstract class FeatureEPG extends FeatureComponent
 
 	public Channel getChannelById(String channelId)
 	{
+		Log.d(TAG, ".getChannelById: " + channelId + " -> " + _channelsMap.get(channelId));
 		return _channelsMap.get(channelId);
+	}
+
+	protected void addChannel(Channel channel)
+	{
+		Log.d(TAG, ".addChannel: " + channel.getChannelId());
+		_channelsMap.put(channel.getChannelId(), channel);
+		_channels.add(channel);
 	}
 
 	private class ChannelsResponse implements Response.Listener<JSONObject>, Response.ErrorListener
@@ -356,8 +355,8 @@ public abstract class FeatureEPG extends FeatureComponent
 				for (int i = 0; i < jsonArr.length(); i++)
 					meta[i] = jsonArr.get(i).toString();
 				indexChannelMetaData(metaData, meta);
-				List<Channel> channels = parseChannelData(metaData, response.getJSONArray("data"));
-				_onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPG.this), channels);
+				parseChannelData(metaData, response.getJSONArray("data"));
+				_onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPG.this), null);
 			}
 			catch (JSONException e)
 			{
@@ -530,11 +529,9 @@ public abstract class FeatureEPG extends FeatureComponent
 	}
 
 	/**
-	 * @return create channel instance
-	 * @param index
-	 *            is the channel position in the global Channels list
+	 * @return creates new channel
 	 */
-	protected abstract Channel createChannel(int index);
+	protected abstract Channel createChannel();
 
 	/**
 	 * Creates program instance associated with Channel and program Id
@@ -570,9 +567,8 @@ public abstract class FeatureEPG extends FeatureComponent
 		}
 	}
 
-	private List<Channel> parseChannelData(Channel.MetaData metaData, JSONArray data) throws JSONException
+	private void parseChannelData(Channel.MetaData metaData, JSONArray data) throws JSONException
 	{
-		List<Channel> channels = new ArrayList<Channel>();
 		int nChannels = (_maxChannels > 0) ? _maxChannels : data.length();
 		for (int i = 0; i < nChannels; i++)
 		{
@@ -587,7 +583,7 @@ public abstract class FeatureEPG extends FeatureComponent
 				}
 			}
 
-			Channel channel = createChannel(channels.size());
+			Channel channel = createChannel();
 			channel.setChannelId(values[metaData.metaChannelId]);
 			channel.setTitle(values[metaData.metaChannelTitle]);
 
@@ -601,15 +597,16 @@ public abstract class FeatureEPG extends FeatureComponent
 			try
 			{
 				channel.setAttributes(metaData, values);
-				channels.add(channel);
 			}
 			catch (Exception e)
 			{
 				// invalid channel attributes, skip this channel
 				Log.w(TAG, e.getMessage(), e);
 			}
+
+			// add channel must be called after channel object has assigned id
+			addChannel(channel);
 		}
-		return channels;
 	}
 
 	protected void indexProgramMetaData(Program.MetaData metaData, String[] meta)

@@ -252,20 +252,21 @@ public class FeatureEPGBulsat extends FeatureEPG
 						@Override
 						public void run()
 						{
-							_updateChannels.update(new OnResultReceived()
+							_updateGenres.update(new OnResultReceived()
 							{
 								@Override
 								public void onReceiveResult(FeatureError error, Object object)
 								{
-									Log.i(TAG, "Channels periodically updated: " + error);
+									Log.i(TAG, "Genres periodically updated: " + error);
 									if (!error.isError())
 									{
-										_updateGenres.update(new OnResultReceived()
+										_updateChannels.update(new OnResultReceived()
 										{
+											@SuppressWarnings("unchecked")
 											@Override
 											public void onReceiveResult(FeatureError error, Object object)
 											{
-												Log.i(TAG, "Genres updated: " + error);
+												Log.i(TAG, "Channels periodically updated: " + error);
 											}
 										});
 									}
@@ -277,10 +278,6 @@ public class FeatureEPGBulsat extends FeatureEPG
 				}
 			}
 		});
-	}
-
-	private void tryUpdate(final OnFeatureInitialized onFeatureInitialized)
-	{
 	}
 
 	@Override
@@ -361,9 +358,9 @@ public class FeatureEPGBulsat extends FeatureEPG
 	}
 
 	@Override
-	protected Channel createChannel(int index)
+	protected Channel createChannel()
 	{
-		return new ChannelBulsat(index);
+		return new ChannelBulsat(getChannels().size());
 	}
 
 	@Override
@@ -787,7 +784,6 @@ public class FeatureEPGBulsat extends FeatureEPG
 
 	private class ChannelJSONResponse implements Response.Listener<JSONArray>, Response.ErrorListener
 	{
-		private List<Channel> _receivedChannels = new ArrayList<Channel>();
 		private OnResultReceived _onResultReceived;
 		private int _logosRequested;
 		private int _logosLoaded;
@@ -803,6 +799,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 			try
 			{
 				Map<String, Boolean> receivedChannelsMap = new HashMap<String, Boolean>();
+				boolean channelsChanged = false;
 
 				for (int i = 0; i < jsonArr.length(); i++)
 				{
@@ -810,9 +807,19 @@ public class FeatureEPGBulsat extends FeatureEPG
 					ImageRequest imageRequest;
 
 					JSONObject jsonChannel = jsonArr.getJSONObject(i);
-					ChannelBulsat channel = new ChannelBulsat(_receivedChannels.size());
+					String channelId = jsonChannel.getString("epg_name");
+					receivedChannelsMap.put(channelId, Boolean.TRUE);
+					ChannelBulsat channel = (ChannelBulsat) getChannelById(channelId);
+					if (channel == null)
+					{
+						// new channel arrived
+						channel = (ChannelBulsat) createChannel();
+						channel.setChannelId(channelId);
+						addChannel(channel);
+						channelsChanged = true;
+					}
 
-					channel.setChannelId(jsonChannel.getString("epg_name"));
+					channel.setTitle(jsonChannel.getString("title"));
 					channel.setChannelImageUrl(ChannelBulsat.LOGO_NORMAL, jsonChannel.getString("logo"));
 					channel.setChannelImageUrl(ChannelBulsat.LOGO_SELECTED, jsonChannel.getString("logo_selected"));
 					channel.setChannelImageUrl(ChannelBulsat.LOGO_FAVORITE, jsonChannel.getString("logo_favorite"));
@@ -880,25 +887,13 @@ public class FeatureEPGBulsat extends FeatureEPG
 					        channelImageListener, 0, 0, Config.ARGB_8888, channelImageListener);
 					Environment.getInstance().getRequestQueue().add(imageRequest);
 					_logosRequested++;
-
-					_receivedChannels.add(channel);
-					receivedChannelsMap.put(channel.getChannelId(), Boolean.TRUE);
-				}
-
-				boolean channelsChanged = false;
-				for (Channel receivedChannel : _receivedChannels)
-				{
-					if (getChannelById(receivedChannel.getChannelId()) == null)
-					{
-						channelsChanged = true;
-						break;
-					}
 				}
 
 				for (Channel existingChannel : getChannels())
 				{
 					if (!receivedChannelsMap.containsKey(existingChannel.getChannelId()))
 					{
+						// detected removed channel
 						channelsChanged = true;
 						break;
 					}
@@ -931,7 +926,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		{
 			Log.i(TAG, ".callBackOnFinish: _logosRequested = " + _logosRequested + ", _logosLoaded = " + _logosLoaded);
 			if (_logosRequested == _logosLoaded)
-				_onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPGBulsat.this), _receivedChannels);
+				_onResultReceived.onReceiveResult(FeatureError.OK(FeatureEPGBulsat.this), null);
 		}
 
 		private class ChannelImageListener implements Response.Listener<Bitmap>, ErrorListener
@@ -973,6 +968,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		@Override
 		public void update(OnResultReceived onResultReceived)
 		{
+			Log.i(TAG, ".UpdateChannelsJSON.update");
 			String url = getPrefs().getString(Param.BULSAT_CHANNELS_URL_JSON);
 
 			// retrieve channel streams from server
@@ -996,7 +992,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		@Override
 		public void update(final OnResultReceived onResultReceived)
 		{
-			Log.i(TAG, "UpdateChannelsXML.update");
+			Log.i(TAG, ".UpdateChannelsXML.update");
 			final String url = getPrefs().getString(Param.BULSAT_CHANNELS_URL_XML);
 			new Thread(new Runnable()
 			{
@@ -1078,6 +1074,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		@Override
 		public void update(final OnResultReceived onResultReceived)
 		{
+			Log.i(TAG, ".UpdateGenresXML.update");
 			new Thread(new Runnable()
 			{
 				@Override
@@ -1165,7 +1162,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		@Override
 		public void update(final OnResultReceived onResultReceived)
 		{
-
+			Log.i(TAG, ".UpdateGenresJSONWithHttpClient.update");
 			new Thread(new Runnable()
 			{
 				@Override
@@ -1234,6 +1231,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		@Override
 		public void update(final OnResultReceived onResultReceived)
 		{
+			Log.i(TAG, ".UpdateGenresJSON.update");
 			String url = getPrefs().getString(Param.BULSAT_GENRES_URL_JSON);
 
 			// retrieve channel genres from server

@@ -134,7 +134,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			if (items.length != 3)
 			{
 				Log.e(TAG,
-				        "Invalid recording format! Expected channelId(String),programId(String),watched(true|false) + got "
+				        "Invalid recording format! Expected channelId(String),programId(String),watched(true|false), got "
 				                + recording);
 				return false;
 			}
@@ -143,7 +143,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 			if (programId.length() != 14)
 			{
-				Log.e(TAG, "Invalid recording format! Expected 14 chars for programId, got + " + programId.length());
+				Log.e(TAG, "Invalid recording format! Expected 14 chars for programId, got `" + programId + "' (" + programId.length() + ")");
 				return false;
 			}
 
@@ -229,61 +229,14 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 */
 	public void removeRecord(String channelId, String programId)
 	{
+		Log.i(TAG, ".removeRecord: channelId = " + channelId + ", programId = " + programId);
 		_recordedPrograms.remove(makeRecordingId(channelId, programId));
 		saveRecordings();
 	}
 
 	/**
-	 * Return all programs for recording by date
-	 *
-	 * @param dateOffset
-	 *            - offset to current day, ex: 0 - current day, +1 (next day)
-	 */
-	/*
-	 * public List<Program> getRecordsByDate(int dateOffset)
-	 * {
-	 * List<Program> programs = new ArrayList<Program>();
-	 * Calendar date = Calendars.getDateByDayOffsetFrom(
-	 * Calendar.getInstance(_feature.Component.TIMEZONE.getTimeZone()),
-	 * dateOffset);
-	 * // String strDate = String.format("%04d%02d%02d",
-	 * // date.get(Calendar.YEAR), 1 + date.get(Calendar.MONTH),
-	 * // date.get(Calendar.DAY_OF_MONTH));
-	 * Log.d(TAG, ".getRecordsByDate: dateOffset = " + dateOffset + " -> " +
-	 * Calendars.makeString(date));
-	 * for (NavigableMap<Calendar, Program> map :
-	 * _channelToRecordsNavigableMap.values())
-	 * {
-	 * for (Program program : map.values())
-	 * {
-	 * Calendar programTime = program.getStartTime();
-	 * Log.d(TAG,
-	 * "Comparing entry offset " + Calendars.makeString(programTime) + " - "
-	 * + Calendars.getDayOffsetByDate(programTime) + " with dateOffset = " +
-	 * dateOffset);
-	 * if (Calendars.getDayOffsetByDate(programTime) == dateOffset)
-	 * {
-	 * programs.add(program);
-	 * }
-	 * }
-	 * }
-	 * Collections.sort(programs, _recordingSchedulerComparator);
-	 * if (programs.size() > 0)
-	 * {
-	 * Log.d(TAG, "program from getRecordsByDate " +
-	 * programs.get(0).getTitle());
-	 * }
-	 * else
-	 * {
-	 * Log.d(TAG, "no programs from getRecordsByDate with dateOffset = " +
-	 * dateOffset);
-	 * }
-	 * return programs;
-	 * }
-	 */
-
-	/**
-	 * Checks if program is scheduled for recording
+	 * Checks if program is scheduled for recording. It will also removes the
+	 * recording if expired related to channel NDVR
 	 *
 	 * @param program
 	 */
@@ -291,10 +244,44 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	{
 		if (program == null)
 		{
-			Log.e(TAG, ".isProgramRecorded(null) is not allowed!");
+			Log.e(TAG, ".isProgramRecorded(program) null argument is not allowed");
 			return false;
 		}
-		return _recordedPrograms.containsKey(makeRecordingId(program.getChannel().getChannelId(), program.getId()));
+		return isProgramRecorded(program.getChannel().getChannelId(), program.getId());
+	}
+
+	/**
+	 * Checks if program is scheduled for recording. It will also removes the
+	 * recording if expired related to channel NDVR
+	 *
+	 * @param channelId
+	 * @param programId
+	 */
+	public boolean isProgramRecorded(String channelId, String programId)
+	{
+		if (channelId == null || programId == null)
+		{
+			Log.e(TAG, ".isProgramRecorded(channelId, programId) null argument is not allowed");
+			return false;
+		}
+		if (_recordedPrograms.containsKey(makeRecordingId(channelId, programId)))
+		{
+			if (isRecordingExpired(channelId, programId))
+			{
+				removeRecord(channelId, programId);
+				return false;
+			}
+			return true;
+		}
+		return false;
+	}
+
+	private boolean isRecordingExpired(String channelId, String programId)
+	{
+		Channel channel = _feature.Component.EPG.getChannelById(channelId);
+		Calendar startTime = Program.timeById(programId);
+		startTime.add(Calendar.SECOND, channel.getNDVR());
+		return _feature.Component.TIMEZONE.getCurrentTime().after(startTime);
 	}
 
 	/**
@@ -378,8 +365,11 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 		for (RecordingItem rec : getUserRecordings())
 		{
-			channelIds.add(rec.channelId);
-			programIds.add(rec.programId);
+			if (isProgramRecorded(rec.channelId, rec.programId))
+			{
+				channelIds.add(rec.channelId);
+				programIds.add(rec.programId);
+			}
 		}
 
 		_feature.Component.EPG.getMultiplePrograms(channelIds, programIds, onResultReceived);
@@ -404,11 +394,14 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 		for (RecordingItem rec : getUserRecordings())
 		{
-			Calendar startTime = Program.timeById(rec.programId);
-			if (Calendars.getDayOffsetByDate(startTime) == dayOffset)
+			if (isProgramRecorded(rec.channelId, rec.programId))
 			{
-				channelIds.add(rec.channelId);
-				programIds.add(rec.programId);
+				Calendar startTime = Program.timeById(rec.programId);
+				if (Calendars.getDayOffsetByDate(startTime) == dayOffset)
+				{
+					channelIds.add(rec.channelId);
+					programIds.add(rec.programId);
+				}
 			}
 		}
 
@@ -462,8 +455,11 @@ public class FeatureRecordingScheduler extends FeatureComponent
 						List<String> programIds = new ArrayList<String>();
 						for (RecordingItem rec : getUserRecordings())
 						{
-							channelIds.add(rec.channelId);
-							programIds.add(rec.programId);
+							if (isProgramRecorded(rec.channelId, rec.programId))
+							{
+								channelIds.add(rec.channelId);
+								programIds.add(rec.programId);
+							}
 						}
 						_feature.Component.EPG.getMultiplePrograms(channelIds, programIds, new OnResultReceived()
 						{
