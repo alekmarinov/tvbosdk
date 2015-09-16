@@ -219,8 +219,9 @@ public class Environment extends Activity
 
 				_serviceController = new ServiceController(Environment.this);
 
-				// Setup Volley request queue
+				// Setup Volley
 
+				// create network
 				_volleyNetwork = new BasicNetwork(new HttpClientStack(AndroidHttpClient.newInstance("tvbosdk/volley")));
 
 				// Use 1/2th of the available memory for caching the global
@@ -228,6 +229,7 @@ public class Environment extends Activity
 				int cacheSize = 1024 * 1024 * memClass / 2;
 				_volleyCache = new DiskBasedCache(getCacheDir(), cacheSize);
 
+				// create request queue
 				_requestQueue = newRequestQueue();
 
 				BitmapMemLruCache memCache = new BitmapMemLruCache(getPrefs().getInt(Param.IMAGE_MEM_CACHE_SIZE));

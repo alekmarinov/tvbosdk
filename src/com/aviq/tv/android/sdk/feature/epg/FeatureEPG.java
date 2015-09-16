@@ -14,7 +14,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -214,21 +213,11 @@ public abstract class FeatureEPG extends FeatureComponent
 				if (_programs.size() == count && _offset < 0 && -_offset < count)
 				{
 					Program currentProgram = _programs.get(-_offset);
-					Log.i(TAG, ".getPrograms: currentProgram = " + currentProgram);
 					if (currentProgram != null)
 					{
 						if (currentProgram.getStartTime().before(when) && currentProgram.getStopTime().after(when))
 						{
-							Log.i(TAG, ".getPrograms: RETURN " + _programs);
 							return _programs;
-						}
-						else
-						{
-							Log.i(TAG,
-							        ".getPrograms: getStartTime() = "
-							                + Calendars.makeString(currentProgram.getStartTime())
-							                + ", getStopTime() = " + Calendars.makeString(currentProgram.getStopTime())
-							                + ", when = " + Calendars.makeString(when));
 						}
 					}
 				}
@@ -265,8 +254,7 @@ public abstract class FeatureEPG extends FeatureComponent
 	@Override
 	public void initialize(final OnFeatureInitialized onFeatureInitialized)
 	{
-		Log.i(TAG, ".initialize:");
-		Log.i(TAG, "Current date time: " + Calendars.makeString(new GregorianCalendar()));
+		Log.i(TAG, ".initialize");
 
 		_featureTimeZone = (FeatureTimeZone) Environment.getInstance().getFeatureComponent(
 		        FeatureName.Component.TIMEZONE);
@@ -324,7 +312,6 @@ public abstract class FeatureEPG extends FeatureComponent
 
 	public Channel getChannelById(String channelId)
 	{
-		Log.d(TAG, ".getChannelById: " + channelId + " -> " + _channelsMap.get(channelId));
 		return _channelsMap.get(channelId);
 	}
 
@@ -866,32 +853,14 @@ public abstract class FeatureEPG extends FeatureComponent
 		}
 	}
 
-	protected void updateChannels(List<Channel> channels)
-	{
-		Log.i(TAG, ".updateChannels: size = " + channels.size());
-		_channels = channels;
-
-		// index all channels to map
-		_channelsMap.clear();
-		for (Channel channel : _channels)
-		{
-			_channelsMap.put(channel.getChannelId(), channel);
-		}
-
-		_programsCache.reset();
-		getEventMessenger().trigger(ON_CHANNELS_UPDATED);
-	}
-
 	private String getProgramDetailsUrl(String channelId, String programId)
 	{
-		Log.i(TAG, "getProgramDetailsUrl");
 		Bundle bundle = new Bundle();
 		bundle.putString("SERVER", _epgServer);
 		bundle.putInt("VERSION", _epgVersion);
 		bundle.putString("PROVIDER", _epgProvider);
 		bundle.putString("CHANNEL", channelId);
 		bundle.putString("ID", programId);
-		Log.i(TAG, "getPrefs().getString(): " + getPrefs().getString(Param.EPG_PROGRAM_DETAILS_URL, bundle));
 
 		return getPrefs().getString(Param.EPG_PROGRAM_DETAILS_URL, bundle);
 	}
@@ -904,7 +873,6 @@ public abstract class FeatureEPG extends FeatureComponent
 
 		ProgramDetailsResponseCallback(Channel channel, String programId, OnResultReceived onResultReceived)
 		{
-			Log.i(TAG, "ProgramDetailsResponseCallback");
 			_channel = channel;
 			_programId = programId;
 			_onResultReceived = onResultReceived;
@@ -913,7 +881,6 @@ public abstract class FeatureEPG extends FeatureComponent
 		@Override
 		public void onResponse(JSONObject response)
 		{
-			Log.i(TAG, "onResponse");
 			Program program = createProgram(_programId, _channel);
 			try
 			{

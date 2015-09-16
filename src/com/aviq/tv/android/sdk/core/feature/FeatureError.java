@@ -16,6 +16,7 @@ import java.net.UnknownHostException;
 import android.os.Bundle;
 
 import com.android.volley.NoConnectionError;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.aviq.tv.android.sdk.core.ResultCode;
 import com.aviq.tv.android.sdk.utils.TextUtils;
@@ -55,121 +56,93 @@ public class FeatureError extends Exception
 	public FeatureError(IFeature feature, Throwable e)
 	{
 		this(feature, ResultCode.GENERAL_FAILURE, e);
-
-		// attempt to detect error code
-		if (FeatureNotFoundException.class.isInstance(e))
-		{
-			_resCode = ResultCode.FEATURE_NOT_FOUND;
-		}
-		else if (IOException.class.isInstance(e))
-		{
-			_resCode = ResultCode.IO_ERROR;
-		}
-		else if (UnknownHostException.class.isInstance(e) || NoConnectionError.class.isInstance(e))
-		{
-			_resCode = ResultCode.COMMUNICATION_ERROR;
-		}
-		else if (VolleyError.class.isInstance(e))
-		{
-			VolleyError ve = (VolleyError) e;
-			if (ve.networkResponse != null)
-			{
-				_resCode = -ve.networkResponse.statusCode;
-				_resData = new Bundle();
-
-				for (String key : ve.networkResponse.headers.keySet())
-				{
-					String value = ve.networkResponse.headers.get(key);
-					_resData.putString(key, value);
-				}
-			}
-		}
+		setResultCodeByThrowable(e);
 	}
 
 	/**
 	 * @param feature
 	 *            the feature related to this error
-	 * @param errCode
+	 * @param resCode
 	 *            the code of the error
 	 */
-	public FeatureError(IFeature feature, int errCode)
+	public FeatureError(IFeature feature, int resCode)
 	{
-		this(feature, errCode, ResultCode.text(errCode), null);
+		this(feature, resCode, ResultCode.text(resCode), null);
 	}
 
 	/**
 	 * @param feature
 	 *            the feature related to this error
-	 * @param errCode
+	 * @param resCode
 	 *            the code of the error
 	 * @param errData
 	 *            bundle with extra error data
 	 */
-	public FeatureError(IFeature feature, int errCode, Bundle errData)
+	public FeatureError(IFeature feature, int resCode, Bundle errData)
 	{
-		this(feature, errCode, errData, ResultCode.text(errCode), null);
+		this(feature, resCode, errData, ResultCode.text(resCode), null);
 	}
 
 	/**
 	 * @param feature
 	 *            the feature related to this error
-	 * @param errCode
+	 * @param resCode
 	 *            the code of the error
 	 * @param detailMessage
 	 *            message describing the error
 	 */
-	public FeatureError(IFeature feature, int errCode, String detailMessage)
+	public FeatureError(IFeature feature, int resCode, String detailMessage)
 	{
-		this(feature, errCode, detailMessage, null);
+		this(feature, resCode, detailMessage, null);
 	}
 
 	/**
 	 * @param feature
 	 *            the feature related to this error
-	 * @param errCode
+	 * @param resCode
 	 *            the code of the error
 	 * @param throwable
 	 *            optional exception object
 	 */
-	public FeatureError(IFeature feature, int errCode, Throwable throwable)
+	public FeatureError(IFeature feature, int resCode, Throwable throwable)
 	{
-		this(feature, errCode, throwable.getMessage(), throwable);
+		this(feature, resCode, throwable.getMessage(), throwable);
 	}
 
 	/**
 	 * @param feature
 	 *            the feature related to this error
-	 * @param errCode
+	 * @param resCode
 	 *            the code of the error
 	 * @param detailMessage
 	 *            message describing the error
 	 * @param throwable
 	 *            optional exception object
 	 */
-	public FeatureError(IFeature feature, int errCode, String detailMessage, Throwable throwable)
+	public FeatureError(IFeature feature, int resCode, String detailMessage, Throwable throwable)
 	{
-		this(feature, errCode, null, detailMessage, throwable);
+		this(feature, resCode, null, detailMessage, throwable);
 	}
 
 	/**
 	 * @param feature
 	 *            the feature related to this error
-	 * @param errCode
+	 * @param resCode
 	 *            the code of the error
 	 * @param errData
 	 *            bundle with extra error data
 	 * @param detailMessage
 	 *            message describing the error
 	 */
-	public FeatureError(IFeature feature, int errCode, Bundle errData, String detailMessage)
+	public FeatureError(IFeature feature, int resCode, Bundle errData, String detailMessage)
 	{
-		this(feature, errCode, errData, detailMessage, null);
+		this(feature, resCode, errData, detailMessage, null);
 	}
 
 	/**
 	 * @param feature
 	 *            the feature related to this error
-	 * @param errCode
+	 * @param resCode
 	 *            the code of the error
 	 * @param errData
 	 *            bundle with extra error data
@@ -178,11 +151,11 @@ public class FeatureError extends Exception
 	 * @param throwable
 	 *            optional exception object
 	 */
-	public FeatureError(IFeature feature, int errCode, Bundle errData, String detailMessage, Throwable throwable)
+	public FeatureError(IFeature feature, int resCode, Bundle errData, String detailMessage, Throwable throwable)
 	{
 		super(detailMessage, throwable);
 		_feature = feature;
-		_resCode = errCode;
+		_resCode = resCode;
 		_resData = errData;
 
 		if (throwable != null && _resCode > 0)
@@ -267,5 +240,45 @@ public class FeatureError extends Exception
 			sb.append(' ').append(TextUtils.implodeBundle(_resData));
 		}
 		return sb.toString();
+	}
+
+	public void setResultCodeByThrowable(Throwable e)
+	{
+		// attempt to detect error code
+		if (FeatureNotFoundException.class.isInstance(e))
+		{
+			_resCode = ResultCode.FEATURE_NOT_FOUND;
+		}
+		else if (IOException.class.isInstance(e))
+		{
+			_resCode = ResultCode.IO_ERROR;
+		}
+		else if (UnknownHostException.class.isInstance(e) || NoConnectionError.class.isInstance(e))
+		{
+			_resCode = ResultCode.COMMUNICATION_ERROR;
+		}
+		else if (VolleyError.class.isInstance(e))
+		{
+			VolleyError ve = (VolleyError) e;
+			if (ve.networkResponse != null)
+			{
+				_resCode = -ve.networkResponse.statusCode;
+				if (_resData == null)
+					_resData = new Bundle();
+
+				for (String key : ve.networkResponse.headers.keySet())
+				{
+					String value = ve.networkResponse.headers.get(key);
+					_resData.putString(key, value);
+				}
+			}
+			else
+			{
+				if (TimeoutError.class.isInstance(e))
+				{
+					_resCode = ResultCode.TIMEOUT;
+				}
+			}
+		}
 	}
 }

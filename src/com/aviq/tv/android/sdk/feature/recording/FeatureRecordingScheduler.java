@@ -47,6 +47,7 @@ import com.aviq.tv.android.sdk.utils.Calendars;
 public class FeatureRecordingScheduler extends FeatureComponent
 {
 	private static final String TAG = FeatureRecordingScheduler.class.getSimpleName();
+	private static final String RECORD_ID_DELIMITER = "_";
 	private static final String RECORD_DELIMITER = ";";
 	private static final String ITEM_DELIMITER = ",";
 	private Map<String, Boolean> _recordedPrograms = new HashMap<String, Boolean>();
@@ -188,6 +189,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 */
 	public void addRecord(String channelId, String programId)
 	{
+		Log.i(TAG, ".addRecord: channelId = " + channelId + ", programId = " + programId);
 		_recordedPrograms.put(makeRecordingId(channelId, programId), Boolean.FALSE);
 		saveRecordings();
 	}
@@ -200,7 +202,7 @@ public class FeatureRecordingScheduler extends FeatureComponent
 			if (sb.length() > 0)
 				sb.append(RECORD_DELIMITER);
 			boolean watched = _recordedPrograms.get(key);
-			String[] parts = key.split("_");
+			String[] parts = unmakeRecordingId(key);
 			sb.append(parts[0]).append(ITEM_DELIMITER).append(parts[1]).append(ITEM_DELIMITER).append(watched);
 		}
 		return sb.toString();
@@ -291,7 +293,14 @@ public class FeatureRecordingScheduler extends FeatureComponent
 	 */
 	public void setRecordWatched(Program program)
 	{
-		setRecordWatched(program.getChannel().getChannelId(), program.getId());
+		if (!isProgramRecorded(program))
+		{
+			Log.w(TAG, "Attempt to set not recorded program as watched");
+		}
+		else
+		{
+			setRecordWatched(program.getChannel().getChannelId(), program.getId());
+		}
 	}
 
 	/**
@@ -318,7 +327,12 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 	private String makeRecordingId(String channelId, String programId)
 	{
-		return channelId + "_" + programId;
+		return channelId + RECORD_ID_DELIMITER + programId;
+	}
+
+	private String[] unmakeRecordingId(String key)
+	{
+		return key.split(RECORD_ID_DELIMITER);
 	}
 
 	private List<RecordingItem> getUserRecordings()
@@ -343,7 +357,14 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 	public boolean haveRecordings()
 	{
-		return !_recordedPrograms.isEmpty();
+		for (String key: _recordedPrograms.keySet())
+		{
+			String[] parts = unmakeRecordingId(key);
+
+			if (isProgramRecorded(parts[0], parts[1]))
+				return true;
+		}
+		return false;
 	}
 
 	/**

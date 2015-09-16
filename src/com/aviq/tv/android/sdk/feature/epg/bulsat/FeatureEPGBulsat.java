@@ -787,9 +787,11 @@ public class FeatureEPGBulsat extends FeatureEPG
 		private OnResultReceived _onResultReceived;
 		private int _logosRequested;
 		private int _logosLoaded;
+		private String _url;
 
-		ChannelJSONResponse(OnResultReceived onResultReceived)
+		ChannelJSONResponse(String url, OnResultReceived onResultReceived)
 		{
+			_url = url;
 			_onResultReceived = onResultReceived;
 		}
 
@@ -907,7 +909,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 			catch (JSONException e)
 			{
 				// Load channels failed, notify error
-				Log.e(TAG, e.getMessage(), e);
+				Log.e(TAG, "Parsing " + _url + " failed: " + e.getMessage(), e);
 				_onResultReceived.onReceiveResult(
 				        new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR, e), null);
 			}
@@ -918,7 +920,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		{
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving channels with code " + statusCode + ": " + error);
+			Log.e(TAG, "Error retrieving channels from " + _url + " with code " + statusCode + ": " + error);
 			_onResultReceived.onReceiveResult(new FeatureError(FeatureEPGBulsat.this, statusCode, error), null);
 		}
 
@@ -968,11 +970,11 @@ public class FeatureEPGBulsat extends FeatureEPG
 		@Override
 		public void update(OnResultReceived onResultReceived)
 		{
-			Log.i(TAG, ".UpdateChannelsJSON.update");
 			String url = getPrefs().getString(Param.BULSAT_CHANNELS_URL_JSON);
+			Log.i(TAG, ".UpdateChannelsJSON.update: url = " + url);
 
 			// retrieve channel streams from server
-			ChannelJSONResponse channelJSONResponse = new ChannelJSONResponse(onResultReceived);
+			ChannelJSONResponse channelJSONResponse = new ChannelJSONResponse(url, onResultReceived);
 			JsonArrayRequest request = new JsonArrayRequest(url, channelJSONResponse, channelJSONResponse)
 			{
 				@Override
@@ -1173,7 +1175,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 					HttpUriRequest httpGet = new HttpGet(url);
 					Log.i(TAG, "Opening " + httpGet.getURI());
 
-					ChannelGenreResponse channelGenreResponse = new ChannelGenreResponse(onResultReceived);
+					ChannelGenreResponse channelGenreResponse = new ChannelGenreResponse(url, onResultReceived);
 					HttpClient httpClient = new DefaultHttpClient(httpGet.getParams());
 					httpGet.setHeader("STBDEVEL", "INTELIBO");
 					try
@@ -1231,11 +1233,11 @@ public class FeatureEPGBulsat extends FeatureEPG
 		@Override
 		public void update(final OnResultReceived onResultReceived)
 		{
-			Log.i(TAG, ".UpdateGenresJSON.update");
 			String url = getPrefs().getString(Param.BULSAT_GENRES_URL_JSON);
+			Log.i(TAG, ".UpdateGenresJSON.update: url = " + url);
 
 			// retrieve channel genres from server
-			ChannelGenreResponse channelGenreResponse = new ChannelGenreResponse(onResultReceived);
+			ChannelGenreResponse channelGenreResponse = new ChannelGenreResponse(url, onResultReceived);
 			JsonArrayRequest request = new JsonArrayRequest(url, channelGenreResponse, channelGenreResponse)
 			{
 				@Override
@@ -1256,9 +1258,11 @@ public class FeatureEPGBulsat extends FeatureEPG
 		private int _logosRequested;
 		private int _logosLoaded;
 		private Genres _genres = new Genres();
+		private String _url;
 
-		ChannelGenreResponse(OnResultReceived onResultReceived)
+		ChannelGenreResponse(String url, OnResultReceived onResultReceived)
 		{
+			_url = url;
 			_onResultReceived = onResultReceived;
 		}
 
@@ -1304,7 +1308,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 			catch (JSONException e)
 			{
 				// Load channels failed, notify error
-				Log.e(TAG, e.getMessage(), e);
+				Log.e(TAG, "Parsing " + _url + " failed: " + e.getMessage(), e);
 				_onResultReceived.onReceiveResult(
 				        new FeatureError(FeatureEPGBulsat.this, ResultCode.PROTOCOL_ERROR, e), null);
 			}
@@ -1315,7 +1319,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 		{
 			int statusCode = error.networkResponse != null ? error.networkResponse.statusCode
 			        : ResultCode.GENERAL_FAILURE;
-			Log.e(TAG, "Error retrieving EPG channel genres with code " + statusCode + ": " + error);
+			Log.e(TAG, "Error retrieving EPG channel genres from " + _url + " with code " + statusCode + ": " + error);
 			_onResultReceived.onReceiveResult(new FeatureError(FeatureEPGBulsat.this, statusCode, error), null);
 		}
 
