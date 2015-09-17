@@ -144,7 +144,8 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 			if (programId.length() != 14)
 			{
-				Log.e(TAG, "Invalid recording format! Expected 14 chars for programId, got `" + programId + "' (" + programId.length() + ")");
+				Log.e(TAG, "Invalid recording format! Expected 14 chars for programId, got `" + programId + "' ("
+				        + programId.length() + ")");
 				return false;
 			}
 
@@ -357,7 +358,12 @@ public class FeatureRecordingScheduler extends FeatureComponent
 
 	public boolean haveRecordings()
 	{
-		for (String key: _recordedPrograms.keySet())
+		List<String> keys = new ArrayList<String>();
+		for (String key : _recordedPrograms.keySet())
+		{
+			keys.add(key);
+		}
+		for (String key : keys)
 		{
 			String[] parts = unmakeRecordingId(key);
 
