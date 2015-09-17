@@ -349,7 +349,7 @@ public class Prefs
 		}
 		catch (FileNotFoundException e)
 		{
-			Log.e(TAG, e.getMessage(), e);
+			Log.w(TAG, e.getMessage(), e);
 		}
 		catch (IOException e)
 		{
