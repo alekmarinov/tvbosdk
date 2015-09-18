@@ -71,7 +71,7 @@ public class FeatureWeather extends FeatureScheduler
 
 	public static enum QUERY_TAGS
 	{
-		query, results, channel, item, condition, temp, code
+		query, results, channel, item, condition, temperature, code
 	}
 
 	public FeatureWeather() throws FeatureNotFoundException
@@ -171,19 +171,19 @@ public class FeatureWeather extends FeatureScheduler
 			response = response.getJSONObject(QUERY_TAGS.values()[id].name());
 		}
 
-		if (!response.isNull(QUERY_TAGS.code.name()) && (!response.isNull(QUERY_TAGS.temp.name())))
+		if (!response.isNull(QUERY_TAGS.code.name()) && (!response.isNull(QUERY_TAGS.temperature.name())))
 		{
 			int code = response.getInt(QUERY_TAGS.code.name());
-			int temp = response.getInt(QUERY_TAGS.temp.name());
+			int temperature = response.getInt(QUERY_TAGS.temperature.name());
 			if (_weatherData == null)
 				_weatherData = new WeatherData();
 			_weatherData.setImgCode(code);
-			_weatherData.setTemp(temp);
+			_weatherData.setTemperature(temperature);
 			getEventMessenger().trigger(ON_WEATHER_CHANGE);
 		}
 		else
 		{
-			Log.w(TAG, "Tag code or temp missing");
+			Log.w(TAG, "Tag code or temperature missing");
 		}
 	}
 
@@ -212,16 +212,16 @@ public class FeatureWeather extends FeatureScheduler
 	public class WeatherData
 	{
 		private int _imgCode;
-		private int _temp;
+		private int _temperature;
 
 		private void setImgCode(int i)
 		{
 			_imgCode = i;
 		}
 
-		private void setTemp(int temp)
+		private void setTemperature(int temp)
 		{
-			_temp = temp;
+			_temperature = temp;
 		}
 
 		public int getImgCode()
@@ -237,9 +237,9 @@ public class FeatureWeather extends FeatureScheduler
 			return imgURL;
 		}
 
-		public int getTemp()
+		public int getTemperature()
 		{
-			return _temp;
+			return _temperature;
 		}
 	}
 }
