@@ -71,7 +71,7 @@ public class FeatureWeather extends FeatureScheduler
 
 	public static enum QUERY_TAGS
 	{
-		query, results, channel, item, condition, temperature, code
+		query, results, channel, item, condition, temp, code
 	}
 
 	public FeatureWeather() throws FeatureNotFoundException
@@ -110,7 +110,7 @@ public class FeatureWeather extends FeatureScheduler
 		Bundle geoIp = _feature.Scheduler.INTERNET.getGeoIP();
 		if (geoIp == null)
 		{
-			Log.d(TAG, "GeoIP is now available yet");
+			Log.d(TAG, "GeoIP is not available yet");
 			return ;
 		}
 		WeatherResponseCallback responseCallback = new WeatherResponseCallback();
@@ -171,10 +171,10 @@ public class FeatureWeather extends FeatureScheduler
 			response = response.getJSONObject(QUERY_TAGS.values()[id].name());
 		}
 
-		if (!response.isNull(QUERY_TAGS.code.name()) && (!response.isNull(QUERY_TAGS.temperature.name())))
+		if (!response.isNull(QUERY_TAGS.code.name()) && (!response.isNull(QUERY_TAGS.temp.name())))
 		{
 			int code = response.getInt(QUERY_TAGS.code.name());
-			int temperature = response.getInt(QUERY_TAGS.temperature.name());
+			int temperature = response.getInt(QUERY_TAGS.temp.name());
 			if (_weatherData == null)
 				_weatherData = new WeatherData();
 			_weatherData.setImgCode(code);
