@@ -73,7 +73,15 @@ public class FeatureEventCollector extends FeatureScheduler
 		REPORT_FILENAME_TEMPLATE("${BUILD}-${CUSTOMER}-${BRAND}-${MAC}-${DATETIME}-${RANDOM}.eventlog"),
 
 		/** Path to the CA certificate relative to the assets folder */
-		EVENTS_SERVER_CA_CERT_PATH("");
+		EVENTS_SERVER_CA_CERT_PATH(""),
+
+		/** Tell this feature to send events or not, false = disabled statistics */
+		SEND_EVENTS(false);
+
+		Param(boolean value)
+		{
+			Environment.getInstance().getFeature(FeatureEventCollector.class).getPrefs().put(name(), value);
+		}
 
 		Param(int value)
 		{
@@ -105,6 +113,7 @@ public class FeatureEventCollector extends FeatureScheduler
 	 * keep all collected events until uploading to the tracking server
 	 */
 	private List<Bundle> _eventList = Collections.synchronizedList(new ArrayList<Bundle>());
+	private boolean _isSendEvents;
 
 	public FeatureEventCollector() throws FeatureNotFoundException
 	{
@@ -117,6 +126,7 @@ public class FeatureEventCollector extends FeatureScheduler
 	{
 		getEventMessenger().register(this, ON_TRACK);
 		_feature.Scheduler.INTERNET.getEventMessenger().register(this, FeatureInternet.ON_CONNECTED);
+		_isSendEvents = getPrefs().getBool(Param.SEND_EVENTS);
 		onSchedule(onFeatureInitialized);
 	}
 
@@ -130,7 +140,7 @@ public class FeatureEventCollector extends FeatureScheduler
 	public void onEvent(int msgId, Bundle bundle)
 	{
 		super.onEvent(msgId, bundle);
-		if (ON_TRACK == msgId)
+		if (_isSendEvents && ON_TRACK == msgId)
 		{
 			String eventName = bundle.getString(OnTrackExtra.EVENT.name().toLowerCase());
 			if (eventName == null)
@@ -232,8 +242,11 @@ public class FeatureEventCollector extends FeatureScheduler
 	protected void onSchedule(OnFeatureInitialized onFeatureInitialized)
 	{
 		// process events
-		processCollectedEvents();
-		scheduleDelayed(getPrefs().getInt(Param.SEND_EVENTS_INTERVAL));
+		if (_isSendEvents)
+		{
+			processCollectedEvents();
+			scheduleDelayed(getPrefs().getInt(Param.SEND_EVENTS_INTERVAL));
+		}
 		super.initialize(onFeatureInitialized);
 	}
 
@@ -246,10 +259,10 @@ public class FeatureEventCollector extends FeatureScheduler
 
 		String data = null;
 		synchronized (_eventList)
-        {
+		{
 			data = parseEventListToString(_eventList);
 			_eventList.clear();
-        }
+		}
 
 		if (data != null && data.length() > 0)
 		{
@@ -311,9 +324,9 @@ public class FeatureEventCollector extends FeatureScheduler
 	protected void addEvent(Bundle eventParams)
 	{
 		synchronized (_eventList)
-        {
+		{
 			_eventList.add(eventParams);
-        }
+		}
 	}
 
 	/**
