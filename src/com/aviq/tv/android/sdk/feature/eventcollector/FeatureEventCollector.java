@@ -57,8 +57,8 @@ public class FeatureEventCollector extends FeatureScheduler
 
 	public static enum Param
 	{
-		/** Schedule interval. */
-		SEND_EVENTS_INTERVAL(16 * 1000),
+		/** Schedule interval. every 30 mins */
+		SEND_EVENTS_INTERVAL(1800 * 1000),
 
 		/** Report URL */
 		EVENTS_SERVER_URL(""),
