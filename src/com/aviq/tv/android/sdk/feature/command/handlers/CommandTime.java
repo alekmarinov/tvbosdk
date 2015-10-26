@@ -2,10 +2,10 @@
  * Copyright (c) 2007-2015, Intelibo Ltd
  *
  * Project:     tvbosdk
- * Filename:    CommandSendText.java
+ * Filename:    CommandTime.java
  * Author:      alek
  * Date:        30.06.2015 ã.
- * Description: Injects text to application
+ * Description: Command returning current time
  */
 
 package com.aviq.tv.android.sdk.feature.command.handlers;

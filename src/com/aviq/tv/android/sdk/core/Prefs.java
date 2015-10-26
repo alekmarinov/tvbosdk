@@ -245,6 +245,14 @@ public class Prefs
 	}
 
 	/**
+	 * Return map with all preferences
+	 */
+	public Map<String, ?> getAll()
+	{
+		return _prefs.getAll();
+	}
+
+	/**
 	 * Remove setting
 	 *
 	 * @param key

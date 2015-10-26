@@ -35,6 +35,7 @@ import com.aviq.tv.android.sdk.core.feature.FeatureNotFoundException;
 import com.aviq.tv.android.sdk.core.feature.annotation.Author;
 import com.aviq.tv.android.sdk.core.service.ServiceController.OnResultReceived;
 import com.aviq.tv.android.sdk.feature.command.handlers.CommandFeatures;
+import com.aviq.tv.android.sdk.feature.command.handlers.CommandGetPrefs;
 import com.aviq.tv.android.sdk.feature.command.handlers.CommandHello;
 import com.aviq.tv.android.sdk.feature.command.handlers.CommandSendKey;
 import com.aviq.tv.android.sdk.feature.command.handlers.CommandSendText;
@@ -107,6 +108,7 @@ public class FeatureCommand extends FeatureComponent
 		addCommandHandler(new CommandSendText());
 		addCommandHandler(new CommandTime());
 		addCommandHandler(new CommandFeatures());
+		addCommandHandler(new CommandGetPrefs());
 
 		if (_feature.Component.HTTP_SERVER instanceof FeatureHttpServerJetty)
 		{
