@@ -141,12 +141,7 @@ public abstract class FeatureEPG extends FeatureComponent
 		 * The number of days in future the program is allowed to be imported by
 		 * EPG
 		 */
-		PROGRAM_RANGE_MAX_DAYS(7),
-
-		/**
-		 * Time to live for the channel data before being invalidated
-		 */
-		CHANNELS_TTL(24 * 3600 * 1000);
+		PROGRAM_RANGE_MAX_DAYS(7);
 
 		Param(boolean value)
 		{

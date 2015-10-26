@@ -45,6 +45,7 @@ import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Response;
@@ -182,41 +183,6 @@ public class FeatureEPGBulsat extends FeatureEPG
 			// updateGenres = new UpdateGenresJSONWithHttpClient();
 		}
 		super.initialize(onFeatureInitialized);
-
-		/*
-		 * final long maxAttempts =
-		 * getPrefs().getLong(Param.UPDATE_ATTEMPTS_MAX);
-		 * tryUpdate(new OnFeatureInitialized()
-		 * {
-		 * int _attempts = 0;
-		 * @Override
-		 * public void onInitialized(FeatureError error)
-		 * {
-		 * if (error.isError() && _attempts < maxAttempts)
-		 * {
-		 * _attempts++;
-		 * final OnFeatureInitialized _this = this;
-		 * getEventMessenger().postDelayed(new Runnable()
-		 * {
-		 * @Override
-		 * public void run()
-		 * {
-		 * tryUpdate(_this);
-		 * }
-		 * }, 1000);
-		 * }
-		 * else
-		 * {
-		 * onFeatureInitialized.onInitialized(error);
-		 * }
-		 * }
-		 * @Override
-		 * public void onInitializeProgress(IFeature feature, float progress)
-		 * {
-		 * onFeatureInitialized.onInitializeProgress(feature, progress);
-		 * }
-		 * });
-		 */
 	}
 
 	@Override
@@ -782,6 +748,13 @@ public class FeatureEPGBulsat extends FeatureEPG
 		}
 	}
 
+	private boolean compareStrings(String s1, String s2)
+	{
+		if (s1 == null || s2 == null)
+			return s1 == null && s2 == null;
+		return s1.equals(s2);
+	}
+
 	private class ChannelJSONResponse implements Response.Listener<JSONArray>, Response.ErrorListener
 	{
 		private OnResultReceived _onResultReceived;
@@ -821,36 +794,89 @@ public class FeatureEPGBulsat extends FeatureEPG
 						channelsChanged = true;
 					}
 
-					channel.setTitle(jsonChannel.getString("title"));
-					channel.setChannelImageUrl(ChannelBulsat.LOGO_NORMAL, jsonChannel.getString("logo"));
-					channel.setChannelImageUrl(ChannelBulsat.LOGO_SELECTED, jsonChannel.getString("logo_selected"));
-					channel.setChannelImageUrl(ChannelBulsat.LOGO_FAVORITE, jsonChannel.getString("logo_favorite"));
-					channel.setProgramImageUrl(jsonChannel.getString("logo_epg"), ImageSize.LARGE);
-					channel.setProgramImageUrl(jsonChannel.getString("logo_epg"), ImageSize.MEDIUM);
+					if (!compareStrings(channel.getTitle(), jsonChannel.getString("title")))
+					{
+						Log.i(TAG, channelId + " TITLE: " + channel.getTitle() + " -> " + jsonChannel.getString("title"));
+						channelsChanged = true;
+						channel.setTitle(jsonChannel.getString("title"));
+					}
+					if (!compareStrings(channel.getChannelImageUrl(ChannelBulsat.LOGO_NORMAL),
+					        jsonChannel.getString("logo")))
+					{
+						Log.i(TAG, channelId + " LOGO_NORMAL: " + channel.getChannelImageUrl(ChannelBulsat.LOGO_NORMAL) + " -> " + jsonChannel.getString("logo"));
+						channelsChanged = true;
+						channel.setChannelImageUrl(ChannelBulsat.LOGO_NORMAL, jsonChannel.getString("logo"));
+					}
+					if (!compareStrings(channel.getChannelImageUrl(ChannelBulsat.LOGO_SELECTED),
+					        jsonChannel.getString("logo_selected")))
+					{
+						Log.i(TAG, channelId + " LOGO_SELECTED: " + channel.getChannelImageUrl(ChannelBulsat.LOGO_SELECTED) + " -> " + jsonChannel.getString("logo_selected"));
+						channelsChanged = true;
+						channel.setChannelImageUrl(ChannelBulsat.LOGO_SELECTED, jsonChannel.getString("logo_selected"));
+					}
+					if (!compareStrings(channel.getChannelImageUrl(ChannelBulsat.LOGO_FAVORITE),
+					        jsonChannel.getString("logo_favorite")))
+					{
+						Log.i(TAG, channelId + " LOGO_FAVORITE: " + channel.getChannelImageUrl(ChannelBulsat.LOGO_FAVORITE) + " -> " + jsonChannel.getString("logo_favorite"));
+						channelsChanged = true;
+						channel.setChannelImageUrl(ChannelBulsat.LOGO_FAVORITE, jsonChannel.getString("logo_favorite"));
+					}
+					if (!compareStrings(channel.getProgramImageUrl(ImageSize.LARGE), jsonChannel.getString("logo_epg")))
+					{
+						Log.i(TAG, channelId + " ProgramImageUrl.LARGE: " + channel.getProgramImageUrl(ImageSize.LARGE) + " -> " + jsonChannel.getString("logo_epg"));
+						channelsChanged = true;
+						channel.setProgramImageUrl(jsonChannel.getString("logo_epg"), ImageSize.LARGE);
+					}
+					if (!compareStrings(channel.getProgramImageUrl(ImageSize.MEDIUM), jsonChannel.getString("logo_epg")))
+					{
+						Log.i(TAG, channelId + " ProgramImageUrl.MEDIUM: " + channel.getProgramImageUrl(ImageSize.MEDIUM) + " -> " + jsonChannel.getString("logo_epg"));
+						channelsChanged = true;
+						channel.setProgramImageUrl(jsonChannel.getString("logo_epg"), ImageSize.MEDIUM);
+					}
 
 					if (jsonChannel.has("sources"))
+					{
 						channel.setStreamUrl(jsonChannel.getString("sources"));
+					}
 
 					if (jsonChannel.has("ndvr"))
+					{
 						channel.setSeekUrl(jsonChannel.getString("ndvr"));
+					}
 
 					if (jsonChannel.has("genre"))
 					{
 						String genreTitle = jsonChannel.getString("genre");
-						Genre genre = Genres.getInstance().getGenreByTitle(genreTitle);
-						channel.setGenre(genre);
+						if (channel.getGenre() == null || !compareStrings(channel.getGenre().getTitle(), genreTitle))
+						{
+							Log.i(TAG, channelId + " GENRE: " + channel.getGenre() + " -> " + genreTitle);
+							channelsChanged = true;
+							Genre genre = Genres.getInstance().getGenreByTitle(genreTitle);
+							channel.setGenre(genre);
+						}
 					}
 
 					if (jsonChannel.has("pg"))
 					{
 						boolean parentControl = !"free".equals(jsonChannel.getString("pg"));
-						channel.setParentControl(parentControl);
+						if (channel.isParentControl() != parentControl)
+						{
+							Log.i(TAG, channelId + " PARENT_CONTROL: " + channel.isParentControl() + " -> " + parentControl);
+							channelsChanged = true;
+							channel.setParentControl(parentControl);
+						}
 					}
 
 					if (jsonChannel.has("channel"))
 						try
 						{
-							channel.setChannelNo(Integer.valueOf(jsonChannel.getString("channel")));
+							int channelNo = Integer.valueOf(jsonChannel.getString("channel"));
+							if (channel.getChannelNo() != channelNo)
+							{
+								Log.i(TAG, channelId + " CHANNEL_NO: " + channel.getChannelNo() + " -> " + channelNo);
+								channelsChanged = true;
+								channel.setChannelNo(channelNo);
+							}
 						}
 						catch (NumberFormatException nfe)
 						{
@@ -860,17 +886,33 @@ public class FeatureEPGBulsat extends FeatureEPG
 					if (jsonChannel.has("can_record"))
 					{
 						int canRecord = Integer.valueOf(jsonChannel.getString("can_record"));
-						channel.setRecordable(canRecord > 0);
+						boolean canRecordBool = canRecord > 0;
+						if (channel.isRecordable() != canRecordBool)
+						{
+							Log.i(TAG, channelId + " RECORDABLE: " + channel.isRecordable() + " -> " + canRecordBool);
+							channelsChanged = true;
+							channel.setRecordable(canRecordBool);
+						}
 					}
 
 					if (jsonChannel.has("has_dvr"))
 					{
-						int hasDdvr = Integer.valueOf(jsonChannel.getString("has_dvr"));
-						channel.setPlayable(hasDdvr > 0);
-						channel.setNDVR(hasDdvr);
+						int hasDvr = Integer.valueOf(jsonChannel.getString("has_dvr"));
+						if (channel.getNDVR() != hasDvr)
+						{
+							Log.i(TAG, channelId + " NDVR: " + channel.getNDVR() + " -> " + hasDvr);
+							channelsChanged = true;
+							channel.setPlayable(hasDvr > 0);
+							channel.setNDVR(hasDvr);
+						}
 					}
 
-					channel.setRadio(jsonChannel.optBoolean("radio"));
+					if (channel.isRadio() != jsonChannel.optBoolean("radio"))
+					{
+						Log.i(TAG, channelId + " RADIO: " + channel.isRadio() + " -> " + jsonChannel.optBoolean("radio"));
+						channelsChanged = true;
+						channel.setRadio(jsonChannel.optBoolean("radio"));
+					}
 
 					channelImageListener = new ChannelImageListener(channel, ChannelBulsat.LOGO_NORMAL);
 					imageRequest = new ImageRequest(channel.getChannelImageUrl(ChannelBulsat.LOGO_NORMAL),
@@ -904,6 +946,12 @@ public class FeatureEPGBulsat extends FeatureEPG
 				if (channelsChanged)
 				{
 					getEventMessenger().trigger(ON_CHANNELS_CHANGED);
+				}
+
+				if (Environment.getInstance().getUserPrefs().getBool(Environment.Param.DEBUG))
+				{
+					Toast.makeText(Environment.getInstance(), "Synchronizing channels: modified = " + channelsChanged,
+					        Toast.LENGTH_LONG).show();
 				}
 			}
 			catch (JSONException e)
