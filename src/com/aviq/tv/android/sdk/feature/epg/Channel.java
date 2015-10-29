@@ -126,6 +126,20 @@ public abstract class Channel
 		_logoNormalUrl = imageUrl;
 	}
 
+	public void validateChannel()
+	{
+		String propName = null;
+		if (_channelId == null)
+			propName = "channelId";
+		else if (_title == null)
+			propName = "title";
+		else if (_logoNormalUrl == null)
+			propName = "logoNormalUrl";
+
+		if (propName != null)
+			throw new IllegalArgumentException("Missing channel property " + propName);
+	}
+
 	/**
 	 * Sets provider's specific channel attributes
 	 *

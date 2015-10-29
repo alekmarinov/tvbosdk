@@ -289,6 +289,28 @@ public class ChannelBulsat extends Channel
 	}
 
 	@Override
+    public void validateChannel()
+	{
+		super.validateChannel();
+		String propName = null;
+		if (_genre == null)
+			propName = "genre";
+		else if (_channelNo == 0)
+			propName = "channelNo";
+		else if (_logoSelectedUrl == null)
+			propName = "logoSelectedUrl";
+		else if (_logoFavoriteUrl == null)
+			propName = "logoFavoriteUrl";
+		else if (_programImageMediumUrl == null)
+			propName = "programImageMediumUrl";
+		else if (_programImageLargeUrl == null)
+			propName = "programImageLargeUrl";
+
+		if (propName != null)
+			throw new IllegalArgumentException("Missing channel property " + propName);
+	}
+
+	@Override
 	public void setAttributes(Channel.MetaData channelMetaData, String[] attributes)
 	{
 		MetaData channelBulsatMetaData = (MetaData) channelMetaData;

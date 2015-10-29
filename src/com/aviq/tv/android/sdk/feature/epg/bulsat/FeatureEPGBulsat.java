@@ -785,51 +785,62 @@ public class FeatureEPGBulsat extends FeatureEPG
 					String channelId = jsonChannel.getString("epg_name");
 					receivedChannelsMap.put(channelId, Boolean.TRUE);
 					ChannelBulsat channel = (ChannelBulsat) getChannelById(channelId);
-					if (channel == null)
+					boolean isNewChannel = channel == null;
+					if (isNewChannel)
 					{
 						// new channel arrived
 						channel = (ChannelBulsat) createChannel();
 						channel.setChannelId(channelId);
-						addChannel(channel);
 						channelsChanged = true;
 					}
 
 					if (!compareStrings(channel.getTitle(), jsonChannel.getString("title")))
 					{
-						Log.i(TAG, channelId + " TITLE: " + channel.getTitle() + " -> " + jsonChannel.getString("title"));
+						Log.i(TAG,
+						        channelId + " TITLE: " + channel.getTitle() + " -> " + jsonChannel.getString("title"));
 						channelsChanged = true;
 						channel.setTitle(jsonChannel.getString("title"));
 					}
 					if (!compareStrings(channel.getChannelImageUrl(ChannelBulsat.LOGO_NORMAL),
 					        jsonChannel.getString("logo")))
 					{
-						Log.i(TAG, channelId + " LOGO_NORMAL: " + channel.getChannelImageUrl(ChannelBulsat.LOGO_NORMAL) + " -> " + jsonChannel.getString("logo"));
+						Log.i(TAG, channelId + " LOGO_NORMAL: " + channel.getChannelImageUrl(ChannelBulsat.LOGO_NORMAL)
+						        + " -> " + jsonChannel.getString("logo"));
 						channelsChanged = true;
 						channel.setChannelImageUrl(ChannelBulsat.LOGO_NORMAL, jsonChannel.getString("logo"));
 					}
 					if (!compareStrings(channel.getChannelImageUrl(ChannelBulsat.LOGO_SELECTED),
 					        jsonChannel.getString("logo_selected")))
 					{
-						Log.i(TAG, channelId + " LOGO_SELECTED: " + channel.getChannelImageUrl(ChannelBulsat.LOGO_SELECTED) + " -> " + jsonChannel.getString("logo_selected"));
+						Log.i(TAG,
+						        channelId + " LOGO_SELECTED: "
+						                + channel.getChannelImageUrl(ChannelBulsat.LOGO_SELECTED) + " -> "
+						                + jsonChannel.getString("logo_selected"));
 						channelsChanged = true;
 						channel.setChannelImageUrl(ChannelBulsat.LOGO_SELECTED, jsonChannel.getString("logo_selected"));
 					}
 					if (!compareStrings(channel.getChannelImageUrl(ChannelBulsat.LOGO_FAVORITE),
 					        jsonChannel.getString("logo_favorite")))
 					{
-						Log.i(TAG, channelId + " LOGO_FAVORITE: " + channel.getChannelImageUrl(ChannelBulsat.LOGO_FAVORITE) + " -> " + jsonChannel.getString("logo_favorite"));
+						Log.i(TAG,
+						        channelId + " LOGO_FAVORITE: "
+						                + channel.getChannelImageUrl(ChannelBulsat.LOGO_FAVORITE) + " -> "
+						                + jsonChannel.getString("logo_favorite"));
 						channelsChanged = true;
 						channel.setChannelImageUrl(ChannelBulsat.LOGO_FAVORITE, jsonChannel.getString("logo_favorite"));
 					}
 					if (!compareStrings(channel.getProgramImageUrl(ImageSize.LARGE), jsonChannel.getString("logo_epg")))
 					{
-						Log.i(TAG, channelId + " ProgramImageUrl.LARGE: " + channel.getProgramImageUrl(ImageSize.LARGE) + " -> " + jsonChannel.getString("logo_epg"));
+						Log.i(TAG, channelId + " ProgramImageUrl.LARGE: " + channel.getProgramImageUrl(ImageSize.LARGE)
+						        + " -> " + jsonChannel.getString("logo_epg"));
 						channelsChanged = true;
 						channel.setProgramImageUrl(jsonChannel.getString("logo_epg"), ImageSize.LARGE);
 					}
 					if (!compareStrings(channel.getProgramImageUrl(ImageSize.MEDIUM), jsonChannel.getString("logo_epg")))
 					{
-						Log.i(TAG, channelId + " ProgramImageUrl.MEDIUM: " + channel.getProgramImageUrl(ImageSize.MEDIUM) + " -> " + jsonChannel.getString("logo_epg"));
+						Log.i(TAG,
+						        channelId + " ProgramImageUrl.MEDIUM: " + channel.getProgramImageUrl(ImageSize.MEDIUM)
+						                + " -> " + jsonChannel.getString("logo_epg"));
 						channelsChanged = true;
 						channel.setProgramImageUrl(jsonChannel.getString("logo_epg"), ImageSize.MEDIUM);
 					}
@@ -861,13 +872,15 @@ public class FeatureEPGBulsat extends FeatureEPG
 						boolean parentControl = !"free".equals(jsonChannel.getString("pg"));
 						if (channel.isParentControl() != parentControl)
 						{
-							Log.i(TAG, channelId + " PARENT_CONTROL: " + channel.isParentControl() + " -> " + parentControl);
+							Log.i(TAG, channelId + " PARENT_CONTROL: " + channel.isParentControl() + " -> "
+							        + parentControl);
 							channelsChanged = true;
 							channel.setParentControl(parentControl);
 						}
 					}
 
 					if (jsonChannel.has("channel"))
+					{
 						try
 						{
 							int channelNo = Integer.valueOf(jsonChannel.getString("channel"));
@@ -882,6 +895,7 @@ public class FeatureEPGBulsat extends FeatureEPG
 						{
 							Log.w(TAG, nfe.getMessage(), nfe);
 						}
+					}
 
 					if (jsonChannel.has("can_record"))
 					{
@@ -909,9 +923,22 @@ public class FeatureEPGBulsat extends FeatureEPG
 
 					if (channel.isRadio() != jsonChannel.optBoolean("radio"))
 					{
-						Log.i(TAG, channelId + " RADIO: " + channel.isRadio() + " -> " + jsonChannel.optBoolean("radio"));
+						Log.i(TAG,
+						        channelId + " RADIO: " + channel.isRadio() + " -> " + jsonChannel.optBoolean("radio"));
 						channelsChanged = true;
 						channel.setRadio(jsonChannel.optBoolean("radio"));
+					}
+
+					if (isNewChannel)
+					{
+						try
+						{
+							channel.validateChannel();
+							addChannel(channel);
+						} catch (IllegalArgumentException e)
+						{
+							Log.e(TAG, e.getMessage());
+						}
 					}
 
 					channelImageListener = new ChannelImageListener(channel, ChannelBulsat.LOGO_NORMAL);
