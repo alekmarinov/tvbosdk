@@ -359,7 +359,6 @@ public class FeatureInternet extends FeatureScheduler
 		@Override
 		public void onResponse(String response)
 		{
-			Log.i(TAG, _url + " -> " + response.substring(0, Math.min(10, response.length() - 1)));
 			Bundle resultData = new Bundle();
 			resultData.putString(ResultExtras.URL.name(), _url);
 			resultData.putString(ResultExtras.CONTENT.name(), response);
