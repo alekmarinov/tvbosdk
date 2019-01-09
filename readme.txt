@@ -1,1 +1,1 @@
-AVIQ TV SDK is Android based platform for Set-Top Box applications
+TVBO SDK is Android based platform for Set-Top Box applications
